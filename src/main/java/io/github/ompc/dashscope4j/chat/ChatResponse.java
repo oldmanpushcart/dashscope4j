@@ -33,7 +33,25 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Data, ChatResponse> 
      * @param usage   使用情况
      * @param data    数据
      */
-    public ChatResponse(String uuid, String code, String message, Usage usage, Data data) {
+    @JsonCreator
+    public ChatResponse(
+
+            @JsonProperty("request_id")
+            String uuid,
+
+            @JsonProperty("code")
+            String code,
+
+            @JsonProperty("message")
+            String message,
+
+            @JsonProperty("usage")
+            Usage usage,
+
+            @JsonProperty("output")
+            Data data
+
+    ) {
         super(uuid, code, message, usage, data);
 
         // 获取最好的选择
@@ -97,18 +115,53 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Data, ChatResponse> 
 
                 final var node = context.readTree(parser);
 
-                //
+                // 兼容openai的返回格式
                 if (node.has("choices")) {
                     final var choiceArray = context.readTreeAsValue(node.get("choices"), Choice[].class);
                     return new Data(List.of(choiceArray));
                 }
 
-                //
-                final var finish = context.readTreeAsValue(node.get("finish_reason"), Choice.Finish.class);
+                // 老的返回格式
+                final var finish = context.readTreeAsValue(node.get("finish_reason"), Finish.class);
                 final var message = Message.ofAi(node.get("text").asText());
                 return new Data(List.of(new Choice(finish, message)));
+
             }
 
+        }
+
+    }
+
+    /**
+     * 结束标识
+     */
+    public enum Finish {
+
+        /**
+         * 正常结束
+         */
+        @JsonProperty("stop")
+        NORMAL(0),
+
+        /**
+         * 截断结束
+         */
+        @JsonProperty("length")
+        OVERFLOW(1),
+
+        /**
+         * 尚未结束
+         * <p>
+         * 用于标识尚未结束，常见于开启了SSE的场景
+         * </p>
+         */
+        @JsonProperty("null")
+        NONE(100);
+
+        private final int weight;
+
+        Finish(int weight) {
+            this.weight = weight;
         }
 
     }
@@ -122,7 +175,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Data, ChatResponse> 
     public record Choice(
 
             @JsonProperty("finish_reason")
-            Finish finish,
+            ChatResponse.Finish finish,
 
             @JsonProperty("message")
             Message message
@@ -131,82 +184,9 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Data, ChatResponse> 
 
         @Override
         public int compareTo(Choice o) {
-            // 按照Finish.weight从小到大排序
             return finish.weight - o.finish.weight;
         }
 
-        /**
-         * 结束标识
-         */
-        public enum Finish {
-
-            /**
-             * 正常结束
-             */
-            @JsonProperty("stop")
-            NORMAL(0),
-
-            /**
-             * 截断结束
-             */
-            @JsonProperty("length")
-            OVERFLOW(1),
-
-            /**
-             * 尚未结束
-             * <p>
-             * 用于标识尚未结束，常见于开启了SSE的场景
-             * </p>
-             */
-            @JsonProperty("null")
-            NONE(100);
-
-            private final int weight;
-
-            Finish(int weight) {
-                this.weight = weight;
-            }
-
-        }
-
-        @JsonCreator
-        static Choice of(
-
-                @JsonProperty("finish_reason")
-                Finish finish,
-
-                @JsonProperty("message")
-                Message message
-
-        ) {
-            return new Choice(
-                    Objects.nonNull(finish) ? finish : Finish.NONE,
-                    message
-            );
-        }
-
-    }
-
-    @JsonCreator
-    static ChatResponse of(
-
-            @JsonProperty("request_id")
-            String uuid,
-
-            @JsonProperty("code")
-            String code,
-
-            @JsonProperty("message")
-            String message,
-
-            @JsonProperty("usage")
-            Usage usage,
-
-            @JsonProperty("output")
-            ChatResponse.Data data
-
-    ) {
-        return new ChatResponse(uuid, code, message, usage, data);
     }
 
 }

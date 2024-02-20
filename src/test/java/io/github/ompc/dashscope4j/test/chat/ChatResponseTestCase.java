@@ -30,7 +30,7 @@ public class ChatResponseTestCase {
         Assertions.assertEquals(1, response.data().choices().size());
         Assertions.assertEquals(1, response.data().choices().get(0).message().contents().size());
         Assertions.assertEquals("TEST-TEXT", response.data().choices().get(0).message().contents().get(0).data());
-        Assertions.assertEquals(ChatResponse.Choice.Finish.NORMAL, response.data().choices().get(0).finish());
+        Assertions.assertEquals(ChatResponse.Finish.NORMAL, response.data().choices().get(0).finish());
         Assertions.assertEquals(380, response.usage().total(item -> item.name().equals("output_tokens")));
         Assertions.assertEquals(633, response.usage().total(item -> item.name().equals("input_tokens")));
     }
@@ -62,7 +62,7 @@ public class ChatResponseTestCase {
         Assertions.assertEquals(1, response.data().choices().size());
         Assertions.assertEquals(1, response.data().choices().get(0).message().contents().size());
         Assertions.assertEquals("TEST-TEXT", response.data().choices().get(0).message().contents().get(0).data());
-        Assertions.assertEquals(ChatResponse.Choice.Finish.NORMAL, response.data().choices().get(0).finish());
+        Assertions.assertEquals(ChatResponse.Finish.NORMAL, response.data().choices().get(0).finish());
         Assertions.assertEquals(380, response.usage().total(item -> item.name().equals("output_tokens")));
         Assertions.assertEquals(633, response.usage().total(item -> item.name().equals("input_tokens")));
     }
@@ -103,7 +103,7 @@ public class ChatResponseTestCase {
         Assertions.assertEquals(2, response.data().choices().get(0).message().contents().size());
         Assertions.assertEquals("TEST-TEXT", response.data().choices().get(0).message().contents().get(0).data());
         Assertions.assertEquals(URI.create("https://example.com/example.png"), response.data().choices().get(0).message().contents().get(1).data());
-        Assertions.assertEquals(ChatResponse.Choice.Finish.NORMAL, response.data().choices().get(0).finish());
+        Assertions.assertEquals(ChatResponse.Finish.NORMAL, response.data().choices().get(0).finish());
         Assertions.assertEquals(380, response.usage().total(item -> item.name().equals("output_tokens")));
         Assertions.assertEquals(480, response.usage().total(item -> item.name().equals("input_tokens")));
         Assertions.assertEquals(680, response.usage().total(item -> item.name().equals("image_tokens")));
