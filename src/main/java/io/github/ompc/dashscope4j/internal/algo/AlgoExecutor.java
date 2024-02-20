@@ -67,7 +67,7 @@ public abstract class AlgoExecutor<M extends Model, DT extends ApiData, T extend
             return switch (ct.mime()) {
                 case HttpHeader.ContentType.MIME_APPLICATION_JSON -> newBlockBodySubscriber(request, ct);
                 case HttpHeader.ContentType.MIME_TEXT_EVENT_STREAM -> newStreamBodySubscriber(request, info, ct);
-                default -> throw new RuntimeException("Unsupported Content-Type: %s".formatted(ct.mime()));
+                default -> throw new RuntimeException("Unsupported HTTP Content-Type: %s".formatted(ct.mime()));
             };
         };
     }
@@ -97,7 +97,7 @@ public abstract class AlgoExecutor<M extends Model, DT extends ApiData, T extend
         // 流式订阅器
         final var subscriber = new HttpResponseEventSubscriber(ct.charset(), event -> {
 
-            logger.debug("{}/{}/http <= {}", this, request.model().name(), event.data());
+            logger.debug("{}/{}/http <= {}", this, request.model().name(), event);
 
             // 异常事件，直接抛出
             if ("error".equals(event.type())) {
@@ -125,7 +125,7 @@ public abstract class AlgoExecutor<M extends Model, DT extends ApiData, T extend
 
             // 未知事件，抛出异常
             else {
-                throw new RuntimeException("Unsupported Event-Type: %s".formatted(event.type()));
+                throw new RuntimeException("Unsupported event type: %s".formatted(event.type()));
             }
 
         });

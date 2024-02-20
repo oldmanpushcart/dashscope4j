@@ -10,7 +10,7 @@ import static io.github.ompc.dashscope4j.internal.util.CommonUtils.isNotBlankStr
  *
  * @param <D> 数据类型
  */
-public abstract class ApiResponse<D extends ApiData, DR extends ApiResponse<D, DR>> {
+public abstract class ApiResponse<D extends ApiData> {
 
     private final String uuid;
     private final Ret ret;

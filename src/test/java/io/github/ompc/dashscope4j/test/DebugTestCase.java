@@ -1,10 +1,8 @@
 package io.github.ompc.dashscope4j.test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatOptions;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
-import io.github.ompc.dashscope4j.chat.ChatResponse;
 import io.github.ompc.dashscope4j.chat.message.Content;
 import io.github.ompc.dashscope4j.chat.message.Message;
 import org.junit.jupiter.api.Test;
@@ -17,8 +15,8 @@ public class DebugTestCase implements LoadingEnv {
     public void test$debug() {
 
         final var request = new ChatRequest.Builder()
-                .model(ChatModel.QWEN_TURBO)
-                // .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .model(ChatModel.QWEN_VL_MAX)
+                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .messages(
                         Message.ofUser(
                                 Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),

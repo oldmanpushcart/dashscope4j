@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 import static io.github.ompc.dashscope4j.internal.api.http.HttpHeader.HEADER_AUTHORIZATION;
 import static java.util.Optional.ofNullable;
 
-public abstract class ApiExecutor<DT extends ApiData, T extends ApiRequest<DT>, DR extends ApiData, R extends ApiResponse<DR, R>> {
+public abstract class ApiExecutor<DT extends ApiData, T extends ApiRequest<DT>, DR extends ApiData, R extends ApiResponse<DR>> {
 
     private static final ObjectMapper mapper = JacksonUtils.mapper();
     private final String sk;

@@ -87,7 +87,7 @@ public record Content<T>(Type type, LazyGet<CompletableFuture<T>> lazy) {
                     case "text" -> ofText(entry.getValue());
                     case "image" -> ofImage(URI.create(entry.getValue()));
                     case "audio" -> ofAudio(URI.create(entry.getValue()));
-                    default -> throw new IllegalArgumentException("unknown content type: %s".formatted(entry.getKey()));
+                    default -> throw new IllegalArgumentException("Unknown content-type: %s".formatted(entry.getKey()));
                 })
                 .findFirst()
                 .orElse(null);
