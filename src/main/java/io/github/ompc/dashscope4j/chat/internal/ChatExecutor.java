@@ -1,6 +1,5 @@
 package io.github.ompc.dashscope4j.chat.internal;
 
-import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
 import io.github.ompc.dashscope4j.chat.message.Content;
@@ -9,18 +8,24 @@ import io.github.ompc.dashscope4j.internal.algo.AlgoExecutor;
 import java.net.http.HttpClient;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
+import java.util.concurrent.Flow;
 
-public class ChatExecutor extends AlgoExecutor<ChatModel, ChatRequest.Data, ChatRequest, ChatResponse.Data, ChatResponse> {
+public class ChatExecutor extends AlgoExecutor<ChatRequest, ChatResponse> {
 
-    public ChatExecutor(String sk, HttpClient http, Executor executor, boolean stream) {
-        super(sk, http, executor, stream, ChatResponse.class);
+    public ChatExecutor(String sk, HttpClient http, Executor executor) {
+        super(sk, http, executor, ChatResponse.class);
     }
 
     @Override
-    public CompletableFuture<ChatResponse> execute(ChatRequest request, Consumer<ChatResponse> consumer) {
+    public CompletableFuture<ChatResponse> async(ChatRequest request) {
         return fetchingChatRequest(request)
-                .thenCompose(v -> super.execute(v, consumer));
+                .thenCompose(super::async);
+    }
+
+    @Override
+    public CompletableFuture<Flow.Publisher<ChatResponse>> flow(ChatRequest request) {
+        return fetchingChatRequest(request)
+                .thenCompose(super::flow);
     }
 
     // 异步获取聊天请求

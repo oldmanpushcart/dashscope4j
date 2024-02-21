@@ -9,7 +9,7 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
+import java.util.concurrent.Flow;
 
 import static io.github.ompc.dashscope4j.internal.util.CommonUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
@@ -39,19 +39,19 @@ public class DashScopeClientImpl implements DashScopeClient {
     }
 
     @Override
-    public OpAsyncAndStream<ChatResponse> chat(ChatRequest request) {
-        return new OpAsyncAndStream<>() {
+    public OpAsyncOpFlow<ChatResponse> chat(ChatRequest request) {
+        return new OpAsyncOpFlow<>() {
 
             @Override
-            public CompletableFuture<ChatResponse> stream(Consumer<ChatResponse> consumer) {
-                return new ChatExecutor(sk, http, executor, true)
-                        .execute(request, consumer);
+            public CompletableFuture<Flow.Publisher<ChatResponse>> flow() {
+                return new ChatExecutor(sk, http, executor)
+                        .flow(request);
             }
 
             @Override
             public CompletableFuture<ChatResponse> async() {
-                return new ChatExecutor(sk, http, executor, false)
-                        .execute(request, r->{});
+                return new ChatExecutor(sk, http, executor)
+                        .async(request);
             }
 
         };

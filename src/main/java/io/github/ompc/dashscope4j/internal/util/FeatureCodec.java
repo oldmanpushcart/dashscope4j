@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import static io.github.ompc.dashscope4j.internal.util.CommonUtils.isBlankString;
 import static io.github.ompc.dashscope4j.internal.util.CommonUtils.isNotBlankString;
 
 /**
@@ -85,13 +86,13 @@ public class FeatureCodec {
 
         final Collection<String> collection = new ArrayList<>();
 
-        if (!isNotBlankString(featureString)) {
+        if (isBlankString(featureString)) {
             return collection;
         }
 
         for (String value : escapeSplit(featureString, kvSegmentSeparator)) {
 
-            if (!isNotBlankString(value)) {
+            if (isBlankString(value)) {
                 // 过滤掉为空的字符串片段
                 continue;
             }
@@ -146,13 +147,13 @@ public class FeatureCodec {
 
         final Map<String, String> map = new HashMap<>();
 
-        if (!isNotBlankString(featureString)) {
+        if (isBlankString(featureString)) {
             return map;
         }
 
         for (String kv : escapeSplit(featureString, kvSegmentSeparator)) {
 
-            if (!isNotBlankString(kv)) {
+            if (isBlankString(kv)) {
                 // 过滤掉为空的字符串片段
                 continue;
             }

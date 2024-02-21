@@ -13,6 +13,7 @@ module dashscope4j {
 
 
     exports io.github.ompc.dashscope4j;
+    exports io.github.ompc.dashscope4j.util;
     exports io.github.ompc.dashscope4j.chat;
     exports io.github.ompc.dashscope4j.chat.message;
 

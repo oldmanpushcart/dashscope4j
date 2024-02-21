@@ -8,7 +8,7 @@ import io.github.ompc.dashscope4j.internal.util.Buildable;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
+import java.util.concurrent.Flow;
 
 
 public interface DashScopeClient {
@@ -19,7 +19,7 @@ public interface DashScopeClient {
      * @param request 对话请求
      * @return 操作
      */
-    OpAsyncAndStream<ChatResponse> chat(ChatRequest request);
+    OpAsyncOpFlow<ChatResponse> chat(ChatRequest request);
 
     /**
      * DashScope客户端构建器
@@ -66,19 +66,14 @@ public interface DashScopeClient {
      *
      * @param <R> 操作类型
      */
-    interface OpAsyncAndStream<R> extends OpAsync<R> {
+    interface OpAsyncOpFlow<R> extends OpAsync<R> {
 
         /**
          * 流式操作
-         * <ul>
-         *     <li>块模式：将会消费最终应答</li>
-         *     <li>流模式：将会消费每一个SSE产生的应答</li>
-         * </ul>
          *
-         * @param consumer 响应消费者
          * @return 操作结果
          */
-        CompletableFuture<R> stream(Consumer<R> consumer);
+        CompletableFuture<Flow.Publisher<R>> flow();
 
     }
 

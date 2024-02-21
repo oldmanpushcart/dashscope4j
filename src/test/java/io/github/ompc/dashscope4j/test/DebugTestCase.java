@@ -4,7 +4,8 @@ import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatOptions;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.message.Content;
-import io.github.ompc.dashscope4j.chat.message.Message;
+import io.github.ompc.dashscope4j.test.chat.ChatAssertions;
+import io.github.ompc.dashscope4j.util.ConsumeFlowSubscriber;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
@@ -17,20 +18,27 @@ public class DebugTestCase implements LoadingEnv {
         final var request = new ChatRequest.Builder()
                 .model(ChatModel.QWEN_VL_MAX)
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                .messages(
-                        Message.ofUser(
-                                Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
-                                Content.ofText("图片中一共多少辆自行车?")
-
-                        )
+                .user(
+                        Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
+                        Content.ofText("图片中一共多少辆自行车?")
                 )
+//                .user(
+//                        Content.ofAudio(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/audios/2channel_16K.wav")),
+//                        Content.ofText("这段音频在说什么?")
+//                )
                 .build();
 
-        final var response = client.chat(request)
-                .stream(r -> {})
-                // .async()
-                .join();
-        System.out.println(response.best().message().text());
+        {
+            client.chat(request).async()
+                    .join();
+        }
+
+//        {
+//            client.chat(request).flow()
+//                    .thenCompose(publisher -> ConsumeFlowSubscriber.consume(publisher, ChatAssertions::assertChatResponse))
+//                    .join();
+//        }
+
 
     }
 

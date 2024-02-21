@@ -1,6 +1,7 @@
 package io.github.ompc.dashscope4j.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.ompc.dashscope4j.chat.message.Content;
 import io.github.ompc.dashscope4j.chat.message.Message;
 import io.github.ompc.dashscope4j.internal.algo.AlgoRequest;
 import io.github.ompc.dashscope4j.internal.api.ApiData;
@@ -56,6 +57,50 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatRequest.Data> {
          */
         public Builder messages(List<Message> messages) {
             this.input().messages().addAll(messages);
+            return this;
+        }
+
+        /**
+         * 添加系统文本消息
+         *
+         * @param text 文本
+         * @return 构建器
+         */
+        public Builder system(String text) {
+            this.input().messages().add(Message.ofSystem(text));
+            return this;
+        }
+
+        /**
+         * 添加AI文本消息
+         *
+         * @param text 文本
+         * @return 构建器
+         */
+        public Builder ai(String text) {
+            this.input().messages().add(Message.ofAi(text));
+            return this;
+        }
+
+        /**
+         * 添加用户文本消息
+         *
+         * @param text 文本
+         * @return 构建器
+         */
+        public Builder user(String text) {
+            this.input().messages().add(Message.ofUser(text));
+            return this;
+        }
+
+        /**
+         * 添加用户消息
+         *
+         * @param contents 内容
+         * @return 构建器
+         */
+        public Builder user(Content<?>... contents) {
+            this.input().messages().add(Message.ofUser(contents));
             return this;
         }
 

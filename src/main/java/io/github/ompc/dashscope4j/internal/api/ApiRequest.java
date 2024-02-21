@@ -65,10 +65,10 @@ public abstract class ApiRequest<D extends ApiData> {
      * 构造器
      *
      * @param <D> 数据类型
-     * @param <R> 请求类型
+     * @param <T> 请求类型
      * @param <B> 构造器类型
      */
-    protected static abstract class Builder<D extends ApiData, R extends ApiRequest<D>, B extends Builder<D, R, B>> implements Buildable<R, B> {
+    protected static abstract class Builder<D extends ApiData, T extends ApiRequest<D>, B extends Builder<D, T, B>> implements Buildable<T, B> {
 
         private final D data;
         private Duration timeout;
