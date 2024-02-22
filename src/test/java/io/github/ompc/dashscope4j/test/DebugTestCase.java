@@ -16,16 +16,16 @@ public class DebugTestCase implements LoadingEnv {
     public void test$debug() {
 
         final var request = new ChatRequest.Builder()
-                .model(ChatModel.QWEN_VL_MAX)
+                .model(ChatModel.QWEN_AUDIO_CHAT)
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                .user(
-                        Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
-                        Content.ofText("图片中一共多少辆自行车?")
-                )
 //                .user(
-//                        Content.ofAudio(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/audios/2channel_16K.wav")),
-//                        Content.ofText("这段音频在说什么?")
+//                        Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
+//                        Content.ofText("图片中一共多少辆自行车?")
 //                )
+                .user(
+                        Content.ofAudio(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/audios/2channel_16K.wav")),
+                        Content.ofText("这段音频在说什么?")
+                )
                 .build();
 
         {
@@ -33,11 +33,11 @@ public class DebugTestCase implements LoadingEnv {
                     .join();
         }
 
-//        {
-//            client.chat(request).flow()
-//                    .thenCompose(publisher -> ConsumeFlowSubscriber.consume(publisher, ChatAssertions::assertChatResponse))
-//                    .join();
-//        }
+        {
+            client.chat(request).flow()
+                    .thenCompose(publisher -> ConsumeFlowSubscriber.consume(publisher, ChatAssertions::assertChatResponse))
+                    .join();
+        }
 
 
     }

@@ -3,7 +3,7 @@ package io.github.ompc.dashscope4j.internal;
 import io.github.ompc.dashscope4j.DashScopeClient;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
-import io.github.ompc.dashscope4j.chat.internal.ChatExecutor;
+import io.github.ompc.dashscope4j.internal.chat.ChatExecutor;
 
 import java.net.http.HttpClient;
 import java.time.Duration;

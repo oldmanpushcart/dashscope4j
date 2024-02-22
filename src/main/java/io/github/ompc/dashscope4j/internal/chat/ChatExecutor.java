@@ -1,4 +1,4 @@
-package io.github.ompc.dashscope4j.chat.internal;
+package io.github.ompc.dashscope4j.internal.chat;
 
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
