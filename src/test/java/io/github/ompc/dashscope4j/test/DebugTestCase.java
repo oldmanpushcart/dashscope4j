@@ -4,6 +4,8 @@ import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatOptions;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.message.Content;
+import io.github.ompc.dashscope4j.test.chat.ChatAssertions;
+import io.github.ompc.dashscope4j.util.ConsumeFlowSubscriber;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
@@ -26,17 +28,17 @@ public class DebugTestCase implements LoadingEnv {
 //                )
                 .build();
 
-        {
-            final var response = client.chat(request).async()
-                    .join();
-            System.out.println(response.best().message().text());
-        }
-
 //        {
-//            client.chat(request).flow()
-//                    .thenCompose(publisher -> ConsumeFlowSubscriber.consume(publisher, ChatAssertions::assertChatResponse))
+//            final var response = client.chat(request).async()
 //                    .join();
+//            System.out.println(response.best().message().text());
 //        }
+
+        {
+            client.chat(request).flow()
+                    .thenCompose(publisher -> ConsumeFlowSubscriber.consume(publisher, ChatAssertions::assertChatResponse))
+                    .join();
+        }
 
 
     }

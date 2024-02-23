@@ -6,8 +6,11 @@ import io.github.ompc.dashscope4j.Model;
 import io.github.ompc.dashscope4j.Option;
 import io.github.ompc.dashscope4j.internal.api.ApiRequest;
 import io.github.ompc.dashscope4j.internal.util.JacksonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.http.HttpRequest;
+import java.util.function.Function;
 
 import static io.github.ompc.dashscope4j.internal.api.http.HttpHeader.ContentType.MIME_APPLICATION_JSON;
 import static io.github.ompc.dashscope4j.internal.api.http.HttpHeader.HEADER_CONTENT_TYPE;
@@ -21,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> extends ApiRequest<R> {
 
     private static final ObjectMapper mapper = JacksonUtils.mapper();
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @JsonProperty("model")
     private final M model;
@@ -31,20 +35,38 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
     @JsonProperty("parameters")
     private final Option option;
 
+    private final String _string;
+
     protected AlgoRequest(Object input, Class<R> responseType, Builder<M, ?, ?> builder) {
         super(responseType, builder);
         this.model = requireNonNull(builder.model);
         this.input = requireNonNull(input);
         this.option = builder.option;
+        this._string = "dashscope://algo/%s".formatted(model.name());
+    }
+
+    @Override
+    public String toString() {
+        return _string;
     }
 
     @Override
     protected HttpRequest newHttpRequest() {
+        final var body = JacksonUtils.toJson(mapper, this);
+        logger.debug("{} => {}", this, body);
         return HttpRequest.newBuilder()
                 .uri(model().remote())
                 .header(HEADER_CONTENT_TYPE, MIME_APPLICATION_JSON)
-                .POST(HttpRequest.BodyPublishers.ofString(JacksonUtils.toJson(mapper, this)))
+                .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
+    }
+
+    @Override
+    protected Function<String, R> responseDeserializer() {
+        return body -> {
+            logger.debug("{} <= {}", this, body);
+            return JacksonUtils.toObject(mapper, body, responseType);
+        };
     }
 
     /**

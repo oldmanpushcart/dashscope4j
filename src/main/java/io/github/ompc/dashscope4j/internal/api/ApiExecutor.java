@@ -1,10 +1,7 @@
 package io.github.ompc.dashscope4j.internal.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.ompc.dashscope4j.Ret;
 import io.github.ompc.dashscope4j.internal.api.http.HttpHeader;
 import io.github.ompc.dashscope4j.internal.api.http.HttpSsEventProcessor;
-import io.github.ompc.dashscope4j.internal.util.JacksonUtils;
 import io.github.ompc.dashscope4j.util.TransformFlowProcessor;
 
 import java.net.http.HttpClient;
@@ -22,11 +19,9 @@ import static java.util.function.Function.identity;
 
 /**
  * API执行器
- *
  */
 public class ApiExecutor {
 
-    private static final ObjectMapper mapper = JacksonUtils.mapper();
     private final String sk;
     private final HttpClient http;
     private final Executor executor;
@@ -65,7 +60,7 @@ public class ApiExecutor {
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
                 .thenApply(httpResponse -> {
-                    final var response = JacksonUtils.toObject(mapper, httpResponse.body(), request.responseType());
+                    final var response = request.responseDeserializer().apply(httpResponse.body());
                     if (!response.ret().isSuccess()) {
                         throw new ApiException(httpResponse.statusCode(), response.ret());
                     }
@@ -84,7 +79,6 @@ public class ApiExecutor {
             builder.header(HEADER_AUTHORIZATION, "Bearer %s".formatted(sk));
             builder.header(HEADER_X_DASHSCOPE_SSE, "enable");
         });
-
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApplyAsync(identity(), executor)
 
@@ -107,10 +101,10 @@ public class ApiExecutor {
                                         .findFirst()
                                         .orElse(200),
                                 // 解析Ret
-                                JacksonUtils.toObject(mapper, event.data(), Ret.class)
+                                request.responseDeserializer().apply(event.data()).ret()
                         );
                         // 数据事件，处理数据
-                        case "result" -> responses.add(JacksonUtils.toObject(mapper, event.data(), request.responseType()));
+                        case "result" -> request.responseDeserializer().apply(event.data());
                         // 未知事件，抛出异常
                         default -> throw new RuntimeException("Unsupported event type: %s".formatted(event.type()));
                     }

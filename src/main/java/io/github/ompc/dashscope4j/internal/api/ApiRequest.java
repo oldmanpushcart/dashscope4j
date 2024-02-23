@@ -4,17 +4,17 @@ import io.github.ompc.dashscope4j.internal.util.Buildable;
 
 import java.net.http.HttpRequest;
 import java.time.Duration;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * API请求
- *
  */
 public abstract class ApiRequest<R extends ApiResponse<?>> {
 
     private final Duration timeout;
-    private final Class<R> responseType;
+    protected final Class<R> responseType;
 
     /**
      * 构造API请求
@@ -35,11 +35,19 @@ public abstract class ApiRequest<R extends ApiResponse<?>> {
         return timeout;
     }
 
+    /**
+     * 转换为HTTP请求
+     *
+     * @return HTTP请求
+     */
     protected abstract HttpRequest newHttpRequest();
 
-    Class<R> responseType() {
-        return responseType;
-    }
+    /**
+     * 应答序列化
+     *
+     * @return 应答序列化
+     */
+    protected abstract Function<String, R> responseDeserializer();
 
 
     /**
