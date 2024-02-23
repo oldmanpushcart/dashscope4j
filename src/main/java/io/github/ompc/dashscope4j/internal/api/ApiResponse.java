@@ -10,12 +10,12 @@ import static io.github.ompc.dashscope4j.internal.util.CommonUtils.isNotBlankStr
  *
  * @param <D> 数据类型
  */
-public abstract class ApiResponse<D extends ApiData> {
+public abstract class ApiResponse<D extends ApiResponse.Output> {
 
     private final String uuid;
     private final Ret ret;
     private final Usage usage;
-    private final D data;
+    private final D output;
 
     /**
      * 构造API响应
@@ -24,13 +24,13 @@ public abstract class ApiResponse<D extends ApiData> {
      * @param code    返回结果编码
      * @param message 返回结果信息
      * @param usage   使用情况
-     * @param data    数据
+     * @param output  数据
      */
-    protected ApiResponse(String uuid, String code, String message, Usage usage, D data) {
+    protected ApiResponse(String uuid, String code, String message, Usage usage, D output) {
         this.uuid = uuid;
         this.ret = ofRet(uuid, code, message);
         this.usage = usage;
-        this.data = data;
+        this.output = output;
     }
 
     /**
@@ -68,15 +68,6 @@ public abstract class ApiResponse<D extends ApiData> {
     }
 
     /**
-     * 获取返回结果
-     *
-     * @return 返回结果
-     */
-    public Ret info() {
-        return ret;
-    }
-
-    /**
      * 获取使用情况
      *
      * @return 使用情况
@@ -90,8 +81,14 @@ public abstract class ApiResponse<D extends ApiData> {
      *
      * @return 数据
      */
-    public D data() {
-        return data;
+    public D output() {
+        return output;
+    }
+
+    /**
+     * 应答数据
+     */
+    public interface Output {
     }
 
 }

@@ -4,8 +4,6 @@ import io.github.ompc.dashscope4j.DashScopeClient;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
 import io.github.ompc.dashscope4j.internal.api.ApiExecutor;
-import io.github.ompc.dashscope4j.internal.api.ApiRequest;
-import io.github.ompc.dashscope4j.internal.api.ApiResponse;
 
 import java.net.http.HttpClient;
 import java.time.Duration;

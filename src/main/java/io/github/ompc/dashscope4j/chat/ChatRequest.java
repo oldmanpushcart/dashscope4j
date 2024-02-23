@@ -1,10 +1,8 @@
 package io.github.ompc.dashscope4j.chat;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.ompc.dashscope4j.chat.message.Content;
 import io.github.ompc.dashscope4j.chat.message.Message;
 import io.github.ompc.dashscope4j.internal.algo.AlgoRequest;
-import io.github.ompc.dashscope4j.internal.api.ApiData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,10 +10,10 @@ import java.util.List;
 /**
  * 对话请求
  */
-public class ChatRequest extends AlgoRequest<ChatModel, ChatRequest.Data, ChatResponse> {
+public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
-    protected ChatRequest(Builder builder) {
-        super(ChatResponse.class, builder);
+    private ChatRequest(Input input, Builder builder) {
+        super(input, ChatResponse.class, builder);
     }
 
     /**
@@ -23,22 +21,16 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatRequest.Data, ChatRe
      *
      * @param messages 对话消息列表
      */
-    public record Data(
-            @JsonProperty("messages")
-            List<Message> messages
-
-    ) implements ApiData {
+    public record Input(List<Message> messages) {
 
     }
 
     /**
      * 对话请求构建器
      */
-    public static class Builder extends AlgoRequest.Builder<ChatModel, ChatRequest.Data, ChatRequest, Builder> {
+    public static class Builder extends AlgoRequest.Builder<ChatModel, ChatRequest, Builder> {
 
-        public Builder() {
-            super(new Data(new ArrayList<>()));
-        }
+        private final Input input = new Input(new ArrayList<>());
 
         /**
          * 添加消息
@@ -56,7 +48,7 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatRequest.Data, ChatRe
          * @see #messages(Message...)
          */
         public Builder messages(List<Message> messages) {
-            this.input().messages().addAll(messages);
+            input.messages().addAll(messages);
             return this;
         }
 
@@ -67,7 +59,7 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatRequest.Data, ChatRe
          * @return 构建器
          */
         public Builder system(String text) {
-            this.input().messages().add(Message.ofSystem(text));
+            input.messages().add(Message.ofSystem(text));
             return this;
         }
 
@@ -78,7 +70,7 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatRequest.Data, ChatRe
          * @return 构建器
          */
         public Builder ai(String text) {
-            this.input().messages().add(Message.ofAi(text));
+            input.messages().add(Message.ofAi(text));
             return this;
         }
 
@@ -89,7 +81,7 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatRequest.Data, ChatRe
          * @return 构建器
          */
         public Builder user(String text) {
-            this.input().messages().add(Message.ofUser(text));
+            input.messages().add(Message.ofUser(text));
             return this;
         }
 
@@ -100,13 +92,13 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatRequest.Data, ChatRe
          * @return 构建器
          */
         public Builder user(Content<?>... contents) {
-            this.input().messages().add(Message.ofUser(contents));
+            input.messages().add(Message.ofUser(contents));
             return this;
         }
 
         @Override
         public ChatRequest build() {
-            return new ChatRequest(this);
+            return new ChatRequest(input, this);
         }
 
     }

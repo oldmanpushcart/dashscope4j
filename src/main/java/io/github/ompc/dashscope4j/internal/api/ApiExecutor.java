@@ -57,7 +57,7 @@ public class ApiExecutor {
      * @param request 请求
      * @return 异步应答
      */
-    public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<?,R> request) {
+    public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<R> request) {
         final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder.header(HEADER_AUTHORIZATION, "Bearer %s".formatted(sk));
             builder.header(HEADER_X_DASHSCOPE_SSE, "disable");
@@ -79,7 +79,7 @@ public class ApiExecutor {
      * @param request 请求
      * @return 流式应答
      */
-    public <R extends ApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(ApiRequest<?,R> request) {
+    public <R extends ApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(ApiRequest<R> request) {
         final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder.header(HEADER_AUTHORIZATION, "Bearer %s".formatted(sk));
             builder.header(HEADER_X_DASHSCOPE_SSE, "enable");

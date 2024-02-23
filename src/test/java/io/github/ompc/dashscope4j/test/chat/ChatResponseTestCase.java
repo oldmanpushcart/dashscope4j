@@ -27,10 +27,10 @@ public class ChatResponseTestCase {
                 """;
         final var response = new ObjectMapper().reader().readValue(json, ChatResponse.class);
         Assertions.assertEquals("d89c06fb-46a1-47b6-acb9-bfb17f814969", response.uuid());
-        Assertions.assertEquals(1, response.data().choices().size());
-        Assertions.assertEquals(1, response.data().choices().get(0).message().contents().size());
-        Assertions.assertEquals("TEST-TEXT", response.data().choices().get(0).message().contents().get(0).data());
-        Assertions.assertEquals(ChatResponse.Finish.NORMAL, response.data().choices().get(0).finish());
+        Assertions.assertEquals(1, response.output().choices().size());
+        Assertions.assertEquals(1, response.output().choices().get(0).message().contents().size());
+        Assertions.assertEquals("TEST-TEXT", response.output().choices().get(0).message().contents().get(0).data());
+        Assertions.assertEquals(ChatResponse.Finish.NORMAL, response.output().choices().get(0).finish());
         Assertions.assertEquals(380, response.usage().total(item -> item.name().equals("output_tokens")));
         Assertions.assertEquals(633, response.usage().total(item -> item.name().equals("input_tokens")));
     }
@@ -59,10 +59,10 @@ public class ChatResponseTestCase {
                 """;
         final var response = new ObjectMapper().reader().readValue(json, ChatResponse.class);
         Assertions.assertEquals("d89c06fb-46a1-47b6-acb9-bfb17f814969", response.uuid());
-        Assertions.assertEquals(1, response.data().choices().size());
-        Assertions.assertEquals(1, response.data().choices().get(0).message().contents().size());
-        Assertions.assertEquals("TEST-TEXT", response.data().choices().get(0).message().contents().get(0).data());
-        Assertions.assertEquals(ChatResponse.Finish.NORMAL, response.data().choices().get(0).finish());
+        Assertions.assertEquals(1, response.output().choices().size());
+        Assertions.assertEquals(1, response.output().choices().get(0).message().contents().size());
+        Assertions.assertEquals("TEST-TEXT", response.output().choices().get(0).message().contents().get(0).data());
+        Assertions.assertEquals(ChatResponse.Finish.NORMAL, response.output().choices().get(0).finish());
         Assertions.assertEquals(380, response.usage().total(item -> item.name().equals("output_tokens")));
         Assertions.assertEquals(633, response.usage().total(item -> item.name().equals("input_tokens")));
     }
@@ -99,11 +99,11 @@ public class ChatResponseTestCase {
                 """;
         final var response = new ObjectMapper().reader().readValue(json, ChatResponse.class);
         Assertions.assertEquals("b042e72d-7994-97dd-b3d2-7ee7e0140525", response.uuid());
-        Assertions.assertEquals(1, response.data().choices().size());
-        Assertions.assertEquals(2, response.data().choices().get(0).message().contents().size());
-        Assertions.assertEquals("TEST-TEXT", response.data().choices().get(0).message().contents().get(0).data());
-        Assertions.assertEquals(URI.create("https://example.com/example.png"), response.data().choices().get(0).message().contents().get(1).data());
-        Assertions.assertEquals(ChatResponse.Finish.NORMAL, response.data().choices().get(0).finish());
+        Assertions.assertEquals(1, response.output().choices().size());
+        Assertions.assertEquals(2, response.output().choices().get(0).message().contents().size());
+        Assertions.assertEquals("TEST-TEXT", response.output().choices().get(0).message().contents().get(0).data());
+        Assertions.assertEquals(URI.create("https://example.com/example.png"), response.output().choices().get(0).message().contents().get(1).data());
+        Assertions.assertEquals(ChatResponse.Finish.NORMAL, response.output().choices().get(0).finish());
         Assertions.assertEquals(380, response.usage().total(item -> item.name().equals("output_tokens")));
         Assertions.assertEquals(480, response.usage().total(item -> item.name().equals("input_tokens")));
         Assertions.assertEquals(680, response.usage().total(item -> item.name().equals("image_tokens")));

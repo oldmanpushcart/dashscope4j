@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.ompc.dashscope4j.Usage;
 import io.github.ompc.dashscope4j.chat.message.Message;
 import io.github.ompc.dashscope4j.internal.algo.AlgoResponse;
-import io.github.ompc.dashscope4j.internal.api.ApiData;
+import io.github.ompc.dashscope4j.internal.api.ApiResponse;
 
 import java.io.IOException;
 import java.util.List;
@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * 对话应答
  */
-public class ChatResponse extends AlgoResponse<ChatResponse.Data> {
+public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
 
     private final Choice best;
 
@@ -29,7 +29,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Data> {
      * @param code    返回结果编码
      * @param message 信息结果信息
      * @param usage   使用情况
-     * @param data    数据
+     * @param output    数据
      */
     @JsonCreator
     public ChatResponse(
@@ -47,14 +47,14 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Data> {
             Usage usage,
 
             @JsonProperty("output")
-            Data data
+            Output output
 
     ) {
-        super(uuid, code, message, usage, data);
+        super(uuid, code, message, usage, output);
 
         // 获取最好的选择
-        this.best = Optional.ofNullable(data)
-                .map(Data::choices)
+        this.best = Optional.ofNullable(output)
+                .map(Output::choices)
                 .flatMap(choices -> choices.stream().sorted().findFirst())
                 .orElse(null);
     }
@@ -69,26 +69,26 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Data> {
         return best;
     }
 
-    @JsonDeserialize(using = Data.DataJsonDeserializer.class)
-    public record Data(List<Choice> choices) implements ApiData {
+    @JsonDeserialize(using = Output.DataJsonDeserializer.class)
+    public record Output(List<Choice> choices) implements ApiResponse.Output {
 
-        static class DataJsonDeserializer extends JsonDeserializer<Data> {
+        static class DataJsonDeserializer extends JsonDeserializer<Output> {
 
             @Override
-            public Data deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            public Output deserialize(JsonParser parser, DeserializationContext context) throws IOException {
 
                 final var node = context.readTree(parser);
 
                 // openai格式
                 if (node.has("choices")) {
                     final var choiceArray = context.readTreeAsValue(node.get("choices"), Choice[].class);
-                    return new Data(List.of(choiceArray));
+                    return new Output(List.of(choiceArray));
                 }
 
                 // 老格式
                 final var finish = context.readTreeAsValue(node.get("finish_reason"), Finish.class);
                 final var message = Message.ofAi(node.get("text").asText());
-                return new Data(List.of(new Choice(finish, message)));
+                return new Output(List.of(new Choice(finish, message)));
 
             }
 

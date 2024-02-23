@@ -16,8 +16,8 @@ public class ChatAssertions {
         Assertions.assertTrue(response.usage().total() > 0);
 
         // choices
-        Assertions.assertNotNull(response.data().choices());
-        Assertions.assertFalse(response.data().choices().isEmpty());
+        Assertions.assertNotNull(response.output().choices());
+        Assertions.assertFalse(response.output().choices().isEmpty());
 
     }
 

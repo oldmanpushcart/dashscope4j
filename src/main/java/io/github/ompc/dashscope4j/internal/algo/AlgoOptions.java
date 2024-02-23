@@ -1,12 +1,11 @@
 package io.github.ompc.dashscope4j.internal.algo;
 
 import io.github.ompc.dashscope4j.Option;
-import io.github.ompc.dashscope4j.internal.api.ApiOptions;
 
 /**
  * 算法选项
  */
-public interface AlgoOptions extends ApiOptions {
+public interface AlgoOptions {
 
     /**
      * ENABLE_INCREMENTAL_OUTPUT

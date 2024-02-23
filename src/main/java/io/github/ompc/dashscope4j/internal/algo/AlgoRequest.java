@@ -3,7 +3,7 @@ package io.github.ompc.dashscope4j.internal.algo;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ompc.dashscope4j.Model;
-import io.github.ompc.dashscope4j.internal.api.ApiData;
+import io.github.ompc.dashscope4j.Option;
 import io.github.ompc.dashscope4j.internal.api.ApiRequest;
 import io.github.ompc.dashscope4j.internal.util.JacksonUtils;
 
@@ -17,18 +17,25 @@ import static java.util.Objects.requireNonNull;
  * 算法请求
  *
  * @param <M> 模型
- * @param <D> 数据
  */
-public abstract class AlgoRequest<M extends Model, D extends ApiData, R extends AlgoResponse<?>> extends ApiRequest<D, R> {
+public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> extends ApiRequest<R> {
 
     private static final ObjectMapper mapper = JacksonUtils.mapper();
 
     @JsonProperty("model")
     private final M model;
 
-    protected AlgoRequest(Class<R> responseType, Builder<M, D, ?, ?> builder) {
+    @JsonProperty("input")
+    protected final Object input;
+
+    @JsonProperty("parameters")
+    private final Option option;
+
+    protected AlgoRequest(Object input, Class<R> responseType, Builder<M, ?, ?> builder) {
         super(responseType, builder);
         this.model = requireNonNull(builder.model);
+        this.input = requireNonNull(input);
+        this.option = builder.option;
     }
 
     @Override
@@ -50,20 +57,25 @@ public abstract class AlgoRequest<M extends Model, D extends ApiData, R extends 
     }
 
     /**
+     * 获取选项
+     *
+     * @return 选项
+     */
+    public Option option() {
+        return option;
+    }
+
+    /**
      * 算法请求构建器
      *
      * @param <M> 模型
-     * @param <D> 数据
      * @param <T> 请求
      * @param <B> 构建器
      */
-    protected static abstract class Builder<M extends Model, D extends ApiData, T extends AlgoRequest<M, D, ?>, B extends Builder<M, D, T, B>> extends ApiRequest.Builder<D, T, B> {
+    protected static abstract class Builder<M extends Model, T extends AlgoRequest<M, ?>, B extends Builder<M, T, B>> extends ApiRequest.Builder<T, B> {
 
         private M model;
-
-        protected Builder(D input) {
-            super(input);
-        }
+        private final Option option = new Option();
 
         /**
          * 设置模型
@@ -73,6 +85,32 @@ public abstract class AlgoRequest<M extends Model, D extends ApiData, R extends 
          */
         public B model(M model) {
             this.model = requireNonNull(model);
+            return self();
+        }
+
+        /**
+         * 设置选项
+         *
+         * @param opt   选项
+         * @param value 选项值
+         * @param <OT>  选项类型
+         * @param <OR>  选项值类型
+         * @return this
+         */
+        public <OT, OR> B option(Option.Opt<OT, OR> opt, OT value) {
+            option.option(opt, value);
+            return self();
+        }
+
+        /**
+         * 设置选项
+         *
+         * @param name  选项名
+         * @param value 选项值
+         * @return this
+         */
+        public B option(String name, Object value) {
+            option.option(name, value);
             return self();
         }
 
