@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.ompc.dashscope4j.Option;
 import io.github.ompc.dashscope4j.internal.util.Buildable;
 
+import java.net.http.HttpRequest;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 
 import static java.util.Objects.requireNonNull;
 
@@ -13,7 +16,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <D> 数据类型
  */
-public abstract class ApiRequest<D extends ApiData> {
+public abstract class ApiRequest<D extends ApiData, R extends ApiResponse<?>> {
 
     @JsonProperty("input")
     private final D data;
@@ -22,16 +25,18 @@ public abstract class ApiRequest<D extends ApiData> {
     private final Option option;
 
     private final Duration timeout;
+    private final Class<R> responseType;
 
     /**
      * 构造API请求
      *
      * @param builder 构造器
      */
-    protected ApiRequest(Builder<D, ?, ?> builder) {
+    protected ApiRequest(Class<R> responseType, Builder<D, ?, ?> builder) {
         this.data = builder.data;
         this.option = builder.option;
         this.timeout = builder.timeout;
+        this.responseType = responseType;
     }
 
     /**
@@ -61,6 +66,13 @@ public abstract class ApiRequest<D extends ApiData> {
         return timeout;
     }
 
+    protected abstract HttpRequest newHttpRequest();
+
+    Class<R> responseType() {
+        return responseType;
+    }
+
+
     /**
      * 构造器
      *
@@ -68,7 +80,7 @@ public abstract class ApiRequest<D extends ApiData> {
      * @param <T> 请求类型
      * @param <B> 构造器类型
      */
-    protected static abstract class Builder<D extends ApiData, T extends ApiRequest<D>, B extends Builder<D, T, B>> implements Buildable<T, B> {
+    protected static abstract class Builder<D extends ApiData, T extends ApiRequest<D, ?>, B extends Builder<D, T, B>> implements Buildable<T, B> {
 
         private final D data;
         private Duration timeout;

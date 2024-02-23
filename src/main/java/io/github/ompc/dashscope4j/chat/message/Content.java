@@ -3,30 +3,18 @@ package io.github.ompc.dashscope4j.chat.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.github.ompc.dashscope4j.internal.util.LazyGet;
 
 import java.net.URI;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 /**
  * 内容
  *
  * @param type 类型
- * @param lazy 内容懒加载
+ * @param data 数据
  * @param <T>  内容类型
  */
-public record Content<T>(Type type, LazyGet<CompletableFuture<T>> lazy) {
-
-    /**
-     * 加载内容
-     *
-     * @return 内容
-     */
-    public CompletableFuture<T> fetch() {
-        return lazy.get();
-    }
+public record Content<T>(Type type, T data) {
 
     /**
      * 获取内容
@@ -34,7 +22,7 @@ public record Content<T>(Type type, LazyGet<CompletableFuture<T>> lazy) {
      * @return 内容
      */
     public T data() {
-        return fetch().join();
+        return data;
     }
 
     /**
@@ -100,7 +88,7 @@ public record Content<T>(Type type, LazyGet<CompletableFuture<T>> lazy) {
      * @return 文本内容
      */
     public static Content<String> ofText(String text) {
-        return new Content<>(Type.TEXT, LazyGet.of(CompletableFuture.completedFuture(text)));
+        return new Content<>(Type.TEXT, text);
     }
 
     /**
@@ -110,17 +98,7 @@ public record Content<T>(Type type, LazyGet<CompletableFuture<T>> lazy) {
      * @return 图像内容
      */
     public static Content<URI> ofImage(URI uri) {
-        return new Content<>(Type.IMAGE, LazyGet.of(CompletableFuture.completedFuture(uri)));
-    }
-
-    /**
-     * 图像
-     *
-     * @param supplier 图像地址获取器
-     * @return 图像内容
-     */
-    public static Content<URI> ofImage(Supplier<CompletableFuture<URI>> supplier) {
-        return new Content<>(Type.IMAGE, LazyGet.of(supplier));
+        return new Content<>(Type.IMAGE, uri);
     }
 
     /**
@@ -130,17 +108,7 @@ public record Content<T>(Type type, LazyGet<CompletableFuture<T>> lazy) {
      * @return 音频内容
      */
     public static Content<URI> ofAudio(URI uri) {
-        return new Content<>(Type.AUDIO, LazyGet.of(CompletableFuture.completedFuture(uri)));
-    }
-
-    /**
-     * 音频
-     *
-     * @param supplier 音频地址获取器
-     * @return 音频内容
-     */
-    public static Content<URI> ofAudio(Supplier<CompletableFuture<URI>> supplier) {
-        return new Content<>(Type.AUDIO, LazyGet.of(supplier));
+        return new Content<>(Type.AUDIO, uri);
     }
 
     /**

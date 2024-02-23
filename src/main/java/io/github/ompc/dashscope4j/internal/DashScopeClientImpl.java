@@ -3,7 +3,9 @@ package io.github.ompc.dashscope4j.internal;
 import io.github.ompc.dashscope4j.DashScopeClient;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
-import io.github.ompc.dashscope4j.internal.chat.ChatExecutor;
+import io.github.ompc.dashscope4j.internal.api.ApiExecutor;
+import io.github.ompc.dashscope4j.internal.api.ApiRequest;
+import io.github.ompc.dashscope4j.internal.api.ApiResponse;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -20,14 +22,14 @@ import static java.util.Optional.ofNullable;
  */
 public class DashScopeClientImpl implements DashScopeClient {
 
-    private final String sk;
-    private final HttpClient http;
-    private final Executor executor;
+    private final ApiExecutor apiExecutor;
 
     public DashScopeClientImpl(Builder builder) {
-        this.sk = requireNonBlankString(builder.sk);
-        this.http = newHttpClient(builder);
-        this.executor = builder.executor;
+        this.apiExecutor = new ApiExecutor(
+                requireNonBlankString(builder.sk),
+                newHttpClient(builder),
+                requireNonNull(builder.executor)
+        );
     }
 
     // 构建HTTP客户端
@@ -44,14 +46,12 @@ public class DashScopeClientImpl implements DashScopeClient {
 
             @Override
             public CompletableFuture<Flow.Publisher<ChatResponse>> flow() {
-                return new ChatExecutor(sk, http, executor)
-                        .flow(request);
+                return apiExecutor.flow(request);
             }
 
             @Override
             public CompletableFuture<ChatResponse> async() {
-                return new ChatExecutor(sk, http, executor)
-                        .async(request);
+                return apiExecutor.async(request);
             }
 
         };

@@ -23,10 +23,8 @@ import static java.util.function.Function.identity;
 /**
  * API执行器
  *
- * @param <T> 请求类型
- * @param <R> 应答类型
  */
-public abstract class ApiExecutor<T extends ApiRequest<?>, R extends ApiResponse<?>> {
+public class ApiExecutor {
 
     private static final ObjectMapper mapper = JacksonUtils.mapper();
     private final String sk;
@@ -40,7 +38,7 @@ public abstract class ApiExecutor<T extends ApiRequest<?>, R extends ApiResponse
      * @param http     HTTP客户端
      * @param executor 线程池
      */
-    protected ApiExecutor(String sk, HttpClient http, Executor executor) {
+    public ApiExecutor(String sk, HttpClient http, Executor executor) {
         this.sk = sk;
         this.http = http;
         this.executor = executor;
@@ -59,15 +57,15 @@ public abstract class ApiExecutor<T extends ApiRequest<?>, R extends ApiResponse
      * @param request 请求
      * @return 异步应答
      */
-    public CompletableFuture<R> async(T request) {
-        final var delegateHttpRequest = delegateHttpRequest(newHttpRequest(request), builder -> {
+    public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<?,R> request) {
+        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder.header(HEADER_AUTHORIZATION, "Bearer %s".formatted(sk));
             builder.header(HEADER_X_DASHSCOPE_SSE, "disable");
         });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
                 .thenApply(httpResponse -> {
-                    final var response = deserializeResponse(httpResponse.body());
+                    final var response = JacksonUtils.toObject(mapper, httpResponse.body(), request.responseType());
                     if (!response.ret().isSuccess()) {
                         throw new ApiException(httpResponse.statusCode(), response.ret());
                     }
@@ -81,11 +79,12 @@ public abstract class ApiExecutor<T extends ApiRequest<?>, R extends ApiResponse
      * @param request 请求
      * @return 流式应答
      */
-    public CompletableFuture<Flow.Publisher<R>> flow(T request) {
-        final var delegateHttpRequest = delegateHttpRequest(newHttpRequest(request), builder -> {
+    public <R extends ApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(ApiRequest<?,R> request) {
+        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder.header(HEADER_AUTHORIZATION, "Bearer %s".formatted(sk));
             builder.header(HEADER_X_DASHSCOPE_SSE, "enable");
         });
+
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApplyAsync(identity(), executor)
 
@@ -111,30 +110,12 @@ public abstract class ApiExecutor<T extends ApiRequest<?>, R extends ApiResponse
                                 JacksonUtils.toObject(mapper, event.data(), Ret.class)
                         );
                         // 数据事件，处理数据
-                        case "result" -> responses.add(deserializeResponse(event.data()));
+                        case "result" -> responses.add(JacksonUtils.toObject(mapper, event.data(), request.responseType()));
                         // 未知事件，抛出异常
                         default -> throw new RuntimeException("Unsupported event type: %s".formatted(event.type()));
                     }
                     return responses;
                 }));
     }
-
-    /**
-     * 构造HTTP请求
-     * <p>{@code request -> HttpRequest}</p>
-     *
-     * @param request 请求
-     * @return HTTP请求
-     */
-    protected abstract HttpRequest newHttpRequest(T request);
-
-    /**
-     * 序列化应答
-     * <p>{@code json -> R}</p>
-     *
-     * @param body 应答JSON
-     * @return 应答
-     */
-    protected abstract R deserializeResponse(String body);
 
 }

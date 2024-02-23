@@ -12,10 +12,10 @@ import java.util.List;
 /**
  * 对话请求
  */
-public class ChatRequest extends AlgoRequest<ChatModel, ChatRequest.Data> {
+public class ChatRequest extends AlgoRequest<ChatModel, ChatRequest.Data, ChatResponse> {
 
     protected ChatRequest(Builder builder) {
-        super(builder);
+        super(ChatResponse.class, builder);
     }
 
     /**
