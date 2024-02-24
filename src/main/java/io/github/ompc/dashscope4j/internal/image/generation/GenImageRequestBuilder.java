@@ -1,20 +1,17 @@
 package io.github.ompc.dashscope4j.internal.image.generation;
 
-import io.github.ompc.dashscope4j.Option;
 import io.github.ompc.dashscope4j.image.generation.GenImageModel;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
-
-import java.time.Duration;
+import io.github.ompc.dashscope4j.internal.algo.AlgoRequestBuilderImpl;
 
 import static java.util.Objects.requireNonNull;
 
-public class GenImageRequestBuilder implements GenImageRequest.Builder{
+public class GenImageRequestBuilder
+        extends AlgoRequestBuilderImpl<GenImageModel, GenImageRequest, GenImageRequest.Builder>
+        implements GenImageRequest.Builder {
 
     private String prompt;
     private String negative;
-    private GenImageModel model;
-    private final Option option = new Option();
-    private Duration timeout;
 
     @Override
     public GenImageRequest.Builder prompt(String prompt) {
@@ -29,32 +26,8 @@ public class GenImageRequestBuilder implements GenImageRequest.Builder{
     }
 
     @Override
-    public GenImageRequest.Builder model(GenImageModel model) {
-        this.model = requireNonNull(model);
-        return this;
-    }
-
-    @Override
-    public <OT, OR> GenImageRequest.Builder option(Option.Opt<OT, OR> opt, OT value) {
-        this.option.option(opt, value);
-        return this;
-    }
-
-    @Override
-    public GenImageRequest.Builder option(String name, Object value) {
-        this.option.option(name, value);
-        return this;
-    }
-
-    @Override
-    public GenImageRequest.Builder timeout(Duration timeout) {
-        this.timeout = requireNonNull(timeout);
-        return this;
-    }
-
-    @Override
     public GenImageRequest build() {
-        return new GenImageRequestImpl(model, new GenImageRequestImpl.InputImpl(prompt, negative), option, timeout);
+        return new GenImageRequestImpl(model(), new GenImageRequestImpl.InputImpl(prompt, negative), option(), timeout());
     }
 
 }

@@ -21,6 +21,11 @@ public interface ChatRequest extends AlgoRequest<ChatResponse> {
 
     }
 
+    /**
+     * 构建对话请求
+     *
+     * @return 对话请求构建器
+     */
     static Builder newBuilder() {
         return new ChatRequestBuilderImpl();
     }

@@ -2,6 +2,7 @@ package io.github.ompc.dashscope4j.internal.task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ompc.dashscope4j.internal.api.ApiRequest;
+import io.github.ompc.dashscope4j.internal.api.ApiRequestBuilderImpl;
 import io.github.ompc.dashscope4j.internal.util.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,22 +18,10 @@ import static java.util.Objects.requireNonNull;
 /**
  * 任务取消请求
  */
-public record TaskCancelRequest(
-        String taskId,
-        Duration timeout
-
-) implements ApiRequest<TaskCancelResponse> {
+public record TaskCancelRequest(String taskId, Duration timeout) implements ApiRequest<TaskCancelResponse> {
 
     private static final ObjectMapper mapper = JacksonUtils.mapper();
     private static final Logger logger = LoggerFactory.getLogger(TaskCancelRequest.class);
-
-
-    private TaskCancelRequest(Builder builder) {
-        this(
-                requireNonNull(builder.taskId),
-                requireNonNull(builder.timeout)
-        );
-    }
 
     @Override
     public HttpRequest newHttpRequest() {
@@ -51,10 +40,9 @@ public record TaskCancelRequest(
         };
     }
 
-    public static class Builder implements ApiRequest.Builder<TaskCancelRequest, Builder> {
+    public static class Builder extends ApiRequestBuilderImpl<TaskCancelRequest, Builder> {
 
         private String taskId;
-        private Duration timeout;
 
         /**
          * 设置任务ID
@@ -68,14 +56,8 @@ public record TaskCancelRequest(
         }
 
         @Override
-        public Builder timeout(Duration timeout) {
-            this.timeout = Objects.requireNonNull(timeout);
-            return this;
-        }
-
-        @Override
         public TaskCancelRequest build() {
-            return new TaskCancelRequest(this);
+            return new TaskCancelRequest(requireNonNull(taskId), timeout());
         }
 
     }

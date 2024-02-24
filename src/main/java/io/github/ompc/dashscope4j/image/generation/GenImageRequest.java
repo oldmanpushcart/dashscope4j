@@ -30,10 +30,18 @@ public interface GenImageRequest extends AlgoRequest<GenImageResponse> {
 
     }
 
+    /**
+     * 构建文生图请求
+     *
+     * @return 构建器
+     */
     static Builder newBuilder() {
         return new GenImageRequestBuilder();
     }
 
+    /**
+     * 文生图请求构建器
+     */
     interface Builder extends AlgoRequest.Builder<GenImageModel, GenImageRequest, Builder> {
 
         /**

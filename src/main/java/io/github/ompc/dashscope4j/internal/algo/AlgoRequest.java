@@ -1,32 +1,36 @@
 package io.github.ompc.dashscope4j.internal.algo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ompc.dashscope4j.Model;
 import io.github.ompc.dashscope4j.Option;
 import io.github.ompc.dashscope4j.internal.api.ApiRequest;
-import io.github.ompc.dashscope4j.internal.util.JacksonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.http.HttpRequest;
-import java.util.function.Function;
-
-import static io.github.ompc.dashscope4j.internal.api.http.HttpHeader.ContentType.MIME_APPLICATION_JSON;
-import static io.github.ompc.dashscope4j.internal.api.http.HttpHeader.HEADER_CONTENT_TYPE;
-import static java.util.Objects.requireNonNull;
 
 /**
  * 算法请求
  */
 public interface AlgoRequest<R extends AlgoResponse<?>> extends ApiRequest<R> {
 
+    /**
+     * 获取模型
+     *
+     * @return 模型
+     */
     @JsonProperty("model")
     Model model();
 
+    /**
+     * 获取输入
+     *
+     * @return 输入
+     */
     @JsonProperty("input")
     Object input();
 
+    /**
+     * 获取选项
+     *
+     * @return 选项
+     */
     @JsonProperty("parameters")
     Option option();
 

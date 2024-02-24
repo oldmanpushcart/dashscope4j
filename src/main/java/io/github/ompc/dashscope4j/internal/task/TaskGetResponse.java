@@ -39,7 +39,6 @@ public record TaskGetResponse(
             public Output deserialize(JsonParser parser, DeserializationContext context) throws IOException {
                 final var node = context.readTree(parser);
                 final var task = context.readTreeAsValue(node, Task.class);
-                // final var body = node.toString();
                 return new Output(task);
             }
 

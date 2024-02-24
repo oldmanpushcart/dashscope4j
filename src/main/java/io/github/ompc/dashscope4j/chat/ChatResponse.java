@@ -6,7 +6,6 @@ import io.github.ompc.dashscope4j.internal.algo.AlgoResponse;
 import io.github.ompc.dashscope4j.internal.api.ApiResponse;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * 对话应答
@@ -19,18 +18,18 @@ public interface ChatResponse extends AlgoResponse<ChatResponse.Output> {
      *
      * @return 最好的选择
      */
-    default Choice best() {
-        return Optional.ofNullable(output())
-                .map(Output::choices)
-                .flatMap(choices -> choices.stream().sorted().findFirst())
-                .orElse(null);
-    }
+    Choice best();
 
     /**
      * 对话应答数据
      */
     interface Output extends ApiResponse.Output {
 
+        /**
+         * 获取应答选择
+         *
+         * @return 应答选择
+         */
         List<Choice> choices();
 
     }
@@ -70,21 +69,21 @@ public interface ChatResponse extends AlgoResponse<ChatResponse.Output> {
     }
 
     /**
-     * 响应选择
+     * 应答选择
      */
     interface Choice extends Comparable<Choice> {
 
         /**
-         * 获取响应结束标识
+         * 获取应答结束标识
          *
          * @return 响应结束标识
          */
         Finish finish();
 
         /**
-         * 获取响应消息
+         * 获取应答消息
          *
-         * @return 响应消息
+         * @return 应答消息
          */
         Message message();
 

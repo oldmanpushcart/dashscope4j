@@ -81,7 +81,7 @@ public class ChatModel extends Model {
 
     /**
      * QWEN-AUDIO-TURBO
-     * <p>通义千问大规模语音模型增强版。</p>
+     * <p>通义千问大规模语音模型增强版</p>
      * <p>增强了语音识别、语音定位、说话人信息识别和音乐分析鉴赏的能力。</p>
      */
     public static ChatModel QWEN_AUDIO_TURBO = new ChatModel(

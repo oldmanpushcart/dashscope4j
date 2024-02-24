@@ -2,6 +2,7 @@ package io.github.ompc.dashscope4j.internal.task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ompc.dashscope4j.internal.api.ApiRequest;
+import io.github.ompc.dashscope4j.internal.api.ApiRequestBuilderImpl;
 import io.github.ompc.dashscope4j.internal.util.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,20 +17,10 @@ import static java.util.Objects.requireNonNull;
 /**
  * 任务获取请求
  */
-public record TaskGetRequest(
-        Duration timeout,
-        String taskId
-) implements ApiRequest<TaskGetResponse> {
+public record TaskGetRequest(String taskId, Duration timeout) implements ApiRequest<TaskGetResponse> {
 
     private static final ObjectMapper mapper = JacksonUtils.mapper();
     private static final Logger logger = LoggerFactory.getLogger(TaskGetRequest.class);
-
-    private TaskGetRequest(Builder builder) {
-        this(
-                builder.timeout,
-                requireNonNull(builder.taskId)
-        );
-    }
 
     @Override
     public HttpRequest newHttpRequest() {
@@ -48,10 +39,9 @@ public record TaskGetRequest(
         };
     }
 
-    public static class Builder implements ApiRequest.Builder<TaskGetRequest, Builder> {
+    public static class Builder extends ApiRequestBuilderImpl<TaskGetRequest, Builder> {
 
         private String taskId;
-        private Duration timeout;
 
         /**
          * 设置任务ID
@@ -65,16 +55,9 @@ public record TaskGetRequest(
         }
 
         @Override
-        public Builder timeout(Duration timeout) {
-            this.timeout = requireNonNull(timeout);
-            return this;
-        }
-
-        @Override
         public TaskGetRequest build() {
-            return new TaskGetRequest(this);
+            return new TaskGetRequest(requireNonNull(taskId), timeout());
         }
-
 
     }
 
