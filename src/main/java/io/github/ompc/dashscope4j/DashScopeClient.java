@@ -23,7 +23,13 @@ public interface DashScopeClient {
      */
     OpAsyncOpFlow<ChatResponse> chat(ChatRequest request);
 
-    OpImage image();
+    /**
+     * 文生图
+     *
+     * @param request 文生图请求
+     * @return 操作
+     */
+    OpTask<GenImageResponse> genImage(GenImageRequest request);
 
     /**
      * DashScope客户端构建器
@@ -65,32 +71,14 @@ public interface DashScopeClient {
 
     }
 
-    interface OpImage {
-
-        OpAsync<Task.Half<GenImageResponse>> generate(GenImageRequest request);
-
-    }
-
-    /**
-     * 异步和流式操作
-     *
-     * @param <R> 操作类型
-     */
-    interface OpAsyncOpFlow<R> extends OpAsync<R> {
-
-        /**
-         * 流式操作
-         *
-         * @return 操作结果
-         */
-        CompletableFuture<Flow.Publisher<R>> flow();
+    interface OpAsyncOpFlow<R> extends OpAsync<R>, OpFlow<R> {
 
     }
 
     /**
      * 异步操作
      *
-     * @param <R>
+     * @param <R> 结果类型
      */
     interface OpAsync<R> {
 
@@ -102,4 +90,57 @@ public interface DashScopeClient {
         CompletableFuture<R> async();
 
     }
+
+    /**
+     * 流式操作
+     *
+     * @param <R> 结果类型
+     */
+    interface OpFlow<R> {
+
+        /**
+         * 流式操作
+         *
+         * @return 操作结果
+         */
+        CompletableFuture<Flow.Publisher<R>> flow();
+
+        /**
+         * 流式操作
+         *
+         * @param subscriber 订阅者
+         * @return 操作结果
+         */
+        default CompletableFuture<Void> flow(Flow.Subscriber<R> subscriber) {
+            return flow().thenAccept(publisher -> publisher.subscribe(subscriber));
+        }
+
+    }
+
+    /**
+     * 任务操作
+     *
+     * @param <R> 结果类型
+     */
+    interface OpTask<R> {
+
+        /**
+         * 任务操作
+         *
+         * @return 结果类型
+         */
+        CompletableFuture<Task.Half<R>> task();
+
+        /**
+         * 任务操作
+         *
+         * @param strategy 等待策略
+         * @return 结果类型
+         */
+        default CompletableFuture<R> task(Task.WaitStrategy strategy) {
+            return task().thenCompose(half -> half.waitingFor(strategy));
+        }
+
+    }
+
 }

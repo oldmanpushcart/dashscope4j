@@ -43,23 +43,21 @@ public class DashScopeClientImpl implements DashScopeClient {
     @Override
     public OpAsyncOpFlow<ChatResponse> chat(ChatRequest request) {
         return new OpAsyncOpFlow<>() {
-
-            @Override
-            public CompletableFuture<Flow.Publisher<ChatResponse>> flow() {
-                return apiExecutor.flow(request);
-            }
-
             @Override
             public CompletableFuture<ChatResponse> async() {
                 return apiExecutor.async(request);
             }
 
+            @Override
+            public CompletableFuture<Flow.Publisher<ChatResponse>> flow() {
+                return apiExecutor.flow(request);
+            }
         };
     }
 
     @Override
-    public OpImage image() {
-        return request -> () -> apiExecutor.task(request);
+    public OpTask<GenImageResponse> genImage(GenImageRequest request) {
+        return () -> apiExecutor.task(request);
     }
 
 

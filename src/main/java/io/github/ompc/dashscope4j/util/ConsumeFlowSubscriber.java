@@ -65,9 +65,20 @@ public class ConsumeFlowSubscriber<T> implements Flow.Subscriber<T> {
      * @param publisher 发布者
      * @param consumer  消费者
      * @param <T>       元素类型
+     */
+    public static <T> void consume(Flow.Publisher<T> publisher, Consumer<T> consumer) {
+        publisher.subscribe(new ConsumeFlowSubscriber<>(consumer));
+    }
+
+    /**
+     * 消费流
+     *
+     * @param publisher 发布者
+     * @param consumer  消费者
+     * @param <T>       元素类型
      * @return 消费流订阅者
      */
-    public static <T> CompletableFuture<Void> consume(Flow.Publisher<T> publisher, Consumer<T> consumer) {
+    public static <T> CompletableFuture<Void> consumeCompose(Flow.Publisher<T> publisher, Consumer<T> consumer) {
         final var subscriber = new ConsumeFlowSubscriber<>(consumer);
         publisher.subscribe(subscriber);
         return subscriber.completed();

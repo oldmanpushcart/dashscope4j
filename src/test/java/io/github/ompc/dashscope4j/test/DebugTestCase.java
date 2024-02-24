@@ -40,7 +40,7 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             client.chat(request).flow()
-                    .thenCompose(publisher -> ConsumeFlowSubscriber.consume(publisher, ChatAssertions::assertChatResponse))
+                    .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, ChatAssertions::assertChatResponse))
                     .join();
         }
 
@@ -53,9 +53,8 @@ public class DebugTestCase implements LoadingEnv {
                 .model(GenImageModel.WANX_V1)
                 .prompt("画一只猫")
                 .build();
-        final var response = client.image().generate(request)
-                .async()
-                .thenCompose(half -> half.waitingFor(Task.WaitStrategies.interval(Duration.ofMillis(1000L))))
+        final var response = client.genImage(request)
+                .task(Task.WaitStrategies.interval(Duration.ofMillis(1000L)))
                 .join();
         System.out.println(response);
     }

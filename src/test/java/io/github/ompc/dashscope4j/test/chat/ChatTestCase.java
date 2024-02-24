@@ -69,7 +69,7 @@ public class ChatTestCase implements LoadingEnv {
         {
             final var stringRef = new AtomicReference<String>();
             client.chat(request).flow()
-                    .thenCompose(publisher -> ConsumeFlowSubscriber.consume(publisher, r -> {
+                    .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
                         stringRef.set(r.best().message().text());
                         ChatAssertions.assertChatResponse(r);
                     }))
@@ -108,8 +108,9 @@ public class ChatTestCase implements LoadingEnv {
         // FLOW
         {
             final var stringRef = new AtomicReference<String>();
+
             client.chat(request).flow()
-                    .thenCompose(publisher -> ConsumeFlowSubscriber.consume(publisher, r -> {
+                    .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
                         stringRef.set(r.best().message().text());
                         ChatAssertions.assertChatResponse(r);
                     }))
