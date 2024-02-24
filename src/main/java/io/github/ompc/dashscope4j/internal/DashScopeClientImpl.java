@@ -1,6 +1,9 @@
 package io.github.ompc.dashscope4j.internal;
 
 import io.github.ompc.dashscope4j.DashScopeClient;
+import io.github.ompc.dashscope4j.Task;
+import io.github.ompc.dashscope4j.api.ApiRequest;
+import io.github.ompc.dashscope4j.api.ApiResponse;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
@@ -58,6 +61,26 @@ public class DashScopeClientImpl implements DashScopeClient {
     @Override
     public OpTask<GenImageResponse> genImage(GenImageRequest request) {
         return () -> apiExecutor.task(request);
+    }
+
+    @Override
+    public <R extends ApiResponse<?>> OpAsyncOpFlowOpTask<R> api(ApiRequest<R> request) {
+        return new OpAsyncOpFlowOpTask<>() {
+            @Override
+            public CompletableFuture<R> async() {
+                return apiExecutor.async(request);
+            }
+
+            @Override
+            public CompletableFuture<Flow.Publisher<R>> flow() {
+                return apiExecutor.flow(request);
+            }
+
+            @Override
+            public CompletableFuture<Task.Half<R>> task() {
+                return apiExecutor.task(request);
+            }
+        };
     }
 
 

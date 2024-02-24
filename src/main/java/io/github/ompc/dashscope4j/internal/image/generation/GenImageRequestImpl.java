@@ -1,6 +1,5 @@
 package io.github.ompc.dashscope4j.internal.image.generation;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.ompc.dashscope4j.Model;
 import io.github.ompc.dashscope4j.Option;

@@ -1,5 +1,7 @@
 package io.github.ompc.dashscope4j;
 
+import io.github.ompc.dashscope4j.api.ApiRequest;
+import io.github.ompc.dashscope4j.api.ApiResponse;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
@@ -30,6 +32,15 @@ public interface DashScopeClient {
      * @return 操作
      */
     OpTask<GenImageResponse> genImage(GenImageRequest request);
+
+    /**
+     * 通用API
+     *
+     * @param request API请求
+     * @param <R>     结果类型
+     * @return 操作
+     */
+    <R extends ApiResponse<?>> OpAsyncOpFlowOpTask<R> api(ApiRequest<R> request);
 
     /**
      * DashScope客户端构建器
@@ -71,7 +82,21 @@ public interface DashScopeClient {
 
     }
 
+    /**
+     * 异步&流式操作
+     *
+     * @param <R> 结果类型
+     */
     interface OpAsyncOpFlow<R> extends OpAsync<R>, OpFlow<R> {
+
+    }
+
+    /**
+     * 异步&流式&任务操作
+     *
+     * @param <R> 结果类型
+     */
+    interface OpAsyncOpFlowOpTask<R> extends OpAsync<R>, OpFlow<R>, OpTask<R> {
 
     }
 

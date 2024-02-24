@@ -1,9 +1,9 @@
 package io.github.ompc.dashscope4j.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.ompc.dashscope4j.chat.message.Message;
 import io.github.ompc.dashscope4j.algo.AlgoResponse;
 import io.github.ompc.dashscope4j.api.ApiResponse;
+import io.github.ompc.dashscope4j.chat.message.Message;
 
 import java.util.List;
 
