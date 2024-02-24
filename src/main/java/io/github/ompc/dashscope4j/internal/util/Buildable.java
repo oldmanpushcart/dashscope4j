@@ -1,5 +1,8 @@
 package io.github.ompc.dashscope4j.internal.util;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 /**
  * 可构建的
  *
@@ -16,6 +19,11 @@ public interface Buildable<T, B extends Buildable<T, B>> {
     @SuppressWarnings("unchecked")
     default B self() {
         return (B) this;
+    }
+
+    default B building(Consumer<B> building) {
+        building.accept(self());
+        return self();
     }
 
     /**

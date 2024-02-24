@@ -55,9 +55,9 @@ public class DebugTestCase implements LoadingEnv {
                 .build();
         final var response = client.image().generate(request)
                 .async()
-                .thenCompose(wait -> wait.waitingFor(taskId -> {
+                .thenCompose(half -> half.waitingFor(taskId -> {
                     try {
-                        Thread.sleep(500);
+                        Thread.sleep(1000);
                     } catch (Throwable ex) {
                         return CompletableFuture.failedFuture(ex);
                     }

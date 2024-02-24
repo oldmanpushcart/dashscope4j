@@ -17,6 +17,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
@@ -143,16 +144,16 @@ public class ApiExecutor {
                 .thenApply(response -> strategy -> rolling(
                         new TaskGetRequest.Builder()
                                 .taskId(response.output().taskId())
-                                .timeout(request.timeout())
+                                .building(builder -> Optional.ofNullable(request.timeout()).ifPresent(builder::timeout))
                                 .build(),
                         strategy,
                         request.responseDeserializer()
                 ));
     }
 
-    private <R> CompletableFuture<R> rolling(TaskGetRequest request, Task.WaitStrategy strategy, Function<String, R> deserializer) {
+    private <R> CompletableFuture<R> rolling(TaskGetRequest request, Task.WaitStrategy strategy, Function<String, R> finisher) {
         return _rolling(request, strategy)
-                .thenApply(response -> deserializer.apply(response.output().body()));
+                .thenApply(response -> finisher.apply(response.output().body()));
     }
 
     private CompletableFuture<TaskGetResponse> _rolling(TaskGetRequest request, Task.WaitStrategy strategy) {
@@ -176,7 +177,7 @@ public class ApiExecutor {
                     // 任务完成
                     return task.isCompleted()
                             ? CompletableFuture.completedFuture(response)
-                            : strategy.until(task.id()).thenCompose(unused -> _rolling(request, strategy));
+                            : strategy.until(task).thenCompose(unused -> _rolling(request, strategy));
                 });
     }
 
