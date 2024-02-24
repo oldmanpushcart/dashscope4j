@@ -1,4 +1,4 @@
-package io.github.ompc.dashscope4j.internal.algo;
+package io.github.ompc.dashscope4j.algo;
 
 /**
  * 算法选项

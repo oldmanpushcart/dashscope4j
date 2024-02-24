@@ -1,5 +1,7 @@
 package io.github.ompc.dashscope4j.internal.api;
 
+import io.github.ompc.dashscope4j.api.ApiRequest;
+
 import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;

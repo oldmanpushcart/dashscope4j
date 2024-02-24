@@ -2,6 +2,9 @@ package io.github.ompc.dashscope4j.internal.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ompc.dashscope4j.Task;
+import io.github.ompc.dashscope4j.api.ApiException;
+import io.github.ompc.dashscope4j.api.ApiRequest;
+import io.github.ompc.dashscope4j.api.ApiResponse;
 import io.github.ompc.dashscope4j.internal.api.http.HttpSsEventProcessor;
 import io.github.ompc.dashscope4j.internal.task.*;
 import io.github.ompc.dashscope4j.internal.util.JacksonUtils;

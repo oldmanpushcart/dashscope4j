@@ -1,7 +1,7 @@
 package io.github.ompc.dashscope4j.internal.task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.ompc.dashscope4j.internal.api.ApiRequest;
+import io.github.ompc.dashscope4j.api.ApiRequest;
 import io.github.ompc.dashscope4j.internal.api.ApiRequestBuilderImpl;
 import io.github.ompc.dashscope4j.internal.util.JacksonUtils;
 import org.slf4j.Logger;
@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;

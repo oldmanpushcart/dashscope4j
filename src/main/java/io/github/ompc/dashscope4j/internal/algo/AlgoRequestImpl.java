@@ -3,6 +3,8 @@ package io.github.ompc.dashscope4j.internal.algo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ompc.dashscope4j.Model;
 import io.github.ompc.dashscope4j.Option;
+import io.github.ompc.dashscope4j.algo.AlgoRequest;
+import io.github.ompc.dashscope4j.algo.AlgoResponse;
 import io.github.ompc.dashscope4j.internal.util.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

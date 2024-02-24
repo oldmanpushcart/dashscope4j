@@ -1,9 +1,9 @@
-package io.github.ompc.dashscope4j.internal.algo;
+package io.github.ompc.dashscope4j.algo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.ompc.dashscope4j.Model;
 import io.github.ompc.dashscope4j.Option;
-import io.github.ompc.dashscope4j.internal.api.ApiRequest;
+import io.github.ompc.dashscope4j.api.ApiRequest;
 
 /**
  * 算法请求

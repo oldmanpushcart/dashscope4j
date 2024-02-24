@@ -1,7 +1,7 @@
 package io.github.ompc.dashscope4j.image.generation;
 
 import io.github.ompc.dashscope4j.Option;
-import io.github.ompc.dashscope4j.internal.algo.AlgoOptions;
+import io.github.ompc.dashscope4j.algo.AlgoOptions;
 
 /**
  * 文生图选项

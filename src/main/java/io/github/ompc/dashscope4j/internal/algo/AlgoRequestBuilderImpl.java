@@ -2,6 +2,7 @@ package io.github.ompc.dashscope4j.internal.algo;
 
 import io.github.ompc.dashscope4j.Model;
 import io.github.ompc.dashscope4j.Option;
+import io.github.ompc.dashscope4j.algo.AlgoRequest;
 import io.github.ompc.dashscope4j.internal.api.ApiRequestBuilderImpl;
 
 import static java.util.Objects.requireNonNull;

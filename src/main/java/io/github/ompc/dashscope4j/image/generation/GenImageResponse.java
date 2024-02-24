@@ -1,8 +1,8 @@
 package io.github.ompc.dashscope4j.image.generation;
 
 import io.github.ompc.dashscope4j.Ret;
-import io.github.ompc.dashscope4j.internal.algo.AlgoResponse;
-import io.github.ompc.dashscope4j.internal.api.ApiResponse;
+import io.github.ompc.dashscope4j.algo.AlgoResponse;
+import io.github.ompc.dashscope4j.api.ApiResponse;
 
 import java.net.URI;
 import java.util.List;
