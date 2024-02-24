@@ -2,43 +2,39 @@ package io.github.ompc.dashscope4j.image.generation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.ompc.dashscope4j.internal.algo.AlgoRequest;
-
-import static io.github.ompc.dashscope4j.internal.util.CommonUtils.requireNonBlankString;
+import io.github.ompc.dashscope4j.internal.image.generation.GenImageRequestBuilder;
 
 /**
  * 文生图请求
  */
-public final class GenImageRequest extends AlgoRequest<GenImageModel, GenImageResponse> {
-
-    private GenImageRequest(Builder builder, Input input) {
-        super(builder, GenImageResponse.class, input);
-    }
-
+public interface GenImageRequest extends AlgoRequest<GenImageResponse> {
 
     /**
      * 输入
-     *
-     * @param prompt   正向提示
-     * @param negative 负向提示
      */
-    public record Input(
-            @JsonProperty("prompt")
-            String prompt,
-            @JsonProperty("negative")
-            String negative
-    ) {
+    interface Input {
 
-        public Input(String prompt, String negative) {
-            this.prompt = requireNonBlankString(prompt);
-            this.negative = negative;
-        }
+        /**
+         * 获取正向提示
+         *
+         * @return 正向提示
+         */
+        String prompt();
+
+        /**
+         * 获取负向提示
+         *
+         * @return 负向提示
+         */
+        String negative();
 
     }
 
-    public static class Builder extends AlgoRequest.Builder<GenImageModel, GenImageRequest, Builder> {
+    static Builder newBuilder() {
+        return new GenImageRequestBuilder();
+    }
 
-        private String prompt;
-        private String negative;
+    interface Builder extends AlgoRequest.Builder<GenImageModel, GenImageRequest, Builder> {
 
         /**
          * 正向提示
@@ -46,10 +42,7 @@ public final class GenImageRequest extends AlgoRequest<GenImageModel, GenImageRe
          * @param prompt 正向提示
          * @return this
          */
-        public Builder prompt(String prompt) {
-            this.prompt = prompt;
-            return this;
-        }
+        Builder prompt(String prompt);
 
         /**
          * 负向提示
@@ -57,22 +50,14 @@ public final class GenImageRequest extends AlgoRequest<GenImageModel, GenImageRe
          * @param negative 负向提示
          * @return this
          */
-        public Builder negative(String negative) {
-            this.negative = negative;
-            return this;
-        }
-
-        @Override
-        public GenImageRequest build() {
-            return new GenImageRequest(this, new Input(prompt, negative));
-        }
+        Builder negative(String negative);
 
     }
 
     /**
      * 图片风格
      */
-    public enum Style {
+    enum Style {
         @JsonProperty("<auto>")
         AUTO,
         @JsonProperty("<3d cartoon>")
@@ -94,7 +79,7 @@ public final class GenImageRequest extends AlgoRequest<GenImageModel, GenImageRe
     /**
      * 图片尺寸
      */
-    public enum Size {
+    enum Size {
         @JsonProperty("1024*1024")
         S_1024_1024,
         @JsonProperty("720*1280")

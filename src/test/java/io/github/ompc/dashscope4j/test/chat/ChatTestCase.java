@@ -47,7 +47,7 @@ public class ChatTestCase implements LoadingEnv {
     })
     public void test$chat$text(String name) {
 
-        final var request = new ChatRequest.Builder()
+        final var request = ChatRequest.newBuilder()
                 .model(getModel(name))
                 .messages(
                         Message.ofUser("小红有10块钱"), Message.ofAi("收到"),
@@ -87,7 +87,7 @@ public class ChatTestCase implements LoadingEnv {
     })
     public void test$chat$image(String name) {
 
-        final var request = new ChatRequest.Builder()
+        final var request = ChatRequest.newBuilder()
                 .model(getModel(name))
                 .messages(
                         Message.ofUser(

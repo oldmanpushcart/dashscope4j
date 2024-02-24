@@ -1,11 +1,13 @@
 package io.github.ompc.dashscope4j.test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ompc.dashscope4j.Task;
 import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatOptions;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.message.Content;
 import io.github.ompc.dashscope4j.image.generation.GenImageModel;
+import io.github.ompc.dashscope4j.image.generation.GenImageOptions;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
 import io.github.ompc.dashscope4j.test.chat.ChatAssertions;
 import io.github.ompc.dashscope4j.util.ConsumeFlowSubscriber;
@@ -19,7 +21,7 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void test$debug() {
 
-        final var request = new ChatRequest.Builder()
+        final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .user(
@@ -40,7 +42,10 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             client.chat(request).flow()
-                    .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, ChatAssertions::assertChatResponse))
+                    .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
+                        System.out.println(r.best().message().text());
+                        ChatAssertions.assertChatResponse(r);
+                    }))
                     .join();
         }
 
@@ -49,14 +54,32 @@ public class DebugTestCase implements LoadingEnv {
 
     @Test
     public void test$debug$image$gen() {
-        final var request = new GenImageRequest.Builder()
+        final var request = GenImageRequest.newBuilder()
                 .model(GenImageModel.WANX_V1)
+                .option(GenImageOptions.NUMBER, 1)
                 .prompt("画一只猫")
                 .build();
         final var response = client.genImage(request)
                 .task(Task.WaitStrategies.interval(Duration.ofMillis(1000L)))
                 .join();
         System.out.println(response);
+    }
+
+    @Test
+    public void test$debug$chat$request() throws Exception {
+
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_VL_MAX)
+                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .user(
+                        Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
+                        Content.ofText("图片中一共多少辆自行车?")
+                )
+                .build();
+
+        final var mapper = new ObjectMapper();
+        System.out.println(mapper.writeValueAsString(request));
+
     }
 
 }

@@ -1,7 +1,5 @@
 package io.github.ompc.dashscope4j.internal.algo;
 
-import io.github.ompc.dashscope4j.Ret;
-import io.github.ompc.dashscope4j.Usage;
 import io.github.ompc.dashscope4j.internal.api.ApiResponse;
 
 /**
@@ -9,10 +7,6 @@ import io.github.ompc.dashscope4j.internal.api.ApiResponse;
  *
  * @param <D> 数据类型
  */
-public abstract class AlgoResponse<D extends ApiResponse.Output> extends ApiResponse<D> {
-    
-    protected AlgoResponse(String uuid, Ret ret, Usage usage, D output) {
-        super(uuid, ret, usage, output);
-    }
+public interface AlgoResponse<D extends ApiResponse.Output> extends ApiResponse<D> {
 
 }

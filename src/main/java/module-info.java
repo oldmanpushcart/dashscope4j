@@ -8,6 +8,8 @@ module dashscope4j {
     opens io.github.ompc.dashscope4j.internal.task to com.fasterxml.jackson.databind;
     opens io.github.ompc.dashscope4j.internal.algo to com.fasterxml.jackson.databind;
     opens io.github.ompc.dashscope4j.internal.api to com.fasterxml.jackson.databind;
+    opens io.github.ompc.dashscope4j.internal.chat to com.fasterxml.jackson.databind;
+    opens io.github.ompc.dashscope4j.internal.image.generation to com.fasterxml.jackson.databind;
     opens io.github.ompc.dashscope4j to com.fasterxml.jackson.databind;
     opens io.github.ompc.dashscope4j.chat to com.fasterxml.jackson.databind;
     opens io.github.ompc.dashscope4j.chat.message to com.fasterxml.jackson.databind;

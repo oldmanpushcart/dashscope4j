@@ -18,4 +18,7 @@ public interface GenImageOptions extends AlgoOptions {
      */
     Option.SimpleOpt<GenImageRequest.Size> SIZE = new Option.SimpleOpt<>("format", GenImageRequest.Size.class);
 
+    Option.SimpleOpt<Integer> NUMBER = new Option.SimpleOpt<>("n", Integer.class);
+    Option.SimpleOpt<Integer> SEED = new Option.SimpleOpt<>("seed", Integer.class);
+
 }

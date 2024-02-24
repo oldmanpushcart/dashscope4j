@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -116,27 +116,22 @@ public class ApiExecutor {
                 )
 
                 // 从SSE事件流中转换为API应答流
-                .thenApply(ssePublisher -> TransformFlowProcessor.transform(ssePublisher, event -> {
-                    final var responses = new ArrayList<R>();
-                    switch (event.type()) {
-                        // 异常事件，直接抛出异常
-                        case "error" -> throw new ApiException(
-                                // 解析HTTP状态：HTTP_STATUS/429
-                                event.meta().stream()
-                                        .filter(meta -> meta.startsWith("HTTP_STATUS/"))
-                                        .map(meta -> Integer.parseInt(meta.substring("HTTP_STATUS/".length())))
-                                        .findFirst()
-                                        .orElse(200),
-                                // 解析应答
-                                request.responseDeserializer().apply(event.data())
-                        );
-                        // 数据事件，处理数据
-                        case "result" -> request.responseDeserializer().apply(event.data());
-                        // 未知事件，抛出异常
-                        default -> throw new RuntimeException("Unsupported event type: %s".formatted(event.type()));
-                    }
-                    return responses;
-                }));
+                .thenApply(ssePublisher -> TransformFlowProcessor.transform(ssePublisher, event ->
+                        switch (event.type()) {
+                            case "error" -> throw new ApiException(
+                                    // 解析HTTP状态：HTTP_STATUS/429
+                                    event.meta().stream()
+                                            .filter(meta -> meta.startsWith("HTTP_STATUS/"))
+                                            .map(meta -> Integer.parseInt(meta.substring("HTTP_STATUS/".length())))
+                                            .findFirst()
+                                            .orElse(200),
+                                    // 解析应答
+                                    request.responseDeserializer().apply(event.data())
+                            );
+                            case "result" -> List.of(request.responseDeserializer().apply(event.data()));
+                            default -> throw new RuntimeException("Unsupported event type: %s".formatted(event.type()));
+                        })
+                );
     }
 
     /**
@@ -186,7 +181,7 @@ public class ApiExecutor {
      */
     private <R> CompletableFuture<R> rollingTask(TaskGetRequest request, Task.WaitStrategy strategy, Function<String, R> finisher) {
         return _rollingTask(request, strategy)
-                .thenApply(response -> finisher.apply(response.output().body()));
+                .thenApply(response -> finisher.apply(response.raw()));
     }
 
     // 滚动任务执行，直至完结（成功、取消、失败）

@@ -18,74 +18,17 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * 算法请求
- *
- * @param <M> 模型
  */
-public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> extends ApiRequest<R> {
-
-    private static final ObjectMapper mapper = JacksonUtils.mapper();
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+public interface AlgoRequest<R extends AlgoResponse<?>> extends ApiRequest<R> {
 
     @JsonProperty("model")
-    private final M model;
+    Model model();
 
     @JsonProperty("input")
-    protected final Object input;
+    Object input();
 
     @JsonProperty("parameters")
-    private final Option option;
-
-    private final String _string;
-
-    protected AlgoRequest(Builder<M, ?, ?> builder, Class<R> responseType, Object input) {
-        super(builder, responseType);
-        this.model = requireNonNull(builder.model);
-        this.input = requireNonNull(input);
-        this.option = builder.option;
-        this._string = "dashscope://algo/%s".formatted(model.name());
-    }
-
-    @Override
-    public String toString() {
-        return _string;
-    }
-
-    @Override
-    protected HttpRequest newHttpRequest() {
-        final var body = JacksonUtils.toJson(mapper, this);
-        logger.debug("{} => {}", this, body);
-        return HttpRequest.newBuilder()
-                .uri(model().remote())
-                .header(HEADER_CONTENT_TYPE, MIME_APPLICATION_JSON)
-                .POST(HttpRequest.BodyPublishers.ofString(body))
-                .build();
-    }
-
-    @Override
-    protected Function<String, R> responseDeserializer() {
-        return body -> {
-            logger.debug("{} <= {}", this, body);
-            return JacksonUtils.toObject(mapper, body, responseType);
-        };
-    }
-
-    /**
-     * 获取模型
-     *
-     * @return 模型
-     */
-    public M model() {
-        return model;
-    }
-
-    /**
-     * 获取选项
-     *
-     * @return 选项
-     */
-    public Option option() {
-        return option;
-    }
+    Option option();
 
     /**
      * 算法请求构建器
@@ -94,10 +37,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
      * @param <T> 请求
      * @param <B> 构建器
      */
-    protected static abstract class Builder<M extends Model, T extends AlgoRequest<M, ?>, B extends Builder<M, T, B>> extends ApiRequest.Builder<T, B> {
-
-        private M model;
-        private final Option option = new Option();
+    interface Builder<M extends Model, T extends AlgoRequest<?>, B extends Builder<M, T, B>> extends ApiRequest.Builder<T, B> {
 
         /**
          * 设置模型
@@ -105,10 +45,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
          * @param model 模型
          * @return this
          */
-        public B model(M model) {
-            this.model = requireNonNull(model);
-            return self();
-        }
+        B model(M model);
 
         /**
          * 设置选项
@@ -119,10 +56,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
          * @param <OR>  选项值类型
          * @return this
          */
-        public <OT, OR> B option(Option.Opt<OT, OR> opt, OT value) {
-            option.option(opt, value);
-            return self();
-        }
+        <OT, OR> B option(Option.Opt<OT, OR> opt, OT value);
 
         /**
          * 设置选项
@@ -131,10 +65,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
          * @param value 选项值
          * @return this
          */
-        public B option(String name, Object value) {
-            option.option(name, value);
-            return self();
-        }
+        B option(String name, Object value);
 
     }
 

@@ -16,20 +16,22 @@ import java.io.IOException;
 /**
  * 任务获取应答
  */
-public final class TaskGetResponse extends ApiResponse<TaskGetResponse.Output> {
-
-    private TaskGetResponse(String uuid, Ret ret, Usage usage, Output output) {
-        super(uuid, ret, usage, output);
-    }
+@JsonDeserialize(using = TaskGetResponse.TaskGetResponseJsonDeserializer.class)
+public record TaskGetResponse(
+        String uuid,
+        Ret ret,
+        Usage usage,
+        Output output,
+        String raw
+) implements ApiResponse<TaskGetResponse.Output> {
 
     /**
      * 任务获取应答输出
      *
      * @param task 任务
-     * @param body 任务内容
      */
     @JsonDeserialize(using = Output.OutputJsonDeserializer.class)
-    public record Output(Task task, String body) implements ApiResponse.Output {
+    public record Output(Task task) implements ApiResponse.Output {
 
         static class OutputJsonDeserializer extends JsonDeserializer<Output> {
 
@@ -37,28 +39,29 @@ public final class TaskGetResponse extends ApiResponse<TaskGetResponse.Output> {
             public Output deserialize(JsonParser parser, DeserializationContext context) throws IOException {
                 final var node = context.readTree(parser);
                 final var task = context.readTreeAsValue(node, Task.class);
-                final var body = node.toString();
-                return new Output(task, body);
+                // final var body = node.toString();
+                return new Output(task);
             }
 
         }
 
     }
 
-    @JsonCreator
-    static TaskGetResponse of(
-            @JsonProperty("request_id")
-            String uuid,
-            @JsonProperty("code")
-            String code,
-            @JsonProperty("message")
-            String message,
-            @JsonProperty("usage")
-            Usage usage,
-            @JsonProperty("output")
-            Output output
-    ) {
-        return new TaskGetResponse(uuid, Ret.of(code, message), usage, output);
+
+    static class TaskGetResponseJsonDeserializer extends JsonDeserializer<TaskGetResponse> {
+
+        @Override
+        public TaskGetResponse deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            final var node = context.readTree(parser);
+            return new TaskGetResponse(
+                    node.get("request_id").asText(),
+                    context.readTreeAsValue(node, Ret.class),
+                    context.readTreeAsValue(node.get("usage"), Usage.class),
+                    context.readTreeAsValue(node.get("output"), Output.class),
+                    node.toString()
+            );
+        }
+
     }
 
 

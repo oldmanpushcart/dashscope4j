@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
+import java.time.Duration;
+import java.util.Objects;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
@@ -15,20 +17,25 @@ import static java.util.Objects.requireNonNull;
 /**
  * 任务取消请求
  */
-public class TaskCancelRequest extends ApiRequest<TaskCancelResponse> {
+public record TaskCancelRequest(
+        String taskId,
+        Duration timeout
+
+) implements ApiRequest<TaskCancelResponse> {
 
     private static final ObjectMapper mapper = JacksonUtils.mapper();
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final Logger logger = LoggerFactory.getLogger(TaskCancelRequest.class);
 
-    private final String taskId;
 
-    protected TaskCancelRequest(Builder builder) {
-        super(builder, TaskCancelResponse.class);
-        this.taskId = requireNonNull(builder.taskId);
+    private TaskCancelRequest(Builder builder) {
+        this(
+                requireNonNull(builder.taskId),
+                requireNonNull(builder.timeout)
+        );
     }
 
     @Override
-    protected HttpRequest newHttpRequest() {
+    public HttpRequest newHttpRequest() {
         logger.debug("dashscope://task/cancel => {}", taskId);
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/api/v1/tasks/%s/cancel".formatted(taskId)))
@@ -37,16 +44,17 @@ public class TaskCancelRequest extends ApiRequest<TaskCancelResponse> {
     }
 
     @Override
-    protected Function<String, TaskCancelResponse> responseDeserializer() {
+    public Function<String, TaskCancelResponse> responseDeserializer() {
         return body -> {
             logger.debug("dashscope://task/cancel <= {}", body);
-            return JacksonUtils.toObject(mapper, body, responseType);
+            return JacksonUtils.toObject(mapper, body, TaskCancelResponse.class);
         };
     }
 
-    public static class Builder extends ApiRequest.Builder<TaskCancelRequest, Builder> {
+    public static class Builder implements ApiRequest.Builder<TaskCancelRequest, Builder> {
 
         private String taskId;
+        private Duration timeout;
 
         /**
          * 设置任务ID
@@ -56,6 +64,12 @@ public class TaskCancelRequest extends ApiRequest<TaskCancelResponse> {
          */
         public Builder taskId(String taskId) {
             this.taskId = requireNonNull(taskId);
+            return this;
+        }
+
+        @Override
+        public Builder timeout(Duration timeout) {
+            this.timeout = Objects.requireNonNull(timeout);
             return this;
         }
 

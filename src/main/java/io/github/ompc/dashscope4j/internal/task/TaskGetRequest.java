@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
+import java.time.Duration;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
@@ -15,20 +16,23 @@ import static java.util.Objects.requireNonNull;
 /**
  * 任务获取请求
  */
-public final class TaskGetRequest extends ApiRequest<TaskGetResponse> {
+public record TaskGetRequest(
+        Duration timeout,
+        String taskId
+) implements ApiRequest<TaskGetResponse> {
 
     private static final ObjectMapper mapper = JacksonUtils.mapper();
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    private final String taskId;
+    private static final Logger logger = LoggerFactory.getLogger(TaskGetRequest.class);
 
     private TaskGetRequest(Builder builder) {
-        super(builder, TaskGetResponse.class);
-        this.taskId = requireNonNull(builder.taskId);
+        this(
+                builder.timeout,
+                requireNonNull(builder.taskId)
+        );
     }
 
     @Override
-    protected HttpRequest newHttpRequest() {
+    public HttpRequest newHttpRequest() {
         logger.debug("dashscope://task/get => {}", taskId);
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/api/v1/tasks/%s".formatted(taskId)))
@@ -37,20 +41,17 @@ public final class TaskGetRequest extends ApiRequest<TaskGetResponse> {
     }
 
     @Override
-    protected Function<String, TaskGetResponse> responseDeserializer() {
+    public Function<String, TaskGetResponse> responseDeserializer() {
         return body -> {
             logger.debug("dashscope://task/get <= {}", body);
-            return JacksonUtils.toObject(mapper, body, responseType);
+            return JacksonUtils.toObject(mapper, body, TaskGetResponse.class);
         };
     }
 
-    public String taskId() {
-        return taskId;
-    }
-
-    public static class Builder extends ApiRequest.Builder<TaskGetRequest, Builder> {
+    public static class Builder implements ApiRequest.Builder<TaskGetRequest, Builder> {
 
         private String taskId;
+        private Duration timeout;
 
         /**
          * 设置任务ID
@@ -64,9 +65,16 @@ public final class TaskGetRequest extends ApiRequest<TaskGetResponse> {
         }
 
         @Override
+        public Builder timeout(Duration timeout) {
+            this.timeout = requireNonNull(timeout);
+            return this;
+        }
+
+        @Override
         public TaskGetRequest build() {
             return new TaskGetRequest(this);
         }
+
 
     }
 
