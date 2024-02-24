@@ -2,6 +2,8 @@ package io.github.ompc.dashscope4j;
 
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
+import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
+import io.github.ompc.dashscope4j.image.generation.GenImageResponse;
 import io.github.ompc.dashscope4j.internal.DashScopeClientImpl;
 import io.github.ompc.dashscope4j.internal.util.Buildable;
 
@@ -20,6 +22,8 @@ public interface DashScopeClient {
      * @return 操作
      */
     OpAsyncOpFlow<ChatResponse> chat(ChatRequest request);
+
+    OpImage image();
 
     /**
      * DashScope客户端构建器
@@ -58,6 +62,12 @@ public interface DashScopeClient {
          * @return this
          */
         Builder connectTimeout(Duration connectTimeout);
+
+    }
+
+    interface OpImage {
+
+        OpAsync<Task.Half<GenImageResponse>> generate(GenImageRequest request);
 
     }
 

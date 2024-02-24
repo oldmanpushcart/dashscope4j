@@ -3,6 +3,8 @@ package io.github.ompc.dashscope4j.internal;
 import io.github.ompc.dashscope4j.DashScopeClient;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
+import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
+import io.github.ompc.dashscope4j.image.generation.GenImageResponse;
 import io.github.ompc.dashscope4j.internal.api.ApiExecutor;
 
 import java.net.http.HttpClient;
@@ -53,6 +55,11 @@ public class DashScopeClientImpl implements DashScopeClient {
             }
 
         };
+    }
+
+    @Override
+    public OpImage image() {
+        return request -> () -> apiExecutor.task(request);
     }
 
 

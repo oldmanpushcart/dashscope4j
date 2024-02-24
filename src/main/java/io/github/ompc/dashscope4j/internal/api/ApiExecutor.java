@@ -1,8 +1,17 @@
 package io.github.ompc.dashscope4j.internal.api;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.ompc.dashscope4j.Task;
 import io.github.ompc.dashscope4j.internal.api.http.HttpHeader;
 import io.github.ompc.dashscope4j.internal.api.http.HttpSsEventProcessor;
+import io.github.ompc.dashscope4j.internal.task.TaskException;
+import io.github.ompc.dashscope4j.internal.task.TaskGetRequest;
+import io.github.ompc.dashscope4j.internal.task.TaskGetResponse;
+import io.github.ompc.dashscope4j.internal.task.TaskHalfResponse;
+import io.github.ompc.dashscope4j.internal.util.JacksonUtils;
 import io.github.ompc.dashscope4j.util.TransformFlowProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static io.github.ompc.dashscope4j.internal.api.http.HttpHeader.HEADER_AUTHORIZATION;
 import static io.github.ompc.dashscope4j.internal.api.http.HttpHeader.HEADER_X_DASHSCOPE_SSE;
@@ -21,6 +31,9 @@ import static java.util.function.Function.identity;
  * API执行器
  */
 public class ApiExecutor {
+
+    private static final ObjectMapper mapper = JacksonUtils.mapper();
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final String sk;
     private final HttpClient http;
@@ -62,7 +75,7 @@ public class ApiExecutor {
                 .thenApply(httpResponse -> {
                     final var response = request.responseDeserializer().apply(httpResponse.body());
                     if (!response.ret().isSuccess()) {
-                        throw new ApiException(httpResponse.statusCode(), response.ret());
+                        throw new ApiException(httpResponse.statusCode(), response);
                     }
                     return response;
                 });
@@ -100,8 +113,8 @@ public class ApiExecutor {
                                         .map(meta -> Integer.parseInt(meta.substring("HTTP_STATUS/".length())))
                                         .findFirst()
                                         .orElse(200),
-                                // 解析Ret
-                                request.responseDeserializer().apply(event.data()).ret()
+                                // 解析应答
+                                request.responseDeserializer().apply(event.data())
                         );
                         // 数据事件，处理数据
                         case "result" -> request.responseDeserializer().apply(event.data());
@@ -110,6 +123,61 @@ public class ApiExecutor {
                     }
                     return responses;
                 }));
+    }
+
+
+    public <R extends ApiResponse<?>> CompletableFuture<Task.Half<R>> task(ApiRequest<R> request) {
+        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
+            builder.header(HEADER_AUTHORIZATION, "Bearer %s".formatted(sk));
+            builder.header(HEADER_X_DASHSCOPE_SSE, "disable");
+        });
+        return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
+                .thenApplyAsync(identity(), executor)
+                .thenApply(httpResponse -> {
+                    final var response = JacksonUtils.toObject(mapper, httpResponse.body(), TaskHalfResponse.class);
+                    if (!response.ret().isSuccess()) {
+                        throw new ApiException(httpResponse.statusCode(), response);
+                    }
+                    return response;
+                })
+                .thenApply(response -> strategy -> rolling(
+                        new TaskGetRequest.Builder()
+                                .taskId(response.output().taskId())
+                                .timeout(request.timeout())
+                                .build(),
+                        strategy,
+                        request.responseDeserializer()
+                ));
+    }
+
+    private <R> CompletableFuture<R> rolling(TaskGetRequest request, Task.WaitStrategy strategy, Function<String, R> deserializer) {
+        return _rolling(request, strategy)
+                .thenApply(response -> deserializer.apply(response.output().body()));
+    }
+
+    private CompletableFuture<TaskGetResponse> _rolling(TaskGetRequest request, Task.WaitStrategy strategy) {
+        return async(request)
+                .thenCompose(response -> {
+                    final var task = response.output().task();
+
+                    // 任务取消
+                    if (task.status() == Task.Status.CANCELED) {
+                        throw new TaskException.TaskCancelledException(task.id());
+                    }
+
+                    // 任务失败
+                    if (task.status() == Task.Status.FAILED) {
+                        throw new TaskException.TaskFailedException(
+                                response.output().task().id(),
+                                response.ret()
+                        );
+                    }
+
+                    // 任务完成
+                    return task.isCompleted()
+                            ? CompletableFuture.completedFuture(response)
+                            : strategy.until(task.id()).thenCompose(unused -> _rolling(request, strategy));
+                });
     }
 
 }

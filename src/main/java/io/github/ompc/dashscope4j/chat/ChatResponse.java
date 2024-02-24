@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.github.ompc.dashscope4j.Ret;
 import io.github.ompc.dashscope4j.Usage;
 import io.github.ompc.dashscope4j.chat.message.Message;
 import io.github.ompc.dashscope4j.internal.algo.AlgoResponse;
@@ -22,41 +23,15 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
 
     private final Choice best;
 
-    /**
-     * 构造对话应答
-     *
-     * @param uuid    UUID
-     * @param code    返回结果编码
-     * @param message 信息结果信息
-     * @param usage   使用情况
-     * @param output    数据
-     */
-    @JsonCreator
-    public ChatResponse(
-
-            @JsonProperty("request_id")
-            String uuid,
-
-            @JsonProperty("code")
-            String code,
-
-            @JsonProperty("message")
-            String message,
-
-            @JsonProperty("usage")
-            Usage usage,
-
-            @JsonProperty("output")
-            Output output
-
-    ) {
-        super(uuid, code, message, usage, output);
+    private ChatResponse(String uuid, Ret ret, Usage usage, Output output) {
+        super(uuid, ret, usage, output);
 
         // 获取最好的选择
         this.best = Optional.ofNullable(output)
                 .map(Output::choices)
                 .flatMap(choices -> choices.stream().sorted().findFirst())
                 .orElse(null);
+
     }
 
     /**
@@ -137,13 +112,10 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
      * @param message 响应消息
      */
     public record Choice(
-
             @JsonProperty("finish_reason")
             ChatResponse.Finish finish,
-
             @JsonProperty("message")
             Message message
-
     ) implements Comparable<Choice> {
 
         @Override
@@ -151,6 +123,22 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
             return finish.weight - o.finish.weight;
         }
 
+    }
+
+    @JsonCreator
+    static ChatResponse of(
+            @JsonProperty("request_id")
+            String uuid,
+            @JsonProperty("code")
+            String code,
+            @JsonProperty("message")
+            String message,
+            @JsonProperty("usage")
+            Usage usage,
+            @JsonProperty("output")
+            Output output
+    ) {
+        return new ChatResponse(uuid, Ret.of(code, message), usage, output);
     }
 
 }

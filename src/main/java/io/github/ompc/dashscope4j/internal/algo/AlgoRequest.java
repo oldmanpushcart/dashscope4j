@@ -37,8 +37,8 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
 
     private final String _string;
 
-    protected AlgoRequest(Object input, Class<R> responseType, Builder<M, ?, ?> builder) {
-        super(responseType, builder);
+    protected AlgoRequest(Builder<M, ?, ?> builder, Class<R> responseType, Object input) {
+        super(builder, responseType);
         this.model = requireNonNull(builder.model);
         this.input = requireNonNull(input);
         this.option = builder.option;

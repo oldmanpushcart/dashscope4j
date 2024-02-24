@@ -13,7 +13,7 @@ import java.util.List;
 public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     private ChatRequest(Input input, Builder builder) {
-        super(input, ChatResponse.class, builder);
+        super(builder, ChatResponse.class, input);
     }
 
     /**

@@ -1,5 +1,6 @@
 package io.github.ompc.dashscope4j.internal.algo;
 
+import io.github.ompc.dashscope4j.Ret;
 import io.github.ompc.dashscope4j.Usage;
 import io.github.ompc.dashscope4j.internal.api.ApiResponse;
 
@@ -10,8 +11,8 @@ import io.github.ompc.dashscope4j.internal.api.ApiResponse;
  */
 public abstract class AlgoResponse<D extends ApiResponse.Output> extends ApiResponse<D> {
     
-    protected AlgoResponse(String uuid, String code, String message, Usage usage, D output) {
-        super(uuid, code, message, usage, output);
+    protected AlgoResponse(String uuid, Ret ret, Usage usage, D output) {
+        super(uuid, ret, usage, output);
     }
 
 }

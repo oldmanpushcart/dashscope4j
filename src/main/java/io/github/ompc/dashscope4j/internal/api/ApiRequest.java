@@ -21,7 +21,7 @@ public abstract class ApiRequest<R extends ApiResponse<?>> {
      *
      * @param builder 构造器
      */
-    protected ApiRequest(Class<R> responseType, Builder<?, ?> builder) {
+    protected ApiRequest(Builder<?, ?> builder, Class<R> responseType) {
         this.timeout = builder.timeout;
         this.responseType = responseType;
     }

@@ -1,14 +1,18 @@
 package io.github.ompc.dashscope4j.test;
 
+import io.github.ompc.dashscope4j.Task;
 import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatOptions;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.message.Content;
+import io.github.ompc.dashscope4j.image.generation.GenImageModel;
+import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
 import io.github.ompc.dashscope4j.test.chat.ChatAssertions;
 import io.github.ompc.dashscope4j.util.ConsumeFlowSubscriber;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 
 public class DebugTestCase implements LoadingEnv {
 
@@ -41,6 +45,26 @@ public class DebugTestCase implements LoadingEnv {
         }
 
 
+    }
+
+    @Test
+    public void test$debug$image$gen() {
+        final var request = new GenImageRequest.Builder()
+                .model(GenImageModel.WANX_V1)
+                .prompt("画一只猫")
+                .build();
+        final var response = client.image().generate(request)
+                .async()
+                .thenCompose(wait -> wait.waitingFor(taskId -> {
+                    try {
+                        Thread.sleep(500);
+                    } catch (Throwable ex) {
+                        return CompletableFuture.failedFuture(ex);
+                    }
+                    return CompletableFuture.completedFuture(null);
+                }))
+                .join();
+        System.out.println(response);
     }
 
 }

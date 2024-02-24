@@ -8,23 +8,25 @@ import io.github.ompc.dashscope4j.Ret;
 public class ApiException extends RuntimeException {
 
     private final int status;
+    private final String uuid;
     private final Ret ret;
 
     /**
      * 构造API异常
      *
-     * @param status HTTP状态
-     * @param ret    应答结果
+     * @param status   HTTP状态
+     * @param response 应答
      */
-    public ApiException(int status, Ret ret) {
+    public ApiException(int status, ApiResponse<?> response) {
         super("api response error! status=%s;uuid=%s;code=%s;message=%s;".formatted(
                 status,
-                ret.uuid(),
-                ret.code(),
-                ret.message()
+                response.uuid(),
+                response.ret().code(),
+                response.ret().message()
         ));
         this.status = status;
-        this.ret = ret;
+        this.uuid = response.uuid();
+        this.ret = response.ret();
     }
 
     /**
@@ -34,6 +36,10 @@ public class ApiException extends RuntimeException {
      */
     public int status() {
         return status;
+    }
+
+    public String uuid() {
+        return uuid;
     }
 
     /**

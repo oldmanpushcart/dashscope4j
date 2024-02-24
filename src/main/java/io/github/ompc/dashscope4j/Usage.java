@@ -33,6 +33,10 @@ public record Usage(List<Item> items) {
                 .sum();
     }
 
+    public static Usage empty() {
+        return new Usage(List.of());
+    }
+
     /**
      * 用量项目
      *

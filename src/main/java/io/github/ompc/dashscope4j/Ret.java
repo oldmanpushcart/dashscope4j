@@ -1,6 +1,6 @@
 package io.github.ompc.dashscope4j;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import static io.github.ompc.dashscope4j.internal.util.CommonUtils.isNotBlankString;
 
 /**
  * 应答结果
@@ -8,18 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @param code    结果编码
  * @param message 结果信息
  */
-public record Ret(
-
-        @JsonProperty("request_id")
-        String uuid,
-
-        @JsonProperty("code")
-        String code,
-
-        @JsonProperty("message")
-        String message
-
-) {
+public record Ret(String code, String message) {
 
     /**
      * 成功编码
@@ -33,6 +22,13 @@ public record Ret(
      */
     public boolean isSuccess() {
         return Ret.CODE_SUCCESS.equals(code);
+    }
+
+    public static Ret of(String code, String message) {
+        return new Ret(
+                isNotBlankString(code) ? code : Ret.CODE_SUCCESS,
+                isNotBlankString(code) ? message : "succeeded"
+        );
     }
 
 }
