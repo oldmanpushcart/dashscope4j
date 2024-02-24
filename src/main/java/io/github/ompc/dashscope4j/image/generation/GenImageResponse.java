@@ -10,6 +10,9 @@ import io.github.ompc.dashscope4j.internal.api.ApiResponse;
 import java.net.URI;
 import java.util.List;
 
+/**
+ * 文生图应答
+ */
 public class GenImageResponse extends AlgoResponse<GenImageResponse.Output> {
 
     private GenImageResponse(String uuid, Ret ret, Usage usage, Output output) {

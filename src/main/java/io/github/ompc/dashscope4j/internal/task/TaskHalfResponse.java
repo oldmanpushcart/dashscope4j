@@ -7,6 +7,9 @@ import io.github.ompc.dashscope4j.Task;
 import io.github.ompc.dashscope4j.Usage;
 import io.github.ompc.dashscope4j.internal.api.ApiResponse;
 
+/**
+ * 任务半应答
+ */
 public final class TaskHalfResponse extends ApiResponse<TaskHalfResponse.Output> {
 
     private TaskHalfResponse(String uuid, Ret ret, Usage usage, Output output) {

@@ -12,7 +12,7 @@ import io.github.ompc.dashscope4j.util.ConsumeFlowSubscriber;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
-import java.util.concurrent.CompletableFuture;
+import java.time.Duration;
 
 public class DebugTestCase implements LoadingEnv {
 
@@ -55,14 +55,7 @@ public class DebugTestCase implements LoadingEnv {
                 .build();
         final var response = client.image().generate(request)
                 .async()
-                .thenCompose(half -> half.waitingFor(taskId -> {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (Throwable ex) {
-                        return CompletableFuture.failedFuture(ex);
-                    }
-                    return CompletableFuture.completedFuture(null);
-                }))
+                .thenCompose(half -> half.waitingFor(Task.WaitStrategies.interval(Duration.ofMillis(1000L))))
                 .join();
         System.out.println(response);
     }

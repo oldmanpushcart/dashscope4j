@@ -13,12 +13,21 @@ import io.github.ompc.dashscope4j.internal.api.ApiResponse;
 
 import java.io.IOException;
 
+/**
+ * 任务获取应答
+ */
 public final class TaskGetResponse extends ApiResponse<TaskGetResponse.Output> {
 
     private TaskGetResponse(String uuid, Ret ret, Usage usage, Output output) {
         super(uuid, ret, usage, output);
     }
 
+    /**
+     * 任务获取应答输出
+     *
+     * @param task 任务
+     * @param body 任务内容
+     */
     @JsonDeserialize(using = Output.OutputJsonDeserializer.class)
     public record Output(Task task, String body) implements ApiResponse.Output {
 

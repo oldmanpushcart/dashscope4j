@@ -38,6 +38,11 @@ public class ApiException extends RuntimeException {
         return status;
     }
 
+    /**
+     * 获取唯一标识
+     *
+     * @return 唯一标识
+     */
     public String uuid() {
         return uuid;
     }

@@ -3,14 +3,24 @@ package io.github.ompc.dashscope4j.image.generation;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.ompc.dashscope4j.internal.algo.AlgoRequest;
 
-import java.net.http.HttpRequest;
+import static io.github.ompc.dashscope4j.internal.util.CommonUtils.requireNonBlankString;
 
+/**
+ * 文生图请求
+ */
 public final class GenImageRequest extends AlgoRequest<GenImageModel, GenImageResponse> {
 
     private GenImageRequest(Builder builder, Input input) {
         super(builder, GenImageResponse.class, input);
     }
 
+
+    /**
+     * 输入
+     *
+     * @param prompt   正向提示
+     * @param negative 负向提示
+     */
     public record Input(
             @JsonProperty("prompt")
             String prompt,
@@ -18,25 +28,35 @@ public final class GenImageRequest extends AlgoRequest<GenImageModel, GenImageRe
             String negative
     ) {
 
-    }
+        public Input(String prompt, String negative) {
+            this.prompt = requireNonBlankString(prompt);
+            this.negative = negative;
+        }
 
-    @Override
-    protected HttpRequest newHttpRequest() {
-        final var request = super.newHttpRequest();
-        return HttpRequest.newBuilder(request, (k,v)->true)
-                .header("X-DashScope-Async", "enable")
-                .build();
     }
 
     public static class Builder extends AlgoRequest.Builder<GenImageModel, GenImageRequest, Builder> {
+
         private String prompt;
         private String negative;
 
+        /**
+         * 正向提示
+         *
+         * @param prompt 正向提示
+         * @return this
+         */
         public Builder prompt(String prompt) {
             this.prompt = prompt;
             return this;
         }
 
+        /**
+         * 负向提示
+         *
+         * @param negative 负向提示
+         * @return this
+         */
         public Builder negative(String negative) {
             this.negative = negative;
             return this;
@@ -49,26 +69,31 @@ public final class GenImageRequest extends AlgoRequest<GenImageModel, GenImageRe
 
     }
 
-
+    /**
+     * 图片风格
+     */
     public enum Style {
-        @JsonProperty("auto")
+        @JsonProperty("<auto>")
         AUTO,
-        @JsonProperty("3d_cartoon")
+        @JsonProperty("<3d cartoon>")
         CARTOON_3D,
-        @JsonProperty("anime")
+        @JsonProperty("<anime>")
         ANIME,
-        @JsonProperty("oil_painting")
+        @JsonProperty("<oil painting>")
         OIL_PAINTING,
-        @JsonProperty("watercolor")
+        @JsonProperty("<watercolor>")
         WATERCOLOR,
-        @JsonProperty("sketch")
+        @JsonProperty("<sketch>")
         SKETCH,
-        @JsonProperty("chinese_painting")
+        @JsonProperty("<chinese painting>")
         CHINESE_PAINTING,
-        @JsonProperty("flat_illustration")
+        @JsonProperty("<flat illustration>")
         FLAT_ILLUSTRATION
     }
 
+    /**
+     * 图片尺寸
+     */
     public enum Size {
         @JsonProperty("1024*1024")
         S_1024_1024,

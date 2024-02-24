@@ -29,6 +29,11 @@ public class HttpHeader {
     public static final String HEADER_X_DASHSCOPE_SSE = "X-DashScope-SSE";
 
     /**
+     * HTTP-HEADER: X-DashScope-Async
+     */
+    public static final String HEADER_X_DASHSCOPE_ASYNC = "X-DashScope-Async";
+
+    /**
      * HTTP Content-Type
      *
      * @param mime       MIME

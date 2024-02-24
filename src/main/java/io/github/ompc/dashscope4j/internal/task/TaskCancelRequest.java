@@ -12,6 +12,9 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 任务取消请求
+ */
 public class TaskCancelRequest extends ApiRequest<TaskCancelResponse> {
 
     private static final ObjectMapper mapper = JacksonUtils.mapper();
@@ -45,6 +48,12 @@ public class TaskCancelRequest extends ApiRequest<TaskCancelResponse> {
 
         private String taskId;
 
+        /**
+         * 设置任务ID
+         *
+         * @param taskId 任务ID
+         * @return 构造器
+         */
         public Builder taskId(String taskId) {
             this.taskId = requireNonNull(taskId);
             return this;
