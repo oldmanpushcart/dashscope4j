@@ -17,15 +17,6 @@ import java.util.Map;
 public record Content<T>(Type type, T data) {
 
     /**
-     * 获取内容
-     *
-     * @return 内容
-     */
-    public T data() {
-        return data;
-    }
-
-    /**
      * 是否为文本
      *
      * @return TRUE | FALSE

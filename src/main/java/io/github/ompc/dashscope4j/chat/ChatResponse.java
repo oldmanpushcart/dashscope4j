@@ -89,7 +89,7 @@ public interface ChatResponse extends AlgoResponse<ChatResponse.Output> {
 
         @Override
         default int compareTo(Choice o) {
-            return finish().weight - o.finish().weight;
+            return Integer.compare(finish().weight, o.finish().weight);
         }
 
     }

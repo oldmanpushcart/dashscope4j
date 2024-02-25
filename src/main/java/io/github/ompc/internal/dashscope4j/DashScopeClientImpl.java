@@ -6,6 +6,8 @@ import io.github.ompc.dashscope4j.base.api.ApiResponse;
 import io.github.ompc.dashscope4j.base.task.Task;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
+import io.github.ompc.dashscope4j.embedding.EmbeddingRequest;
+import io.github.ompc.dashscope4j.embedding.EmbeddingResponse;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
 import io.github.ompc.dashscope4j.image.generation.GenImageResponse;
 import io.github.ompc.internal.dashscope4j.base.api.ApiExecutor;
@@ -61,6 +63,11 @@ public class DashScopeClientImpl implements DashScopeClient {
     @Override
     public OpTask<GenImageResponse> genImage(GenImageRequest request) {
         return () -> apiExecutor.task(request);
+    }
+
+    @Override
+    public OpAsync<EmbeddingResponse> embedding(EmbeddingRequest request) {
+        return () -> apiExecutor.async(request);
     }
 
     @Override

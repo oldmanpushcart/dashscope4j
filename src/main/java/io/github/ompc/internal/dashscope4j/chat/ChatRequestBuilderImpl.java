@@ -12,9 +12,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
-public class ChatRequestBuilderImpl
-        extends AlgoRequestBuilderImpl<ChatModel, ChatRequest, ChatRequest.Builder>
-        implements ChatRequest.Builder {
+public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, ChatRequest, ChatRequest.Builder> implements ChatRequest.Builder {
 
     private final List<Message> messages = new ArrayList<>();
 

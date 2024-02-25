@@ -6,6 +6,8 @@ import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatOptions;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.message.Content;
+import io.github.ompc.dashscope4j.embedding.EmbeddingModel;
+import io.github.ompc.dashscope4j.embedding.EmbeddingRequest;
 import io.github.ompc.dashscope4j.image.generation.GenImageModel;
 import io.github.ompc.dashscope4j.image.generation.GenImageOptions;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
@@ -66,19 +68,18 @@ public class DebugTestCase implements LoadingEnv {
     }
 
     @Test
-    public void test$debug$chat$request() throws Exception {
+    public void test$debug$embedding$request() throws Exception {
 
-        final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_VL_MAX)
-                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                .user(
-                        Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
-                        Content.ofText("图片中一共多少辆自行车?")
-                )
+        final var request = EmbeddingRequest.newBuilder()
+                .model(EmbeddingModel.TEXT_EMBEDDING_V2)
+                .documents("我爱北京天安门", "天安门上太阳升")
                 .build();
 
-        final var mapper = new ObjectMapper();
-        System.out.println(mapper.writeValueAsString(request));
+        final var response = client.embedding(request)
+                .async()
+                .join();
+
+        System.out.println(response);
 
     }
 

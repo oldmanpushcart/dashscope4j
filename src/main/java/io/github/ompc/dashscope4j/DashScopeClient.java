@@ -5,10 +5,12 @@ import io.github.ompc.dashscope4j.base.api.ApiResponse;
 import io.github.ompc.dashscope4j.base.task.Task;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
+import io.github.ompc.dashscope4j.embedding.EmbeddingRequest;
+import io.github.ompc.dashscope4j.embedding.EmbeddingResponse;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
 import io.github.ompc.dashscope4j.image.generation.GenImageResponse;
-import io.github.ompc.internal.dashscope4j.DashScopeClientImpl;
 import io.github.ompc.dashscope4j.util.Buildable;
+import io.github.ompc.internal.dashscope4j.DashScopeClientImpl;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -33,6 +35,14 @@ public interface DashScopeClient {
      * @return 操作
      */
     OpTask<GenImageResponse> genImage(GenImageRequest request);
+
+    /**
+     * 向量计算
+     *
+     * @param request 向量计算请求
+     * @return 操作
+     */
+    OpAsync<EmbeddingResponse> embedding(EmbeddingRequest request);
 
     /**
      * 通用API
