@@ -1,6 +1,6 @@
-package io.github.ompc.dashscope4j.algo;
+package io.github.ompc.dashscope4j.base.algo;
 
-import io.github.ompc.dashscope4j.api.ApiResponse;
+import io.github.ompc.dashscope4j.base.api.ApiResponse;
 
 /**
  * 算法应答

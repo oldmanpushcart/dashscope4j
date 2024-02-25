@@ -1,7 +1,7 @@
 package io.github.ompc.dashscope4j.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.ompc.dashscope4j.task.Task;
+import io.github.ompc.dashscope4j.base.task.Task;
 import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatOptions;
 import io.github.ompc.dashscope4j.chat.ChatRequest;

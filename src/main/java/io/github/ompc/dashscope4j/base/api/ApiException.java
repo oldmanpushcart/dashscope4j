@@ -1,4 +1,4 @@
-package io.github.ompc.dashscope4j.api;
+package io.github.ompc.dashscope4j.base.api;
 
 import io.github.ompc.dashscope4j.Ret;
 

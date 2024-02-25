@@ -1,8 +1,8 @@
-package io.github.ompc.internal.dashscope4j.task;
+package io.github.ompc.internal.dashscope4j.base.task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.ompc.dashscope4j.api.ApiRequest;
-import io.github.ompc.internal.dashscope4j.api.ApiRequestBuilderImpl;
+import io.github.ompc.dashscope4j.base.api.ApiRequest;
+import io.github.ompc.internal.dashscope4j.base.api.ApiRequestBuilderImpl;
 import io.github.ompc.internal.dashscope4j.util.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

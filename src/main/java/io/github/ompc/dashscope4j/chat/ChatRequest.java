@@ -1,6 +1,6 @@
 package io.github.ompc.dashscope4j.chat;
 
-import io.github.ompc.dashscope4j.algo.AlgoRequest;
+import io.github.ompc.dashscope4j.base.algo.AlgoRequest;
 import io.github.ompc.dashscope4j.chat.message.Content;
 import io.github.ompc.dashscope4j.chat.message.Message;
 import io.github.ompc.internal.dashscope4j.chat.ChatRequestBuilderImpl;

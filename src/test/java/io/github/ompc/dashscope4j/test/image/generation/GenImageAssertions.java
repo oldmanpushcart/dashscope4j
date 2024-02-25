@@ -6,9 +6,6 @@ import io.github.ompc.dashscope4j.test.RetAssertions;
 import io.github.ompc.dashscope4j.test.UsageAssertions;
 import org.junit.jupiter.api.Assertions;
 
-import java.net.MalformedURLException;
-import java.net.URI;
-
 public class GenImageAssertions {
 
     public static void assertGenImageRequest(GenImageRequest request) {

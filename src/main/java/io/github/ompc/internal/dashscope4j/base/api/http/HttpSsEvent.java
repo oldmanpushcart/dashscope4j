@@ -1,4 +1,4 @@
-package io.github.ompc.internal.dashscope4j.api.http;
+package io.github.ompc.internal.dashscope4j.base.api.http;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;

@@ -1,4 +1,4 @@
-package io.github.ompc.dashscope4j.api;
+package io.github.ompc.dashscope4j.base.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.ompc.internal.dashscope4j.util.Buildable;

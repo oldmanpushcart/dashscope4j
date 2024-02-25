@@ -6,7 +6,7 @@ import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
 import io.github.ompc.dashscope4j.chat.message.Message;
-import io.github.ompc.internal.dashscope4j.algo.AlgoRequestImpl;
+import io.github.ompc.internal.dashscope4j.base.algo.AlgoRequestImpl;
 
 import java.time.Duration;
 import java.util.ArrayList;

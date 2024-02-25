@@ -1,6 +1,6 @@
-package io.github.ompc.internal.dashscope4j.api;
+package io.github.ompc.internal.dashscope4j.base.api;
 
-import io.github.ompc.dashscope4j.api.ApiRequest;
+import io.github.ompc.dashscope4j.base.api.ApiRequest;
 
 import java.time.Duration;
 

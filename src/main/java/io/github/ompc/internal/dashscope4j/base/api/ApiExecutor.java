@@ -1,15 +1,18 @@
-package io.github.ompc.internal.dashscope4j.api;
+package io.github.ompc.internal.dashscope4j.base.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.ompc.dashscope4j.task.Task;
-import io.github.ompc.dashscope4j.api.ApiException;
-import io.github.ompc.dashscope4j.api.ApiRequest;
-import io.github.ompc.dashscope4j.api.ApiResponse;
-import io.github.ompc.dashscope4j.task.TaskException;
+import io.github.ompc.dashscope4j.base.api.ApiException;
+import io.github.ompc.dashscope4j.base.api.ApiRequest;
+import io.github.ompc.dashscope4j.base.api.ApiResponse;
+import io.github.ompc.dashscope4j.base.task.Task;
+import io.github.ompc.dashscope4j.base.task.TaskException;
 import io.github.ompc.dashscope4j.util.TransformFlowProcessor;
-import io.github.ompc.internal.dashscope4j.api.http.HttpHeader;
-import io.github.ompc.internal.dashscope4j.api.http.HttpSsEventProcessor;
-import io.github.ompc.internal.dashscope4j.task.*;
+import io.github.ompc.internal.dashscope4j.base.api.http.HttpHeader;
+import io.github.ompc.internal.dashscope4j.base.api.http.HttpSsEventProcessor;
+import io.github.ompc.internal.dashscope4j.base.task.TaskCancelRequest;
+import io.github.ompc.internal.dashscope4j.base.task.TaskGetRequest;
+import io.github.ompc.internal.dashscope4j.base.task.TaskGetResponse;
+import io.github.ompc.internal.dashscope4j.base.task.TaskHalfResponse;
 import io.github.ompc.internal.dashscope4j.util.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

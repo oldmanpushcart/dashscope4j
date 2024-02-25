@@ -1,11 +1,11 @@
-package io.github.ompc.internal.dashscope4j.task;
+package io.github.ompc.internal.dashscope4j.base.task;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.ompc.dashscope4j.Ret;
-import io.github.ompc.dashscope4j.task.Task;
 import io.github.ompc.dashscope4j.Usage;
-import io.github.ompc.dashscope4j.api.ApiResponse;
+import io.github.ompc.dashscope4j.base.api.ApiResponse;
+import io.github.ompc.dashscope4j.base.task.Task;
 
 /**
  * 任务半应答

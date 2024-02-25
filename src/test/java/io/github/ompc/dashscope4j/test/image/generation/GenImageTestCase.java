@@ -1,6 +1,6 @@
 package io.github.ompc.dashscope4j.test.image.generation;
 
-import io.github.ompc.dashscope4j.task.Task;
+import io.github.ompc.dashscope4j.base.task.Task;
 import io.github.ompc.dashscope4j.image.generation.GenImageModel;
 import io.github.ompc.dashscope4j.image.generation.GenImageOptions;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;

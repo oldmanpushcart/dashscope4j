@@ -1,7 +1,7 @@
 package io.github.ompc.dashscope4j.chat;
 
 import io.github.ompc.dashscope4j.Option;
-import io.github.ompc.dashscope4j.algo.AlgoOptions;
+import io.github.ompc.dashscope4j.base.algo.AlgoOptions;
 
 /**
  * 对话选项

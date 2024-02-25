@@ -1,14 +1,14 @@
 package io.github.ompc.internal.dashscope4j;
 
 import io.github.ompc.dashscope4j.DashScopeClient;
-import io.github.ompc.dashscope4j.task.Task;
-import io.github.ompc.dashscope4j.api.ApiRequest;
-import io.github.ompc.dashscope4j.api.ApiResponse;
+import io.github.ompc.dashscope4j.base.api.ApiRequest;
+import io.github.ompc.dashscope4j.base.api.ApiResponse;
+import io.github.ompc.dashscope4j.base.task.Task;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
 import io.github.ompc.dashscope4j.image.generation.GenImageResponse;
-import io.github.ompc.internal.dashscope4j.api.ApiExecutor;
+import io.github.ompc.internal.dashscope4j.base.api.ApiExecutor;
 
 import java.net.http.HttpClient;
 import java.time.Duration;

@@ -1,7 +1,7 @@
-package io.github.ompc.internal.dashscope4j.api.http;
+package io.github.ompc.internal.dashscope4j.base.api.http;
 
-import io.github.ompc.internal.dashscope4j.util.FeatureDetection;
 import io.github.ompc.dashscope4j.util.TransformFlowProcessor;
+import io.github.ompc.internal.dashscope4j.util.FeatureDetection;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;

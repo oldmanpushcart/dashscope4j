@@ -5,7 +5,7 @@ import io.github.ompc.dashscope4j.Model;
 import io.github.ompc.dashscope4j.Option;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
 import io.github.ompc.dashscope4j.image.generation.GenImageResponse;
-import io.github.ompc.internal.dashscope4j.algo.AlgoRequestImpl;
+import io.github.ompc.internal.dashscope4j.base.algo.AlgoRequestImpl;
 
 import java.time.Duration;
 

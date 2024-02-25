@@ -2,7 +2,7 @@ package io.github.ompc.internal.dashscope4j.image.generation;
 
 import io.github.ompc.dashscope4j.image.generation.GenImageModel;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
-import io.github.ompc.internal.dashscope4j.algo.AlgoRequestBuilderImpl;
+import io.github.ompc.internal.dashscope4j.base.algo.AlgoRequestBuilderImpl;
 
 import static java.util.Objects.requireNonNull;
 

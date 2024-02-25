@@ -1,7 +1,7 @@
 package io.github.ompc.dashscope4j.image.generation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.ompc.dashscope4j.algo.AlgoRequest;
+import io.github.ompc.dashscope4j.base.algo.AlgoRequest;
 import io.github.ompc.internal.dashscope4j.image.generation.GenImageRequestBuilder;
 
 /**

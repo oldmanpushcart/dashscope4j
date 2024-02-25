@@ -3,7 +3,7 @@ package io.github.ompc.internal.dashscope4j.chat;
 import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.message.Message;
-import io.github.ompc.internal.dashscope4j.algo.AlgoRequestBuilderImpl;
+import io.github.ompc.internal.dashscope4j.base.algo.AlgoRequestBuilderImpl;
 
 import java.util.ArrayList;
 import java.util.List;

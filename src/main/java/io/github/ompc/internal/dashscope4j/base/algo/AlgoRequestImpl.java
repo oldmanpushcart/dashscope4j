@@ -1,10 +1,10 @@
-package io.github.ompc.internal.dashscope4j.algo;
+package io.github.ompc.internal.dashscope4j.base.algo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ompc.dashscope4j.Model;
 import io.github.ompc.dashscope4j.Option;
-import io.github.ompc.dashscope4j.algo.AlgoRequest;
-import io.github.ompc.dashscope4j.algo.AlgoResponse;
+import io.github.ompc.dashscope4j.base.algo.AlgoRequest;
+import io.github.ompc.dashscope4j.base.algo.AlgoResponse;
 import io.github.ompc.internal.dashscope4j.util.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,8 +13,8 @@ import java.net.http.HttpRequest;
 import java.time.Duration;
 import java.util.function.Function;
 
-import static io.github.ompc.internal.dashscope4j.api.http.HttpHeader.ContentType.MIME_APPLICATION_JSON;
-import static io.github.ompc.internal.dashscope4j.api.http.HttpHeader.HEADER_CONTENT_TYPE;
+import static io.github.ompc.internal.dashscope4j.base.api.http.HttpHeader.ContentType.MIME_APPLICATION_JSON;
+import static io.github.ompc.internal.dashscope4j.base.api.http.HttpHeader.HEADER_CONTENT_TYPE;
 
 public abstract class AlgoRequestImpl<R extends AlgoResponse<?>> implements AlgoRequest<R> {
 
