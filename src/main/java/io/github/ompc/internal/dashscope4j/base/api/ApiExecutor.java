@@ -1,13 +1,13 @@
 package io.github.ompc.internal.dashscope4j.base.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.ompc.dashscope4j.Constants;
 import io.github.ompc.dashscope4j.base.api.ApiException;
 import io.github.ompc.dashscope4j.base.api.ApiRequest;
 import io.github.ompc.dashscope4j.base.api.ApiResponse;
 import io.github.ompc.dashscope4j.base.task.Task;
 import io.github.ompc.dashscope4j.base.task.TaskException;
 import io.github.ompc.dashscope4j.util.TransformFlowProcessor;
-import io.github.ompc.dashscope4j.Constants;
 import io.github.ompc.internal.dashscope4j.base.api.http.HttpHeader;
 import io.github.ompc.internal.dashscope4j.base.api.http.HttpSsEventProcessor;
 import io.github.ompc.internal.dashscope4j.base.task.TaskCancelRequest;

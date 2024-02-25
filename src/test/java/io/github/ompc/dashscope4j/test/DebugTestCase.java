@@ -1,6 +1,5 @@
 package io.github.ompc.dashscope4j.test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ompc.dashscope4j.base.task.Task;
 import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatOptions;
@@ -11,7 +10,6 @@ import io.github.ompc.dashscope4j.embedding.EmbeddingRequest;
 import io.github.ompc.dashscope4j.image.generation.GenImageModel;
 import io.github.ompc.dashscope4j.image.generation.GenImageOptions;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
-import io.github.ompc.dashscope4j.test.chat.ChatAssertions;
 import io.github.ompc.dashscope4j.util.ConsumeFlowSubscriber;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +44,7 @@ public class DebugTestCase implements LoadingEnv {
             client.chat(request).flow()
                     .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
                         System.out.println(r.best().message().text());
-                        ChatAssertions.assertChatResponse(r);
+                        DashScopeAssertions.assertChatResponse(r);
                     }))
                     .join();
         }

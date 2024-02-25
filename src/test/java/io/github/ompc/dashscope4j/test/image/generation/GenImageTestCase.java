@@ -5,6 +5,7 @@ import io.github.ompc.dashscope4j.image.generation.GenImageModel;
 import io.github.ompc.dashscope4j.image.generation.GenImageOptions;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
 import io.github.ompc.dashscope4j.test.CommonAssertions;
+import io.github.ompc.dashscope4j.test.DashScopeAssertions;
 import io.github.ompc.dashscope4j.test.LoadingEnv;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -29,13 +30,13 @@ public class GenImageTestCase implements LoadingEnv {
                 .option(GenImageOptions.STYLE, GenImageRequest.Style.CARTOON_3D)
                 .build();
 
-        GenImageAssertions.assertGenImageRequest(request);
+        DashScopeAssertions.assertGenImageRequest(request);
 
         final var response = client.genImage(request)
                 .task(Task.WaitStrategies.perpetual(Duration.ofSeconds(1)))
                 .join();
 
-        GenImageAssertions.assertGenImageResponse(response);
+        DashScopeAssertions.assertGenImageResponse(response);
         Assertions.assertEquals(4, response.output().results().size());
         Assertions.assertEquals(4, response.output().results().stream().filter(result -> result.ret().isSuccess()).count());
 

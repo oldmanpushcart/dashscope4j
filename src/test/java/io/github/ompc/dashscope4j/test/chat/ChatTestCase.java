@@ -6,6 +6,7 @@ import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.message.Content;
 import io.github.ompc.dashscope4j.chat.message.Message;
 import io.github.ompc.dashscope4j.test.CommonAssertions;
+import io.github.ompc.dashscope4j.test.DashScopeAssertions;
 import io.github.ompc.dashscope4j.test.LoadingEnv;
 import io.github.ompc.dashscope4j.util.ConsumeFlowSubscriber;
 import org.junit.jupiter.api.Assertions;
@@ -63,12 +64,13 @@ public class ChatTestCase implements LoadingEnv {
                 )
                 .build();
 
+        DashScopeAssertions.assertChatRequest(request);
 
         // ASYNC
         {
             final var response = client.chat(request).async().join();
             Assertions.assertTrue(response.best().message().text().contains("23"));
-            ChatAssertions.assertChatResponse(response);
+            DashScopeAssertions.assertChatResponse(response);
         }
 
         // FLOW
@@ -77,7 +79,7 @@ public class ChatTestCase implements LoadingEnv {
             client.chat(request).flow()
                     .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
                         stringRef.set(r.best().message().text());
-                        ChatAssertions.assertChatResponse(r);
+                        DashScopeAssertions.assertChatResponse(r);
                     }))
                     .join();
 
@@ -103,12 +105,14 @@ public class ChatTestCase implements LoadingEnv {
                 )
                 .build();
 
+        DashScopeAssertions.assertChatRequest(request);
+
         // ASYNC
         {
             final var response = client.chat(request).async().join();
             final var text = response.best().message().text();
             Assertions.assertTrue(text.contains("2") || text.contains("两辆"));
-            ChatAssertions.assertChatResponse(response);
+            DashScopeAssertions.assertChatResponse(response);
         }
 
         // FLOW
@@ -118,7 +122,7 @@ public class ChatTestCase implements LoadingEnv {
             client.chat(request).flow()
                     .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
                         stringRef.set(r.best().message().text());
-                        ChatAssertions.assertChatResponse(r);
+                        DashScopeAssertions.assertChatResponse(r);
                     }))
                     .join();
 
@@ -134,6 +138,7 @@ public class ChatTestCase implements LoadingEnv {
             "qwen-audio-chat"
     })
     public void test$chat$audio(String name) {
+
         final var request = ChatRequest.newBuilder()
                 .model(getModel(name))
                 .messages(
@@ -144,10 +149,12 @@ public class ChatTestCase implements LoadingEnv {
                 )
                 .build();
 
+        DashScopeAssertions.assertChatRequest(request);
+
         // ASYNC
         {
             final var response = client.chat(request).async().join();
-            ChatAssertions.assertChatResponse(response);
+            DashScopeAssertions.assertChatResponse(response);
             Assertions.assertTrue(response.best().message().text().contains("男"));
         }
 
@@ -158,7 +165,7 @@ public class ChatTestCase implements LoadingEnv {
             client.chat(request).flow()
                     .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
                         stringRef.set(r.best().message().text());
-                        ChatAssertions.assertChatResponse(r);
+                        DashScopeAssertions.assertChatResponse(r);
                     }))
                     .join();
 
@@ -175,6 +182,7 @@ public class ChatTestCase implements LoadingEnv {
                 .model(not_exists_model)
                 .user("hello!")
                 .build();
+        DashScopeAssertions.assertChatRequest(request);
         CommonAssertions.assertRootThrows(ApiException.class, () -> client.chat(request).async().join(), ex -> {
             Assertions.assertTrue(200 != ex.status());
             Assertions.assertFalse(ex.ret().isSuccess());
