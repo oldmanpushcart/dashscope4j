@@ -5,7 +5,6 @@ module dashscope4j {
     requires com.fasterxml.jackson.core;
     requires org.slf4j;
 
-
     opens io.github.ompc.internal.dashscope4j.base.task to com.fasterxml.jackson.databind;
     opens io.github.ompc.internal.dashscope4j.base.algo to com.fasterxml.jackson.databind;
     opens io.github.ompc.internal.dashscope4j.base.api to com.fasterxml.jackson.databind;

@@ -10,27 +10,6 @@ import io.github.ompc.internal.dashscope4j.image.generation.GenImageRequestBuild
 public interface GenImageRequest extends AlgoRequest<GenImageResponse> {
 
     /**
-     * 输入
-     */
-    interface Input {
-
-        /**
-         * 获取正向提示
-         *
-         * @return 正向提示
-         */
-        String prompt();
-
-        /**
-         * 获取负向提示
-         *
-         * @return 负向提示
-         */
-        String negative();
-
-    }
-
-    /**
      * 构建文生图请求
      *
      * @return 构建器
