@@ -14,11 +14,15 @@ public interface ChatRequest extends AlgoRequest<ChatResponse> {
 
     /**
      * 对话请求数据
-     *
-     * @param messages 对话消息列表
      */
-    // TODO : 2021/8/3 为什么要用record
-    record Input(List<Message> messages) {
+    interface Input {
+
+        /**
+         * 获取对话消息列表
+         *
+         * @return 对话消息列表
+         */
+        List<Message> messages();
 
     }
 

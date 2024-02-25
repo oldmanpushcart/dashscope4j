@@ -26,7 +26,7 @@ public class ChatRequestBuilderImpl
     public ChatRequest build() {
         return new ChatRequestImpl(
                 requireNonNull(model()),
-                new ChatRequest.Input(messages),
+                new ChatRequestImpl.InputImpl(messages),
                 option(),
                 timeout()
         );

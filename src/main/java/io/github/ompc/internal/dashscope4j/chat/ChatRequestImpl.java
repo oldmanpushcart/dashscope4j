@@ -1,14 +1,17 @@
 package io.github.ompc.internal.dashscope4j.chat;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.ompc.dashscope4j.Option;
 import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
+import io.github.ompc.dashscope4j.chat.message.Message;
 import io.github.ompc.internal.dashscope4j.algo.AlgoRequestImpl;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements ChatRequest {
@@ -38,6 +41,13 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
                 }}));
             }});
         }};
+    }
+
+    record InputImpl(
+            @JsonProperty("messages")
+            List<Message> messages
+    ) implements Input {
+
     }
 
 }
