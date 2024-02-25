@@ -10,13 +10,8 @@ import io.github.ompc.dashscope4j.api.ApiResponse;
 /**
  * 任务半应答
  */
-public record TaskHalfResponse(
-        String uuid,
-        Ret ret,
-        Usage usage,
-        Output output
-
-) implements ApiResponse<TaskHalfResponse.Output> {
+public record TaskHalfResponse(String uuid, Ret ret, Usage usage, Output output)
+        implements ApiResponse<TaskHalfResponse.Output> {
 
     public record Output(String taskId, Task.Status status) implements ApiResponse.Output {
 

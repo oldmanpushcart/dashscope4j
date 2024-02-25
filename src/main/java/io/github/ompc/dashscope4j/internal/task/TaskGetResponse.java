@@ -15,13 +15,8 @@ import java.io.IOException;
  * 任务获取应答
  */
 @JsonDeserialize(using = TaskGetResponse.TaskGetResponseJsonDeserializer.class)
-public record TaskGetResponse(
-        String uuid,
-        Ret ret,
-        Usage usage,
-        Output output,
-        String raw
-) implements ApiResponse<TaskGetResponse.Output> {
+public record TaskGetResponse(String uuid, Ret ret, Usage usage, Output output, String raw)
+        implements ApiResponse<TaskGetResponse.Output> {
 
     /**
      * 任务获取应答输出
