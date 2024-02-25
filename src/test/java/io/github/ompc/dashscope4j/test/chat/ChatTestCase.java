@@ -1,12 +1,15 @@
 package io.github.ompc.dashscope4j.test.chat;
 
+import io.github.ompc.dashscope4j.base.api.ApiException;
 import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.message.Content;
 import io.github.ompc.dashscope4j.chat.message.Message;
+import io.github.ompc.dashscope4j.test.CommonAssertions;
 import io.github.ompc.dashscope4j.test.LoadingEnv;
 import io.github.ompc.dashscope4j.util.ConsumeFlowSubscriber;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -26,7 +29,11 @@ public class ChatTestCase implements LoadingEnv {
 
             // VL
             ChatModel.QWEN_VL_MAX,
-            ChatModel.QWEN_VL_PLUS
+            ChatModel.QWEN_VL_PLUS,
+
+            // AUDIO
+            ChatModel.QWEN_AUDIO_CHAT,
+            ChatModel.QWEN_AUDIO_TURBO
     );
 
     private static ChatModel getModel(String name) {
@@ -119,6 +126,61 @@ public class ChatTestCase implements LoadingEnv {
             Assertions.assertTrue(text.contains("2") || text.contains("两辆"));
         }
 
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "qwen-audio-turbo",
+            "qwen-audio-chat"
+    })
+    public void test$chat$audio(String name) {
+        final var request = ChatRequest.newBuilder()
+                .model(getModel(name))
+                .messages(
+                        Message.ofUser(
+                                Content.ofAudio(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/audios/2channel_16K.wav")),
+                                Content.ofText("说话的人是男还是女?")
+                        )
+                )
+                .build();
+
+        // ASYNC
+        {
+            final var response = client.chat(request).async().join();
+            ChatAssertions.assertChatResponse(response);
+            Assertions.assertTrue(response.best().message().text().contains("男"));
+        }
+
+        // FLOW
+        {
+            final var stringRef = new AtomicReference<String>();
+
+            client.chat(request).flow()
+                    .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
+                        stringRef.set(r.best().message().text());
+                        ChatAssertions.assertChatResponse(r);
+                    }))
+                    .join();
+
+            final var text = stringRef.get();
+            Assertions.assertTrue(text.contains("男"));
+        }
+
+    }
+
+    @Test
+    public void test$chat$not_exists_module() {
+        final var not_exists_model = ChatModel.ofText("not-exists-module");
+        final var request = ChatRequest.newBuilder()
+                .model(not_exists_model)
+                .user("hello!")
+                .build();
+        CommonAssertions.assertRootThrows(ApiException.class, () -> client.chat(request).async().join(), ex -> {
+            Assertions.assertTrue(200 != ex.status());
+            Assertions.assertFalse(ex.ret().isSuccess());
+            Assertions.assertFalse(ex.ret().code().isBlank());
+            Assertions.assertFalse(ex.ret().message().isBlank());
+        });
     }
 
 }

@@ -12,6 +12,7 @@ import java.net.http.HttpRequest;
 import java.time.Duration;
 import java.util.function.Function;
 
+import static io.github.ompc.dashscope4j.Constants.LOGGER_NAME;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -20,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 public record TaskCancelRequest(String taskId, Duration timeout) implements ApiRequest<TaskCancelResponse> {
 
     private static final ObjectMapper mapper = JacksonUtils.mapper();
-    private static final Logger logger = LoggerFactory.getLogger(TaskCancelRequest.class);
+    private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     @Override
     public HttpRequest newHttpRequest() {

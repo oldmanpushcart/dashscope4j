@@ -1,7 +1,7 @@
 package io.github.ompc.dashscope4j.base.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.github.ompc.internal.dashscope4j.util.Buildable;
+import io.github.ompc.dashscope4j.util.Buildable;
 
 import java.net.http.HttpRequest;
 import java.time.Duration;

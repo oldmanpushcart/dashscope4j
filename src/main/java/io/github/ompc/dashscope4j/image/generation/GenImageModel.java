@@ -6,18 +6,11 @@ import java.net.URI;
 
 /**
  * 文生图模型
+ *
+ * @param name   模型名称
+ * @param remote 模型地址
  */
-public class GenImageModel extends Model {
-
-    /**
-     * 构造文生图模型
-     *
-     * @param name   模型名称
-     * @param remote 模型地址
-     */
-    public GenImageModel(String name, URI remote) {
-        super(name, remote);
-    }
+public record GenImageModel(String name, URI remote) implements Model {
 
     /**
      * WANX-V1

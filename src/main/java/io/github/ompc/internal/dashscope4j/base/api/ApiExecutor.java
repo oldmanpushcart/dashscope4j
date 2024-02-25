@@ -7,6 +7,7 @@ import io.github.ompc.dashscope4j.base.api.ApiResponse;
 import io.github.ompc.dashscope4j.base.task.Task;
 import io.github.ompc.dashscope4j.base.task.TaskException;
 import io.github.ompc.dashscope4j.util.TransformFlowProcessor;
+import io.github.ompc.dashscope4j.Constants;
 import io.github.ompc.internal.dashscope4j.base.api.http.HttpHeader;
 import io.github.ompc.internal.dashscope4j.base.api.http.HttpSsEventProcessor;
 import io.github.ompc.internal.dashscope4j.base.task.TaskCancelRequest;
@@ -28,6 +29,9 @@ import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static io.github.ompc.dashscope4j.Constants.LOGGER_NAME;
+import static io.github.ompc.internal.dashscope4j.base.api.http.HttpHeader.HEADER_AUTHORIZATION;
+import static io.github.ompc.internal.dashscope4j.base.api.http.HttpHeader.HEADER_X_DASHSCOPE_CLIENT;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.function.Function.identity;
 
@@ -37,7 +41,8 @@ import static java.util.function.Function.identity;
 public class ApiExecutor {
 
     private static final ObjectMapper mapper = JacksonUtils.mapper();
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final String CLIENT_INFO = "dashscope4j/%s".formatted(Constants.VERSION);
+    private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     private final String sk;
     private final HttpClient http;
@@ -57,8 +62,10 @@ public class ApiExecutor {
     }
 
     // 委派API请求
-    private static HttpRequest delegateHttpRequest(HttpRequest request, Consumer<HttpRequest.Builder> consumer) {
-        final var builder = HttpRequest.newBuilder(request, (k, v) -> true);
+    private HttpRequest delegateHttpRequest(HttpRequest request, Consumer<HttpRequest.Builder> consumer) {
+        final var builder = HttpRequest.newBuilder(request, (k, v) -> true)
+                .header(HEADER_AUTHORIZATION, "Bearer %s".formatted(sk))
+                .headers(HEADER_X_DASHSCOPE_CLIENT, CLIENT_INFO);
         consumer.accept(builder);
         return builder.build();
     }
@@ -70,10 +77,8 @@ public class ApiExecutor {
      * @return 异步应答
      */
     public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<R> request) {
-        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
-            builder.header(HttpHeader.HEADER_AUTHORIZATION, "Bearer %s".formatted(sk));
-            builder.header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "disable");
-        });
+        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> builder
+                .header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "disable"));
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
                 .thenApply(httpResponse -> {
@@ -92,10 +97,8 @@ public class ApiExecutor {
      * @return 流式应答
      */
     public <R extends ApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(ApiRequest<R> request) {
-        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
-            builder.header(HttpHeader.HEADER_AUTHORIZATION, "Bearer %s".formatted(sk));
-            builder.header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "enable");
-        });
+        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> builder
+                .header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "enable"));
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApplyAsync(identity(), executor)
 
@@ -148,11 +151,9 @@ public class ApiExecutor {
      * @return 任务应答
      */
     public <R extends ApiResponse<?>> CompletableFuture<Task.Half<R>> task(ApiRequest<R> request) {
-        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
-            builder.header(HttpHeader.HEADER_AUTHORIZATION, "Bearer %s".formatted(sk));
-            builder.header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "disable");
-            builder.header(HttpHeader.HEADER_X_DASHSCOPE_ASYNC, "enable");
-        });
+        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> builder
+                .header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "disable")
+                .header(HttpHeader.HEADER_X_DASHSCOPE_ASYNC, "enable"));
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
 
@@ -219,7 +220,7 @@ public class ApiExecutor {
                             // 失败则取消任务
                             .exceptionallyCompose(ex -> {
 
-                                if(!task.isCancelable()) {
+                                if (!task.isCancelable()) {
                                     return failedFuture(ex);
                                 }
 

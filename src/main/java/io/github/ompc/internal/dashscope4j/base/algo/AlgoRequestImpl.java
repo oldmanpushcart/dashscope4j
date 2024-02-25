@@ -13,13 +13,14 @@ import java.net.http.HttpRequest;
 import java.time.Duration;
 import java.util.function.Function;
 
+import static io.github.ompc.dashscope4j.Constants.LOGGER_NAME;
 import static io.github.ompc.internal.dashscope4j.base.api.http.HttpHeader.ContentType.MIME_APPLICATION_JSON;
 import static io.github.ompc.internal.dashscope4j.base.api.http.HttpHeader.HEADER_CONTENT_TYPE;
 
 public abstract class AlgoRequestImpl<R extends AlgoResponse<?>> implements AlgoRequest<R> {
 
     private final static ObjectMapper mapper = JacksonUtils.mapper();
-    private final static Logger logger = LoggerFactory.getLogger(AlgoRequestImpl.class);
+    private final static Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     private final Model model;
     private final Object input;

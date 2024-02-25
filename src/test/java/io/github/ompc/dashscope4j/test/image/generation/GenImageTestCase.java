@@ -4,6 +4,7 @@ import io.github.ompc.dashscope4j.base.task.Task;
 import io.github.ompc.dashscope4j.image.generation.GenImageModel;
 import io.github.ompc.dashscope4j.image.generation.GenImageOptions;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
+import io.github.ompc.dashscope4j.test.CommonAssertions;
 import io.github.ompc.dashscope4j.test.LoadingEnv;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -11,7 +12,6 @@ import org.junit.jupiter.api.Timeout;
 
 import java.time.Duration;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletionException;
 
 public class GenImageTestCase implements LoadingEnv {
 
@@ -49,15 +49,10 @@ public class GenImageTestCase implements LoadingEnv {
                 .model(GenImageModel.WANX_V1)
                 .prompt("一只五彩斑斓的美女")
                 .build();
-        Assertions.assertThrows(CancellationException.class, () -> {
-            try {
+        CommonAssertions.assertRootThrows(CancellationException.class, () ->
                 client.genImage(request)
                         .task(Task.WaitStrategies.timeout(Duration.ofSeconds(1), Duration.ofSeconds(5)))
-                        .join();
-            } catch (CompletionException ce) {
-                throw ce.getCause();
-            }
-        });
+                        .join());
     }
 
 }

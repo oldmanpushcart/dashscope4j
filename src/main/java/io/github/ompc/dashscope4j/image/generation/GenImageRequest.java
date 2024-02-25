@@ -72,7 +72,7 @@ public interface GenImageRequest extends AlgoRequest<GenImageResponse> {
         @JsonProperty("720*1280")
         S_720_1280,
         @JsonProperty("1280*720")
-        S_1280_720;
+        S_1280_720
     }
 
 }

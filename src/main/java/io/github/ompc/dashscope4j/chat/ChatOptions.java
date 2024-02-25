@@ -27,7 +27,7 @@ public interface ChatOptions extends AlgoOptions {
      * <p>停止词</p>
      * <p>在生成内容即将包含指定的字符串时自动停止，生成内容不包含指定的内容</p>
      */
-    Option.SimpleOpt<String[]> STOP_WORDS = new Option.SimpleOpt<String[]>("stop", String[].class);
+    Option.SimpleOpt<String[]> STOP_WORDS = new Option.SimpleOpt<>("stop", String[].class);
 
     /**
      * TEMPERATURE

@@ -1,4 +1,4 @@
-package io.github.ompc.internal.dashscope4j.util;
+package io.github.ompc.dashscope4j.util;
 
 import java.util.function.Consumer;
 

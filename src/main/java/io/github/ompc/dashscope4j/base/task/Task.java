@@ -39,6 +39,9 @@ public record Task(String id, Status status, Metrics metrics, Timing timing) {
         return status == Status.PENDING;
     }
 
+    /**
+     * 任务状态
+     */
     public enum Status {
         PENDING,
         RUNNING,
