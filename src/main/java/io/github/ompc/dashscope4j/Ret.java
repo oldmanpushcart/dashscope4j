@@ -3,7 +3,7 @@ package io.github.ompc.dashscope4j;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import static io.github.ompc.dashscope4j.internal.util.CommonUtils.isNotBlankString;
+import static io.github.ompc.internal.dashscope4j.util.CommonUtils.isNotBlankString;
 
 /**
  * 应答结果

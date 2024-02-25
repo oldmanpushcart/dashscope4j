@@ -1,7 +1,7 @@
 package io.github.ompc.dashscope4j.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.ompc.dashscope4j.Task;
+import io.github.ompc.dashscope4j.task.Task;
 import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatOptions;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
@@ -60,7 +60,7 @@ public class DebugTestCase implements LoadingEnv {
                 .prompt("画一只猫")
                 .build();
         final var response = client.genImage(request)
-                .task(Task.WaitStrategies.interval(Duration.ofMillis(1000L)))
+                .task(Task.WaitStrategies.perpetual(Duration.ofMillis(1000L)))
                 .join();
         System.out.println(response);
     }

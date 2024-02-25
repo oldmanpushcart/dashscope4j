@@ -6,8 +6,9 @@ import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
 import io.github.ompc.dashscope4j.image.generation.GenImageResponse;
-import io.github.ompc.dashscope4j.internal.DashScopeClientImpl;
-import io.github.ompc.dashscope4j.internal.util.Buildable;
+import io.github.ompc.dashscope4j.task.Task;
+import io.github.ompc.internal.dashscope4j.DashScopeClientImpl;
+import io.github.ompc.internal.dashscope4j.util.Buildable;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;

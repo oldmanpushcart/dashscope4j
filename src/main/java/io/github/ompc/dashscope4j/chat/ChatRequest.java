@@ -3,7 +3,7 @@ package io.github.ompc.dashscope4j.chat;
 import io.github.ompc.dashscope4j.algo.AlgoRequest;
 import io.github.ompc.dashscope4j.chat.message.Content;
 import io.github.ompc.dashscope4j.chat.message.Message;
-import io.github.ompc.dashscope4j.internal.chat.ChatRequestBuilderImpl;
+import io.github.ompc.internal.dashscope4j.chat.ChatRequestBuilderImpl;
 
 import java.util.List;
 
@@ -17,6 +17,7 @@ public interface ChatRequest extends AlgoRequest<ChatResponse> {
      *
      * @param messages 对话消息列表
      */
+    // TODO : 2021/8/3 为什么要用record
     record Input(List<Message> messages) {
 
     }

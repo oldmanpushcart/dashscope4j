@@ -2,7 +2,7 @@ package io.github.ompc.dashscope4j.image.generation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.ompc.dashscope4j.algo.AlgoRequest;
-import io.github.ompc.dashscope4j.internal.image.generation.GenImageRequestBuilder;
+import io.github.ompc.internal.dashscope4j.image.generation.GenImageRequestBuilder;
 
 /**
  * 文生图请求
