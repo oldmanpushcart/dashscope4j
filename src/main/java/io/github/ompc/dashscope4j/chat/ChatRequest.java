@@ -13,20 +13,6 @@ import java.util.List;
 public interface ChatRequest extends AlgoRequest<ChatResponse> {
 
     /**
-     * 对话请求数据
-     */
-    interface Input {
-
-        /**
-         * 获取对话消息列表
-         *
-         * @return 对话消息列表
-         */
-        List<Message> messages();
-
-    }
-
-    /**
      * 构建对话请求
      *
      * @return 对话请求构建器
