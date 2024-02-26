@@ -1,6 +1,7 @@
 package io.github.ompc.internal.dashscope4j.chat;
 
 import io.github.ompc.dashscope4j.chat.ChatModel;
+import io.github.ompc.dashscope4j.chat.ChatPlugin;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.message.Message;
 import io.github.ompc.internal.dashscope4j.base.algo.AlgoRequestBuilderImpl;
@@ -14,7 +15,14 @@ import static java.util.stream.Collectors.toList;
 
 public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, ChatRequest, ChatRequest.Builder> implements ChatRequest.Builder {
 
+    private final List<ChatPlugin> plugins = new ArrayList<>();
     private final List<Message> messages = new ArrayList<>();
+
+    @Override
+    public ChatRequest.Builder plugins(ChatPlugin... plugins) {
+        this.plugins.addAll(List.of(plugins));
+        return this;
+    }
 
     @Override
     public ChatRequest.Builder messages(List<Message> messages) {
@@ -28,7 +36,8 @@ public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, Ch
                 requireNonNull(model()),
                 makeInput(model(), messages),
                 option(),
-                timeout()
+                timeout(),
+                plugins
         );
     }
 

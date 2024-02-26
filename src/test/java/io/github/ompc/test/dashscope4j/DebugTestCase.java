@@ -1,7 +1,5 @@
 package io.github.ompc.test.dashscope4j;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.ompc.dashscope4j.Usage;
 import io.github.ompc.dashscope4j.base.task.Task;
 import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatOptions;
@@ -13,11 +11,13 @@ import io.github.ompc.dashscope4j.image.generation.GenImageModel;
 import io.github.ompc.dashscope4j.image.generation.GenImageOptions;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
 import io.github.ompc.dashscope4j.util.ConsumeFlowSubscriber;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.time.Duration;
 
+@Disabled
 public class DebugTestCase implements LoadingEnv {
 
     @Test
@@ -84,18 +84,7 @@ public class DebugTestCase implements LoadingEnv {
     }
 
     @Test
-    public void test$debug() throws Exception {
-        final var mapper = new ObjectMapper();
-        final var json = """
-                {
-                    "audio": {"measure":1,"weight":2},
-                    "image": {"measure":1,"weight":1},
-                     "text": {"measure":1,"weight":1},
-                    "total_usage":4
-                }
-                """;
-        final var usage = mapper.readValue(json, Usage.class);
-        System.out.println(usage);
+    public void test$debug() {
 
     }
 

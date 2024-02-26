@@ -39,6 +39,11 @@ public class HttpHeader {
     public static final String HEADER_X_DASHSCOPE_CLIENT = "X-DashScope-Client";
 
     /**
+     * HTTP-HEADER: X-DashScope-Plugin
+     */
+    public static final String HEADER_X_DASHSCOPE_PLUGIN = "X-DashScope-Plugin";
+
+    /**
      * HTTP Content-Type
      *
      * @param mime       MIME

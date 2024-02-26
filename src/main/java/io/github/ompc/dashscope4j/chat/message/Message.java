@@ -95,7 +95,13 @@ public interface Message {
          * 用户
          */
         @JsonProperty("user")
-        USER
+        USER,
+
+        /**
+         * 插件
+         */
+        @JsonProperty("plugin")
+        PLUGIN
 
     }
 

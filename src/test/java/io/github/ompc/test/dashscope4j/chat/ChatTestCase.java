@@ -2,6 +2,7 @@ package io.github.ompc.test.dashscope4j.chat;
 
 import io.github.ompc.dashscope4j.base.api.ApiException;
 import io.github.ompc.dashscope4j.chat.ChatModel;
+import io.github.ompc.dashscope4j.chat.ChatPlugin;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.message.Content;
 import io.github.ompc.dashscope4j.chat.message.Message;
@@ -189,6 +190,21 @@ public class ChatTestCase implements LoadingEnv {
             Assertions.assertFalse(ex.ret().code().isBlank());
             Assertions.assertFalse(ex.ret().message().isBlank());
         });
+    }
+
+    @Test
+    public void test$chat$plugin() {
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_PLUS)
+                .plugins(ChatPlugin.CALCULATOR, ChatPlugin.PDF_EXTRACTER)
+                .user("1+2*3-4/5=?")
+                .build();
+        DashScopeAssertions.assertChatRequest(request);
+        final var response= client.chat(request)
+                .async()
+                .join();
+        DashScopeAssertions.assertChatResponse(response);
+        Assertions.assertTrue(response.best().message().text().contains("6.2"));
     }
 
 }

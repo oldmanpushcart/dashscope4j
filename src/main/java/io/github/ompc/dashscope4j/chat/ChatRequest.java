@@ -12,6 +12,8 @@ import java.util.List;
  */
 public interface ChatRequest extends AlgoRequest<ChatResponse> {
 
+    List<ChatPlugin> plugins();
+
     /**
      * 构建对话请求
      *
@@ -25,6 +27,13 @@ public interface ChatRequest extends AlgoRequest<ChatResponse> {
      * 对话请求构建器
      */
     interface Builder extends AlgoRequest.Builder<ChatModel, ChatRequest, Builder> {
+
+        /**
+         * 添加插件
+         * @param plugins 插件
+         * @return 构建器
+         */
+        Builder plugins(ChatPlugin... plugins);
 
         /**
          * 添加消息
