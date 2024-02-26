@@ -1,4 +1,4 @@
-package io.github.ompc.dashscope4j.test;
+package io.github.ompc.test.dashscope4j;
 
 import io.github.ompc.dashscope4j.DashScopeClient;
 

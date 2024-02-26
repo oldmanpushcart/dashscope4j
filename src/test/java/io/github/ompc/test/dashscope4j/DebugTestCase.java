@@ -1,5 +1,7 @@
-package io.github.ompc.dashscope4j.test;
+package io.github.ompc.test.dashscope4j;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.ompc.dashscope4j.Usage;
 import io.github.ompc.dashscope4j.base.task.Task;
 import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatOptions;
@@ -19,7 +21,7 @@ import java.time.Duration;
 public class DebugTestCase implements LoadingEnv {
 
     @Test
-    public void test$debug() {
+    public void test$debug$text() {
 
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
@@ -66,7 +68,7 @@ public class DebugTestCase implements LoadingEnv {
     }
 
     @Test
-    public void test$debug$embedding$request() throws Exception {
+    public void test$debug$embedding$request() {
 
         final var request = EmbeddingRequest.newBuilder()
                 .model(EmbeddingModel.TEXT_EMBEDDING_V2)
@@ -78,6 +80,22 @@ public class DebugTestCase implements LoadingEnv {
                 .join();
 
         System.out.println(response);
+
+    }
+
+    @Test
+    public void test$debug() throws Exception {
+        final var mapper = new ObjectMapper();
+        final var json = """
+                {
+                    "audio": {"measure":1,"weight":2},
+                    "image": {"measure":1,"weight":1},
+                     "text": {"measure":1,"weight":1},
+                    "total_usage":4
+                }
+                """;
+        final var usage = mapper.readValue(json, Usage.class);
+        System.out.println(usage);
 
     }
 

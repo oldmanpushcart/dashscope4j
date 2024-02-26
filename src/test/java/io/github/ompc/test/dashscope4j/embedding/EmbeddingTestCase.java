@@ -1,9 +1,9 @@
-package io.github.ompc.dashscope4j.test.embedding;
+package io.github.ompc.test.dashscope4j.embedding;
 
 import io.github.ompc.dashscope4j.embedding.EmbeddingModel;
 import io.github.ompc.dashscope4j.embedding.EmbeddingRequest;
-import io.github.ompc.dashscope4j.test.DashScopeAssertions;
-import io.github.ompc.dashscope4j.test.LoadingEnv;
+import io.github.ompc.test.dashscope4j.DashScopeAssertions;
+import io.github.ompc.test.dashscope4j.LoadingEnv;
 import org.junit.jupiter.api.Test;
 
 public class EmbeddingTestCase implements LoadingEnv {

@@ -1,4 +1,4 @@
-open module dashscope4j.test {
+open module test.dashscope4j {
 
     requires dashscope4j;
     requires com.fasterxml.jackson.databind;

@@ -1,14 +1,14 @@
-package io.github.ompc.dashscope4j.test.chat;
+package io.github.ompc.test.dashscope4j.chat;
 
 import io.github.ompc.dashscope4j.base.api.ApiException;
 import io.github.ompc.dashscope4j.chat.ChatModel;
 import io.github.ompc.dashscope4j.chat.ChatRequest;
 import io.github.ompc.dashscope4j.chat.message.Content;
 import io.github.ompc.dashscope4j.chat.message.Message;
-import io.github.ompc.dashscope4j.test.CommonAssertions;
-import io.github.ompc.dashscope4j.test.DashScopeAssertions;
-import io.github.ompc.dashscope4j.test.LoadingEnv;
 import io.github.ompc.dashscope4j.util.ConsumeFlowSubscriber;
+import io.github.ompc.test.dashscope4j.CommonAssertions;
+import io.github.ompc.test.dashscope4j.DashScopeAssertions;
+import io.github.ompc.test.dashscope4j.LoadingEnv;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

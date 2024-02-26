@@ -2,6 +2,7 @@ package io.github.ompc.dashscope4j;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -54,10 +55,14 @@ public record Usage(List<Item> items) {
      * @return 用量
      */
     @JsonCreator
-    static Usage of(Map<String, Integer> map) {
-        return new Usage(map.entrySet().stream()
-                .map(e -> new Item(e.getKey(), e.getValue()))
-                .toList());
+    static Usage of(Map<String, Object> map) {
+        final var items = new ArrayList<Item>();
+        map.forEach((k, v) -> {
+            if (v instanceof Number num) {
+                items.add(new Item(k, num.intValue()));
+            }
+        });
+        return new Usage(items);
     }
 
 }

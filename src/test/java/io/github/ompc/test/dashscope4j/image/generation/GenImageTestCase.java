@@ -1,12 +1,12 @@
-package io.github.ompc.dashscope4j.test.image.generation;
+package io.github.ompc.test.dashscope4j.image.generation;
 
 import io.github.ompc.dashscope4j.base.task.Task;
 import io.github.ompc.dashscope4j.image.generation.GenImageModel;
 import io.github.ompc.dashscope4j.image.generation.GenImageOptions;
 import io.github.ompc.dashscope4j.image.generation.GenImageRequest;
-import io.github.ompc.dashscope4j.test.CommonAssertions;
-import io.github.ompc.dashscope4j.test.DashScopeAssertions;
-import io.github.ompc.dashscope4j.test.LoadingEnv;
+import io.github.ompc.test.dashscope4j.CommonAssertions;
+import io.github.ompc.test.dashscope4j.DashScopeAssertions;
+import io.github.ompc.test.dashscope4j.LoadingEnv;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
