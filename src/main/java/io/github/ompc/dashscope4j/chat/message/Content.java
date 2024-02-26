@@ -1,28 +1,38 @@
 package io.github.ompc.dashscope4j.chat.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
+import io.github.ompc.internal.dashscope4j.chat.message.ContentImpl;
 
 import java.net.URI;
-import java.util.Map;
 
 /**
  * 内容
  *
- * @param type 类型
- * @param data 数据
- * @param <T>  内容类型
+ * @param <T> 内容类型
  */
-public record Content<T>(Type type, T data) {
+public interface Content<T> {
+
+    /**
+     * 类型
+     *
+     * @return 类型
+     */
+    Type type();
+
+    /**
+     * 数据
+     *
+     * @return 数据
+     */
+    T data();
 
     /**
      * 是否为文本
      *
      * @return TRUE | FALSE
      */
-    public boolean isText() {
-        return type == Type.TEXT;
+    default boolean isText() {
+        return type() == Type.TEXT;
     }
 
     /**
@@ -30,8 +40,8 @@ public record Content<T>(Type type, T data) {
      *
      * @return TRUE | FALSE
      */
-    public boolean isImage() {
-        return type == Type.IMAGE;
+    default boolean isImage() {
+        return type() == Type.IMAGE;
     }
 
     /**
@@ -39,37 +49,8 @@ public record Content<T>(Type type, T data) {
      *
      * @return TRUE | FALSE
      */
-    public boolean isAudio() {
-        return type == Type.AUDIO;
-    }
-
-    /**
-     * 序列化为 {@code {"<TYPE>":"<DATA>"}} 格式
-     *
-     * @return Json Object Map
-     */
-    @JsonValue
-    Map<Type, T> extract() {
-        return Map.of(type, data());
-    }
-
-    /**
-     * 反序列化
-     *
-     * @param map Json Object Map
-     * @return 内容
-     */
-    @JsonCreator
-    static Content<?> of(Map<String, String> map) {
-        return map.entrySet().stream()
-                .map(entry -> switch (entry.getKey()) {
-                    case "text" -> ofText(entry.getValue());
-                    case "image" -> ofImage(URI.create(entry.getValue()));
-                    case "audio" -> ofAudio(URI.create(entry.getValue()));
-                    default -> throw new IllegalArgumentException("Unknown content-type: %s".formatted(entry.getKey()));
-                })
-                .findFirst()
-                .orElse(null);
+    default boolean isAudio() {
+        return type() == Type.AUDIO;
     }
 
     /**
@@ -78,8 +59,8 @@ public record Content<T>(Type type, T data) {
      * @param text 文本
      * @return 文本内容
      */
-    public static Content<String> ofText(String text) {
-        return new Content<>(Type.TEXT, text);
+    static Content<String> ofText(String text) {
+        return new ContentImpl<>(Type.TEXT, text);
     }
 
     /**
@@ -88,8 +69,8 @@ public record Content<T>(Type type, T data) {
      * @param uri 图像地址
      * @return 图像内容
      */
-    public static Content<URI> ofImage(URI uri) {
-        return new Content<>(Type.IMAGE, uri);
+    static Content<URI> ofImage(URI uri) {
+        return new ContentImpl<>(Type.IMAGE, uri);
     }
 
     /**
@@ -98,14 +79,14 @@ public record Content<T>(Type type, T data) {
      * @param uri 音频地址
      * @return 音频内容
      */
-    public static Content<URI> ofAudio(URI uri) {
-        return new Content<>(Type.AUDIO, uri);
+    static Content<URI> ofAudio(URI uri) {
+        return new ContentImpl<>(Type.AUDIO, uri);
     }
 
     /**
      * 类型
      */
-    public enum Type {
+    enum Type {
 
         /**
          * 文本

@@ -10,6 +10,7 @@ import io.github.ompc.dashscope4j.Ret;
 import io.github.ompc.dashscope4j.Usage;
 import io.github.ompc.dashscope4j.chat.ChatResponse;
 import io.github.ompc.dashscope4j.chat.message.Message;
+import io.github.ompc.internal.dashscope4j.chat.message.MessageImpl;
 
 import java.io.IOException;
 import java.util.List;
@@ -74,7 +75,7 @@ record ChatResponseImpl(String uuid, Ret ret, Usage usage, Output output, Choice
                 @JsonProperty("finish_reason")
                 Finish finish,
                 @JsonProperty("message")
-                Message message
+                MessageImpl message
         ) {
             return new ChoiceImpl(finish, message);
         }
