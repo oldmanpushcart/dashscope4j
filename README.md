@@ -1,13 +1,13 @@
-# Dashscope4j：灵积的Java客户端
+# DashScope4j：灵积的Java客户端
 
-`Dashscope4j`是一个开源的灵积非官方Java客户端，基于`JDK17`
+`DashScope4j`是一个开源的灵积非官方Java客户端，基于`JDK17`
 构建。它旨在提供一个功能丰富、易于集成和使用的Java库，以便开发者能够通灵积API轻松实现多模态对话、续向量嵌入和图像处理等功能。
 
-> 请注意：在使用`dashscope4j`时，你需要遵守灵积API的使用条款和条件。
+> 请注意：在使用`DashScope4j`时，你需要遵守灵积API的使用条款和条件。
 
 ## 一、主要功能
 
-`dashscope4j`支持以下API功能：
+`DashScope4j`支持以下API功能：
 
 - **对话（Chat）**
     - 提供用户与灵积进行多模态(图、文)对话。
@@ -199,7 +199,7 @@ final var response = client.genImage(request)
 
 ## 五、参与贡献
 
-如果你对`dashscope4j`感兴趣并希望为其做出贡献，请遵循以下步骤：
+如果你对`DashScope4j`感兴趣并希望为其做出贡献，请遵循以下步骤：
 
 1. Fork本项目到你的GitHub账户。
 2. 克隆项目到你的本地环境。
@@ -224,7 +224,7 @@ final var response = client.genImage(request)
 
 ### 写在最后
 
-灵积是有官方的Java客户端的，我之所以还需要开发这个`dashscope4j`主要是基于以下几点考虑
+灵积是有官方的Java客户端的，我之所以还需要开发这个`DashScope4j`主要是基于以下几点考虑
 
 1. 官方的SDK并不开源，你无法查看其源码，也无法自行修改和定制
 2. 个人练手习惯，反正也不花我多少时间，嗯嗯
