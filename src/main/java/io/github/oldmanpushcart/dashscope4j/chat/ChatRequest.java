@@ -12,6 +12,11 @@ import java.util.List;
  */
 public interface ChatRequest extends AlgoRequest<ChatResponse> {
 
+    /**
+     * 获取插件列表
+     *
+     * @return 插件列表
+     */
     List<ChatPlugin> plugins();
 
     /**
@@ -30,6 +35,7 @@ public interface ChatRequest extends AlgoRequest<ChatResponse> {
 
         /**
          * 添加插件
+         *
          * @param plugins 插件
          * @return 构建器
          */

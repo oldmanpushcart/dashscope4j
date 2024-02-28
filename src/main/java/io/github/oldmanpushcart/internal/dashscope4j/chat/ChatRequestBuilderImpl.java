@@ -10,8 +10,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
 
 public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, ChatRequest, ChatRequest.Builder> implements ChatRequest.Builder {
 
@@ -37,14 +37,14 @@ public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, Ch
                 makeInput(model(), messages),
                 option(),
                 timeout(),
-                plugins
+                unmodifiableList(plugins)
         );
     }
 
     private static Object makeInput(ChatModel model, List<Message> messages) {
         return new HashMap<>() {{
             put("messages", switch (model.mode()) {
-                case MULTIMODAL -> messages;
+                case MULTIMODAL -> unmodifiableList(messages);
                 case TEXT -> messages.stream()
                         .map(message -> {
                             final var item = new HashMap<>();
@@ -52,7 +52,7 @@ public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, Ch
                             item.put("content", message.text());
                             return item;
                         })
-                        .collect(toList());
+                        .toList();
             });
         }};
     }
