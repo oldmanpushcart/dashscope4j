@@ -100,6 +100,7 @@ System.out.println(response.best().message().text());
 // 创建请求
 final var request = ChatRequest.newBuilder()
     .model(ChatModel.QWEN_VL_MAX)
+    .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
     .user(
             Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
             Content.ofText("图片中一共多少辆自行车?")
@@ -112,29 +113,35 @@ final var publisher = client.chat(request)
     .join();
 
 // 应答输出（流式）
+final var latch = new CountDownLatch(1);
+final var output = new StringBuilder();
 publisher.subscribe(new Flow.Subscriber<>(){
 
     @Override
     public void onSubscribe(Flow.Subscription subscription) {
-      subscription.request(Long.MAX_VALUE);
+        subscription.request(Long.MAX_VALUE);
     }
     
     @Override
     public void onNext(ChatResponse response) {
-      System.out.println(response.best().message().text());
+        output.append(response.best().message().text());
     }
     
     @Override
     public void onError(Throwable ex) {
-      ex.printStackTrace(System.err);
+        ex.printStackTrace(System.err);
     }
     
     @Override
     public void onComplete() {
-      System.out.println("Complete");
+        latch.countDown();
     }
 
 });
+
+// 等待处理完成
+latch.await();
+System.out.println(output);
 ```
 
 输出日志
