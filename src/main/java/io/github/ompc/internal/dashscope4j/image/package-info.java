@@ -1,1 +1,0 @@
-package io.github.ompc.internal.dashscope4j.image;
