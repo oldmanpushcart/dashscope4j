@@ -85,7 +85,17 @@ public class DebugTestCase implements LoadingEnv {
 
     @Test
     public void test$debug() {
-
+        final var request = GenImageRequest.newBuilder()
+                .model(GenImageModel.WANX_V1)
+                .option(GenImageOptions.NUMBER, 1)
+                .option(GenImageOptions.STYLE, GenImageRequest.Style.ANIME)
+                .prompt("画古风美少女，黑发，面容白皙精致，发饰精美")
+                .build();
+        final var response = client.genImage(request)
+                .task(Task.WaitStrategies.perpetual(Duration.ofSeconds(1L)))
+                .join();
+        System.out.println(response);
+        response.output().results().get(0);
     }
 
 }

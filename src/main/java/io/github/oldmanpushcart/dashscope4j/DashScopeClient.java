@@ -68,12 +68,12 @@ public interface DashScopeClient {
     interface Builder extends Buildable<DashScopeClient, Builder> {
 
         /**
-         * 设置SK
+         * 设置AK
          *
-         * @param sk SK
+         * @param ak AK
          * @return this
          */
-        Builder sk(String sk);
+        Builder ak(String ak);
 
         /**
          * 设置线程池

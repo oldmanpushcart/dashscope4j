@@ -7,12 +7,12 @@ import java.util.concurrent.Executors;
 
 public interface LoadingEnv {
 
-    String SK = System.getenv("DASHSCOPE_SK");
+    String AK = System.getenv("DASHSCOPE_AK");
 
     ExecutorService executor = Executors.newFixedThreadPool(10);
 
     DashScopeClient client = DashScopeClient.newBuilder()
-            .sk(SK)
+            .ak(AK)
             .executor(executor)
             .build();
 

@@ -60,7 +60,7 @@ public class TransformFlowProcessor<T, R> implements Flow.Processor<T, R> {
                 final var count = gearbox.polling(n, subscriber::onNext);
 
                 // 变速箱中的数据就已经满足订阅端的需求，则直接返回
-                if (count == n) {
+                if (count > 0 && count == n) {
                     return;
                 }
 
@@ -98,13 +98,18 @@ public class TransformFlowProcessor<T, R> implements Flow.Processor<T, R> {
         // 转换结果先存储到队列中
         transformer.apply(item).forEach(gearbox::offer);
 
-        // 如果队列中有数据，则直接消耗队列中的数据
-        if (gearbox.polling(1L, subscriberRef.get()::onNext) == 1L) {
-            return;
-        }
+        // 消费队列中的数据，直到变速箱限速
+        while (!gearbox.isLimit()) {
 
-        // 队列中没有数据，则继续向[订阅端]申请数据
-        subscriptionRef.get().request(1);
+            // 如果队列中有数据，则直接消耗队列中的数据
+            if (gearbox.polling(1L, subscriberRef.get()::onNext) == 0L) {
+                return;
+            }
+
+            // 队列中没有数据，则继续向[订阅端]申请数据
+            subscriptionRef.get().request(1);
+
+        }
 
     }
 

@@ -4,7 +4,7 @@
     <groupId>io.github.oldmanpushcart</groupId>
     <artifactId>dashscope4j</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <name>dashscope4j ${project.version}</name>
 
     <description>Java library for DashScope</description>
@@ -52,9 +52,10 @@
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central-oldmanpushcart@gmail.com</publishingServerId>
+                            <deploymentName>Deployment-${project.name}</deploymentName>
                             <tokenAuth>true</tokenAuth>
-                            <autoPublish>true</autoPublish>
-                            <waitUntil>published</waitUntil>
+                            <autoPublish>false</autoPublish>
+                            <waitUntil>validated</waitUntil>
                         </configuration>
                     </plugin>
                     <plugin>
@@ -73,18 +74,6 @@
                     </plugin>
                 </plugins>
             </build>
-
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>ossrh</id>
-                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
-                <repository>
-                    <id>ossrh</id>
-                    <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-            </distributionManagement>
-
         </profile>
 
     </profiles>

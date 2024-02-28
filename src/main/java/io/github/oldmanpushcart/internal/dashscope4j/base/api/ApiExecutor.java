@@ -44,19 +44,19 @@ public class ApiExecutor {
     private static final String CLIENT_INFO = "dashscope4j/%s".formatted(Constants.VERSION);
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
-    private final String sk;
+    private final String ak;
     private final HttpClient http;
     private final Executor executor;
 
     /**
      * 构造API执行器
      *
-     * @param sk       SK
+     * @param ak       AK
      * @param http     HTTP客户端
      * @param executor 线程池
      */
-    public ApiExecutor(String sk, HttpClient http, Executor executor) {
-        this.sk = sk;
+    public ApiExecutor(String ak, HttpClient http, Executor executor) {
+        this.ak = ak;
         this.http = http;
         this.executor = executor;
     }
@@ -64,7 +64,7 @@ public class ApiExecutor {
     // 委派API请求
     private HttpRequest delegateHttpRequest(HttpRequest request, Consumer<HttpRequest.Builder> consumer) {
         final var builder = HttpRequest.newBuilder(request, (k, v) -> true)
-                .header(HEADER_AUTHORIZATION, "Bearer %s".formatted(sk))
+                .header(HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
                 .headers(HEADER_X_DASHSCOPE_CLIENT, CLIENT_INFO);
         consumer.accept(builder);
         return builder.build();

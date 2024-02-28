@@ -31,7 +31,7 @@ public class DashScopeClientImpl implements DashScopeClient {
 
     public DashScopeClientImpl(Builder builder) {
         this.apiExecutor = new ApiExecutor(
-                requireNonBlankString(builder.sk),
+                requireNonBlankString(builder.ak),
                 newHttpClient(builder),
                 requireNonNull(builder.executor)
         );
@@ -96,13 +96,13 @@ public class DashScopeClientImpl implements DashScopeClient {
      */
     public static class Builder implements DashScopeClient.Builder {
 
-        private String sk;
+        private String ak;
         private Executor executor;
         private Duration connectTimeout;
 
         @Override
-        public DashScopeClient.Builder sk(String sk) {
-            this.sk = requireNonBlankString(sk);
+        public DashScopeClient.Builder ak(String ak) {
+            this.ak = requireNonBlankString(ak);
             return this;
         }
 
