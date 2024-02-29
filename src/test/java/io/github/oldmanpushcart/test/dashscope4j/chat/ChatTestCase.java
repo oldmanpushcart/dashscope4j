@@ -70,7 +70,7 @@ public class ChatTestCase implements LoadingEnv {
         // ASYNC
         {
             final var response = client.chat(request).async().join();
-            Assertions.assertTrue(response.best().message().text().contains("23"));
+            Assertions.assertTrue(response.output().best().message().text().contains("23"));
             DashScopeAssertions.assertChatResponse(response);
         }
 
@@ -79,7 +79,7 @@ public class ChatTestCase implements LoadingEnv {
             final var stringRef = new AtomicReference<String>();
             client.chat(request).flow()
                     .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
-                        stringRef.set(r.best().message().text());
+                        stringRef.set(r.output().best().message().text());
                         DashScopeAssertions.assertChatResponse(r);
                     }))
                     .join();
@@ -111,7 +111,7 @@ public class ChatTestCase implements LoadingEnv {
         // ASYNC
         {
             final var response = client.chat(request).async().join();
-            final var text = response.best().message().text();
+            final var text = response.output().best().message().text();
             Assertions.assertTrue(text.contains("2") || text.contains("两辆"));
             DashScopeAssertions.assertChatResponse(response);
         }
@@ -122,7 +122,7 @@ public class ChatTestCase implements LoadingEnv {
 
             client.chat(request).flow()
                     .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
-                        stringRef.set(r.best().message().text());
+                        stringRef.set(r.output().best().message().text());
                         DashScopeAssertions.assertChatResponse(r);
                     }))
                     .join();
@@ -156,7 +156,7 @@ public class ChatTestCase implements LoadingEnv {
         {
             final var response = client.chat(request).async().join();
             DashScopeAssertions.assertChatResponse(response);
-            Assertions.assertTrue(response.best().message().text().contains("男"));
+            Assertions.assertTrue(response.output().best().message().text().contains("男"));
         }
 
         // FLOW
@@ -165,7 +165,7 @@ public class ChatTestCase implements LoadingEnv {
 
             client.chat(request).flow()
                     .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
-                        stringRef.set(r.best().message().text());
+                        stringRef.set(r.output().best().message().text());
                         DashScopeAssertions.assertChatResponse(r);
                     }))
                     .join();
@@ -204,7 +204,7 @@ public class ChatTestCase implements LoadingEnv {
                 .async()
                 .join();
         DashScopeAssertions.assertChatResponse(response);
-        Assertions.assertTrue(response.best().message().text().contains("6.2"));
+        Assertions.assertTrue(response.output().best().message().text().contains("6.2"));
     }
 
 }

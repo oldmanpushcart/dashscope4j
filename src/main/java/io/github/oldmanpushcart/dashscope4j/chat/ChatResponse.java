@@ -13,14 +13,6 @@ import java.util.List;
 public interface ChatResponse extends AlgoResponse<ChatResponse.Output> {
 
     /**
-     * 获取最好的选择
-     * <p>如果返回的{@link Choice}集合为空，则返回null</p>
-     *
-     * @return 最好的选择
-     */
-    Choice best();
-
-    /**
      * 对话应答数据
      */
     interface Output extends ApiResponse.Output {
@@ -31,6 +23,14 @@ public interface ChatResponse extends AlgoResponse<ChatResponse.Output> {
          * @return 应答选择
          */
         List<Choice> choices();
+
+        /**
+         * 获取最好的选择
+         * <p>如果返回的{@link Choice}集合为空，则返回null</p>
+         *
+         * @return 最好的选择
+         */
+        Choice best();
 
     }
 

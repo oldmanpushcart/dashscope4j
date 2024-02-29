@@ -45,7 +45,7 @@ public class DebugTestCase implements LoadingEnv {
         {
             client.chat(request).flow()
                     .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
-                        System.out.println(r.best().message().text());
+                        System.out.println(r.output().best().message().text());
                         DashScopeAssertions.assertChatResponse(r);
                     }))
                     .join();

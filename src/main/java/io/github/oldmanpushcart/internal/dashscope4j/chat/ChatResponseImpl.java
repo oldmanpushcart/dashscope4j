@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-record ChatResponseImpl(String uuid, Ret ret, Usage usage, Output output, Choice best) implements ChatResponse {
+record ChatResponseImpl(String uuid, Ret ret, Usage usage, Output output) implements ChatResponse {
 
     @JsonCreator
     static ChatResponseImpl of(
@@ -31,18 +31,18 @@ record ChatResponseImpl(String uuid, Ret ret, Usage usage, Output output, Choice
             @JsonProperty("output")
             OutputImpl output
     ) {
-
-        // 获取最好的选择
-        final var best = Optional.ofNullable(output)
-                .map(Output::choices)
-                .flatMap(choices -> choices.stream().sorted().findFirst())
-                .orElse(null);
-
-        return new ChatResponseImpl(uuid, Ret.of(code, message), usage, output, best);
+        return new ChatResponseImpl(uuid, Ret.of(code, message), usage, output);
     }
 
     @JsonDeserialize(using = OutputImpl.DataJsonDeserializer.class)
     public record OutputImpl(List<Choice> choices) implements ChatResponse.Output {
+
+        @Override
+        public Choice best() {
+            return Optional.ofNullable(choices)
+                    .flatMap(choices -> choices.stream().sorted().findFirst())
+                    .orElse(null);
+        }
 
         static class DataJsonDeserializer extends JsonDeserializer<Output> {
 
