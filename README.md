@@ -33,7 +33,7 @@
 
 ## 三、跑通测试
 
-1. 到阿里云的[模型服务-灵积](https://dashscope.console.aliyun.com/)中开通服务，获取`SK`
+1. 到阿里云的[模型服务-灵积](https://dashscope.console.aliyun.com/)中开通服务，获取`AK`
 2. 到[API-KEY管理]()中创建一个`API-KEY`，获取其`AK`
 3. 声明环境变量`export DASHSCOPE_AK=<YOUR APP-KEY>`
 4. 运行测试用例：`mvn test`
