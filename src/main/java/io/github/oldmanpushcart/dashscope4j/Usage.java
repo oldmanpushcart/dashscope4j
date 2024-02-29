@@ -9,6 +9,8 @@ import java.util.function.Predicate;
 
 /**
  * 用量
+ *
+ * @param items 项目列表
  */
 public record Usage(List<Item> items) {
 

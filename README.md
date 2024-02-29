@@ -1,7 +1,9 @@
 # DashScope4j：灵积的Java客户端
+![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)
+![JDK17+](https://img.shields.io/badge/JDK-17+-blue.svg)
+![LLM-通义千问](https://img.shields.io/badge/LLM-%E9%80%9A%E4%B9%89%E5%8D%83%E9%97%AE-blue.svg)
 
-`DashScope4j`是一个开源的灵积非官方Java客户端，基于`JDK17`
-构建。它旨在提供一个功能丰富、易于集成和使用的Java库，以便开发者能够通灵积API轻松实现多模态对话、向量嵌入和图像处理等功能。
+`DashScope4j`是一个开源的灵积非官方Java客户端，基于`JDK17`构建。它旨在提供一个功能丰富、易于集成和使用的Java库，以便开发者能够通灵积API轻松实现多模态对话、向量嵌入和图像处理等功能。
 
 > 请注意：在使用`DashScope4j`时，你需要遵守灵积API的使用条款和条件。
 
@@ -20,7 +22,7 @@
     - **文生图：** 将文本描述转换为相应的图像。
 
 - **插件应用（Plugin）**
-    - **OCR插件：** 图片理解识别，并对图片内容进行总结概述，输出用户可理解的句子或段落。
+    - **OCR插件：** 图像理解识别，并对图像内容进行总结概述，输出用户可理解的句子或段落。
     - **PDF解析插件：** 对PDF文件进行解析，提取、理解文本内容。
     - **计算器插件：** 对用户输入的数学表达式进行计算。
     - **文生图插件：** 将文本描述转换为相应的图像。
@@ -46,7 +48,7 @@
 <dependency>
     <groupId>io.github.oldmanpushcart</groupId>
     <artifactId>dashscope4j</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 
@@ -56,13 +58,13 @@
 ```java
 
 // 线程池
-ExecutorService executor = Executors.newFixedThreadPool(10);
+final var executor = Executors.newFixedThreadPool(10);
 
 // 创建客户端
-DashScopeClient client = DashScopeClient.newBuilder()
-        .ak("<YOUR APP-KEY>")
-        .executor(executor)
-        .build();
+final var client = DashScopeClient.newBuilder()
+    .ak("<YOUR APP-KEY>")
+    .executor(executor)
+    .build();
 ```
 
 #### 对话示例（异步）
@@ -70,20 +72,20 @@ DashScopeClient client = DashScopeClient.newBuilder()
 ```java
 // 创建请求
 final var request = ChatRequest.newBuilder()
-        .model(ChatModel.QWEN_VL_MAX)
-        .user(
-                Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
-                Content.ofText("图片中一共多少辆自行车?")
-        )
-        .build();
+    .model(ChatModel.QWEN_VL_MAX)
+    .user(
+            Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
+            Content.ofText("图片中一共多少辆自行车?")
+    )
+    .build();
 
 // 异步应答
 final var response = client.chat(request)
-        .async()
-        .join();
+    .async()
+    .join();
 
 // 输出结果（异步）
-System.out.println(response.best().message().text());
+System.out.println(response.output().best().message().text());
 ```
 
 输出日志
@@ -114,7 +116,7 @@ final var publisher = client.chat(request)
 
 // 应答输出（流式）
 final var latch = new CountDownLatch(1);
-final var output = new StringBuilder();
+final var stringSB = new StringBuilder();
 publisher.subscribe(new Flow.Subscriber<>(){
 
     @Override
@@ -124,7 +126,7 @@ publisher.subscribe(new Flow.Subscriber<>(){
     
     @Override
     public void onNext(ChatResponse response) {
-        output.append(response.best().message().text());
+        stringSB.append(response.output().best().message().text());
     }
     
     @Override
@@ -141,7 +143,7 @@ publisher.subscribe(new Flow.Subscriber<>(){
 
 // 等待处理完成
 latch.await();
-System.out.println(output);
+System.out.println(stringSB);
 ```
 
 输出日志
