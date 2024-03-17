@@ -24,17 +24,10 @@ public class EmbeddingRequestBuilderImpl extends AlgoRequestBuilderImpl<Embeddin
     public EmbeddingRequest build() {
         return new EmbeddingRequestImpl(
                 requireNonNull(model()),
-                new Input(documents),
                 option(),
-                timeout()
+                timeout(),
+                documents
         );
-    }
-
-    private record Input(
-            @JsonProperty("texts")
-            List<String> documents
-    ) {
-
     }
 
 }

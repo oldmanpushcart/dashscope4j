@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.internal.dashscope4j.image.generation;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageModel;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestBuilderImpl;
@@ -30,19 +29,11 @@ public class GenImageRequestBuilder
     public GenImageRequest build() {
         return new GenImageRequestImpl(
                 requireNonNull(model()),
-                new Input(prompt, negative),
                 option(),
-                timeout()
+                timeout(),
+                prompt,
+                negative
         );
-    }
-
-    private record Input(
-            @JsonProperty("prompt")
-            String prompt,
-            @JsonProperty("negative_prompt")
-            String negative
-    ) {
-
     }
 
 }
