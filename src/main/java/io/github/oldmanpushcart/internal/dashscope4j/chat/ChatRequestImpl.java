@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.internal.dashscope4j.chat;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatPlugin;
@@ -24,11 +25,18 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
     private final List<FunctionTool> functionTools;
 
     ChatRequestImpl(ChatModel model, Option option, Duration timeout, List<Message> messages, List<ChatPlugin> plugins, List<ChatFunction<?, ?>> functions) {
-        super(model, messages, option, timeout, ChatResponseImpl.class);
+        super(model, new Input(messages), option, timeout, ChatResponseImpl.class);
         this.plugins = plugins;
         this.functionTools = functions.stream()
                 .map(FunctionTool::of)
                 .toList();
+    }
+
+    private record Input(
+            @JsonProperty("messages")
+            List<Message> messages
+    ) {
+
     }
 
     @Override
