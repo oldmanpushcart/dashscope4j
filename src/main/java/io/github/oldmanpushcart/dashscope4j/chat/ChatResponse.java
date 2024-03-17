@@ -46,10 +46,17 @@ public interface ChatResponse extends AlgoResponse<ChatResponse.Output> {
         NORMAL(0),
 
         /**
+         * 工具调用
+         * @since 1.2.0
+         */
+        @JsonProperty("tool_calls")
+        TOOL_CALLS(1),
+
+        /**
          * 截断结束
          */
         @JsonProperty("length")
-        OVERFLOW(1),
+        OVERFLOW(2),
 
         /**
          * 尚未结束

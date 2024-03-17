@@ -101,7 +101,14 @@ public interface Message {
          * 插件
          */
         @JsonProperty("plugin")
-        PLUGIN
+        PLUGIN,
+
+        /**
+         * 工具
+         * @since 1.2.0
+         */
+        @JsonProperty("tool")
+        TOOL
 
     }
 

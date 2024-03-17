@@ -88,6 +88,7 @@ public class DebugTestCase implements LoadingEnv {
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_MAX)
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .option("result_format", "message")
                 .user("你好呀!")
                 .build();
         client.chat(request).flow()
