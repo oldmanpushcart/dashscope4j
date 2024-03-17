@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.algo;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
@@ -19,7 +19,6 @@ import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHe
 
 public abstract class AlgoRequestImpl<R extends AlgoResponse<?>> implements AlgoRequest<R> {
 
-    private final static ObjectMapper mapper = JacksonUtils.mapper();
     private final static Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     private final Model model;
@@ -38,7 +37,7 @@ public abstract class AlgoRequestImpl<R extends AlgoResponse<?>> implements Algo
 
     @Override
     public HttpRequest newHttpRequest() {
-        final var body = JacksonUtils.toJson(mapper, this);
+        final var body = JacksonUtils.toJson(this);
         logger.debug("{}/{} => {}", this, model().name(), body);
         return HttpRequest.newBuilder()
                 .uri(model().remote())
@@ -51,20 +50,23 @@ public abstract class AlgoRequestImpl<R extends AlgoResponse<?>> implements Algo
     public Function<String, R> responseDeserializer() {
         return body -> {
             logger.debug("{}/{} <= {}", this, model().name(), body);
-            return JacksonUtils.toObject(mapper, body, responseType);
+            return JacksonUtils.toObject(body, responseType);
         };
     }
 
+    @JsonProperty("model")
     @Override
     public Model model() {
         return model;
     }
 
+    @JsonProperty("input")
     @Override
     public Object input() {
         return input;
     }
 
+    @JsonProperty("parameters")
     @Override
     public Option option() {
         return option;

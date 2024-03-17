@@ -13,13 +13,6 @@ import java.util.List;
 public interface ChatRequest extends AlgoRequest<ChatResponse> {
 
     /**
-     * 获取插件列表
-     *
-     * @return 插件列表
-     */
-    List<ChatPlugin> plugins();
-
-    /**
      * 构建对话请求
      *
      * @return 对话请求构建器

@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.task;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiRequestBuilderImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
@@ -20,7 +19,6 @@ import static java.util.Objects.requireNonNull;
  */
 public record TaskCancelRequest(String taskId, Duration timeout) implements ApiRequest<TaskCancelResponse> {
 
-    private static final ObjectMapper mapper = JacksonUtils.mapper();
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     @Override
@@ -36,7 +34,7 @@ public record TaskCancelRequest(String taskId, Duration timeout) implements ApiR
     public Function<String, TaskCancelResponse> responseDeserializer() {
         return body -> {
             logger.debug("dashscope://task/cancel <= {}", body);
-            return JacksonUtils.toObject(mapper, body, TaskCancelResponse.class);
+            return JacksonUtils.toObject(body, TaskCancelResponse.class);
         };
     }
 

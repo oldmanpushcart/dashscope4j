@@ -14,6 +14,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.chat.message.MessageImpl;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 record ChatResponseImpl(String uuid, Ret ret, Usage usage, Output output) implements ChatResponse {
@@ -75,9 +76,15 @@ record ChatResponseImpl(String uuid, Ret ret, Usage usage, Output output) implem
                 @JsonProperty("finish_reason")
                 Finish finish,
                 @JsonProperty("message")
-                MessageImpl message
+                MessageImpl message,
+                @JsonProperty("messages")
+                MessageImpl[] messages
         ) {
-            return new ChoiceImpl(finish, message);
+            if (Objects.nonNull(messages)) {
+                return new ChoiceImpl(finish, messages[messages.length - 1]);
+            } else {
+                return new ChoiceImpl(finish, message);
+            }
         }
 
     }

@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.base.algo;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
@@ -15,7 +14,6 @@ public interface AlgoRequest<R extends AlgoResponse<?>> extends ApiRequest<R> {
      *
      * @return 模型
      */
-    @JsonProperty("model")
     Model model();
 
     /**
@@ -23,7 +21,6 @@ public interface AlgoRequest<R extends AlgoResponse<?>> extends ApiRequest<R> {
      *
      * @return 输入
      */
-    @JsonProperty("input")
     Object input();
 
     /**
@@ -31,7 +28,6 @@ public interface AlgoRequest<R extends AlgoResponse<?>> extends ApiRequest<R> {
      *
      * @return 选项
      */
-    @JsonProperty("parameters")
     Option option();
 
     /**

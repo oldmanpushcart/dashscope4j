@@ -33,15 +33,14 @@ public record ContentImpl<T>(Type type, T data) implements Content<T> {
      * @return 内容
      */
     @JsonCreator
-    static ContentImpl<?> of(Map<String, String> map) {
+    static ContentImpl<?> of(Map<Type, String> map) {
         return map.entrySet().stream()
                 .map(entry -> switch (entry.getKey()) {
-                    case "text" -> new ContentImpl<>(Type.TEXT, entry.getValue());
-                    case "image" -> new ContentImpl<>(Type.IMAGE, URI.create(entry.getValue()));
-                    case "audio" -> new ContentImpl<>(Type.AUDIO, URI.create(entry.getValue()));
-                    case "video" -> new ContentImpl<>(Type.VIDEO, URI.create(entry.getValue()));
-                    case "file" -> new ContentImpl<>(Type.FILE, URI.create(entry.getValue()));
-                    default -> throw new IllegalArgumentException("Unknown content-type: %s".formatted(entry.getKey()));
+                    case TEXT -> new ContentImpl<>(Type.TEXT, entry.getValue());
+                    case IMAGE -> new ContentImpl<>(Type.IMAGE, URI.create(entry.getValue()));
+                    case AUDIO -> new ContentImpl<>(Type.AUDIO, URI.create(entry.getValue()));
+                    case VIDEO -> new ContentImpl<>(Type.VIDEO, URI.create(entry.getValue()));
+                    case FILE -> new ContentImpl<>(Type.FILE, URI.create(entry.getValue()));
                 })
                 .findFirst()
                 .orElse(null);

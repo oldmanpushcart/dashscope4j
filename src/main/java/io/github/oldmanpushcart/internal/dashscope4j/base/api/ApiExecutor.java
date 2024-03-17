@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.oldmanpushcart.dashscope4j.Constants;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
@@ -40,7 +39,6 @@ import static java.util.function.Function.identity;
  */
 public class ApiExecutor {
 
-    private static final ObjectMapper mapper = JacksonUtils.mapper();
     private static final String CLIENT_INFO = "dashscope4j/%s".formatted(Constants.VERSION);
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
@@ -159,7 +157,7 @@ public class ApiExecutor {
 
                 // 解析HTTP响应为任务半应答
                 .thenApply(httpResponse -> {
-                    final TaskHalfResponse response = JacksonUtils.toObject(mapper, httpResponse.body(), TaskHalfResponse.class);
+                    final TaskHalfResponse response = JacksonUtils.toObject(httpResponse.body(), TaskHalfResponse.class);
                     if (!response.ret().isSuccess()) {
                         throw new ApiException(httpResponse.statusCode(), response);
                     }

@@ -15,24 +15,14 @@ public class JacksonUtils {
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     /**
-     * 获取一个新的mapper
-     *
-     * @return mapper
-     */
-    public static ObjectMapper mapper() {
-        return mapper.copy();
-    }
-
-    /**
      * {@code json -> T}
      *
-     * @param mapper mapper
      * @param json   json
      * @param type   对象类型
      * @param <T>    对象类型
      * @return 目标对象
      */
-    public static <T> T toObject(ObjectMapper mapper, String json, Class<T> type) {
+    public static <T> T toObject(String json, Class<T> type) {
         try {
             return mapper.readValue(json, type);
         } catch (JsonProcessingException cause) {
@@ -42,12 +32,10 @@ public class JacksonUtils {
 
     /**
      * {@code object -> json}
-     *
-     * @param mapper mapper
      * @param object 目标对象
      * @return json
      */
-    public static String toJson(ObjectMapper mapper, Object object) {
+    public static String toJson(Object object) {
         try {
             return mapper.writer().writeValueAsString(object);
         } catch (JsonProcessingException cause) {

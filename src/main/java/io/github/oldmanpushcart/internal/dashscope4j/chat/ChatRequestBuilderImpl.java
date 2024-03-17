@@ -7,7 +7,6 @@ import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestBuilderImpl;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import static java.util.Collections.unmodifiableList;
@@ -34,27 +33,13 @@ public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, Ch
     public ChatRequest build() {
         return new ChatRequestImpl(
                 requireNonNull(model()),
-                makeInput(model(), messages),
                 option(),
                 timeout(),
+                unmodifiableList(messages),
                 unmodifiableList(plugins)
         );
     }
 
-    private static Object makeInput(ChatModel model, List<Message> messages) {
-        return new HashMap<>() {{
-            put("messages", switch (model.mode()) {
-                case MULTIMODAL -> unmodifiableList(messages);
-                case TEXT -> messages.stream()
-                        .map(message -> {
-                            final var item = new HashMap<>();
-                            item.put("role", message.role());
-                            item.put("content", message.text());
-                            return item;
-                        })
-                        .toList();
-            });
-        }};
-    }
+
 
 }
