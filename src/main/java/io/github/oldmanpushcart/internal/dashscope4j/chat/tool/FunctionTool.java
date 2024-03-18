@@ -38,7 +38,7 @@ public record FunctionTool(Meta meta, ChatFunction<?, ?> function) implements To
 
     }
 
-    record TypeSchema(Type type) {
+    public record TypeSchema(Type type) {
 
         @JsonValue
         JsonNode extract() {
@@ -47,8 +47,14 @@ public record FunctionTool(Meta meta, ChatFunction<?, ?> function) implements To
 
     }
 
-    public record Call(String name, String arguments) implements Tool.Call {
+    public record Call(
+            @JsonProperty(value = "name", access = JsonProperty.Access.WRITE_ONLY)
+            String name,
+            @JsonProperty(value = "arguments", access = JsonProperty.Access.WRITE_ONLY)
+            String arguments
+    ) implements Tool.Call {
 
+        @JsonProperty("type")
         @Override
         public Classify classify() {
             return Classify.FUNCTION;

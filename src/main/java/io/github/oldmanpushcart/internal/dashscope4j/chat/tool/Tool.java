@@ -15,8 +15,7 @@ public interface Tool {
     }
 
     interface Call {
-
-        @JsonProperty("type")
+        
         Classify classify();
 
     }

@@ -84,6 +84,14 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
 
     @Override
     public HttpRequest newHttpRequest() {
+
+        // 为消息设置模型
+        messages.stream()
+                .filter(message -> message instanceof MessageImpl)
+                .map(message -> (MessageImpl) message)
+                .forEach(message -> message.model(model()));
+
+        // 构造HTTP请求
         final var builder = HttpRequest.newBuilder(super.newHttpRequest(), (k, v) -> true);
 
         // 添加插件
@@ -102,12 +110,6 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
     }
 
     public static ChatRequestImpl of(ChatModel model, Option option, Duration timeout, List<Message> messages, List<ChatPlugin> plugins, List<ChatFunction<?, ?>> functions) {
-
-        // 为消息设置模型
-        messages.stream()
-                .filter(message -> message instanceof MessageImpl)
-                .map(message -> (MessageImpl) message)
-                .forEach(message -> message.model(model));
 
         // 转换为函数工具
         final var functionTools = functions.stream()

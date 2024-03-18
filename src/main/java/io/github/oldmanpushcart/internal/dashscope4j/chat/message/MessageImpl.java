@@ -53,5 +53,5 @@ public class MessageImpl implements Message {
             case TEXT -> text();
         };
     }
-
+    
 }

@@ -6,7 +6,6 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestBuilderImpl;
-import io.github.oldmanpushcart.internal.dashscope4j.chat.message.MessageImpl;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.internal.dashscope4j.embedding;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingModel;
 import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestBuilderImpl;

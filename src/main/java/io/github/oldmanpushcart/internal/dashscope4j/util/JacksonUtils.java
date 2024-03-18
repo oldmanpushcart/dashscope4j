@@ -21,6 +21,29 @@ public class JacksonUtils {
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     /**
+     * 压缩Json字符串
+     * @param json   json
+     * @return json
+     */
+    public static String compact(String json) {
+        return toJson(toNode(json));
+    }
+
+    /**
+     * {@code json -> node}
+     *
+     * @param json   json
+     * @return node
+     */
+    public static JsonNode toNode(String json) {
+        try {
+            return mapper.readTree(json);
+        } catch (JsonProcessingException cause) {
+            throw new RuntimeException("parse json to node failed!", cause);
+        }
+    }
+
+    /**
      * {@code json -> T}
      *
      * @param json json
@@ -31,6 +54,23 @@ public class JacksonUtils {
     public static <T> T toObject(String json, Class<T> type) {
         try {
             return mapper.readValue(json, type);
+        } catch (JsonProcessingException cause) {
+            throw new IllegalArgumentException("parse json to object failed!", cause);
+        }
+    }
+
+    /**
+     * {@code json -> T}
+     *
+     * @param json json
+     * @param type 对象类型
+     * @param <T>  对象类型
+     * @return 目标对象
+     */
+    public static <T> T toObject(String json, Type type) {
+        try {
+            final var jType = mapper.constructType(type);
+            return mapper.readValue(json, jType);
         } catch (JsonProcessingException cause) {
             throw new IllegalArgumentException("parse json to object failed!", cause);
         }

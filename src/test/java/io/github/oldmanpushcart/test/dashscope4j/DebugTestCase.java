@@ -11,6 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageModel;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageOptions;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
+import io.github.oldmanpushcart.test.dashscope4j.chat.function.EchoFunction;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -87,16 +88,21 @@ public class DebugTestCase implements LoadingEnv {
     public void test$debug() {
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_MAX)
-                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                .option("result_format", "message")
-                .user("你好呀!")
+                .functions(new EchoFunction())
+                // .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .user("echo HELLO!")
                 .build();
-        client.chat(request).flow()
-                .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
-                    System.out.println(r.output().best().message().text());
-                    DashScopeAssertions.assertChatResponse(r);
-                }))
+//        client.chat(request).flow()
+//                .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
+//                    // System.out.println(r.output().best().message().text());
+//                    DashScopeAssertions.assertChatResponse(r);
+//                }))
+//                .join();
+
+        final var response = client.chat(request)
+                .async()
                 .join();
+        System.out.println(response);
     }
 
 }

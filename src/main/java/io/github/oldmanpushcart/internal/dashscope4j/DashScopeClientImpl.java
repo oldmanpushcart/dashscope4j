@@ -11,6 +11,8 @@ import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingResponse;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
+import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpAsyncHandler;
+import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpFlowHandler;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -50,12 +52,14 @@ public class DashScopeClientImpl implements DashScopeClient {
         return new OpAsyncOpFlow<>() {
             @Override
             public CompletableFuture<ChatResponse> async() {
-                return apiExecutor.async(request);
+                return apiExecutor.async(request)
+                        .thenCompose(new ChatResponseOpAsyncHandler(DashScopeClientImpl.this, request));
             }
 
             @Override
             public CompletableFuture<Flow.Publisher<ChatResponse>> flow() {
-                return apiExecutor.flow(request);
+                return apiExecutor.flow(request)
+                        .thenApply(new ChatResponseOpFlowHandler(DashScopeClientImpl.this, request));
             }
         };
     }
