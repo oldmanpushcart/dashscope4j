@@ -40,16 +40,8 @@ public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, Ch
 
     @Override
     public ChatRequest build() {
-
         requireNonNull(model());
-
-        // 为消息设置模型
-        messages.stream()
-                .filter(message -> message instanceof MessageImpl)
-                .map(message -> (MessageImpl) message)
-                .forEach(message -> message.model(model()));
-
-        return new ChatRequestImpl(
+        return ChatRequestImpl.of(
                 model(),
                 option(),
                 timeout(),

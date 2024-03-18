@@ -10,6 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader;
+import io.github.oldmanpushcart.internal.dashscope4j.chat.message.MessageImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 
@@ -21,22 +22,40 @@ import static java.util.stream.Collectors.toMap;
 
 final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements ChatRequest {
 
+    private final List<Message> messages;
     private final List<ChatPlugin> plugins;
     private final List<FunctionTool> functionTools;
 
-    ChatRequestImpl(ChatModel model, Option option, Duration timeout, List<Message> messages, List<ChatPlugin> plugins, List<ChatFunction<?, ?>> functions) {
+    ChatRequestImpl(ChatModel model, Option option, Duration timeout, List<Message> messages, List<ChatPlugin> plugins, List<FunctionTool> functionTools) {
         super(model, new Input(messages), option, timeout, ChatResponseImpl.class);
+        this.messages = messages;
         this.plugins = plugins;
-        this.functionTools = functions.stream()
-                .map(FunctionTool::of)
-                .toList();
+        this.functionTools = functionTools;
     }
+
 
     private record Input(
             @JsonProperty("messages")
             List<Message> messages
     ) {
 
+    }
+
+    public List<Message> messages() {
+        return messages;
+    }
+
+    public List<ChatPlugin> plugins() {
+        return plugins;
+    }
+
+    public List<FunctionTool> functionTools() {
+        return functionTools;
+    }
+
+    @Override
+    public ChatModel model() {
+        return (ChatModel) super.model();
     }
 
     @Override
@@ -49,13 +68,14 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
         final var clone = new Option();
         super.option().export().forEach(clone::option);
 
-        // 如果启用了插件服务，必须使用 message 格式
+        // 插件必选参数
         if (!plugins.isEmpty()) {
             clone.option("result_format", "message");
         }
 
-        // 添加工具参数
+        // 工具必选参数
         if (!functionTools.isEmpty()) {
+            clone.option("result_format", "message");
             clone.option("tools", functionTools);
         }
 
@@ -79,6 +99,24 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
         }
 
         return builder.build();
+    }
+
+    public static ChatRequestImpl of(ChatModel model, Option option, Duration timeout, List<Message> messages, List<ChatPlugin> plugins, List<ChatFunction<?, ?>> functions) {
+
+        // 为消息设置模型
+        messages.stream()
+                .filter(message -> message instanceof MessageImpl)
+                .map(message -> (MessageImpl) message)
+                .forEach(message -> message.model(model));
+
+        // 转换为函数工具
+        final var functionTools = functions.stream()
+                .map(FunctionTool::of)
+                .toList();
+
+        // 构造对话请求
+        return new ChatRequestImpl(model, option, timeout, messages, plugins, functionTools);
+
     }
 
 }
