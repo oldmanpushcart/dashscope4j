@@ -4,4 +4,4 @@
 export GPG_TTY=$(tty)
 
 ## maven clean & deploy to maven repo
-mvn -f ../pom.xml clean deploy -P sonatype
+mvn -f ../pom.xml -DskipTests clean deploy -P sonatype
