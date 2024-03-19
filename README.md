@@ -7,6 +7,13 @@
 
 > 请注意：在使用`DashScope4j`时，你需要遵守灵积API的使用条款和条件。
 
+## 重要更新：1.2.0；支持函数调用
+
+灵积在`2024-03-12`放出了[函数调用](#函数调用示例)功能，当前支持的模型是大语言模型`qwen-turbo`、`qwen-plus`、`qwen-max`、`qwen-max-longcontext`，
+`DashScope4j`从`1.2.0`版本开始作为Java版SDK首发支持`函数调用`的功能。
+
+函数调用是我实际开发中最喜欢的一个功能，它扩展了大模型的能力边界，让AI具备了操纵现实的能力。而之前要做到这些事情我得通过`langchain`来实现。
+
 ## 一、主要功能
 
 `DashScope4j`支持以下API功能：
@@ -14,6 +21,8 @@
 - **对话（Chat）**
     - 提供用户与灵积进行多模态(图、文)对话。
     - 提供用户与灵积进行多模态(图、音)对话。
+    - 提供用户与灵积进行函数对话
+      > 函数功能从`1.2.0`版本中支持： `qwen-turbo`、`qwen-plus`、`qwen-max`、`qwen-max-longcontext`
 
 - **向量（Embeddings）**
     - 将文本转换为向量表示，用于文本相似度比较、聚类等任务。
@@ -48,7 +57,7 @@
 <dependency>
     <groupId>io.github.oldmanpushcart</groupId>
     <artifactId>dashscope4j</artifactId>
-    <version>1.1.1</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
@@ -155,6 +164,52 @@ System.out.println(stringSB);
 2024-02-29 01:21:45 DEBUG dashscope://chat/qwen-vl-max <= {"output":{"choices":[{"message":{"content":[{"text":"两"}],"role":"assistant"},"finish_reason":"null"}]},"usage":{"input_tokens":1264,"output_tokens":3,"image_tokens":1230},"request_id":"9713405c-31b3-97a5-8e99-ac2c685798a0"}
 2024-02-29 01:21:45 DEBUG dashscope://chat/qwen-vl-max <= {"output":{"choices":[{"message":{"content":[{"text":"辆自行车。"}],"role":"assistant"},"finish_reason":"stop"}]},"usage":{"input_tokens":1264,"output_tokens":7,"image_tokens":1230},"request_id":"9713405c-31b3-97a5-8e99-ac2c685798a0"}
 图片中有两辆自行车。
+```
+
+#### 函数调用示例
+
+灵积在`2024-03-12`放出了`函数调用`的功能，当前支持的模型是大语言模型`qwen-turbo`、`qwen-plus`、`qwen-max`、`qwen-max-longcontext`，下面是一个`函数调用`的示例：
+
+假设我们有一个回显函数:`echo`
+```java
+@ChatFn(name = "echo", description = "当用户输入echo:，回显后边的文字")
+public class EchoFunction implements ChatFunction<EchoFunction.Echo, EchoFunction.Echo> {
+
+    @Override
+    public CompletableFuture<Echo> call(Echo echo) {
+        return CompletableFuture.completedFuture(new Echo(echo.words()));
+    }
+
+    public record Echo(
+            @JsonPropertyDescription("需要回显的文字")
+            String words
+    ) {
+
+    }
+
+}
+```
+
+我们可以通过以下代码来调用这个函数：
+```java
+final var request = ChatRequest.newBuilder()
+    .model(ChatModel.QWEN_MAX)
+    .functions(new EchoFunction())
+    .user("echo: HELLO!")
+    .build();
+final var response = client.chat(request)
+    .async()
+    .join();
+```
+
+输出日志
+```text
+2024-03-19 21:28:38 DEBUG dashscope://chat/qwen-max => {"model":"qwen-max","input":{"messages":[{"role":"user","content":"echo: HELLO!"}]},"parameters":{"result_format":"message","tools":[{"function":{"name":"echo","description":"当用户输入echo:，回显后边的文字","parameters":{"type":"object","properties":{"words":{"type":"string","description":"需要回显的文字"}}}},"type":"function"}]}}
+2024-03-19 21:28:40 DEBUG dashscope://chat/qwen-max <= {"output":{"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","tool_calls":[{"function":{"name":"echo","arguments":"{\"words\": \"HELLO!\"}"},"id":"","type":"function"}],"content":""}}]},"usage":{"total_tokens":28,"output_tokens":23,"input_tokens":5},"request_id":"8af40d7a-d43d-9d7f-9f12-8d52accfe8ac"}
+2024-03-19 21:28:40 DEBUG dashscope://chat/function <= {"words":"HELLO!"}
+2024-03-19 21:28:40 DEBUG dashscope://chat/function => {"words":"HELLO!"}
+2024-03-19 21:28:40 DEBUG dashscope://chat/qwen-max => {"model":"qwen-max","input":{"messages":[{"role":"user","content":"echo: HELLO!"},{"role":"assistant","tool_calls":[{"function":{"name":"echo","arguments":"{\"words\": \"HELLO!\"}"},"type":"function"}],"content":""},{"role":"tool","name":"echo","content":"{\"words\":\"HELLO!\"}"}]},"parameters":{"result_format":"message","tools":[{"function":{"name":"echo","description":"当用户输入echo:，回显后边的文字","parameters":{"type":"object","properties":{"words":{"type":"string","description":"需要回显的文字"}}}},"type":"function"}]}}
+2024-03-19 21:28:42 DEBUG dashscope://chat/qwen-max <= {"output":{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"HELLO!"}}]},"usage":{"total_tokens":8,"output_tokens":3,"input_tokens":5},"request_id":"37ff7303-c1b2-9d7c-966d-82a7446fc52e"}
 ```
 
 #### 文生图示例
