@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public interface Tool {
 
-    @JsonProperty("type")
     Classify classify();
 
     enum Classify {
@@ -15,7 +14,7 @@ public interface Tool {
     }
 
     interface Call {
-        
+
         Classify classify();
 
     }

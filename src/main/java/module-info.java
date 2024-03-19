@@ -1,10 +1,10 @@
 open module dashscope4j {
 
     requires java.net.http;
-    requires com.fasterxml.jackson.databind;
-    requires com.fasterxml.jackson.core;
     requires org.slf4j;
 
+    requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.module.jsonSchema;
 
     exports io.github.oldmanpushcart.dashscope4j;

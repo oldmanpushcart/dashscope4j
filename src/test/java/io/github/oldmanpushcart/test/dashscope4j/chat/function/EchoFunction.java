@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.test.dashscope4j.chat.function;
 
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.chat.function.ChatFn;
 import io.github.oldmanpushcart.dashscope4j.chat.function.ChatFunction;
 
@@ -15,7 +14,6 @@ public class EchoFunction implements ChatFunction<EchoFunction.Echo, EchoFunctio
     }
 
     public record Echo(
-            @JsonPropertyDescription("words")
             String words
     ) {
 

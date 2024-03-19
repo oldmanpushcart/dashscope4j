@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 public record FunctionTool(Meta meta, ChatFunction<?, ?> function) implements Tool {
 
+    @JsonProperty("type")
     @Override
     public Classify classify() {
         return Classify.FUNCTION;

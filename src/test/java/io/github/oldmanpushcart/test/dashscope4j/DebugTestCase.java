@@ -89,20 +89,20 @@ public class DebugTestCase implements LoadingEnv {
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_MAX)
                 .functions(new EchoFunction())
-                // .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                //.option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .user("echo HELLO!")
                 .build();
-//        client.chat(request).flow()
-//                .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
-//                    // System.out.println(r.output().best().message().text());
-//                    DashScopeAssertions.assertChatResponse(r);
-//                }))
-//                .join();
-
-        final var response = client.chat(request)
-                .async()
+        client.chat(request).flow()
+                .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
+                    // System.out.println(r.output().best().message().text());
+                    DashScopeAssertions.assertChatResponse(r);
+                }))
                 .join();
-        System.out.println(response);
+
+//        final var response = client.chat(request)
+//                .async()
+//                .join();
+//        System.out.println(response);
     }
 
 }
