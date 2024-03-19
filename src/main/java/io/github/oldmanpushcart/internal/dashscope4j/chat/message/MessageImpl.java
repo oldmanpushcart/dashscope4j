@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.internal.dashscope4j.chat.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 
@@ -13,7 +12,7 @@ import java.util.stream.Collectors;
  */
 public class MessageImpl implements Message {
 
-    private ChatModel model;
+    private Format format;
     private final Message.Role role;
     private final List<Content<?>> contents;
 
@@ -42,16 +41,39 @@ public class MessageImpl implements Message {
                 .collect(Collectors.joining());
     }
 
-    public void model(ChatModel model) {
-        this.model = model;
-    }
-
     @JsonProperty("content")
     Object content() {
-        return switch (model.mode()) {
-            case MULTIMODAL -> contents;
-            case TEXT -> text();
+        return switch (format) {
+            case MULTIMODAL_MESSAGE -> contents;
+            case TEXT_MESSAGE -> text();
         };
     }
-    
+
+    /**
+     * 设置消息格式
+     *
+     * @param format 消息格式
+     */
+    public void format(Format format) {
+        this.format = format;
+    }
+
+    /**
+     * 消息格式
+     */
+    public enum Format {
+
+        /**
+         * 文本消息格式
+         * <p>{@code {content:"..."}}</p>
+         */
+        TEXT_MESSAGE,
+
+        /**
+         * 多模态消息格式
+         * <p>{@code {content:[{"text":"..."},{"file":"http://..."}]}}</p>
+         */
+        MULTIMODAL_MESSAGE
+    }
+
 }

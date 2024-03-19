@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.test.dashscope4j.chat.function;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFn;
@@ -61,20 +60,20 @@ public class QueryScoreFunction implements ChatFunction<QueryScoreFunction.Reque
         ));
     }
 
-    @JsonClassDescription("request to query student scores")
     public record Request(
+
             @JsonProperty(required = true)
-            @JsonPropertyDescription("the student name to query, example: \"张三\"")
+            @JsonPropertyDescription("the student name to query")
             String name,
 
             @JsonProperty(required = true)
-            @JsonPropertyDescription("the subjects to query, example: [\"MATH\", \"CHINESE\"]")
+            @JsonPropertyDescription("the subjects to query")
             Subject... subjects
+
     ) {
 
     }
 
-    @JsonClassDescription("student scores")
     public record Score(
 
             @JsonPropertyDescription("student name")
@@ -85,15 +84,23 @@ public class QueryScoreFunction implements ChatFunction<QueryScoreFunction.Reque
 
             @JsonPropertyDescription("score value")
             float value
+
     ) {
 
     }
 
-    @JsonClassDescription("subject items")
+
     public enum Subject {
+
+        @JsonPropertyDescription("语文")
         CHINESE,
+
+        @JsonPropertyDescription("数学")
         MATH,
+
+        @JsonPropertyDescription("英语")
         ENGLISH
+
     }
 
 }

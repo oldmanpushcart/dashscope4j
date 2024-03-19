@@ -196,11 +196,16 @@ public class ChatTestCase implements LoadingEnv {
         });
     }
 
+    private static final ChatPlugin[] PLUGINS = new ChatPlugin[]{
+            ChatPlugin.CALCULATOR,
+            ChatPlugin.PDF_EXTRACTER,
+    };
+
     @Test
-    public void test$chat$plugin() {
+    public void test$chat$plugin$calculator() {
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
-                .plugins(ChatPlugin.CALCULATOR, ChatPlugin.PDF_EXTRACTER)
+                .plugins(PLUGINS)
                 .user("1+2*3-4/5=?")
                 .build();
         DashScopeAssertions.assertChatRequest(request);
@@ -212,6 +217,23 @@ public class ChatTestCase implements LoadingEnv {
         Assertions.assertEquals(3, response.output().best().history().size());
         Assertions.assertInstanceOf(PluginCallMessage.class, response.output().best().history().get(0));
         Assertions.assertInstanceOf(PluginMessage.class, response.output().best().history().get(1));
+    }
+
+    @Test
+    public void test$chat$plugin$pdf_extracter() {
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_PLUS)
+                .plugins(PLUGINS)
+                .user(
+                        Content.ofText("请总结这篇文档"),
+                        Content.ofFile(URI.create("https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf"))
+                )
+                .build();
+        final var response = client.chat(request)
+                .async()
+                .join();
+        final var text = response.output().best().message().text();
+        Assertions.assertTrue(text.contains("五年规划"));
     }
 
     @Test

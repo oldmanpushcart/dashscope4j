@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.test.dashscope4j;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatOptions;
+import io.github.oldmanpushcart.dashscope4j.chat.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingModel;
@@ -11,7 +12,6 @@ import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageModel;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageOptions;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
-import io.github.oldmanpushcart.test.dashscope4j.chat.function.EchoFunction;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -87,9 +87,9 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void test$debug() {
         final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_MAX)
-                .functions(new EchoFunction())
-                .user("echo: HELLO!")
+                .model(ChatModel.QWEN_PLUS)
+                .plugins(ChatPlugin.CALCULATOR)
+                .user("1+2*3-4/5=?")
                 .build();
         final var response = client.chat(request)
                 .async()

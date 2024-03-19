@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestImpl;
@@ -88,7 +89,34 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
         messages.stream()
                 .filter(message -> message instanceof MessageImpl)
                 .map(message -> (MessageImpl) message)
-                .forEach(message -> message.model(model()));
+                .forEach(message -> {
+
+                    // 默认是文本消息格式
+                    var format = MessageImpl.Format.TEXT_MESSAGE;
+
+                    // 如果是多模态模型，则需要设置多模态的消息格式
+                    if (model().mode() == ChatModel.Mode.MULTIMODAL) {
+                        format = MessageImpl.Format.MULTIMODAL_MESSAGE;
+                    }
+                    
+                    /*
+                     * 如果是PDF提取插件，而且消息中包含了file内容
+                     * 这种情况下需要转成多模态消息格式
+                     */
+                    {
+                        final var hasPdfExtractPlugin = plugins.stream()
+                                .anyMatch(plugin -> plugin.name().equals(ChatPlugin.PDF_EXTRACTER.name()));
+                        final var hasFileContent = message.contents().stream()
+                                .anyMatch(content -> content.type() == Content.Type.FILE);
+                        if (hasPdfExtractPlugin && hasFileContent) {
+                            format = MessageImpl.Format.MULTIMODAL_MESSAGE;
+                        }
+                    }
+
+                    // 设置消息格式
+                    message.format(format);
+
+                });
 
         // 构造HTTP请求
         final var builder = HttpRequest.newBuilder(super.newHttpRequest(), (k, v) -> true);
