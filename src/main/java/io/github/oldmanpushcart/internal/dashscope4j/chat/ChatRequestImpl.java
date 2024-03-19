@@ -6,12 +6,11 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.chat.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.MessageImpl;
-import io.github.oldmanpushcart.internal.dashscope4j.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 
 import java.net.http.HttpRequest;

@@ -2,11 +2,12 @@ package io.github.oldmanpushcart.internal.dashscope4j.chat.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
-import io.github.oldmanpushcart.internal.dashscope4j.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.chat.message.ToolCallMessage;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.Tool;
 
 import java.util.List;
 
-public class ToolCallMessageImpl extends MessageImpl {
+public class ToolCallMessageImpl extends MessageImpl implements ToolCallMessage {
 
     private final List<Tool.Call> calls;
 
@@ -16,6 +17,7 @@ public class ToolCallMessageImpl extends MessageImpl {
     }
 
     @JsonProperty("tool_calls")
+    @Override
     public List<Tool.Call> calls() {
         return calls;
     }

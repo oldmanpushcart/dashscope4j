@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.chat.function;
+package io.github.oldmanpushcart.dashscope4j.chat.tool.function;
 
 import java.util.concurrent.CompletableFuture;
 

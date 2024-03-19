@@ -8,9 +8,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.chat.plugin.Plugin;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.Tool;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.*;
-import io.github.oldmanpushcart.internal.dashscope4j.chat.tool.FunctionTool;
-import io.github.oldmanpushcart.internal.dashscope4j.chat.tool.Tool;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -128,14 +128,14 @@ public class OutputJsonDeserializer extends JsonDeserializer<ChatResponse.Output
             if (inTextMessage.role() == Message.Role.PLUGIN) {
                 final var text = inTextMessage.text();
                 final var name = messageNode.get("name").asText();
-                final var status = context.readTreeAsValue(messageNode.get("status"), PluginMessageImpl.Status.class);
+                final var status = context.readTreeAsValue(messageNode.get("status"), Plugin.Status.class);
                 return new PluginMessageImpl(text, name, status);
             }
 
             // 处理插件请求消息
             else if (inTextMessage.role() == Message.Role.AI && messageNode.has("plugin_call")) {
                 final var text = inTextMessage.text();
-                final var call = context.readTreeAsValue(messageNode.get("plugin_call"), PluginCallMessageImpl.Call.class);
+                final var call = context.readTreeAsValue(messageNode.get("plugin_call"), Plugin.Call.class);
                 return new PluginCallMessageImpl(text, call);
             }
 

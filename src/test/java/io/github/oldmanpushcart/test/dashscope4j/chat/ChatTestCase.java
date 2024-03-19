@@ -6,10 +6,14 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.chat.message.PluginCallMessage;
+import io.github.oldmanpushcart.dashscope4j.chat.message.PluginMessage;
 import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
 import io.github.oldmanpushcart.test.dashscope4j.CommonAssertions;
 import io.github.oldmanpushcart.test.dashscope4j.DashScopeAssertions;
 import io.github.oldmanpushcart.test.dashscope4j.LoadingEnv;
+import io.github.oldmanpushcart.test.dashscope4j.chat.function.EchoFunction;
+import io.github.oldmanpushcart.test.dashscope4j.chat.function.QueryScoreFunction;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -200,11 +204,57 @@ public class ChatTestCase implements LoadingEnv {
                 .user("1+2*3-4/5=?")
                 .build();
         DashScopeAssertions.assertChatRequest(request);
-        final var response= client.chat(request)
+        final var response = client.chat(request)
                 .async()
                 .join();
         DashScopeAssertions.assertChatResponse(response);
         Assertions.assertTrue(response.output().best().message().text().contains("6.2"));
+        Assertions.assertEquals(3, response.output().best().history().size());
+        Assertions.assertInstanceOf(PluginCallMessage.class, response.output().best().history().get(0));
+        Assertions.assertInstanceOf(PluginMessage.class, response.output().best().history().get(1));
+    }
+
+    @Test
+    public void test$chat$function$echo() {
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_PLUS)
+                .functions(new EchoFunction())
+                .user("echo: HELLO!")
+                .build();
+
+        // FLOW
+        {
+            final var stringRef = new AtomicReference<String>();
+            client.chat(request).flow()
+                    .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
+                        stringRef.set(r.output().best().message().text());
+                        DashScopeAssertions.assertChatResponse(r);
+                    }))
+                    .join();
+            Assertions.assertEquals("HELLO!", stringRef.get());
+        }
+
+        // ASYNC
+        {
+            final var response = client.chat(request)
+                    .async()
+                    .join();
+            Assertions.assertEquals("HELLO!", response.output().best().message().text());
+        }
+
+    }
+
+    @Test
+    public void test$chat$function$query_score() {
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_PLUS)
+                .functions(new QueryScoreFunction())
+                .user("查询张三的数学成绩")
+                .build();
+        final var response = client.chat(request)
+                .async()
+                .join();
+        Assertions.assertTrue(response.output().best().message().text().contains("80"));
     }
 
 }

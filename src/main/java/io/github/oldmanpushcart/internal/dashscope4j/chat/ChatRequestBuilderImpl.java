@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.internal.dashscope4j.chat;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.chat.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestBuilderImpl;
 
 import java.util.ArrayList;

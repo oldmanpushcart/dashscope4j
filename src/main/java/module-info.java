@@ -13,10 +13,11 @@ open module dashscope4j {
     exports io.github.oldmanpushcart.dashscope4j.base.task;
     exports io.github.oldmanpushcart.dashscope4j.chat;
     exports io.github.oldmanpushcart.dashscope4j.chat.message;
-    exports io.github.oldmanpushcart.dashscope4j.chat.function;
+    exports io.github.oldmanpushcart.dashscope4j.chat.tool;
+    exports io.github.oldmanpushcart.dashscope4j.chat.tool.function;
     exports io.github.oldmanpushcart.dashscope4j.image.generation;
     exports io.github.oldmanpushcart.dashscope4j.embedding;
     exports io.github.oldmanpushcart.dashscope4j.util;
-
+    exports io.github.oldmanpushcart.dashscope4j.chat.plugin;
 
 }

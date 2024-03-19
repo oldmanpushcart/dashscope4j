@@ -18,15 +18,12 @@ public interface ChatResponse extends AlgoResponse<ChatResponse.Output> {
     interface Output extends ApiResponse.Output {
 
         /**
-         * 获取应答选择
-         *
          * @return 应答选择
          */
         List<Choice> choices();
 
         /**
-         * 获取最好的选择
-         * <p>如果返回的{@link Choice}集合为空，则返回null</p>
+         * 如果返回的{@link Choice}集合为空，则返回null
          *
          * @return 最好的选择
          */
@@ -47,6 +44,7 @@ public interface ChatResponse extends AlgoResponse<ChatResponse.Output> {
 
         /**
          * 工具调用
+         *
          * @since 1.2.0
          */
         @JsonProperty("tool_calls")
@@ -81,18 +79,20 @@ public interface ChatResponse extends AlgoResponse<ChatResponse.Output> {
     interface Choice extends Comparable<Choice> {
 
         /**
-         * 获取应答结束标识
-         *
          * @return 响应结束标识
          */
         Finish finish();
 
         /**
-         * 获取应答消息
-         *
          * @return 应答消息
          */
         Message message();
+
+        /**
+         * @return 历史消息
+         * @since 1.2.0
+         */
+        List<Message> history();
 
         @Override
         default int compareTo(Choice o) {

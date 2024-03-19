@@ -1,11 +1,12 @@
-package io.github.oldmanpushcart.internal.dashscope4j.chat.tool;
+package io.github.oldmanpushcart.internal.dashscope4j.chat;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.github.oldmanpushcart.dashscope4j.chat.function.ChatFn;
-import io.github.oldmanpushcart.dashscope4j.chat.function.ChatFunction;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFn;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunction;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 
 import java.lang.reflect.ParameterizedType;
@@ -13,7 +14,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.stream.Stream;
 
-public record FunctionTool(Meta meta, ChatFunction<?, ?> function) implements Tool {
+public record FunctionTool(Meta meta, ChatFunction<?, ?> function) implements ChatFunctionTool {
 
     @JsonProperty("type")
     @Override
@@ -53,7 +54,7 @@ public record FunctionTool(Meta meta, ChatFunction<?, ?> function) implements To
             String name,
             @JsonProperty(value = "arguments", access = JsonProperty.Access.WRITE_ONLY)
             String arguments
-    ) implements Tool.Call {
+    ) implements ChatFunctionTool.Call {
 
         @JsonProperty("type")
         @Override
