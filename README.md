@@ -9,10 +9,10 @@
 
 ## 重要更新：1.2.0；支持函数调用
 
-灵积在`2024-03-12`放出了[函数调用](#函数调用示例)功能，当前支持的模型是大语言模型`qwen-turbo`、`qwen-plus`、`qwen-max`、`qwen-max-longcontext`，
-`DashScope4j`从`1.2.0`版本开始作为Java版SDK首发支持`函数调用`的功能。
+灵积在 2024-03-12 放出了 [函数调用](#函数调用示例) 功能，当前支持的模型是大语言模型 qwen-turbo、qwen-plus、qwen-max、qwen-max-longcontext，
+DashScope4j从`1.2.0`版本开始作为 Java SDK 首发支持`函数调用`的功能。
 
-函数调用是我实际开发中最喜欢的一个功能，它扩展了大模型的能力边界，让AI具备了操纵现实的能力。而之前要做到这些事情我得通过`langchain`来实现。
+函数调用是我实际开发中最喜欢的一个功能，它扩展了大模型的能力边界，让AI具备了操纵现实的能力。而之前要做到这些事情我得通过 LangChain 来实现。
 
 ## 一、主要功能
 
@@ -22,7 +22,7 @@
     - 提供用户与灵积进行多模态(图、文)对话。
     - 提供用户与灵积进行多模态(图、音)对话。
     - 提供用户与灵积进行函数对话
-      > 函数功能从`1.2.0`版本中支持： `qwen-turbo`、`qwen-plus`、`qwen-max`、`qwen-max-longcontext`
+      > 函数功能从`1.2.0`版本中支持：qwen-turbo、qwen-plus、qwen-max、qwen-max-longcontext
 
 - **向量（Embeddings）**
     - 将文本转换为向量表示，用于文本相似度比较、聚类等任务。
