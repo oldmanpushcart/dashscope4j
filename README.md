@@ -3,9 +3,9 @@
 ![JDK17+](https://img.shields.io/badge/JDK-17+-blue.svg)
 ![LLM-通义千问](https://img.shields.io/badge/LLM-%E9%80%9A%E4%B9%89%E5%8D%83%E9%97%AE-blue.svg)
 
-`DashScope4j`是一个开源的灵积非官方 Java SDK，基于`JDK17`构建。它旨在提供一个功能丰富、易于集成和使用灵积API（通义千问模型）的Java库，以便开发者能够通灵积API轻松实现多模态对话、向量嵌入和图像处理等功能。
+`DashScope4j`是一个开源的灵积非官方 Java SDK，基于 JDK17 构建。它旨在提供一个功能丰富、易于集成和使用灵积API（通义千问模型）的Java库，以便开发者能够通灵积API轻松实现多模态对话、向量嵌入和图像处理等功能。
 
-> 请注意：在使用`DashScope4j`时，你需要遵守灵积API的使用条款和条件。
+> 请注意：在使用 DashScope4j 时，你需要遵守灵积API的使用条款和条件。
 
 ## 重要更新：1.2.0；支持函数调用
 
@@ -13,6 +13,18 @@
 DashScope4j从`1.2.0`版本开始作为 Java SDK 首发支持`函数调用`的功能。
 
 函数调用是我实际开发中最喜欢的一个功能，它扩展了大模型的能力边界，让AI具备了操纵现实的能力。而之前要做到这些事情我得通过 LangChain 来实现。
+
+## 依赖使用
+
+```xml
+<dependency>
+    <groupId>io.github.oldmanpushcart</groupId>
+    <artifactId>dashscope4j</artifactId>
+    <version>1.2.1</version>
+</dependency>
+```
+
+### 
 
 ## 一、主要功能
 
@@ -47,23 +59,9 @@ DashScope4j从`1.2.0`版本开始作为 Java SDK 首发支持`函数调用`的�
 3. 声明环境变量`export DASHSCOPE_AK=<YOUR APP-KEY>`
 4. 运行测试用例：`mvn test`
 
-## 四、依赖使用
+## 四、使用示例
 
-### 添加依赖
-
-项目仓库托管在Maven中央仓库，你可以在`pom.xml`中添加以下依赖：
-
-```xml
-<dependency>
-    <groupId>io.github.oldmanpushcart</groupId>
-    <artifactId>dashscope4j</artifactId>
-    <version>1.2.1</version>
-</dependency>
-```
-
-### 使用示例
-
-#### 创建客户端
+### 创建客户端
 ```java
 
 // 线程池
@@ -76,7 +74,7 @@ final var client = DashScopeClient.newBuilder()
     .build();
 ```
 
-#### 对话示例（异步）
+### 对话示例（异步）
 
 ```java
 // 创建请求
@@ -105,7 +103,7 @@ System.out.println(response.output().best().message().text());
 图片中有两辆自行车。
 ```
 
-#### 对话示例（流式）
+### 对话示例（流式）
 
 ```java
 // 创建请求
@@ -166,7 +164,7 @@ System.out.println(stringSB);
 图片中有两辆自行车。
 ```
 
-#### 函数调用示例
+### 函数调用示例
 
 灵积在`2024-03-12`放出了`函数调用`的功能，当前支持的模型是大语言模型`qwen-turbo`、`qwen-plus`、`qwen-max`、`qwen-max-longcontext`，下面是一个`函数调用`的示例：
 
@@ -212,7 +210,7 @@ final var response = client.chat(request)
 2024-03-19 21:28:42 DEBUG dashscope://chat/qwen-max <= {"output":{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"HELLO!"}}]},"usage":{"total_tokens":8,"output_tokens":3,"input_tokens":5},"request_id":"37ff7303-c1b2-9d7c-966d-82a7446fc52e"}
 ```
 
-#### 文生图示例
+### 文生图示例
 
 ```java
 // 创建请求
@@ -261,9 +259,9 @@ final var response = client.genImage(request)
 
 ![文生图-美女](https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-003.png)
 
-#### 插件调用示例
+### 插件调用示例
 
-##### PDF提取插件
+#### PDF提取插件
 
 我从网上下载了一份[《十四五规划》](https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf)的PDF文件，然后通过`PDF提取插件`来提取PDF文件的内容。
 
@@ -287,7 +285,7 @@ final var response = client.chat(request)
 2024-03-20 00:24:47 DEBUG dashscope://chat/qwen-plus <= {"output":{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"这篇文档是中国国民经济和社会发展第十四个五年规划和2035年远景目标纲要，它阐述了中国在新发展阶段的主要任务和战略目标。规划涵盖了多个领域，包括创新驱动发展、产业升级、市场体系建设、数字化发展、深化改革、乡村振兴、城镇化、区域协调发展、文化建设、绿色发展、对外开放、教育与健康、民生福祉、国家安全、国防和军队现代化、民主法治以及监督制度的完善。\n\n在创新驱动方面，强调了强化国家战略科技力量，提升企业创新能力，激发人才创新活力，并完善科技创新机制。在产业发展上，致力于制造业升级，发展战略性新兴产业，促进服务业繁荣，同时建设现代化基础设施体系。\n\n为了构建新发展格局，规划提出畅通国内大循环，促进国内外双循环，加快培育完整内需体系。数字化发展被放在重要位置，旨在打造数字经济新优势，加速数字社会建设，提升数字政府水平，并营造健康的数字环境。\n\n在深化改革方面，将激发各类市场主体活力，建设高标准市场体系，改革财税金融体制，提升政府经济治理能力。农业、农村发展和乡村振兴是关注焦点，包括提高农业质量和效益，实施乡村建设行动，以及城乡融合发展。\n\n此外，规划还强调优化区域经济布局，促进区域协调发展，发展社会主义先进文化，推动绿色发展，实行高水平对外开放，提升国民素质，增进民生福祉，加强国家安全和国防建设，以及加强民主法治和监督制度。\n\n最后，规划提出了一系列实施保障措施，包括加强党的领导，健全规划体系，完善实施机制，确保党中央重大决策的贯彻落实，激发全社会参与规划实施的积极性，并通过监测评估、政策保障和考核监督机制，确保规划目标的实现。整个规划为全面建设社会主义现代化国家描绘了蓝图，是全国各族人民共同遵循的行动纲领。"}}]},"usage":{"total_tokens":365,"output_tokens":361,"input_tokens":4},"request_id":"d1eb2274-35cc-97fb-b60a-570fab96ab0b"}
 ```
 
-##### 计算器插件
+#### 计算器插件
 
 ```java
 final var request = ChatRequest.newBuilder()
