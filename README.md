@@ -164,7 +164,7 @@ System.out.println(stringSB);
 
 ### 函数调用示例
 
-灵积在`2024-03-12`放出了`函数调用`的功能，当前支持的模型是大语言模型`qwen-turbo`、`qwen-plus`、`qwen-max`、`qwen-max-longcontext`，下面是一个`函数调用`的示例：
+灵积在 2024-03-12 放出了**函数调用**的功能，当前支持的模型是大语言模型：qwen-turbo、qwen-plus、qwen-max、qwen-max-longcontext，下面是一个函数调用的示例：
 
 假设我们有一个回显函数:`echo`
 ```java
