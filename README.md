@@ -24,8 +24,6 @@ DashScope4j从`1.2.0`版本开始作为 Java SDK 首发支持`函数调用`的�
 </dependency>
 ```
 
-### 
-
 ## 一、主要功能
 
 `DashScope4j`支持以下API功能：
