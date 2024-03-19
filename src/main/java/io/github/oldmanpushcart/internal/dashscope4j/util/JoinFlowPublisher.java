@@ -57,6 +57,10 @@ public class JoinFlowPublisher<T> implements Flow.Publisher<T> {
                 }
             }
 
+            private void clean() {
+                hold = null;
+            }
+
             @Override
             public void onNext(T item) {
                 checkSelf();
@@ -71,38 +75,38 @@ public class JoinFlowPublisher<T> implements Flow.Publisher<T> {
 
             @Override
             public void onError(Throwable ex) {
-                // checkSelf();
+                checkSelf();
+                clean();
                 subscriber.onError(ex);
             }
 
             @Override
             public void onComplete() {
                 checkSelf();
-                hold = null;
                 finisher.apply(itemRef.get()).whenComplete((publisher, ex) -> {
 
                     // 异常
                     if (null != ex) {
                         onError(ex);
+                        return;
                     }
 
-                    // 完成
+                    // 清理
+                    clean();
+
+                    // 续订
+                    if (null != publisher) {
+                        join(publisher, accumulator, finisher);
+                    }
+
+                    // 续订成功，继续请求
+                    if (null != hold) {
+                        hold.request(limitRef.getAndSet(0L));
+                    }
+
+                    // 没有续订，直接完成
                     else {
-
-                        // 如果存在下一个Publisher，则继续订阅
-                        if (null != publisher) {
-                            join(publisher, accumulator, finisher);
-                        }
-
-                        // 如果没有订阅了，则完成
-                        if (null == hold) {
-                            subscriber.onComplete();
-                        } else {
-                            final var limit = limitRef.get();
-                            limitRef.set(0);
-                            hold.request(limit);
-                        }
-
+                        subscriber.onComplete();
                     }
 
                 });
