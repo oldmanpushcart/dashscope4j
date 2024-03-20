@@ -12,6 +12,7 @@ import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
 import io.github.oldmanpushcart.test.dashscope4j.CommonAssertions;
 import io.github.oldmanpushcart.test.dashscope4j.DashScopeAssertions;
 import io.github.oldmanpushcart.test.dashscope4j.LoadingEnv;
+import io.github.oldmanpushcart.test.dashscope4j.chat.function.ComputeAvgScoreFunction;
 import io.github.oldmanpushcart.test.dashscope4j.chat.function.EchoFunction;
 import io.github.oldmanpushcart.test.dashscope4j.chat.function.QueryScoreFunction;
 import org.junit.jupiter.api.Assertions;
@@ -267,11 +268,24 @@ public class ChatTestCase implements LoadingEnv {
     }
 
     @Test
-    public void test$chat$function$query_score() {
+    public void test$chat$function$single_function() {
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
                 .functions(new QueryScoreFunction())
                 .user("查询张三的数学成绩")
+                .build();
+        final var response = client.chat(request)
+                .async()
+                .join();
+        Assertions.assertTrue(response.output().best().message().text().contains("80"));
+    }
+
+    @Test
+    public void test$chat$function$multi_function() {
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_PLUS)
+                .functions(new QueryScoreFunction(), new ComputeAvgScoreFunction())
+                .user("张三的所有成绩，并计算平均分")
                 .build();
         final var response = client.chat(request)
                 .async()

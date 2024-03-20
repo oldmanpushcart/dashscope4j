@@ -166,6 +166,8 @@ System.out.println(stringSB);
 
 灵积在 2024-03-12 放出了**函数调用**的功能，当前支持的模型是大语言模型：qwen-turbo、qwen-plus、qwen-max、qwen-max-longcontext，下面是一个函数调用的示例：
 
+#### 单个函数调用示例：回显
+
 假设我们有一个回显函数:`echo`
 ```java
 @ChatFn(name = "echo", description = "当用户输入echo:，回显后边的文字")
@@ -202,10 +204,45 @@ final var response = client.chat(request)
 ```text
 2024-03-19 21:28:38 DEBUG dashscope://chat/qwen-max => {"model":"qwen-max","input":{"messages":[{"role":"user","content":"echo: HELLO!"}]},"parameters":{"result_format":"message","tools":[{"function":{"name":"echo","description":"当用户输入echo:，回显后边的文字","parameters":{"type":"object","properties":{"words":{"type":"string","description":"需要回显的文字"}}}},"type":"function"}]}}
 2024-03-19 21:28:40 DEBUG dashscope://chat/qwen-max <= {"output":{"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","tool_calls":[{"function":{"name":"echo","arguments":"{\"words\": \"HELLO!\"}"},"id":"","type":"function"}],"content":""}}]},"usage":{"total_tokens":28,"output_tokens":23,"input_tokens":5},"request_id":"8af40d7a-d43d-9d7f-9f12-8d52accfe8ac"}
-2024-03-19 21:28:40 DEBUG dashscope://chat/function <= {"words":"HELLO!"}
-2024-03-19 21:28:40 DEBUG dashscope://chat/function => {"words":"HELLO!"}
+2024-03-19 21:28:40 DEBUG dashscope://chat/function/echo <= {"words":"HELLO!"}
+2024-03-19 21:28:40 DEBUG dashscope://chat/function/echo => {"words":"HELLO!"}
 2024-03-19 21:28:40 DEBUG dashscope://chat/qwen-max => {"model":"qwen-max","input":{"messages":[{"role":"user","content":"echo: HELLO!"},{"role":"assistant","tool_calls":[{"function":{"name":"echo","arguments":"{\"words\": \"HELLO!\"}"},"type":"function"}],"content":""},{"role":"tool","name":"echo","content":"{\"words\":\"HELLO!\"}"}]},"parameters":{"result_format":"message","tools":[{"function":{"name":"echo","description":"当用户输入echo:，回显后边的文字","parameters":{"type":"object","properties":{"words":{"type":"string","description":"需要回显的文字"}}}},"type":"function"}]}}
 2024-03-19 21:28:42 DEBUG dashscope://chat/qwen-max <= {"output":{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"HELLO!"}}]},"usage":{"total_tokens":8,"output_tokens":3,"input_tokens":5},"request_id":"37ff7303-c1b2-9d7c-966d-82a7446fc52e"}
+HELLO!
+```
+
+#### 级联函数调用示例：成绩查询
+
+我们有两个函数
+
+- 查询成绩函数：[query_score]()
+- 计算平均分函数：[compute_avg_score]()
+
+现在需要查询某个同学的所有成绩，并计算其平均分。LLM需要先调用 `query_score` 函数查询成绩，然后再调用 `compute_avg_score` 函数计算平均分。
+```java
+final var request = ChatRequest.newBuilder()
+    .model(ChatModel.QWEN_PLUS)
+    .functions(new QueryScoreFunction(), new ComputeAvgScoreFunction())
+    .user("张三的所有成绩，并计算平均分")
+    .build();
+final var response = client.chat(request)
+    .async()
+    .join();
+```
+
+输出日志
+```text
+2024-03-20 23:50:17 DEBUG dashscope://chat/qwen-plus => {"model":"qwen-plus","input":{"messages":[{"role":"user","content":"张三的所有成绩，并计算平均分"}]},"parameters":{"result_format":"message","tools":[{"function":{"name":"query_score","description":"query student's scores","parameters":{"type":"object","properties":{"name":{"type":"string","description":"the student name to query"},"subjects":{"type":"array","description":"the subjects to query","items":{"type":"string","enum":["CHINESE","MATH","ENGLISH"]}}},"required":["name","subjects"]}},"type":"function"},{"function":{"name":"compute_avg_score","description":"计算平均成绩","parameters":{"type":"object","properties":{"scores":{"type":"array","description":"分数集合","items":{"type":"number"}}}}},"type":"function"}]}}
+2024-03-20 23:50:20 DEBUG dashscope://chat/qwen-plus <= {"output":{"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","tool_calls":[{"function":{"name":"query_score","arguments":"{\"name\": \"张三\", \"subjects\": [\"CHINESE\", \"MATH\", \"ENGLISH\"]}"},"id":"","type":"function"}],"content":""}}]},"usage":{"total_tokens":47,"output_tokens":39,"input_tokens":8},"request_id":"4703f631-a245-967e-ba86-8f01327a82bf"}
+2024-03-20 23:50:20 DEBUG dashscope://chat/function/query_score <= {"name":"张三","subjects":["CHINESE","MATH","ENGLISH"]}
+2024-03-20 23:50:20 DEBUG dashscope://chat/function/query_score => {"message":"查询成功","data":[{"name":"张三","subject":"CHINESE","value":90.0},{"name":"张三","subject":"MATH","value":80.0},{"name":"张三","subject":"ENGLISH","value":70.0}],"success":true}
+2024-03-20 23:50:20 DEBUG dashscope://chat/qwen-plus => {"model":"qwen-plus","input":{"messages":[{"role":"user","content":"张三的所有成绩，并计算平均分"},{"role":"assistant","tool_calls":[{"function":{"arguments":"{\"name\": \"张三\", \"subjects\": [\"CHINESE\", \"MATH\", \"ENGLISH\"]}","name":"query_score"},"type":"function"}],"content":""},{"role":"tool","name":"query_score","content":"{\"message\":\"查询成功\",\"data\":[{\"name\":\"张三\",\"subject\":\"CHINESE\",\"value\":90.0},{\"name\":\"张三\",\"subject\":\"MATH\",\"value\":80.0},{\"name\":\"张三\",\"subject\":\"ENGLISH\",\"value\":70.0}],\"success\":true}"}]},"parameters":{"result_format":"message","tools":[{"function":{"name":"query_score","description":"query student's scores","parameters":{"type":"object","properties":{"name":{"type":"string","description":"the student name to query"},"subjects":{"type":"array","description":"the subjects to query","items":{"type":"string","enum":["CHINESE","MATH","ENGLISH"]}}},"required":["name","subjects"]}},"type":"function"},{"function":{"name":"compute_avg_score","description":"计算平均成绩","parameters":{"type":"object","properties":{"scores":{"type":"array","description":"分数集合","items":{"type":"number"}}}}},"type":"function"}]}}
+2024-03-20 23:50:24 DEBUG dashscope://chat/qwen-plus <= {"output":{"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","tool_calls":[{"function":{"name":"compute_avg_score","arguments":"{\"scores\": [90.0, 80.0, 70.0]}"},"id":"","type":"function"}],"content":"张三的成绩如下：\n\n- 中文: 90.0分\n- 数学: 80.0分\n- 英语: 70.0分\n\n现在我们来计算他的平均分。"}}]},"usage":{"total_tokens":93,"output_tokens":85,"input_tokens":8},"request_id":"0f662c8b-ca5d-9512-9f92-597045977eca"}
+2024-03-20 23:50:24 DEBUG dashscope://chat/function/compute_avg_score <= {"scores":[90.0,80.0,70.0]}
+2024-03-20 23:50:24 DEBUG dashscope://chat/function/compute_avg_score => {"avg_score":80.0}
+2024-03-20 23:50:24 DEBUG dashscope://chat/qwen-plus => {"model":"qwen-plus","input":{"messages":[{"role":"user","content":"张三的所有成绩，并计算平均分"},{"role":"assistant","tool_calls":[{"function":{"arguments":"{\"name\": \"张三\", \"subjects\": [\"CHINESE\", \"MATH\", \"ENGLISH\"]}","name":"query_score"},"type":"function"}],"content":""},{"role":"tool","name":"query_score","content":"{\"message\":\"查询成功\",\"data\":[{\"name\":\"张三\",\"subject\":\"CHINESE\",\"value\":90.0},{\"name\":\"张三\",\"subject\":\"MATH\",\"value\":80.0},{\"name\":\"张三\",\"subject\":\"ENGLISH\",\"value\":70.0}],\"success\":true}"},{"role":"assistant","tool_calls":[{"function":{"arguments":"{\"scores\": [90.0, 80.0, 70.0]}","name":"compute_avg_score"},"type":"function"}],"content":"张三的成绩如下：\n\n- 中文: 90.0分\n- 数学: 80.0分\n- 英语: 70.0分\n\n现在我们来计算他的平均分。"},{"role":"tool","name":"compute_avg_score","content":"{\"avg_score\":80.0}"}]},"parameters":{"result_format":"message","tools":[{"function":{"name":"query_score","description":"query student's scores","parameters":{"type":"object","properties":{"name":{"type":"string","description":"the student name to query"},"subjects":{"type":"array","description":"the subjects to query","items":{"type":"string","enum":["CHINESE","MATH","ENGLISH"]}}},"required":["name","subjects"]}},"type":"function"},{"function":{"name":"compute_avg_score","description":"计算平均成绩","parameters":{"type":"object","properties":{"scores":{"type":"array","description":"分数集合","items":{"type":"number"}}}}},"type":"function"}]}}
+2024-03-20 23:50:25 DEBUG dashscope://chat/qwen-plus <= {"output":{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"张三的平均分是 80.0 分。"}}]},"usage":{"total_tokens":68,"output_tokens":13,"input_tokens":55},"request_id":"c01da60a-21d7-9e2f-ae5d-17a9b622ed41"}
+张三的平均分是 80.0 分。
 ```
 
 ### 文生图示例

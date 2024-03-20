@@ -20,6 +20,9 @@ import java.util.concurrent.Flow;
 import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils.compact;
 
+/**
+ * 工具调用操作
+ */
 class OpToolCall {
 
     private final static Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
@@ -32,6 +35,12 @@ class OpToolCall {
         this.message = message;
     }
 
+    /**
+     * 操作工具调用
+     *
+     * @param client DashScope客户端
+     * @return 异步操作
+     */
     public CompletableFuture<OpAsyncOpFlow<ChatResponse>> op(DashScopeClient client) {
 
         // 检查工具调用中是否只有函数调用，当前只支持函数调用
@@ -54,7 +63,7 @@ class OpToolCall {
                 .orElseThrow(() -> new IllegalArgumentException("not found tool by name: %s".formatted(functionCall.name())));
 
         if (logger.isDebugEnabled()) {
-            logger.debug("{}/function <= {}", request, compact(functionCall.arguments()));
+            logger.debug("{}/function/{} <= {}", request, functionCall.name(), compact(functionCall.arguments()));
         }
 
         // 进行函数调用
@@ -62,17 +71,20 @@ class OpToolCall {
                 .thenApply(resultJson -> {
 
                     if (logger.isDebugEnabled()) {
-                        logger.debug("{}/function => {}", request, compact(resultJson));
+                        logger.debug("{}/function/{} => {}", request, functionCall.name(), compact(resultJson));
                     }
 
+                    // 工具调用的对话历史，需要在最后的response中透出
                     final var history = new ArrayList<Message>();
                     history.add(message);
                     history.add(new ToolMessageImpl(resultJson, functionCall.name()));
 
+                    // 工具调用应答消息，由本次请求中的消息和本次工具调用的对话历史构成
                     final var messages = new ArrayList<Message>();
                     messages.addAll(request.messages());
                     messages.addAll(history);
 
+                    // 工具调用结果的请求
                     final var newRequest = new ChatRequestImpl(
                             request.model(),
                             request.option(),
@@ -82,11 +94,16 @@ class OpToolCall {
                             request.functionTools()
                     );
 
+                    /*
+                     * 处理工具调用结果的请求
+                     * 1. 这里需要代理处理，因为工具调用结果的请求中的消息和工具调用的对话历史需要在最后的response中透出
+                     * 2. 通过调用client的请求来实现工具级联调用
+                     */
                     return opProxy(history, client.chat(newRequest));
-
                 });
     }
 
+    // 函数调用
     private CompletableFuture<String> callingFunction(FunctionTool tool, FunctionTool.Call call) {
         try {
             return tool.function().call(JacksonUtils.toObject(call.arguments(), tool.meta().parameterTs().type()))
@@ -96,17 +113,21 @@ class OpToolCall {
         }
     }
 
+    // 代理操作
     private OpAsyncOpFlow<ChatResponse> opProxy(List<Message> history, OpAsyncOpFlow<ChatResponse> op) {
         return new OpAsyncOpFlow<>() {
 
-            // 代理response
-            private ChatResponse responseProxy(ChatResponse response) {
+            // 处理response
+            private ChatResponse onResponse(ChatResponse response) {
                 response.output().choices().stream()
                         .filter(choice -> choice.finish() == ChatResponse.Finish.NORMAL)
                         .forEach(choice -> {
+
+                            // 添加工具调用的对话历史
                             if (choice instanceof ChoiceImpl impl) {
                                 impl.appendFirst(history);
                             }
+
                         });
                 return response;
             }
@@ -114,13 +135,13 @@ class OpToolCall {
             @Override
             public CompletableFuture<ChatResponse> async() {
                 return op.async()
-                        .thenApply(this::responseProxy);
+                        .thenApply(this::onResponse);
             }
 
             @Override
             public CompletableFuture<Flow.Publisher<ChatResponse>> flow() {
                 return op.flow()
-                        .thenApply(source-> TransformFlowProcessor.transform(source, response -> List.of(responseProxy(response))));
+                        .thenApply(source -> TransformFlowProcessor.transform(source, v -> List.of(onResponse(v))));
             }
 
         };
