@@ -215,8 +215,8 @@ HELLO!
 
 我们有两个函数
 
-- 查询成绩函数：[query_score]()
-- 计算平均分函数：[compute_avg_score]()
+- 查询成绩函数：[query_score](https://github.com/oldmanpushcart/dashscope4j/blob/main/src/test/java/io/github/oldmanpushcart/test/dashscope4j/chat/function/QueryScoreFunction.java)
+- 计算平均分函数：[compute_avg_score](https://github.com/oldmanpushcart/dashscope4j/blob/main/src/test/java/io/github/oldmanpushcart/test/dashscope4j/chat/function/ComputeAvgScoreFunction.java)
 
 现在需要查询某个同学的所有成绩，并计算其平均分。LLM需要先调用 `query_score` 函数查询成绩，然后再调用 `compute_avg_score` 函数计算平均分。
 ```java
