@@ -10,6 +10,14 @@ import java.net.URI;
 public interface Model {
 
     /**
+     * @return 模型标签
+     * @since 1.2.2
+     */
+    default String label() {
+        return "model";
+    }
+
+    /**
      * 获取模型名称
      *
      * @return 模型名称

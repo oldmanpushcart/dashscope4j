@@ -13,6 +13,11 @@ import java.net.URI;
  */
 public record EmbeddingModel(int dimension, String name, URI remote) implements Model {
 
+    @Override
+    public String label() {
+        return "embedding";
+    }
+
     /**
      * TEXT_EMBEDDING_V1
      * <p>文本向量计算模型V1版</p>

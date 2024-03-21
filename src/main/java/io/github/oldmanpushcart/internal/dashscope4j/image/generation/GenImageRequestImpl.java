@@ -15,11 +15,6 @@ final class GenImageRequestImpl extends AlgoRequestImpl<GenImageResponse> implem
         super(model, new Input(prompt, negative), option, timeout, GenImageResponseImpl.class);
     }
 
-    @Override
-    public String toString() {
-        return "dashscope://image/generation";
-    }
-
     private record Input(
             @JsonProperty("prompt")
             String prompt,

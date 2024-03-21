@@ -15,6 +15,11 @@ import static io.github.oldmanpushcart.dashscope4j.chat.ChatModel.Mode.MULTIMODA
  */
 public record ChatModel(Mode mode, String name, URI remote) implements Model {
 
+    @Override
+    public String label() {
+        return "chat";
+    }
+
     /**
      * 对话模型模式
      */

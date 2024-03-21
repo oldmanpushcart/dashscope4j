@@ -16,11 +16,6 @@ final class EmbeddingRequestImpl extends AlgoRequestImpl<EmbeddingResponse> impl
         super(model, new Input(documents), option, timeout, EmbeddingResponseImpl.class);
     }
 
-    @Override
-    public String toString() {
-        return "dashscope://embedding";
-    }
-
     private record Input(
             @JsonProperty("texts")
             List<String> documents

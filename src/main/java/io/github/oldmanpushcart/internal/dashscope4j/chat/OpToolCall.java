@@ -63,7 +63,12 @@ class OpToolCall {
                 .orElseThrow(() -> new IllegalArgumentException("not found tool by name: %s".formatted(functionCall.name())));
 
         if (logger.isDebugEnabled()) {
-            logger.debug("{}/function/{} <= {}", request, functionCall.name(), compact(functionCall.arguments()));
+            logger.debug("dashscope://{}/{}/function/{} <= {}",
+                    request.model().label(),
+                    request.model().name(),
+                    functionCall.name(),
+                    compact(functionCall.arguments())
+            );
         }
 
         // 进行函数调用
@@ -71,7 +76,12 @@ class OpToolCall {
                 .thenApply(resultJson -> {
 
                     if (logger.isDebugEnabled()) {
-                        logger.debug("{}/function/{} => {}", request, functionCall.name(), compact(resultJson));
+                        logger.debug("dashscope://{}/{}/function/{} => {}",
+                                request.model().label(),
+                                request.model().name(),
+                                functionCall.name(),
+                                compact(resultJson)
+                        );
                     }
 
                     // 工具调用的对话历史，需要在最后的response中透出

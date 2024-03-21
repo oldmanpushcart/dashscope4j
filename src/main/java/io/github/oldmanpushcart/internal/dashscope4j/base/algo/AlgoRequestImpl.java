@@ -38,7 +38,7 @@ public abstract class AlgoRequestImpl<R extends AlgoResponse<?>> implements Algo
     @Override
     public HttpRequest newHttpRequest() {
         final var body = JacksonUtils.toJson(this);
-        logger.debug("{}/{} => {}", this, model().name(), body);
+        logger.debug("dashscope://{}/{} => {}", model.label(), model.name(), body);
         return HttpRequest.newBuilder()
                 .uri(model().remote())
                 .header(HEADER_CONTENT_TYPE, MIME_APPLICATION_JSON)
@@ -49,7 +49,7 @@ public abstract class AlgoRequestImpl<R extends AlgoResponse<?>> implements Algo
     @Override
     public Function<String, R> responseDeserializer() {
         return body -> {
-            logger.debug("{}/{} <= {}", this, model().name(), body);
+            logger.debug("dashscope://{}/{} <= {}", model.label(), model.name(), body);
             return JacksonUtils.toObject(body, responseType);
         };
     }

@@ -59,11 +59,6 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
     }
 
     @Override
-    public String toString() {
-        return "dashscope://chat";
-    }
-
-    @Override
     public Option option() {
         final var clone = new Option();
         super.option().export().forEach(clone::option);

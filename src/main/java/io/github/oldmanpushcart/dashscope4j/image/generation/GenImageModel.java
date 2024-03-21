@@ -12,6 +12,11 @@ import java.net.URI;
  */
 public record GenImageModel(String name, URI remote) implements Model {
 
+    @Override
+    public String label() {
+        return "gen-image";
+    }
+
     /**
      * WANX-V1
      * <p>通义万相-文本生成图像</p>
