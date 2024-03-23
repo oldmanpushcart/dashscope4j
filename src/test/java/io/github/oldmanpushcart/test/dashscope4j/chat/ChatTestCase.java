@@ -259,13 +259,7 @@ public class ChatTestCase implements LoadingEnv {
                                 }
                                 """
                         )
-                        .returnType(EchoFunction.Echo.class)
-                        .function(new Function<EchoFunction.Echo, EchoFunction.Echo>() {
-                            @Override
-                            public EchoFunction.Echo apply(EchoFunction.Echo echo) {
-                                return echo;
-                            }
-                        })
+                        .function(echo -> echo)
                         .build())
                 .user("echo: HELLO!")
                 .build();

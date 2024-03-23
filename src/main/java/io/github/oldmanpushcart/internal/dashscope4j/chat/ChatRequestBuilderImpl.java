@@ -30,7 +30,7 @@ public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, Ch
     @Override
     public ChatRequest.Builder functions(List<ChatFunction<?, ?>> functions) {
         final var tools = functions.stream()
-                .map(ChatFunctionToolImpl::annotationBy)
+                .map(ChatFunctionToolImpl::byAnnotation)
                 .toList();
         this.tools.addAll(tools);
         return this;

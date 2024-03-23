@@ -15,7 +15,6 @@ public class ChatFunctionToolBuilderImpl implements ChatFunctionTool.Builder {
     private String name;
     private String description;
     private ChatFunctionTool.Meta.TypeSchema parameterTs;
-    private ChatFunctionTool.Meta.TypeSchema returnTs;
     private ChatFunction<?, ?> function;
 
     @Override
@@ -43,19 +42,7 @@ public class ChatFunctionToolBuilderImpl implements ChatFunctionTool.Builder {
     }
 
     @Override
-    public ChatFunctionTool.Builder returnType(Type returnType) {
-        this.returnTs = ChatFunctionToolImpl.TypeSchemaImpl.ofType(returnType);
-        return this;
-    }
-
-    @Override
-    public ChatFunctionTool.Builder returnType(Type returnType, String schema) {
-        this.returnTs = ChatFunctionToolImpl.TypeSchemaImpl.ofType(returnType, schema);
-        return this;
-    }
-
-    @Override
-    public <T, R> ChatFunctionTool.Builder function(ChatFunction<T, R> function) {
+    public <T, R> ChatFunctionTool.Builder chatFunction(ChatFunction<T, R> function) {
         this.function = requireNonNull(function);
         return this;
     }
@@ -70,9 +57,8 @@ public class ChatFunctionToolBuilderImpl implements ChatFunctionTool.Builder {
     public ChatFunctionTool build() {
         requireNonBlankString(name);
         requireNonNull(parameterTs);
-        requireNonNull(returnTs);
         return new ChatFunctionToolImpl(
-                new ChatFunctionToolImpl.MetaImpl(name, description, parameterTs, returnTs),
+                new ChatFunctionToolImpl.MetaImpl(name, description, parameterTs),
                 requireNonNull(function)
         );
     }

@@ -33,8 +33,7 @@ public record ChatFunctionToolImpl(Meta meta, ChatFunction<?, ?> function) imple
             @JsonProperty("description")
             String description,
             @JsonProperty("parameters")
-            TypeSchema parameterTs,
-            TypeSchema returnTs
+            TypeSchema parameterTs
     ) implements Meta {
     }
 
@@ -81,7 +80,8 @@ public record ChatFunctionToolImpl(Meta meta, ChatFunction<?, ?> function) imple
 
     }
 
-    public static ChatFunctionTool annotationBy(ChatFunction<?, ?> function) {
+
+    public static ChatFunctionTool byAnnotation(ChatFunction<?, ?> function) {
 
         // 获取函数类
         final var functionClass = function.getClass();
@@ -112,14 +112,12 @@ public record ChatFunctionToolImpl(Meta meta, ChatFunction<?, ?> function) imple
 
         final var anChatFn = functionClass.getAnnotation(ChatFn.class);
         final var parameterType = interfaceType.getActualTypeArguments()[0];
-        final var returnType = interfaceType.getActualTypeArguments()[1];
 
         return new ChatFunctionToolImpl(
                 new MetaImpl(
                         anChatFn.name(),
                         anChatFn.description(),
-                        TypeSchemaImpl.ofType(parameterType),
-                        TypeSchemaImpl.ofType(returnType)
+                        TypeSchemaImpl.ofType(parameterType)
                 ),
                 function
         );
