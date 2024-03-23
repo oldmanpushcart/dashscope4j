@@ -24,7 +24,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 public class ChatTestCase implements LoadingEnv {
 

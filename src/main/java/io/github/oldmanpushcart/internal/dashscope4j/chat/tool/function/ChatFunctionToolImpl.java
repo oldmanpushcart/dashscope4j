@@ -6,12 +6,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFn;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.internal.dashscope4j.util.GenericReflectUtils;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.Optional;
 
 public record ChatFunctionToolImpl(Meta meta, ChatFunction<?, ?> function) implements ChatFunctionTool {
 
@@ -101,11 +101,7 @@ public record ChatFunctionToolImpl(Meta meta, ChatFunction<?, ?> function) imple
         }
 
         // 找到ChatFunction接口
-        final var interfaceType = Stream.of(functionClass.getGenericInterfaces())
-                .filter(genericInterface -> genericInterface instanceof ParameterizedType)
-                .map(genericInterface -> (ParameterizedType) genericInterface)
-                .filter(pType -> pType.getRawType().equals(ChatFunction.class))
-                .findFirst()
+        final var interfaceType = Optional.ofNullable(GenericReflectUtils.findFirst(functionClass, ChatFunction.class))
                 .orElseThrow(() -> new IllegalArgumentException("required implements interface: %s".formatted(
                         ChatFunction.class.getName()
                 )));

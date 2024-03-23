@@ -10,7 +10,6 @@ import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.*;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.tool.function.ChatFunctionToolImpl;
 
