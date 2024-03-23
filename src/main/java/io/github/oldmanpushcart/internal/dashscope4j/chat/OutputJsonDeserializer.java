@@ -10,7 +10,9 @@ import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.*;
+import io.github.oldmanpushcart.internal.dashscope4j.chat.tool.function.ChatFunctionToolImpl;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -154,7 +156,7 @@ public class OutputJsonDeserializer extends JsonDeserializer<ChatResponse.Output
                 for (final var toolCallNode : toolCallsNode) {
                     final var type = context.readTreeAsValue(toolCallNode.get("type"), Tool.Classify.class);
                     if (type == Tool.Classify.FUNCTION) {
-                        final var call = context.readTreeAsValue(toolCallNode.get("function"), FunctionTool.Call.class);
+                        final var call = context.readTreeAsValue(toolCallNode.get("function"), ChatFunctionToolImpl.CallImpl.class);
                         toolCalls.add(call);
                     }
                 }

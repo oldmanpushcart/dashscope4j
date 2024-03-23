@@ -1,0 +1,80 @@
+package io.github.oldmanpushcart.internal.dashscope4j.chat.tool.function;
+
+import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunction;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunctionTool;
+
+import java.lang.reflect.Type;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.requireNonBlankString;
+import static java.util.Objects.requireNonNull;
+
+public class ChatFunctionToolBuilderImpl implements ChatFunctionTool.Builder {
+
+    private String name;
+    private String description;
+    private ChatFunctionTool.Meta.TypeSchema parameterTs;
+    private ChatFunctionTool.Meta.TypeSchema returnTs;
+    private ChatFunction<?, ?> function;
+
+    @Override
+    public ChatFunctionTool.Builder name(String name) {
+        this.name = requireNonBlankString(name);
+        return this;
+    }
+
+    @Override
+    public ChatFunctionTool.Builder description(String description) {
+        this.description = requireNonBlankString(description);
+        return this;
+    }
+
+    @Override
+    public ChatFunctionTool.Builder parameterType(Type parameterType) {
+        this.parameterTs = ChatFunctionToolImpl.TypeSchemaImpl.ofType(parameterType);
+        return this;
+    }
+
+    @Override
+    public ChatFunctionTool.Builder parameterType(Type parameterType, String schema) {
+        this.parameterTs = ChatFunctionToolImpl.TypeSchemaImpl.ofType(parameterType, schema);
+        return this;
+    }
+
+    @Override
+    public ChatFunctionTool.Builder returnType(Type returnType) {
+        this.returnTs = ChatFunctionToolImpl.TypeSchemaImpl.ofType(returnType);
+        return this;
+    }
+
+    @Override
+    public ChatFunctionTool.Builder returnType(Type returnType, String schema) {
+        this.returnTs = ChatFunctionToolImpl.TypeSchemaImpl.ofType(returnType, schema);
+        return this;
+    }
+
+    @Override
+    public <T, R> ChatFunctionTool.Builder function(ChatFunction<T, R> function) {
+        this.function = requireNonNull(function);
+        return this;
+    }
+
+    @Override
+    public <T, R> ChatFunctionTool.Builder function(Function<T, R> function) {
+        this.function = (ChatFunction<T, R>) t -> CompletableFuture.completedFuture(function.apply(t));
+        return this;
+    }
+
+    @Override
+    public ChatFunctionTool build() {
+        requireNonBlankString(name);
+        requireNonNull(parameterTs);
+        requireNonNull(returnTs);
+        return new ChatFunctionToolImpl(
+                new ChatFunctionToolImpl.MetaImpl(name, description, parameterTs, returnTs),
+                requireNonNull(function)
+        );
+    }
+
+}

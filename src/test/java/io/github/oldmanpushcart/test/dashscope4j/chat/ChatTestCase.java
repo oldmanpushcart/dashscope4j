@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.chat.message.PluginCallMessage;
 import io.github.oldmanpushcart.dashscope4j.chat.message.PluginMessage;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
 import io.github.oldmanpushcart.test.dashscope4j.CommonAssertions;
 import io.github.oldmanpushcart.test.dashscope4j.DashScopeAssertions;
@@ -23,6 +24,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 public class ChatTestCase implements LoadingEnv {
 
@@ -235,6 +237,42 @@ public class ChatTestCase implements LoadingEnv {
                 .join();
         final var text = response.output().best().message().text();
         Assertions.assertTrue(text.contains("五年规划"));
+    }
+
+    @Test
+    public void test$chat$tool$echo() {
+
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_PLUS)
+                .tools(ChatFunctionTool.newBuilder()
+                        .name("echo")
+                        .description("当用户输入echo:，回显后边的文字")
+                        .parameterType(EchoFunction.Echo.class, """
+                                {
+                                    "type":"object",
+                                    "properties":{
+                                        "words":{
+                                            "type":"string",
+                                            "description":"需要回显的文字"
+                                        }
+                                    }
+                                }
+                                """
+                        )
+                        .returnType(EchoFunction.Echo.class)
+                        .function(new Function<EchoFunction.Echo, EchoFunction.Echo>() {
+                            @Override
+                            public EchoFunction.Echo apply(EchoFunction.Echo echo) {
+                                return echo;
+                            }
+                        })
+                        .build())
+                .user("echo: HELLO!")
+                .build();
+        final var response = client.chat(request)
+                .async()
+                .join();
+        Assertions.assertEquals("HELLO!", response.output().best().message().text());
     }
 
     @Test

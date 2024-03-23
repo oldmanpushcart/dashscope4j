@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
 import io.github.oldmanpushcart.dashscope4j.DashScopeClient.OpAsyncOpFlow;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.util.TransformFlowProcessor;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.ToolCallMessageImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.ToolMessageImpl;
@@ -44,7 +45,7 @@ class OpToolCall {
     public CompletableFuture<OpAsyncOpFlow<ChatResponse>> op(DashScopeClient client) {
 
         // 检查工具调用中是否只有函数调用，当前只支持函数调用
-        if (!message.calls().stream().allMatch(call -> call instanceof FunctionTool.Call)) {
+        if (!message.calls().stream().allMatch(call -> call instanceof ChatFunctionTool.Call)) {
             throw new IllegalArgumentException("only support function call in tool call.");
         }
 
@@ -54,10 +55,12 @@ class OpToolCall {
         }
 
         // 获取函数调用
-        final var functionCall = (FunctionTool.Call) message.calls().get(0);
+        final var functionCall = (ChatFunctionTool.Call) message.calls().get(0);
 
         // 找到函数工具
-        final var functionTool = request.functionTools().stream()
+        final var functionTool = request.tools().stream()
+                .filter(tool -> tool instanceof ChatFunctionTool)
+                .map(tool -> (ChatFunctionTool) tool)
                 .filter(tool -> Objects.equals(tool.meta().name(), functionCall.name()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("not found tool by name: %s".formatted(functionCall.name())));
@@ -101,7 +104,7 @@ class OpToolCall {
                             request.timeout(),
                             messages,
                             request.plugins(),
-                            request.functionTools()
+                            request.tools()
                     );
 
                     /*
@@ -114,7 +117,7 @@ class OpToolCall {
     }
 
     // 函数调用
-    private CompletableFuture<String> callingFunction(FunctionTool tool, FunctionTool.Call call) {
+    private CompletableFuture<String> callingFunction(ChatFunctionTool tool, ChatFunctionTool.Call call) {
         try {
             return tool.function().call(JacksonUtils.toObject(call.arguments(), tool.meta().parameterTs().type()))
                     .thenApply(JacksonUtils::toJson);

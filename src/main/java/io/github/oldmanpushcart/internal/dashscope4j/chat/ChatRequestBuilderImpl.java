@@ -4,8 +4,10 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestBuilderImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.chat.tool.function.ChatFunctionToolImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +18,7 @@ import static java.util.Objects.requireNonNull;
 public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, ChatRequest, ChatRequest.Builder> implements ChatRequest.Builder {
 
     private final List<ChatPlugin> plugins = new ArrayList<>();
-    private final List<ChatFunction<?,?>> functions = new ArrayList<>();
+    private final List<Tool> tools = new ArrayList<>();
     private final List<Message> messages = new ArrayList<>();
 
     @Override
@@ -26,8 +28,17 @@ public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, Ch
     }
 
     @Override
-    public ChatRequest.Builder functions(List<ChatFunction<?,?>> functions) {
-        this.functions.addAll(functions);
+    public ChatRequest.Builder functions(List<ChatFunction<?, ?>> functions) {
+        final var tools = functions.stream()
+                .map(ChatFunctionToolImpl::annotationBy)
+                .toList();
+        this.tools.addAll(tools);
+        return this;
+    }
+
+    @Override
+    public ChatRequest.Builder tools(List<Tool> tools) {
+        this.tools.addAll(tools);
         return this;
     }
 
@@ -40,13 +51,13 @@ public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, Ch
     @Override
     public ChatRequest build() {
         requireNonNull(model());
-        return ChatRequestImpl.of(
+        return new ChatRequestImpl(
                 model(),
                 option(),
                 timeout(),
                 unmodifiableList(messages),
                 unmodifiableList(plugins),
-                unmodifiableList(functions)
+                unmodifiableList(tools)
         );
     }
 

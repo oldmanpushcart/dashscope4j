@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.chat;
 import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatRequestBuilderImpl;
 
@@ -51,7 +52,27 @@ public interface ChatRequest extends AlgoRequest<ChatResponse> {
          * @return 构建器
          * @since 1.2.0
          */
-        Builder functions(List<ChatFunction<?,?>> functions);
+        Builder functions(List<ChatFunction<?, ?>> functions);
+
+        /**
+         * 添加工具
+         *
+         * @param tools 工具
+         * @return 构建器
+         * @since 1.2.2
+         */
+        default Builder tools(Tool... tools) {
+            return tools(List.of(tools));
+        }
+
+        /**
+         * 添加工具
+         *
+         * @param tools 工具
+         * @return 构建器
+         * @since 1.2.2
+         */
+        Builder tools(List<Tool> tools);
 
         /**
          * 添加消息

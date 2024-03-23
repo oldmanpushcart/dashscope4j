@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader;
@@ -24,13 +25,13 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
 
     private final List<Message> messages;
     private final List<ChatPlugin> plugins;
-    private final List<FunctionTool> functionTools;
+    private final List<Tool> tools;
 
-    ChatRequestImpl(ChatModel model, Option option, Duration timeout, List<Message> messages, List<ChatPlugin> plugins, List<FunctionTool> functionTools) {
+    ChatRequestImpl(ChatModel model, Option option, Duration timeout, List<Message> messages, List<ChatPlugin> plugins, List<Tool> tools) {
         super(model, new Input(messages), option, timeout, ChatResponseImpl.class);
         this.messages = messages;
         this.plugins = plugins;
-        this.functionTools = functionTools;
+        this.tools = tools;
     }
 
 
@@ -49,8 +50,8 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
         return plugins;
     }
 
-    public List<FunctionTool> functionTools() {
-        return functionTools;
+    public List<Tool> tools() {
+        return tools;
     }
 
     @Override
@@ -69,9 +70,9 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
         }
 
         // 工具必选参数
-        if (!functionTools.isEmpty()) {
+        if (!tools.isEmpty()) {
             clone.option("result_format", "message");
-            clone.option("tools", functionTools);
+            clone.option("tools", tools);
         }
 
         return clone;
@@ -129,18 +130,6 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
         }
 
         return builder.build();
-    }
-
-    public static ChatRequestImpl of(ChatModel model, Option option, Duration timeout, List<Message> messages, List<ChatPlugin> plugins, List<ChatFunction<?, ?>> functions) {
-
-        // 转换为函数工具
-        final var functionTools = functions.stream()
-                .map(FunctionTool::of)
-                .toList();
-
-        // 构造对话请求
-        return new ChatRequestImpl(model, option, timeout, messages, plugins, functionTools);
-
     }
 
 }

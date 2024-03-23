@@ -1,6 +1,5 @@
-package io.github.oldmanpushcart.internal.dashscope4j.chat;
+package io.github.oldmanpushcart.internal.dashscope4j.chat.tool.function;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,7 +13,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.stream.Stream;
 
-public record FunctionTool(Meta meta, ChatFunction<?, ?> function) implements ChatFunctionTool {
+public record ChatFunctionToolImpl(Meta meta, ChatFunction<?, ?> function) implements ChatFunctionTool {
 
     @JsonProperty("type")
     @Override
@@ -23,38 +22,28 @@ public record FunctionTool(Meta meta, ChatFunction<?, ?> function) implements Ch
     }
 
     @JsonProperty("function")
+    @Override
     public Meta meta() {
         return meta;
     }
 
-    public record Meta(
+    public record MetaImpl(
             @JsonProperty("name")
             String name,
             @JsonProperty("description")
             String description,
             @JsonProperty("parameters")
             TypeSchema parameterTs,
-            @JsonIgnore
             TypeSchema returnTs
-    ) {
-
+    ) implements Meta {
     }
 
-    public record TypeSchema(Type type) {
-
-        @JsonValue
-        JsonNode extract() {
-            return JacksonUtils.schema(type());
-        }
-
-    }
-
-    public record Call(
+    public record CallImpl(
             @JsonProperty(value = "name", access = JsonProperty.Access.WRITE_ONLY)
             String name,
             @JsonProperty(value = "arguments", access = JsonProperty.Access.WRITE_ONLY)
             String arguments
-    ) implements ChatFunctionTool.Call {
+    ) implements Call {
 
         @JsonProperty("type")
         @Override
@@ -72,7 +61,27 @@ public record FunctionTool(Meta meta, ChatFunction<?, ?> function) implements Ch
 
     }
 
-    public static FunctionTool of(ChatFunction<?, ?> function) {
+    public record TypeSchemaImpl(Type type, String schema, JsonNode node) implements Meta.TypeSchema {
+
+        @JsonValue
+        JsonNode extract() {
+            return node;
+        }
+
+        static Meta.TypeSchema ofType(Type type) {
+            final var node = JacksonUtils.schema(type);
+            final var schema = JacksonUtils.toJson(node);
+            return new TypeSchemaImpl(type, schema, node);
+        }
+
+        static Meta.TypeSchema ofType(Type type, String schema) {
+            final var node = JacksonUtils.toNode(schema);
+            return new TypeSchemaImpl(type, schema, node);
+        }
+
+    }
+
+    public static ChatFunctionTool annotationBy(ChatFunction<?, ?> function) {
 
         // 获取函数类
         final var functionClass = function.getClass();
@@ -105,12 +114,12 @@ public record FunctionTool(Meta meta, ChatFunction<?, ?> function) implements Ch
         final var parameterType = interfaceType.getActualTypeArguments()[0];
         final var returnType = interfaceType.getActualTypeArguments()[1];
 
-        return new FunctionTool(
-                new Meta(
+        return new ChatFunctionToolImpl(
+                new MetaImpl(
                         anChatFn.name(),
                         anChatFn.description(),
-                        new TypeSchema(parameterType),
-                        new TypeSchema(returnType)
+                        TypeSchemaImpl.ofType(parameterType),
+                        TypeSchemaImpl.ofType(returnType)
                 ),
                 function
         );

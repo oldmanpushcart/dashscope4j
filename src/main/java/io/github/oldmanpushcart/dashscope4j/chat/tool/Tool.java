@@ -40,4 +40,13 @@ public interface Tool {
 
     }
 
+    /**
+     * 工具元数据
+     *
+     * @since 1.2.2
+     */
+    interface Meta {
+
+    }
+
 }
