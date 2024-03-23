@@ -56,7 +56,7 @@ public class ChatTestCase implements LoadingEnv {
             "qwen-plus",
             "qwen-turbo",
             "qwen-max",
-            //"qwen-max-longcontext", //-- 限流太多，暂时从测试用例中去除
+            // "qwen-max-longcontext", //-- 限流太多，暂时从测试用例中去除
             "qwen-vl-max",
             "qwen-vl-plus"
     })
@@ -67,7 +67,7 @@ public class ChatTestCase implements LoadingEnv {
                 .messages(
                         Message.ofUser("小红有10块钱"), Message.ofAi("收到"),
                         Message.ofUser("小明比小红多3块"), Message.ofAi("收到"),
-                        Message.ofUser("他两一共有多少钱?")
+                        Message.ofUser("小红和小明一共有多少钱?")
                 )
                 .build();
 
@@ -107,7 +107,7 @@ public class ChatTestCase implements LoadingEnv {
                 .messages(
                         Message.ofUser(
                                 Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
-                                Content.ofText("请告诉我照片里一共有多少辆自行车?")
+                                Content.ofText("图片中一共多少辆自行车?")
                         )
                 )
                 .build();

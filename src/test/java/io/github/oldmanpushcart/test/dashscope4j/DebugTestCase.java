@@ -40,7 +40,7 @@ public class DebugTestCase implements LoadingEnv {
 //        {
 //            final var response = client.chat(request).async()
 //                    .join();
-//            System.out.println(response.best().message().text());
+//            System.out.println(response.output().best().message().text());
 //        }
 
         {
