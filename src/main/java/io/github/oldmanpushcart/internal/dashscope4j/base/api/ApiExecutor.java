@@ -75,8 +75,10 @@ public class ApiExecutor {
      * @return 异步应答
      */
     public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<R> request) {
-        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> builder
-                .header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "disable"));
+        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
+            builder.header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "disable");
+            Optional.ofNullable(request.timeout()).ifPresent(builder::timeout);
+        });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
                 .thenApply(httpResponse -> {
@@ -95,8 +97,10 @@ public class ApiExecutor {
      * @return 流式应答
      */
     public <R extends ApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(ApiRequest<R> request) {
-        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> builder
-                .header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "enable"));
+        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
+            builder.header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "enable");
+            Optional.ofNullable(request.timeout()).ifPresent(builder::timeout);
+        });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApplyAsync(identity(), executor)
 
@@ -149,9 +153,12 @@ public class ApiExecutor {
      * @return 任务应答
      */
     public <R extends ApiResponse<?>> CompletableFuture<Task.Half<R>> task(ApiRequest<R> request) {
-        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> builder
-                .header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "disable")
-                .header(HttpHeader.HEADER_X_DASHSCOPE_ASYNC, "enable"));
+        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
+            builder
+                    .header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "disable")
+                    .header(HttpHeader.HEADER_X_DASHSCOPE_ASYNC, "enable");
+            Optional.ofNullable(request.timeout()).ifPresent(builder::timeout);
+        });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
 
