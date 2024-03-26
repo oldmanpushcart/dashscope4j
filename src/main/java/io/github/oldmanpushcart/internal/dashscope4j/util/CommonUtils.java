@@ -31,14 +31,15 @@ public class CommonUtils {
     /**
      * 要求非空字符串
      *
-     * @param string 字符串
+     * @param string  字符串
+     * @param message 异常信息
      * @return 字符串
      */
-    public static String requireNonBlankString(String string) {
+    public static String requireNonBlankString(String string, String message) {
         if (isNotBlankString(string)) {
             return string;
         }
-        throw new IllegalArgumentException("string is blank");
+        throw new IllegalArgumentException(message);
     }
 
 }

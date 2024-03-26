@@ -19,13 +19,13 @@ public class ChatFunctionToolBuilderImpl implements ChatFunctionTool.Builder {
 
     @Override
     public ChatFunctionTool.Builder name(String name) {
-        this.name = requireNonBlankString(name);
+        this.name = requireNonBlankString(name, "name is blank");
         return this;
     }
 
     @Override
     public ChatFunctionTool.Builder description(String description) {
-        this.description = requireNonBlankString(description);
+        this.description = requireNonBlankString(description, "description is blank");
         return this;
     }
 
@@ -55,7 +55,7 @@ public class ChatFunctionToolBuilderImpl implements ChatFunctionTool.Builder {
 
     @Override
     public ChatFunctionTool build() {
-        requireNonBlankString(name);
+        requireNonBlankString(name, "name is blank");
         requireNonNull(parameterTs);
         return new ChatFunctionToolImpl(
                 new ChatFunctionToolImpl.MetaImpl(name, description, parameterTs),
