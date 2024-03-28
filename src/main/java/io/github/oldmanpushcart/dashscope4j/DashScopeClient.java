@@ -7,6 +7,8 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingRequest;
 import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingResponse;
+import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.MmEmbeddingRequest;
+import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.MmEmbeddingResponse;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
@@ -43,6 +45,14 @@ public interface DashScopeClient {
      * @return 操作
      */
     OpAsync<EmbeddingResponse> embedding(EmbeddingRequest request);
+
+    /**
+     * 多模态向量计算
+     *
+     * @param request 多模态向量计算请求
+     * @return 操作
+     */
+    OpAsync<MmEmbeddingResponse> mmEmbedding(MmEmbeddingRequest request);
 
     /**
      * 通用API
