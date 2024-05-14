@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -27,6 +28,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
 import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.HEADER_AUTHORIZATION;
@@ -45,6 +47,7 @@ public class ApiExecutor {
     private final String ak;
     private final HttpClient http;
     private final Executor executor;
+    private final Duration timeout;
 
     /**
      * 构造API执行器
@@ -52,11 +55,13 @@ public class ApiExecutor {
      * @param ak       AK
      * @param http     HTTP客户端
      * @param executor 线程池
+     * @param timeout  超时
      */
-    public ApiExecutor(String ak, HttpClient http, Executor executor) {
+    public ApiExecutor(String ak, HttpClient http, Executor executor, Duration timeout) {
         this.ak = ak;
         this.http = http;
         this.executor = executor;
+        this.timeout = timeout;
     }
 
     // 委派API请求
@@ -77,7 +82,9 @@ public class ApiExecutor {
     public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<R> request) {
         final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder.header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "disable");
-            Optional.ofNullable(request.timeout()).ifPresent(builder::timeout);
+            Optional.ofNullable(request.timeout())
+                    .or(() -> Optional.ofNullable(timeout))
+                    .ifPresent(builder::timeout);
         });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
@@ -99,7 +106,9 @@ public class ApiExecutor {
     public <R extends ApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(ApiRequest<R> request) {
         final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder.header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "enable");
-            Optional.ofNullable(request.timeout()).ifPresent(builder::timeout);
+            Optional.ofNullable(request.timeout())
+                    .or(() -> Optional.ofNullable(timeout))
+                    .ifPresent(builder::timeout);
         });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApplyAsync(identity(), executor)
@@ -157,7 +166,9 @@ public class ApiExecutor {
             builder
                     .header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "disable")
                     .header(HttpHeader.HEADER_X_DASHSCOPE_ASYNC, "enable");
-            Optional.ofNullable(request.timeout()).ifPresent(builder::timeout);
+            Optional.ofNullable(request.timeout())
+                    .or(() -> Optional.ofNullable(timeout))
+                    .ifPresent(builder::timeout);
         });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)

@@ -101,6 +101,15 @@ public interface DashScopeClient {
          */
         Builder connectTimeout(Duration connectTimeout);
 
+        /**
+         * 设置超时
+         * <p>默认超时时间，如果在{@link ApiRequest#timeout()}上没有设置超时，则以此为默认超时时间</p>
+         *
+         * @param timeout 超时
+         * @return this
+         */
+        Builder timeout(Duration timeout);
+
     }
 
     /**
