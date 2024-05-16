@@ -4,6 +4,8 @@ import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
+import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
+import io.github.oldmanpushcart.dashscope4j.base.upload.UploadResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingRequest;
@@ -13,6 +15,9 @@ import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.MmEmbeddingResponse;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
+import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadGetRequest;
+import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadPostRequest;
+import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadResponseImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpAsyncHandler;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpFlowHandler;
 
@@ -100,6 +105,32 @@ public class DashScopeClientImpl implements DashScopeClient {
                 return apiExecutor.task(request);
             }
         };
+    }
+
+    @Override
+    public BaseOp base() {
+        return new BaseOpImpl();
+    }
+
+    private class BaseOpImpl implements BaseOp {
+
+        @Override
+        public OpAsync<UploadResponse> upload(UploadRequest request) {
+            return () -> CompletableFuture.completedFuture(null)
+                    .thenCompose(unused -> apiExecutor.async(new UploadGetRequest(
+                            request.model(),
+                            request.timeout()
+                    )))
+                    .thenApply(response -> response.output().upload())
+                    .thenCompose(upload -> apiExecutor.async(new UploadPostRequest(
+                            request.resource(),
+                            upload,
+                            request.timeout()
+                    )))
+                    .thenApply(response -> response.output().uploaded())
+                    .thenApply(uploaded -> new UploadResponseImpl(() -> uploaded));
+        }
+
     }
 
 

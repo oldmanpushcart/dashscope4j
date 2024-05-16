@@ -28,7 +28,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
 import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.HEADER_AUTHORIZATION;
@@ -88,6 +87,7 @@ public class ApiExecutor {
         });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
+                .thenApply(request.httpResponseChecker())
                 .thenApply(httpResponse -> {
                     final var response = request.responseDeserializer().apply(httpResponse.body());
                     if (!response.ret().isSuccess()) {
@@ -112,6 +112,7 @@ public class ApiExecutor {
         });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApplyAsync(identity(), executor)
+                .thenApply(request.httpResponseChecker())
 
                 // 从HTTP响应数据流转换为SSE事件流
                 .thenApply(httpResponse -> {
@@ -172,6 +173,7 @@ public class ApiExecutor {
         });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
+                .thenApply(request.httpResponseChecker())
 
                 // 解析HTTP响应为任务半应答
                 .thenApply(httpResponse -> {

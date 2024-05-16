@@ -11,6 +11,7 @@ open module dashscope4j {
     exports io.github.oldmanpushcart.dashscope4j.base.algo;
     exports io.github.oldmanpushcart.dashscope4j.base.api;
     exports io.github.oldmanpushcart.dashscope4j.base.task;
+    exports io.github.oldmanpushcart.dashscope4j.base.upload;
     exports io.github.oldmanpushcart.dashscope4j.chat;
     exports io.github.oldmanpushcart.dashscope4j.chat.message;
     exports io.github.oldmanpushcart.dashscope4j.chat.tool;

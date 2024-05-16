@@ -3,6 +3,8 @@ package io.github.oldmanpushcart.dashscope4j;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
+import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
+import io.github.oldmanpushcart.dashscope4j.base.upload.UploadResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingRequest;
@@ -62,6 +64,11 @@ public interface DashScopeClient {
      * @return 操作
      */
     <R extends ApiResponse<?>> OpAsyncOpFlowOpTask<R> api(ApiRequest<R> request);
+
+    /**
+     * @return 辅助操作
+     */
+    BaseOp base();
 
     /**
      * DashScope客户端构建器
@@ -195,6 +202,21 @@ public interface DashScopeClient {
         default CompletableFuture<R> task(Task.WaitStrategy strategy) {
             return task().thenCompose(half -> half.waitingFor(strategy));
         }
+
+    }
+
+    /**
+     * 辅助功能操作
+     */
+    interface BaseOp {
+
+        /**
+         * 上传文件到临时空间
+         *
+         * @param request 上传请求
+         * @return 上传操作
+         */
+        OpAsync<UploadResponse> upload(UploadRequest request);
 
     }
 

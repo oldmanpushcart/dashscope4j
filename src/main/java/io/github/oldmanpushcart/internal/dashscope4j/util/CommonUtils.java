@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.internal.dashscope4j.util;
 
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * 通用工具类
@@ -25,7 +26,7 @@ public class CommonUtils {
      */
     public static boolean isNotBlankString(String string) {
         return Objects.nonNull(string)
-                && !string.isBlank();
+               && !string.isBlank();
     }
 
     /**
@@ -40,6 +41,22 @@ public class CommonUtils {
             return string;
         }
         throw new IllegalArgumentException(message);
+    }
+
+    /**
+     * 检查
+     *
+     * @param t         对象
+     * @param predicate 断言
+     * @param message   异常信息
+     * @param <T>       对象类型
+     * @return 对象
+     */
+    public static <T> T check(T t, Predicate<T> predicate, String message) {
+        if (!predicate.test(t)) {
+            throw new IllegalArgumentException(message);
+        }
+        return t;
     }
 
 }

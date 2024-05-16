@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.function.Function;
 
@@ -12,19 +13,26 @@ import java.util.function.Function;
  */
 public interface ApiRequest<R extends ApiResponse<?>> {
 
+    /**
+     * @return 请求超时
+     */
     @JsonIgnore
     Duration timeout();
 
     /**
-     * 转换为HTTP请求
-     *
      * @return HTTP请求
      */
     HttpRequest newHttpRequest();
 
     /**
-     * 应答序列化
-     *
+     * @return 应答检查器
+     * @since 1.4.0
+     */
+    default <T> Function<HttpResponse<T>, HttpResponse<T>> httpResponseChecker() {
+        return Function.identity();
+    }
+
+    /**
      * @return 应答序列化
      */
     Function<String, R> responseDeserializer();

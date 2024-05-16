@@ -27,6 +27,10 @@ public record Ret(String code, String message) {
         return Ret.CODE_SUCCESS.equals(code);
     }
 
+    public static Ret ofSuccess(String message) {
+        return new Ret(Ret.CODE_SUCCESS, message);
+    }
+
     @JsonCreator
     public static Ret of(
             @JsonProperty("code")
