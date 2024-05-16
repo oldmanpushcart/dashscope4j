@@ -6,9 +6,18 @@ import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
 
-public abstract class ApiRequestBuilderImpl<T extends ApiRequest<?>, B extends ApiRequest.Builder<T, B>> implements ApiRequest.Builder<T, B> {
+public abstract class ApiRequestBuilderImpl<T extends ApiRequest<?>, B extends ApiRequest.Builder<T, B>>
+        implements ApiRequest.Builder<T, B> {
 
     private Duration timeout;
+
+    protected ApiRequestBuilderImpl() {
+
+    }
+
+    protected ApiRequestBuilderImpl(T request) {
+        timeout(request.timeout());
+    }
 
     @Override
     public B timeout(Duration timeout) {

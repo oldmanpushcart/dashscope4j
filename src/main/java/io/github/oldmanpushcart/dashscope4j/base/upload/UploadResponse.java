@@ -1,5 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.base.upload;
 
+import io.github.oldmanpushcart.dashscope4j.Model;
+
 import java.net.URI;
 
 /**
@@ -20,11 +22,19 @@ public interface UploadResponse {
     interface Output {
 
         /**
-         * 上传后的资源地址
-         *
-         * @return 资源地址
+         * @return 上传后的资源地址
          */
         URI uploaded();
+
+        /**
+         * @return 上传前的资源地址
+         */
+        URI resource();
+
+        /**
+         * @return 指定模型
+         */
+        Model model();
 
     }
 

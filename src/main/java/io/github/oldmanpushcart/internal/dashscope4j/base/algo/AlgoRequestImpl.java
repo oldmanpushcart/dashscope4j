@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.internal.dashscope4j.base.algo;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Option;
-import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoResponse;
+import io.github.oldmanpushcart.dashscope4j.base.algo.SpecifyModelAlgoRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,17 +17,18 @@ import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
 import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.ContentType.MIME_APPLICATION_JSON;
 import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.HEADER_CONTENT_TYPE;
 
-public abstract class AlgoRequestImpl<R extends AlgoResponse<?>> implements AlgoRequest<R> {
+public abstract class AlgoRequestImpl<M extends Model, R extends AlgoResponse<?>>
+        implements SpecifyModelAlgoRequest<M, R> {
 
     private final static Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
-    private final Model model;
+    private final M model;
     private final Object input;
     private final Option option;
     private final Duration timeout;
     private final Class<? extends R> responseType;
 
-    protected AlgoRequestImpl(Model model, Object input, Option option, Duration timeout, Class<? extends R> responseType) {
+    protected AlgoRequestImpl(M model, Object input, Option option, Duration timeout, Class<? extends R> responseType) {
         this.model = model;
         this.input = input;
         this.option = option;
@@ -56,7 +57,7 @@ public abstract class AlgoRequestImpl<R extends AlgoResponse<?>> implements Algo
 
     @JsonProperty("model")
     @Override
-    public Model model() {
+    public M model() {
         return model;
     }
 

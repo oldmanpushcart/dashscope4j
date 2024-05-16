@@ -1,13 +1,25 @@
 package io.github.oldmanpushcart.dashscope4j.image.generation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.base.algo.SpecifyModelAlgoRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.image.generation.GenImageRequestBuilder;
 
 /**
  * 文生图请求
  */
-public interface GenImageRequest extends AlgoRequest<GenImageResponse> {
+public interface GenImageRequest extends SpecifyModelAlgoRequest<GenImageModel, GenImageResponse> {
+
+    /**
+     * @return 正向提示
+     * @since 1.4.0
+     */
+    String prompt();
+
+    /**
+     * @return 负向提示
+     * @since 1.4.0
+     */
+    String negative();
 
     /**
      * 构建文生图请求
@@ -19,9 +31,20 @@ public interface GenImageRequest extends AlgoRequest<GenImageResponse> {
     }
 
     /**
+     * 构建文生图请求
+     *
+     * @param request 请求
+     * @return 构建器
+     * @since 1.4.0
+     */
+    static Builder newBuilder(GenImageRequest request) {
+        return new GenImageRequestBuilder(request);
+    }
+
+    /**
      * 文生图请求构建器
      */
-    interface Builder extends AlgoRequest.Builder<GenImageModel, GenImageRequest, Builder> {
+    interface Builder extends SpecifyModelAlgoRequest.Builder<GenImageModel, GenImageRequest, Builder> {
 
         /**
          * 正向提示
@@ -45,34 +68,23 @@ public interface GenImageRequest extends AlgoRequest<GenImageResponse> {
      * 图片风格
      */
     enum Style {
-        @JsonProperty("<auto>")
-        AUTO,
-        @JsonProperty("<3d cartoon>")
-        CARTOON_3D,
-        @JsonProperty("<anime>")
-        ANIME,
-        @JsonProperty("<oil painting>")
-        OIL_PAINTING,
-        @JsonProperty("<watercolor>")
-        WATERCOLOR,
-        @JsonProperty("<sketch>")
-        SKETCH,
-        @JsonProperty("<chinese painting>")
-        CHINESE_PAINTING,
-        @JsonProperty("<flat illustration>")
-        FLAT_ILLUSTRATION
+        @JsonProperty("<auto>") AUTO,
+        @JsonProperty("<3d cartoon>") CARTOON_3D,
+        @JsonProperty("<anime>") ANIME,
+        @JsonProperty("<oil painting>") OIL_PAINTING,
+        @JsonProperty("<watercolor>") WATERCOLOR,
+        @JsonProperty("<sketch>") SKETCH,
+        @JsonProperty("<chinese painting>") CHINESE_PAINTING,
+        @JsonProperty("<flat illustration>") FLAT_ILLUSTRATION
     }
 
     /**
      * 图片尺寸
      */
     enum Size {
-        @JsonProperty("1024*1024")
-        S_1024_1024,
-        @JsonProperty("720*1280")
-        S_720_1280,
-        @JsonProperty("1280*720")
-        S_1280_720
+        @JsonProperty("1024*1024") S_1024_1024,
+        @JsonProperty("720*1280") S_720_1280,
+        @JsonProperty("1280*720") S_1280_720
     }
 
 }

@@ -117,18 +117,29 @@ public class DashScopeClientImpl implements DashScopeClient {
         @Override
         public OpAsync<UploadResponse> upload(UploadRequest request) {
             return () -> CompletableFuture.completedFuture(null)
+
+                    // 获取上传凭证
                     .thenCompose(unused -> apiExecutor.async(new UploadGetRequest(
                             request.model(),
                             request.timeout()
                     )))
                     .thenApply(response -> response.output().upload())
+
+                    // 上传资源
                     .thenCompose(upload -> apiExecutor.async(new UploadPostRequest(
                             request.resource(),
+                            request.model(),
                             upload,
                             request.timeout()
                     )))
                     .thenApply(response -> response.output().uploaded())
-                    .thenApply(uploaded -> new UploadResponseImpl(() -> uploaded));
+
+                    // 构建上传响应
+                    .thenApply(uploaded -> new UploadResponseImpl(new UploadResponseImpl.OutputImpl(
+                            request.resource(),
+                            request.model(),
+                            uploaded
+                    )));
         }
 
     }

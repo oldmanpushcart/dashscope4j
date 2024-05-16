@@ -1,14 +1,16 @@
 package io.github.oldmanpushcart.dashscope4j.chat;
 
+import io.github.oldmanpushcart.dashscope4j.chat.plugin.Plugin;
+
 import java.util.Map;
 
 /**
- * 聊天插件
+ * 对话插件
  *
  * @param name      插件名称
  * @param arguments 插件参数
  */
-public record ChatPlugin(String name, Map<String, Object> arguments) {
+public record ChatPlugin(String name, Map<String, Object> arguments) implements Plugin {
 
     /**
      * OCR 插件

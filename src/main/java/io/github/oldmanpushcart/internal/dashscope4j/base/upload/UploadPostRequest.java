@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.upload;
 
+import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
@@ -27,6 +28,7 @@ public final class UploadPostRequest implements ApiRequest<UploadPostResponse> {
     private static final int SUCCESS_CODE = 200;
     private static final AtomicInteger sequencer = new AtomicInteger(1000);
     private final URI resource;
+    private final Model model;
     private final Upload upload;
     private final Duration timeout;
     private final String ossKey;
@@ -35,11 +37,13 @@ public final class UploadPostRequest implements ApiRequest<UploadPostResponse> {
      * 构造上传请求
      *
      * @param resource 上传资源
+     * @param model    指定模型
      * @param upload   上传凭证
      * @param timeout  上传超时
      */
-    public UploadPostRequest(URI resource, Upload upload, Duration timeout) {
+    public UploadPostRequest(URI resource, Model model, Upload upload, Duration timeout) {
         this.resource = resource;
+        this.model = model;
         this.upload = upload;
         this.timeout = timeout;
         this.ossKey = computeOssKey(resource, upload);
@@ -103,7 +107,11 @@ public final class UploadPostRequest implements ApiRequest<UploadPostResponse> {
                         UUID.randomUUID().toString(),
                         Ret.ofSuccess("success"),
                         Usage.empty(),
-                        new UploadPostResponse.Output(URI.create("oss://%s".formatted(ossKey)))
+                        new UploadPostResponse.Output(
+                                resource,
+                                model,
+                                URI.create("oss://%s".formatted(ossKey))
+                        )
                 );
     }
 

@@ -72,6 +72,13 @@ public class ApiExecutor {
         return builder.build();
     }
 
+    // 设置超时时间
+    private void setupTimeout(HttpRequest.Builder builder, ApiRequest<?> request) {
+        Optional.ofNullable(request.timeout())
+                .or(() -> Optional.ofNullable(timeout))
+                .ifPresent(builder::timeout);
+    }
+
     /**
      * 异步执行API请求
      *
@@ -81,9 +88,7 @@ public class ApiExecutor {
     public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<R> request) {
         final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder.header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "disable");
-            Optional.ofNullable(request.timeout())
-                    .or(() -> Optional.ofNullable(timeout))
-                    .ifPresent(builder::timeout);
+            setupTimeout(builder, request);
         });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
@@ -106,9 +111,7 @@ public class ApiExecutor {
     public <R extends ApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(ApiRequest<R> request) {
         final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder.header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "enable");
-            Optional.ofNullable(request.timeout())
-                    .or(() -> Optional.ofNullable(timeout))
-                    .ifPresent(builder::timeout);
+            setupTimeout(builder, request);
         });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApplyAsync(identity(), executor)
@@ -167,9 +170,7 @@ public class ApiExecutor {
             builder
                     .header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "disable")
                     .header(HttpHeader.HEADER_X_DASHSCOPE_ASYNC, "enable");
-            Optional.ofNullable(request.timeout())
-                    .or(() -> Optional.ofNullable(timeout))
-                    .ifPresent(builder::timeout);
+            setupTimeout(builder, request);
         });
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
@@ -244,10 +245,12 @@ public class ApiExecutor {
 
                                 final var taskCancelRequest = new TaskCancelRequest.Builder()
                                         .taskId(task.id())
-                                        .building(builder -> Optional.ofNullable(taskGetRequest.timeout()).ifPresent(builder::timeout))
                                         .build();
                                 return async(taskCancelRequest)
-                                        .whenComplete((cv, cex) -> logger.warn("dashscope://task/cancel completed: task={};", task.id(), cex))
+                                        .handle((cv, cex)-> {
+                                            logger.warn("dashscope://task/cancel completed: task={};", task.id(), cex);
+                                            return cv;
+                                        })
                                         .thenCompose(cv -> failedFuture(ex));
 
                             })

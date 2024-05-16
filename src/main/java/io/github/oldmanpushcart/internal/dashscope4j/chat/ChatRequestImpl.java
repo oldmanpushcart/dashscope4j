@@ -8,8 +8,9 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.Tool;
-import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.algo.SpecifyModelAlgoRequestImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.MessageImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
@@ -20,13 +21,13 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toMap;
 
-final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements ChatRequest {
+final class ChatRequestImpl extends SpecifyModelAlgoRequestImpl<ChatModel, ChatResponse> implements ChatRequest {
 
     private final List<Message> messages;
-    private final List<ChatPlugin> plugins;
+    private final List<Plugin> plugins;
     private final List<Tool> tools;
 
-    ChatRequestImpl(ChatModel model, Option option, Duration timeout, List<Message> messages, List<ChatPlugin> plugins, List<Tool> tools) {
+    ChatRequestImpl(ChatModel model, Option option, Duration timeout, List<Message> messages, List<Plugin> plugins, List<Tool> tools) {
         super(model, new Input(messages), option, timeout, ChatResponseImpl.class);
         this.messages = messages;
         this.plugins = plugins;
@@ -45,17 +46,12 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
         return messages;
     }
 
-    public List<ChatPlugin> plugins() {
+    public List<Plugin> plugins() {
         return plugins;
     }
 
     public List<Tool> tools() {
         return tools;
-    }
-
-    @Override
-    public ChatModel model() {
-        return (ChatModel) super.model();
     }
 
     @Override
@@ -93,7 +89,7 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
                     if (model().mode() == ChatModel.Mode.MULTIMODAL) {
                         format = MessageImpl.Format.MULTIMODAL_MESSAGE;
                     }
-                    
+
                     /*
                      * 如果是PDF提取插件，而且消息中包含了file内容
                      * 这种情况下需要转成多模态消息格式
@@ -120,8 +116,8 @@ final class ChatRequestImpl extends AlgoRequestImpl<ChatResponse> implements Cha
         if (!plugins.isEmpty()) {
             final var pluginArgMap = plugins.stream()
                     .collect(toMap(
-                            ChatPlugin::name,
-                            ChatPlugin::arguments,
+                            Plugin::name,
+                            Plugin::arguments,
                             (a, b) -> b
                     ));
             final var pluginArgJson = JacksonUtils.toJson(pluginArgMap);

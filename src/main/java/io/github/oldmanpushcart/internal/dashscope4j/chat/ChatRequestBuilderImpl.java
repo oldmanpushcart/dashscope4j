@@ -1,12 +1,12 @@
 package io.github.oldmanpushcart.internal.dashscope4j.chat;
 
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.chat.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunction;
-import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestBuilderImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.algo.SpecifyModelAlgoRequestBuilderImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.tool.function.ChatFunctionToolImpl;
 
 import java.util.ArrayList;
@@ -15,14 +15,27 @@ import java.util.List;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
-public class ChatRequestBuilderImpl extends AlgoRequestBuilderImpl<ChatModel, ChatRequest, ChatRequest.Builder> implements ChatRequest.Builder {
+public class ChatRequestBuilderImpl extends SpecifyModelAlgoRequestBuilderImpl<ChatModel, ChatRequest, ChatRequest.Builder> implements ChatRequest.Builder {
 
-    private final List<ChatPlugin> plugins = new ArrayList<>();
-    private final List<Tool> tools = new ArrayList<>();
-    private final List<Message> messages = new ArrayList<>();
+    private final List<Message> messages;
+    private final List<Plugin> plugins;
+    private final List<Tool> tools;
+
+    public ChatRequestBuilderImpl() {
+        this.messages = new ArrayList<>();
+        this.plugins = new ArrayList<>();
+        this.tools = new ArrayList<>();
+    }
+
+    public ChatRequestBuilderImpl(ChatRequest request) {
+        super(request);
+        this.messages = request.messages();
+        this.plugins = request.plugins();
+        this.tools = request.tools();
+    }
 
     @Override
-    public ChatRequest.Builder plugins(ChatPlugin... plugins) {
+    public ChatRequest.Builder plugins(Plugin... plugins) {
         this.plugins.addAll(List.of(plugins));
         return this;
     }
