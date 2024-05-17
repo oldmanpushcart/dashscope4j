@@ -36,8 +36,7 @@ final class ChatRequestImpl extends SpecifyModelAlgoRequestImpl<ChatModel, ChatR
 
 
     private record Input(
-            @JsonProperty("messages")
-            List<Message> messages
+            @JsonProperty("messages") List<Message> messages
     ) {
 
     }
@@ -56,8 +55,7 @@ final class ChatRequestImpl extends SpecifyModelAlgoRequestImpl<ChatModel, ChatR
 
     @Override
     public Option option() {
-        final var clone = new Option();
-        super.option().export().forEach(clone::option);
+        final var clone = super.option().clone();
 
         // 插件必选参数
         if (!plugins.isEmpty()) {

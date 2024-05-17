@@ -12,58 +12,60 @@ import io.github.oldmanpushcart.internal.dashscope4j.chat.tool.function.ChatFunc
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.requireNotEmpty;
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.updateList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
-public class ChatRequestBuilderImpl extends SpecifyModelAlgoRequestBuilderImpl<ChatModel, ChatRequest, ChatRequest.Builder> implements ChatRequest.Builder {
+public class ChatRequestBuilderImpl
+        extends SpecifyModelAlgoRequestBuilderImpl<ChatModel, ChatRequest, ChatRequest.Builder>
+        implements ChatRequest.Builder {
 
-    private final List<Message> messages;
-    private final List<Plugin> plugins;
-    private final List<Tool> tools;
+    private final List<Message> messages = new ArrayList<>();
+    private final List<Plugin> plugins = new ArrayList<>();
+    private final List<Tool> tools = new ArrayList<>();
 
     public ChatRequestBuilderImpl() {
-        this.messages = new ArrayList<>();
-        this.plugins = new ArrayList<>();
-        this.tools = new ArrayList<>();
     }
 
     public ChatRequestBuilderImpl(ChatRequest request) {
         super(request);
-        this.messages = request.messages();
-        this.plugins = request.plugins();
-        this.tools = request.tools();
+        this.messages.addAll(request.messages());
+        this.plugins.addAll(request.plugins());
+        this.tools.addAll(request.tools());
     }
 
     @Override
-    public ChatRequest.Builder plugins(Plugin... plugins) {
-        this.plugins.addAll(List.of(plugins));
+    public ChatRequest.Builder plugins(boolean isAppend, List<Plugin> plugins) {
+        updateList(isAppend, this.plugins, plugins);
         return this;
     }
 
     @Override
-    public ChatRequest.Builder functions(List<ChatFunction<?, ?>> functions) {
+    public ChatRequest.Builder functions(boolean isAppend, List<ChatFunction<?, ?>> functions) {
         final var tools = functions.stream()
                 .map(ChatFunctionToolImpl::byAnnotation)
+                .map(Tool.class::cast)
                 .toList();
-        this.tools.addAll(tools);
+        return tools(isAppend, tools);
+    }
+
+    @Override
+    public ChatRequest.Builder tools(boolean isAppend, List<Tool> tools) {
+        updateList(isAppend, this.tools, tools);
         return this;
     }
 
     @Override
-    public ChatRequest.Builder tools(List<Tool> tools) {
-        this.tools.addAll(tools);
-        return this;
-    }
-
-    @Override
-    public ChatRequest.Builder messages(List<Message> messages) {
-        this.messages.addAll(messages);
+    public ChatRequest.Builder messages(boolean isAppend, List<Message> messages) {
+        updateList(isAppend, this.messages, messages);
         return this;
     }
 
     @Override
     public ChatRequest build() {
-        requireNonNull(model());
+        requireNonNull(model(), "model is required");
+        requireNotEmpty(messages, "messages is required");
         return new ChatRequestImpl(
                 model(),
                 option(),

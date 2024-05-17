@@ -6,17 +6,17 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.algo.SpecifyModelAlgoR
 
 import static java.util.Objects.requireNonNull;
 
-public class GenImageRequestBuilder
+public class GenImageRequestBuilderImpl
         extends SpecifyModelAlgoRequestBuilderImpl<GenImageModel, GenImageRequest, GenImageRequest.Builder>
         implements GenImageRequest.Builder {
 
     private String prompt;
     private String negative;
 
-    public GenImageRequestBuilder() {
+    public GenImageRequestBuilderImpl() {
     }
 
-    public GenImageRequestBuilder(GenImageRequest request) {
+    public GenImageRequestBuilderImpl(GenImageRequest request) {
         super(request);
         this.prompt = request.prompt();
         this.negative = request.negative();
@@ -36,8 +36,9 @@ public class GenImageRequestBuilder
 
     @Override
     public GenImageRequest build() {
+        requireNonNull(model(), "model is required");
         return new GenImageRequestImpl(
-                requireNonNull(model()),
+                model(),
                 option(),
                 timeout(),
                 prompt,

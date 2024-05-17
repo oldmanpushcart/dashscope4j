@@ -1,5 +1,7 @@
 package io.github.oldmanpushcart.internal.dashscope4j.util;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -57,6 +59,56 @@ public class CommonUtils {
             throw new IllegalArgumentException(message);
         }
         return t;
+    }
+
+    /**
+     * 是否为空集合
+     *
+     * @param collection 集合
+     * @return TRUE | FALSE
+     */
+    public static boolean isEmptyCollection(Collection<?> collection) {
+        return Objects.isNull(collection) || collection.isEmpty();
+    }
+
+    /**
+     * 是否为非空集合
+     *
+     * @param collection 集合
+     * @return TRUE | FALSE
+     */
+    public static boolean isNotEmptyCollection(Collection<?> collection) {
+        return !isEmptyCollection(collection);
+    }
+
+    /**
+     * 要求非空集合
+     *
+     * @param collection 集合
+     * @param message    异常信息
+     * @param <T>        集合类型
+     * @return 集合
+     */
+    public static <T extends Collection<?>> T requireNotEmpty(T collection, String message) {
+        check(collection, CommonUtils::isNotEmptyCollection, message);
+        return collection;
+    }
+
+    /**
+     * 更新列表
+     *
+     * @param isAppend 是否追加
+     * @param target   目标列表
+     * @param source   源列表
+     * @param <T>      对象类型
+     */
+    public static <T> void updateList(boolean isAppend, List<T> target, Collection<T> source) {
+        if (!isAppend) {
+            target.clear();
+        }
+        if (!isEmptyCollection(source)) {
+            target.addAll(source);
+        }
     }
 
 }

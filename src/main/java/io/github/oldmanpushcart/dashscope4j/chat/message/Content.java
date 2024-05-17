@@ -27,6 +27,18 @@ public interface Content<T> {
     T data();
 
     /**
+     * 创建内容
+     *
+     * @param type 类型
+     * @param data 数据
+     * @param <T>  数据类型
+     * @return 内容
+     */
+    static <T> Content<T> of(Type type, T data) {
+        return new ContentImpl<>(type, data);
+    }
+
+    /**
      * 文本
      *
      * @param text 文本

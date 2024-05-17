@@ -12,16 +12,15 @@ public abstract class AlgoRequestBuilderImpl<M extends Model, T extends AlgoRequ
         implements AlgoRequest.Builder<M, T, B> {
 
     private M model;
-    private final Option option;
+    private final Option option = new Option();
 
     protected AlgoRequestBuilderImpl() {
-        this.option = new Option();
     }
 
     protected AlgoRequestBuilderImpl(M model, T request) {
         super(request);
         this.model = model;
-        this.option = request.option();
+        request.option().export().forEach(this.option::option);
     }
 
     @Override

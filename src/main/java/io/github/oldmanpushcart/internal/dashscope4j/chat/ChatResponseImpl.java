@@ -10,16 +10,11 @@ record ChatResponseImpl(String uuid, Ret ret, Usage usage, Output output) implem
 
     @JsonCreator
     static ChatResponseImpl of(
-            @JsonProperty("request_id")
-            String uuid,
-            @JsonProperty("code")
-            String code,
-            @JsonProperty("message")
-            String message,
-            @JsonProperty("usage")
-            Usage usage,
-            @JsonProperty("output")
-            OutputImpl output
+            @JsonProperty("request_id") String uuid,
+            @JsonProperty("code") String code,
+            @JsonProperty("message") String message,
+            @JsonProperty("usage") Usage usage,
+            @JsonProperty("output") OutputImpl output
     ) {
         return new ChatResponseImpl(uuid, Ret.of(code, message), usage, output);
     }

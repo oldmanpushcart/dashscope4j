@@ -66,7 +66,30 @@ public interface ChatRequest extends SpecifyModelAlgoRequest<ChatModel, ChatResp
          * @return this
          * @since 1.4.0
          */
-        Builder plugins(Plugin... plugins);
+        default Builder plugins(Plugin... plugins) {
+            return plugins(List.of(plugins));
+        }
+
+        /**
+         * 添加插件集合
+         *
+         * @param plugins 插件集合
+         * @return this
+         * @since 1.4.0
+         */
+        default Builder plugins(List<Plugin> plugins) {
+            return plugins(true, plugins);
+        }
+
+        /**
+         * 添加或设置插件集合
+         *
+         * @param isAppend 是否添加
+         * @param plugins  插件集合
+         * @return this
+         * @since 1.4.0
+         */
+        Builder plugins(boolean isAppend, List<Plugin> plugins);
 
         /**
          * 添加函数
@@ -86,7 +109,19 @@ public interface ChatRequest extends SpecifyModelAlgoRequest<ChatModel, ChatResp
          * @return this
          * @since 1.2.0
          */
-        Builder functions(List<ChatFunction<?, ?>> functions);
+        default Builder functions(List<ChatFunction<?, ?>> functions) {
+            return functions(true, functions);
+        }
+
+        /**
+         * 添加或设置函数集合
+         *
+         * @param isAppend  是否追加
+         * @param functions 函数集合
+         * @return this
+         * @since 1.4.0
+         */
+        Builder functions(boolean isAppend, List<ChatFunction<?, ?>> functions);
 
         /**
          * 添加工具
@@ -100,13 +135,25 @@ public interface ChatRequest extends SpecifyModelAlgoRequest<ChatModel, ChatResp
         }
 
         /**
-         * 添加工具
+         * 添加工具集合
          *
-         * @param tools 工具
+         * @param tools 工具集合
          * @return this
          * @since 1.2.2
          */
-        Builder tools(List<Tool> tools);
+        default Builder tools(List<Tool> tools) {
+            return tools(true, tools);
+        }
+
+        /**
+         * 添加或设置工具集合
+         *
+         * @param isAppend 是否追加
+         * @param tools    工具集合
+         * @return this
+         * @since 1.4.0
+         */
+        Builder tools(boolean isAppend, List<Tool> tools);
 
         /**
          * 添加消息
@@ -119,11 +166,25 @@ public interface ChatRequest extends SpecifyModelAlgoRequest<ChatModel, ChatResp
         }
 
         /**
-         * @param messages 消息
+         * 添加消息集合
+         *
+         * @param messages 消息集合
          * @return this
          * @see #messages(Message...)
          */
-        Builder messages(List<Message> messages);
+        default Builder messages(List<Message> messages) {
+            return messages(true, messages);
+        }
+
+        /**
+         * 添加或设置消息集合
+         *
+         * @param isAppend 是否追加
+         * @param messages 消息集合
+         * @return this
+         * @since 1.4.0
+         */
+        Builder messages(boolean isAppend, List<Message> messages);
 
         /**
          * 添加系统文本消息

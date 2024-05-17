@@ -27,10 +27,7 @@ final class MmEmbeddingRequestImpl extends SpecifyModelAlgoRequestImpl<MmEmbeddi
     }
 
     private record Input(
-
-            @JsonProperty("contents")
-            List<FactorContent<?>> contents
-
+            @JsonProperty("contents") List<FactorContent<?>> contents
     ) {
 
     }

@@ -25,8 +25,7 @@ final class EmbeddingRequestImpl extends SpecifyModelAlgoRequestImpl<EmbeddingMo
     }
 
     private record Input(
-            @JsonProperty("texts")
-            List<String> documents
+            @JsonProperty("texts") List<String> documents
     ) {
 
     }

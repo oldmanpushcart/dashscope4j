@@ -45,7 +45,30 @@ public interface MmEmbeddingRequest extends SpecifyModelAlgoRequest<MmEmbeddingM
          * @param contents 内容
          * @return 构造器
          */
-        Builder contents(FactorContent<?>... contents);
+        default Builder contents(FactorContent<?>... contents) {
+            return contents(List.of(contents));
+        }
+
+        /**
+         * 添加文档内容
+         *
+         * @param contents 内容
+         * @return 构造器
+         * @since 1.4.0
+         */
+        default Builder contents(List<FactorContent<?>> contents) {
+            return contents(true, contents);
+        }
+
+        /**
+         * 添加文档内容集合
+         *
+         * @param isAppend 是否追加
+         * @param contents 文档内容集合
+         * @return 构造器
+         * @since 1.4.0
+         */
+        Builder contents(boolean isAppend, List<FactorContent<?>> contents);
 
     }
 

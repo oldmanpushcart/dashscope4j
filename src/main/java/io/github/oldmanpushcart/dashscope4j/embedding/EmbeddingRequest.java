@@ -48,7 +48,31 @@ public interface EmbeddingRequest extends SpecifyModelAlgoRequest<EmbeddingModel
          * @param documents 文档
          * @return 构建器
          */
-        Builder documents(String... documents);
+        default Builder documents(String... documents) {
+            return documents(List.of(documents));
+        }
+
+        /**
+         * 添加文档
+         *
+         * @param documents 文档
+         * @return 构建器
+         * @since 1.4.0
+         */
+        default Builder documents(List<String> documents) {
+            return documents(true, documents);
+        }
+
+        /**
+         * 添加文档集合
+         *
+         * @param isAppend  是否追加
+         * @param documents 文档集合
+         * @return 构建器
+         * @since 1.4.0
+         */
+        Builder documents(boolean isAppend, List<String> documents);
+
 
     }
 
