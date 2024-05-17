@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.base.upload;
 
 import io.github.oldmanpushcart.dashscope4j.Model;
+import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadRequestBuilderImpl;
 
@@ -12,7 +13,7 @@ import java.time.Duration;
  *
  * @since 1.4.0
  */
-public interface UploadRequest {
+public interface UploadRequest extends ApiRequest<UploadResponse> {
 
     /**
      * @return 指定模型

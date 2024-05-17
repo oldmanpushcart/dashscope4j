@@ -27,20 +27,25 @@ public record Ret(String code, String message) {
         return Ret.CODE_SUCCESS.equals(code);
     }
 
+    /**
+     * 创建成功应答
+     *
+     * @param message 结果信息
+     * @return 应答结果
+     * @since 1.4.0
+     */
     public static Ret ofSuccess(String message) {
         return new Ret(Ret.CODE_SUCCESS, message);
     }
 
     @JsonCreator
     public static Ret of(
-            @JsonProperty("code")
-            String code,
-            @JsonProperty("message")
-            String message
+            @JsonProperty("code") String code,
+            @JsonProperty("message") String message
     ) {
         return new Ret(
                 isNotBlankString(code) ? code : Ret.CODE_SUCCESS,
-                isNotBlankString(code) ? message : "succeeded"
+                isNotBlankString(message) ? message : "succeeded"
         );
     }
 

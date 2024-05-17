@@ -123,23 +123,26 @@ public class DashScopeClientImpl implements DashScopeClient {
                             request.model(),
                             request.timeout()
                     )))
-                    .thenApply(response -> response.output().upload())
 
                     // 上传资源
-                    .thenCompose(upload -> apiExecutor.async(new UploadPostRequest(
+                    .thenCompose(getResponse -> apiExecutor.async(new UploadPostRequest(
                             request.resource(),
                             request.model(),
-                            upload,
+                            getResponse.output().upload(),
                             request.timeout()
                     )))
-                    .thenApply(response -> response.output().uploaded())
 
                     // 构建上传响应
-                    .thenApply(uploaded -> new UploadResponseImpl(new UploadResponseImpl.OutputImpl(
-                            request.resource(),
-                            request.model(),
-                            uploaded
-                    )));
+                    .thenApply(postResponse -> new UploadResponseImpl(
+                            postResponse.uuid(),
+                            postResponse.ret(),
+                            postResponse.usage(),
+                            new UploadResponseImpl.OutputImpl(
+                                    request.resource(),
+                                    request.model(),
+                                    postResponse.output().uploaded()
+                            )
+                    ));
         }
 
     }

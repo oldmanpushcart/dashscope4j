@@ -22,7 +22,9 @@ public interface ApiRequest<R extends ApiResponse<?>> {
     /**
      * @return HTTP请求
      */
-    HttpRequest newHttpRequest();
+    default HttpRequest newHttpRequest() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return 应答检查器
@@ -35,7 +37,9 @@ public interface ApiRequest<R extends ApiResponse<?>> {
     /**
      * @return 应答序列化
      */
-    Function<String, R> responseDeserializer();
+    default Function<String, R> responseDeserializer() {
+        throw new UnsupportedOperationException();
+    }
 
 
     /**

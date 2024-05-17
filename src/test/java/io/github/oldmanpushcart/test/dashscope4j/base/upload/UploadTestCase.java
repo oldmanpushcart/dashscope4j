@@ -27,6 +27,8 @@ public class UploadTestCase implements LoadingEnv {
         Assertions.assertEquals(resource, response.output().resource());
         Assertions.assertEquals(model, response.output().model());
         Assertions.assertNotNull(response.output().uploaded());
+        Assertions.assertTrue(response.ret().isSuccess());
+        Assertions.assertNotNull(response.usage());
 
     }
 

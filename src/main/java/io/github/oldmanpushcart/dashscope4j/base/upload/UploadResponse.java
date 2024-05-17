@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.base.upload;
 
 import io.github.oldmanpushcart.dashscope4j.Model;
+import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 
 import java.net.URI;
 
@@ -9,7 +10,7 @@ import java.net.URI;
  *
  * @since 1.4.0
  */
-public interface UploadResponse {
+public interface UploadResponse extends ApiResponse<UploadResponse.Output> {
 
     /**
      * @return 应答数据
@@ -19,7 +20,7 @@ public interface UploadResponse {
     /**
      * 应答数据
      */
-    interface Output {
+    interface Output extends ApiResponse.Output {
 
         /**
          * @return 上传后的资源地址

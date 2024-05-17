@@ -36,6 +36,12 @@ public record Usage(List<Item> items) {
                 .sum();
     }
 
+    /**
+     * 创建空用量
+     *
+     * @return 空用量
+     * @since 1.4.0
+     */
     public static Usage empty() {
         return new Usage(List.of());
     }
