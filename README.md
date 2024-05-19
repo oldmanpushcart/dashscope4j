@@ -14,6 +14,48 @@
 - **1.2.0：** 支持多函数级联调用
 - **1.1.1：** 第一个稳定版本
 
+### 支持请求和应答拦截器
+
+- **RequestInterceptor：** 可以拦截和修改请求
+- **ResponseInterceptor：** 可以拦截和修改应答
+
+通过`DashScopeClient.Builder`设置，示例代码
+
+```java
+DashScopeClient client = DashScopeClient.newBuilder()
+    .ak(AK)
+    .executor(executor)
+    .requestInterceptors(new RequestInterceptor() {
+        
+        @Override
+        public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
+            return CompletableFuture.completedFuture(request);
+        }
+        
+    })
+    .build();
+```
+
+### 支持无感使用临时空间
+
+在`对话`、`多模态向量计算`和`文档分析插件`等请求中如果需要解析图片、音频、文档等内容，不再需要提前上传到OSS转换为外网可访问的URL连接。这样极不方便也不安全。
+
+通过灵积平台提供的[临时空间](https://help.aliyun.com/zh/dashscope/developer-reference/guidance-of-temporary-storage-space?spm=a2c4g.11186623.0.0.9606193el1PZwe)可以很好的解决这个问题，但操作起来需要调用额外的api且需要对url进行拼接和替换，略为繁琐。
+
+dashscope4j帮你封装了这个繁琐的操作，你只需要设置内容的时候将本地文件、BufferedImage甚至byte[]直接传入Content，框架会自动识别并帮你完成临时空间上传和转换连接操作。并自带一个缓存避免重复上传。
+
+```java
+final var request = ChatRequest.newBuilder()
+        .model(ChatModel.QWEN_VL_MAX)
+        .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+        .user(
+                Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\image-002.jpeg").toURI()),
+                Content.ofText("图片中一共多少辆自行车?")
+        )
+        .build();
+```
+
+
 ## 依赖使用
 
 ```xml
