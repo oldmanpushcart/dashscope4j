@@ -28,8 +28,8 @@ DashScopeClient client = DashScopeClient.newBuilder()
     .requestInterceptors(new RequestInterceptor() {
         
         @Override
-        public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
-            return CompletableFuture.completedFuture(request);
+        public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext ctx, ApiRequest<?> req) {
+            return CompletableFuture.completedFuture(req);
         }
         
     })
@@ -49,7 +49,7 @@ final var request = ChatRequest.newBuilder()
         .model(ChatModel.QWEN_VL_MAX)
         .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
         .user(
-                Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\image-002.jpeg").toURI()),
+                Content.ofImage(new File("C:\\Users\\vlinux\\图片\\image-002.jpeg").toURI()),
                 Content.ofText("图片中一共多少辆自行车?")
         )
         .build();
