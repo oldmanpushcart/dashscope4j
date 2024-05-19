@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,11 +15,11 @@ public class MessageImpl implements Message {
 
     private Format format;
     private final Message.Role role;
-    private final List<Content<?>> contents;
+    private final List<Content<?>> contents = new ArrayList<>();
 
     public MessageImpl(Role role, List<Content<?>> contents) {
         this.role = role;
-        this.contents = contents;
+        this.contents.addAll(contents);
     }
 
     @JsonProperty("role")

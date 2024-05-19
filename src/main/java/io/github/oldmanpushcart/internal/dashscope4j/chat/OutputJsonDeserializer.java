@@ -56,10 +56,8 @@ public class OutputJsonDeserializer extends JsonDeserializer<ChatResponse.Output
         }
 
         private record InnerOutput(
-                @JsonProperty("finish_reason")
-                ChatResponse.Finish finish,
-                @JsonProperty("text")
-                String text
+                @JsonProperty("finish_reason") ChatResponse.Finish finish,
+                @JsonProperty("text") String text
         ) {
 
         }
@@ -172,19 +170,15 @@ public class OutputJsonDeserializer extends JsonDeserializer<ChatResponse.Output
         }
 
         private record InnerMultiMessage(
-                @JsonProperty("role")
-                Message.Role role,
-                @JsonProperty("content")
-                List<ContentImpl<?>> contents
+                @JsonProperty("role") Message.Role role,
+                @JsonProperty("content") List<ContentImpl<?>> contents
         ) {
 
         }
 
         private record InnerTextMessage(
-                @JsonProperty("role")
-                Message.Role role,
-                @JsonProperty("content")
-                String text
+                @JsonProperty("role") Message.Role role,
+                @JsonProperty("content") String text
         ) {
 
         }
