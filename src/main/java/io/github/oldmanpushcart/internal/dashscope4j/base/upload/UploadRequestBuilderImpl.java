@@ -14,6 +14,16 @@ public class UploadRequestBuilderImpl implements UploadRequest.Builder {
     private Model model;
     private Duration timeout;
 
+    public UploadRequestBuilderImpl() {
+
+    }
+
+    public UploadRequestBuilderImpl(UploadRequest request) {
+        this.resource = request.resource();
+        this.model = request.model();
+        this.timeout = request.timeout();
+    }
+
     @Override
     public UploadRequest.Builder resource(URI resource) {
         this.resource = resource;

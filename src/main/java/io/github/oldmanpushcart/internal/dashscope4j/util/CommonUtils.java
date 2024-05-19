@@ -62,23 +62,13 @@ public class CommonUtils {
     }
 
     /**
-     * 是否为空集合
-     *
-     * @param collection 集合
-     * @return TRUE | FALSE
-     */
-    public static boolean isEmptyCollection(Collection<?> collection) {
-        return Objects.isNull(collection) || collection.isEmpty();
-    }
-
-    /**
      * 是否为非空集合
      *
      * @param collection 集合
      * @return TRUE | FALSE
      */
     public static boolean isNotEmptyCollection(Collection<?> collection) {
-        return !isEmptyCollection(collection);
+        return Objects.nonNull(collection) && !collection.isEmpty();
     }
 
     /**
@@ -102,11 +92,11 @@ public class CommonUtils {
      * @param source   源列表
      * @param <T>      对象类型
      */
-    public static <T> void updateList(boolean isAppend, List<T> target, Collection<T> source) {
+    public static <T> void updateList(boolean isAppend, List<? super T> target, Collection<? extends T> source) {
         if (!isAppend) {
             target.clear();
         }
-        if (!isEmptyCollection(source)) {
+        if (isNotEmptyCollection(source)) {
             target.addAll(source);
         }
     }

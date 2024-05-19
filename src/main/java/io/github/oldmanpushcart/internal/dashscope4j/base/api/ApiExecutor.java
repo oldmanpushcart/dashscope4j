@@ -30,8 +30,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
-import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.HEADER_AUTHORIZATION;
-import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.HEADER_X_DASHSCOPE_CLIENT;
+import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.*;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.function.Function.identity;
 
@@ -67,7 +66,9 @@ public class ApiExecutor {
     private HttpRequest delegateHttpRequest(HttpRequest request, Consumer<HttpRequest.Builder> consumer) {
         final var builder = HttpRequest.newBuilder(request, (k, v) -> true)
                 .header(HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
-                .headers(HEADER_X_DASHSCOPE_CLIENT, CLIENT_INFO);
+                .header(HEADER_X_DASHSCOPE_CLIENT, CLIENT_INFO)
+                .header(HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, "enable")
+                ;
         consumer.accept(builder);
         return builder.build();
     }

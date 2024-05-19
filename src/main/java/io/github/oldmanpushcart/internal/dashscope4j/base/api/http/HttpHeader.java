@@ -44,6 +44,12 @@ public class HttpHeader {
     public static final String HEADER_X_DASHSCOPE_PLUGIN = "X-DashScope-Plugin";
 
     /**
+     * HTTP-HEADER: X-DashScope-OssResourceResolve
+     * <p>临时空间</p>
+     */
+    public static final String HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE = "X-DashScope-OssResourceResolve";
+
+    /**
      * HTTP Content-Type
      *
      * @param mime       MIME

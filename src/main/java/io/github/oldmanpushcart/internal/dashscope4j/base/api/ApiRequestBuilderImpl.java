@@ -16,7 +16,7 @@ public abstract class ApiRequestBuilderImpl<T extends ApiRequest<?>, B extends A
     }
 
     protected ApiRequestBuilderImpl(T request) {
-        timeout(request.timeout());
+        this.timeout = request.timeout();
     }
 
     @Override

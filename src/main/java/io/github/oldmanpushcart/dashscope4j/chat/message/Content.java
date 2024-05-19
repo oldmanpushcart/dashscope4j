@@ -3,6 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.chat.message;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.ContentImpl;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.net.URI;
 
 /**
@@ -59,6 +61,17 @@ public interface Content<T> {
     }
 
     /**
+     * 图像
+     *
+     * @param image 图像
+     * @return 图像内容
+     * @since 1.4.0
+     */
+    static Content<BufferedImage> ofImage(BufferedImage image) {
+        return new ContentImpl<>(Type.IMAGE, image);
+    }
+
+    /**
      * 音频
      *
      * @param uri 音频地址
@@ -76,6 +89,17 @@ public interface Content<T> {
      */
     static Content<URI> ofVideo(URI uri) {
         return new ContentImpl<>(Type.VIDEO, uri);
+    }
+
+    /**
+     * 文件
+     *
+     * @param file 文件
+     * @return 文件内容
+     * @since 1.4.0
+     */
+    static Content<File> ofFile(File file) {
+        return new ContentImpl<>(Type.FILE, file);
     }
 
     /**

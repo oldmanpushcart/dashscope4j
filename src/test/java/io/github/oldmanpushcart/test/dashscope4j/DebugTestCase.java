@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.test.dashscope4j;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatOptions;
-import io.github.oldmanpushcart.dashscope4j.chat.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingModel;
@@ -15,6 +14,8 @@ import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import javax.imageio.ImageIO;
+import java.io.File;
 import java.net.URI;
 import java.time.Duration;
 
@@ -84,17 +85,24 @@ public class DebugTestCase implements LoadingEnv {
 
     }
 
+    @Disabled
     @Test
-    public void test$debug() {
+    public void test$debug() throws Exception {
+        final var image = ImageIO.read(new File("C:\\Users\\vlinux\\OneDrive\\图片\\image-002.jpeg"));
         final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_PLUS)
-                .plugins(ChatPlugin.CALCULATOR)
-                .user("1+2*3-4/5=?")
+                .model(ChatModel.QWEN_VL_MAX)
+                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .user(
+                        Content.ofImage(image),
+                        Content.ofText("图片中一共多少辆自行车?")
+                )
                 .build();
-        final var response = client.chat(request)
-                .async()
+        client.chat(request).flow()
+                .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
+                    System.out.println(r.output().best().message().text());
+                    DashScopeAssertions.assertChatResponse(r);
+                }))
                 .join();
-        System.out.println(response.output().best().message().text());
     }
 
 }

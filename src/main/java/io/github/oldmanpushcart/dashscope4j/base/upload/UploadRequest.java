@@ -31,6 +31,16 @@ public interface UploadRequest extends ApiRequest<UploadResponse> {
     Duration timeout();
 
     /**
+     * 构造器
+     *
+     * @param request 上传请求
+     * @return 构造器
+     */
+    static Builder newBuilder(UploadRequest request) {
+        return new UploadRequestBuilderImpl(request);
+    }
+
+    /**
      * @return 构造器
      */
     static Builder newBuilder() {
