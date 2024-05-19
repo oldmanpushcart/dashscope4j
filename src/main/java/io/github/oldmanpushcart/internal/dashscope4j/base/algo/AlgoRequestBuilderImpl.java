@@ -14,6 +14,15 @@ public abstract class AlgoRequestBuilderImpl<M extends Model, T extends AlgoRequ
     private M model;
     private final Option option = new Option();
 
+    protected AlgoRequestBuilderImpl() {
+    }
+
+    protected AlgoRequestBuilderImpl(M model, T request) {
+        super(request);
+        this.model = model;
+        request.option().export().forEach(this.option::option);
+    }
+
     @Override
     public B model(M model) {
         this.model = requireNonNull(model);

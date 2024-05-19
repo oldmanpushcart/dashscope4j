@@ -17,6 +17,31 @@ public final class Option {
     private final Map<String, Object> map = new HashMap<>();
 
     /**
+     * 构造选项
+     */
+    public Option() {
+
+    }
+
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    @Override
+    public Option clone() {
+        Option option = new Option();
+        option.map.putAll(this.map);
+        return option;
+    }
+
+    /**
+     * 构造选项
+     *
+     * @param map 选项KV集合
+     * @since 1.4.0
+     */
+    public Option(Map<String, Object> map) {
+        this.map.putAll(map);
+    }
+
+    /**
      * 设置选项
      *
      * @param opt   选项

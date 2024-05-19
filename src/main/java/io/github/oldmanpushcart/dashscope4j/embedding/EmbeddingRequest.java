@@ -1,13 +1,21 @@
 package io.github.oldmanpushcart.dashscope4j.embedding;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.base.algo.SpecifyModelAlgoRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.embedding.EmbeddingRequestBuilderImpl;
+
+import java.util.List;
 
 /**
  * 向量计算请求
  */
-public interface EmbeddingRequest extends AlgoRequest<EmbeddingResponse> {
+public interface EmbeddingRequest extends SpecifyModelAlgoRequest<EmbeddingModel, EmbeddingResponse> {
+
+    /**
+     * @return 文档列表
+     * @since 1.4.0
+     */
+    List<String> documents();
 
     /**
      * 构建向量计算请求
@@ -19,9 +27,20 @@ public interface EmbeddingRequest extends AlgoRequest<EmbeddingResponse> {
     }
 
     /**
+     * 构建向量计算请求
+     *
+     * @param request 请求
+     * @return 构建器
+     * @since 1.4.0
+     */
+    static Builder newBuilder(EmbeddingRequest request) {
+        return new EmbeddingRequestBuilderImpl(request);
+    }
+
+    /**
      * 向量计算请求构建器
      */
-    interface Builder extends AlgoRequest.Builder<EmbeddingModel, EmbeddingRequest, Builder> {
+    interface Builder extends SpecifyModelAlgoRequest.Builder<EmbeddingModel, EmbeddingRequest, Builder> {
 
         /**
          * 添加文档
@@ -29,7 +48,31 @@ public interface EmbeddingRequest extends AlgoRequest<EmbeddingResponse> {
          * @param documents 文档
          * @return 构建器
          */
-        Builder documents(String... documents);
+        default Builder documents(String... documents) {
+            return documents(List.of(documents));
+        }
+
+        /**
+         * 添加文档
+         *
+         * @param documents 文档
+         * @return 构建器
+         * @since 1.4.0
+         */
+        default Builder documents(List<String> documents) {
+            return documents(true, documents);
+        }
+
+        /**
+         * 添加文档集合
+         *
+         * @param isAppend  是否追加
+         * @param documents 文档集合
+         * @return 构建器
+         * @since 1.4.0
+         */
+        Builder documents(boolean isAppend, List<String> documents);
+
 
     }
 

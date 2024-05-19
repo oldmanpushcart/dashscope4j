@@ -3,7 +3,11 @@ package io.github.oldmanpushcart.internal.dashscope4j;
 import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
+import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
+import io.github.oldmanpushcart.dashscope4j.base.upload.UploadResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingRequest;
@@ -13,16 +17,24 @@ import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.MmEmbeddingResponse;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
+import io.github.oldmanpushcart.internal.dashscope4j.base.api.InterceptorApiExecutor;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.InterceptorHelper;
+import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadGetRequest;
+import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadPostRequest;
+import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadResponseImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpAsyncHandler;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpFlowHandler;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.requireNonBlankString;
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.updateList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
@@ -31,13 +43,22 @@ import static java.util.Optional.ofNullable;
  */
 public class DashScopeClientImpl implements DashScopeClient {
 
+    private final InterceptorHelper interceptorHelper;
     private final ApiExecutor apiExecutor;
 
     public DashScopeClientImpl(Builder builder) {
-        this.apiExecutor = new ApiExecutor(
+        this.interceptorHelper = new InterceptorHelper(
+                this,
+                builder.executor,
+                builder.requestInterceptors,
+                builder.responseInterceptors
+        );
+        this.apiExecutor = new InterceptorApiExecutor(
                 requireNonBlankString(builder.ak, "ak is blank"),
                 newHttpClient(builder),
-                requireNonNull(builder.executor)
+                requireNonNull(builder.executor),
+                builder.timeout,
+                interceptorHelper
         );
     }
 
@@ -101,6 +122,51 @@ public class DashScopeClientImpl implements DashScopeClient {
         };
     }
 
+    @Override
+    public BaseOp base() {
+        return new BaseOpImpl();
+    }
+
+    private class BaseOpImpl implements BaseOp {
+
+        @Override
+        public OpAsync<UploadResponse> upload(UploadRequest request) {
+            final var context = interceptorHelper.newInvocationContext();
+            return () -> interceptorHelper.preHandle(context, request)
+                    .thenCompose(req -> CompletableFuture.completedFuture(null)
+
+                            // 获取上传凭证
+                            .thenCompose(unused -> apiExecutor.async(new UploadGetRequest(
+                                    req.model(),
+                                    req.timeout()
+                            )))
+
+                            // 上传资源
+                            .thenCompose(getResponse -> apiExecutor.async(new UploadPostRequest(
+                                    req.resource(),
+                                    req.model(),
+                                    getResponse.output().upload(),
+                                    req.timeout()
+                            )))
+
+                            // 构建上传响应
+                            .thenApply(postResponse -> new UploadResponseImpl(
+                                    postResponse.uuid(),
+                                    postResponse.ret(),
+                                    postResponse.usage(),
+                                    new UploadResponseImpl.OutputImpl(
+                                            req.resource(),
+                                            req.model(),
+                                            postResponse.output().uploaded()
+                                    )
+                            ))
+
+                    )
+                    .thenCompose(res -> interceptorHelper.postHandle(context, res));
+        }
+
+    }
+
 
     /**
      * DashScope客户端构建器实现
@@ -110,6 +176,9 @@ public class DashScopeClientImpl implements DashScopeClient {
         private String ak;
         private Executor executor;
         private Duration connectTimeout;
+        private Duration timeout;
+        private final List<RequestInterceptor> requestInterceptors = new ArrayList<>();
+        private final List<ResponseInterceptor> responseInterceptors = new ArrayList<>();
 
         @Override
         public DashScopeClient.Builder ak(String ak) {
@@ -126,6 +195,24 @@ public class DashScopeClientImpl implements DashScopeClient {
         @Override
         public DashScopeClient.Builder connectTimeout(Duration connectTimeout) {
             this.connectTimeout = requireNonNull(connectTimeout);
+            return this;
+        }
+
+        @Override
+        public DashScopeClient.Builder timeout(Duration timeout) {
+            this.timeout = requireNonNull(timeout);
+            return this;
+        }
+
+        @Override
+        public DashScopeClient.Builder requestInterceptors(boolean isAppend, List<RequestInterceptor> interceptors) {
+            updateList(isAppend, requestInterceptors, interceptors);
+            return this;
+        }
+
+        @Override
+        public DashScopeClient.Builder responseInterceptors(boolean isAppend, List<ResponseInterceptor> interceptors) {
+            updateList(isAppend, responseInterceptors, interceptors);
             return this;
         }
 

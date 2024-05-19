@@ -2,6 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.chat.plugin;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Map;
+
 /**
  * 插件
  *
@@ -10,16 +12,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public interface Plugin {
 
     /**
+     * @return 插件名称
+     * @since 1.4.0
+     */
+    String name();
+
+    /**
+     * @return 插件参数
+     * @since 1.4.0
+     */
+    Map<String, Object> arguments();
+
+    /**
      * 插件调用
      *
      * @param name      插件名称
      * @param arguments 调用参数
      */
     record Call(
-            @JsonProperty("name")
-            String name,
-            @JsonProperty("arguments")
-            String arguments
+            @JsonProperty("name") String name,
+            @JsonProperty("arguments") String arguments
     ) {
     }
 
@@ -31,12 +43,9 @@ public interface Plugin {
      * @param desc 状态描述
      */
     record Status(
-            @JsonProperty("code")
-            int code,
-            @JsonProperty("name")
-            String name,
-            @JsonProperty("message")
-            String desc
+            @JsonProperty("code") int code,
+            @JsonProperty("name") String name,
+            @JsonProperty("message") String desc
     ) {
     }
 

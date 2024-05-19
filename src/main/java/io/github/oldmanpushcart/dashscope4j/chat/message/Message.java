@@ -12,16 +12,12 @@ import java.util.List;
 public interface Message {
 
     /**
-     * 获取角色
-     *
      * @return 角色
      */
     Role role();
 
     /**
-     * 获取内容
-     *
-     * @return 内容
+     * @return 内容集合
      */
     List<Content<?>> contents();
 
@@ -33,6 +29,18 @@ public interface Message {
      * @return 文本内容
      */
     String text();
+
+    /**
+     * 创建消息
+     *
+     * @param role     角色
+     * @param contents 内容
+     * @return 消息
+     * @since 1.4.0
+     */
+    static Message of(Role role, List<Content<?>> contents) {
+        return new MessageImpl(role, contents);
+    }
 
     /**
      * 系统消息(文本)
@@ -105,6 +113,7 @@ public interface Message {
 
         /**
          * 工具
+         *
          * @since 1.2.0
          */
         @JsonProperty("tool")

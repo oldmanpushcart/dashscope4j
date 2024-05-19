@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.chat.message.PluginCallMessage;
 import io.github.oldmanpushcart.dashscope4j.chat.message.PluginMessage;
+import io.github.oldmanpushcart.dashscope4j.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
 import io.github.oldmanpushcart.test.dashscope4j.CommonAssertions;
@@ -198,7 +199,7 @@ public class ChatTestCase implements LoadingEnv {
         });
     }
 
-    private static final ChatPlugin[] PLUGINS = new ChatPlugin[]{
+    private static final Plugin[] PLUGINS = new Plugin[]{
             ChatPlugin.CALCULATOR,
             ChatPlugin.PDF_EXTRACTER,
     };

@@ -2,7 +2,11 @@ package io.github.oldmanpushcart.dashscope4j;
 
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
+import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
+import io.github.oldmanpushcart.dashscope4j.base.upload.UploadResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingRequest;
@@ -15,6 +19,7 @@ import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import io.github.oldmanpushcart.internal.dashscope4j.DashScopeClientImpl;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
@@ -64,6 +69,11 @@ public interface DashScopeClient {
     <R extends ApiResponse<?>> OpAsyncOpFlowOpTask<R> api(ApiRequest<R> request);
 
     /**
+     * @return 辅助操作
+     */
+    BaseOp base();
+
+    /**
      * DashScope客户端构建器
      *
      * @return 构建器
@@ -100,6 +110,79 @@ public interface DashScopeClient {
          * @return this
          */
         Builder connectTimeout(Duration connectTimeout);
+
+        /**
+         * 设置超时
+         * <p>默认超时时间，如果在{@link ApiRequest#timeout()}上没有设置超时，则以此为默认超时时间</p>
+         *
+         * @param timeout 超时
+         * @return this
+         */
+        Builder timeout(Duration timeout);
+
+        /**
+         * 添加请求拦截器
+         *
+         * @param interceptors 请求拦截器
+         * @return this
+         * @since 1.4.0
+         */
+        default Builder requestInterceptors(RequestInterceptor... interceptors) {
+            return requestInterceptors(List.of(interceptors));
+        }
+
+        /**
+         * 添加请求拦截器
+         *
+         * @param interceptors 请求拦截器
+         * @return this
+         * @since 1.4.0
+         */
+        default Builder requestInterceptors(List<RequestInterceptor> interceptors) {
+            return requestInterceptors(true, interceptors);
+        }
+
+        /**
+         * 添加或设置请求拦截器
+         *
+         * @param isAppend     是否追加
+         * @param interceptors 请求拦截器
+         * @return this
+         * @since 1.4.0
+         */
+        Builder requestInterceptors(boolean isAppend, List<RequestInterceptor> interceptors);
+
+        /**
+         * 添加响应拦截器
+         *
+         * @param interceptors 响应拦截器
+         * @return this
+         * @since 1.4.0
+         */
+        default Builder responseInterceptors(ResponseInterceptor... interceptors) {
+            return responseInterceptors(List.of(interceptors));
+        }
+
+        /**
+         * 添加响应拦截器
+         *
+         * @param interceptors 响应拦截器
+         * @return this
+         * @since 1.4.0
+         */
+        default Builder responseInterceptors(List<ResponseInterceptor> interceptors) {
+            return responseInterceptors(true, interceptors);
+        }
+
+        /**
+         * 添加或设置响应拦截器
+         *
+         * @param isAppend     是否追加
+         * @param interceptors 响应拦截器
+         * @return this
+         * @since 1.4.0
+         */
+        Builder responseInterceptors(boolean isAppend, List<ResponseInterceptor> interceptors);
 
     }
 
@@ -186,6 +269,23 @@ public interface DashScopeClient {
         default CompletableFuture<R> task(Task.WaitStrategy strategy) {
             return task().thenCompose(half -> half.waitingFor(strategy));
         }
+
+    }
+
+    /**
+     * 辅助功能操作
+     *
+     * @since 1.4.0
+     */
+    interface BaseOp {
+
+        /**
+         * 上传文件到临时空间
+         *
+         * @param request 上传请求
+         * @return 上传操作
+         */
+        OpAsync<UploadResponse> upload(UploadRequest request);
 
     }
 
