@@ -17,10 +17,13 @@ public record TaskHalfResponse(String uuid, Ret ret, Usage usage, Output output)
 
         @JsonCreator
         static Output of(
+
                 @JsonProperty("task_id")
                 String taskId,
+
                 @JsonProperty("task_status")
                 Task.Status status
+
         ) {
             return new Output(taskId, status);
         }
@@ -29,14 +32,19 @@ public record TaskHalfResponse(String uuid, Ret ret, Usage usage, Output output)
 
     @JsonCreator
     static TaskHalfResponse of(
+
             @JsonProperty("request_id")
             String uuid,
+
             @JsonProperty("code")
             String code,
+
             @JsonProperty("message")
             String message,
+
             @JsonProperty("output")
             Output output
+
     ) {
         return new TaskHalfResponse(uuid, Ret.of(code, message), Usage.empty(), output);
     }

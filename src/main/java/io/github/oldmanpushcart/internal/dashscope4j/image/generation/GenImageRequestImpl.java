@@ -37,8 +37,13 @@ final class GenImageRequestImpl extends SpecifyModelAlgoRequestImpl<GenImageMode
     }
 
     private record Input(
-            @JsonProperty("prompt") String prompt,
-            @JsonProperty("negative_prompt") String negative
+
+            @JsonProperty("prompt")
+            String prompt,
+
+            @JsonProperty("negative_prompt")
+            String negative
+
     ) {
 
     }

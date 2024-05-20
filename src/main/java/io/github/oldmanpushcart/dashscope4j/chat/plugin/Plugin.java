@@ -30,8 +30,13 @@ public interface Plugin {
      * @param arguments 调用参数
      */
     record Call(
-            @JsonProperty("name") String name,
-            @JsonProperty("arguments") String arguments
+
+            @JsonProperty("name")
+            String name,
+
+            @JsonProperty("arguments")
+            String arguments
+
     ) {
     }
 
@@ -43,9 +48,16 @@ public interface Plugin {
      * @param desc 状态描述
      */
     record Status(
-            @JsonProperty("code") int code,
-            @JsonProperty("name") String name,
-            @JsonProperty("message") String desc
+
+            @JsonProperty("code")
+            int code,
+
+            @JsonProperty("name")
+            String name,
+
+            @JsonProperty("message")
+            String desc
+
     ) {
     }
 

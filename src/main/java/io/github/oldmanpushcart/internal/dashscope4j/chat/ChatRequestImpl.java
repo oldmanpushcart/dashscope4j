@@ -36,7 +36,10 @@ final class ChatRequestImpl extends SpecifyModelAlgoRequestImpl<ChatModel, ChatR
 
 
     private record Input(
-            @JsonProperty("messages") List<Message> messages
+
+            @JsonProperty("messages")
+            List<Message> messages
+
     ) {
 
     }

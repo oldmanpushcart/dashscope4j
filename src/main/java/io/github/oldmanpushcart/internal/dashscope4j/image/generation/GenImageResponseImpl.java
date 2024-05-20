@@ -15,11 +15,22 @@ public record GenImageResponseImpl(String uuid, Ret ret, Usage usage, Output out
 
     @JsonCreator
     static GenImageResponseImpl of(
-            @JsonProperty("request_id") String uuid,
-            @JsonProperty("code") String code,
-            @JsonProperty("message") String message,
-            @JsonProperty("usage") Usage usage,
-            @JsonProperty("output") OutputImpl output
+
+            @JsonProperty("request_id")
+            String uuid,
+
+            @JsonProperty("code")
+            String code,
+
+            @JsonProperty("message")
+            String message,
+
+            @JsonProperty("usage")
+            Usage usage,
+
+            @JsonProperty("output")
+            OutputImpl output
+
     ) {
         return new GenImageResponseImpl(uuid, Ret.of(code, message), usage, output);
     }
@@ -28,8 +39,10 @@ public record GenImageResponseImpl(String uuid, Ret ret, Usage usage, Output out
 
         @JsonCreator
         static OutputImpl of(
+
                 @JsonProperty("results")
                 List<ItemImpl> results
+
         ) {
             return new OutputImpl(unmodifiableList(results));
         }
@@ -40,9 +53,16 @@ public record GenImageResponseImpl(String uuid, Ret ret, Usage usage, Output out
 
         @JsonCreator
         static ItemImpl of(
-                @JsonProperty("url") String url,
-                @JsonProperty("code") String code,
-                @JsonProperty("message") String message
+
+                @JsonProperty("url")
+                String url,
+
+                @JsonProperty("code")
+                String code,
+
+                @JsonProperty("message")
+                String message
+
         ) {
             return new ItemImpl(Ret.of(code, message), URI.create(url));
         }

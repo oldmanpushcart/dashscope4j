@@ -28,20 +28,27 @@ public record ChatFunctionToolImpl(Meta meta, ChatFunction<?, ?> function) imple
     }
 
     public record MetaImpl(
+
             @JsonProperty("name")
             String name,
+
             @JsonProperty("description")
             String description,
+
             @JsonProperty("parameters")
             TypeSchema parameterTs
+
     ) implements Meta {
     }
 
     public record CallImpl(
+
             @JsonProperty(value = "name", access = JsonProperty.Access.WRITE_ONLY)
             String name,
+
             @JsonProperty(value = "arguments", access = JsonProperty.Access.WRITE_ONLY)
             String arguments
+
     ) implements Call {
 
         @JsonProperty("type")
