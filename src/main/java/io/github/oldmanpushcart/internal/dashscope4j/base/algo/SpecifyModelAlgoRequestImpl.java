@@ -11,8 +11,8 @@ public abstract class SpecifyModelAlgoRequestImpl<M extends Model, R extends Alg
         extends AlgoRequestImpl<M, R>
         implements SpecifyModelAlgoRequest<M, R> {
 
-    protected SpecifyModelAlgoRequestImpl(M model, Object input, Option option, Duration timeout, Class<? extends R> responseType) {
-        super(model, input, option, timeout, responseType);
+    protected SpecifyModelAlgoRequestImpl(M model, Option option, Duration timeout, Class<? extends R> responseType) {
+        super(model, option, timeout, responseType);
     }
 
 }

@@ -28,7 +28,7 @@ final class ChatRequestImpl extends SpecifyModelAlgoRequestImpl<ChatModel, ChatR
     private final List<Tool> tools;
 
     ChatRequestImpl(ChatModel model, Option option, Duration timeout, List<Message> messages, List<Plugin> plugins, List<Tool> tools) {
-        super(model, new Input(messages), option, timeout, ChatResponseImpl.class);
+        super(model, option, timeout, ChatResponseImpl.class);
         this.messages = messages;
         this.plugins = plugins;
         this.tools = tools;
@@ -41,16 +41,24 @@ final class ChatRequestImpl extends SpecifyModelAlgoRequestImpl<ChatModel, ChatR
 
     }
 
+    @Override
     public List<Message> messages() {
         return messages;
     }
 
+    @Override
     public List<Plugin> plugins() {
         return plugins;
     }
 
+    @Override
     public List<Tool> tools() {
         return tools;
+    }
+
+    @Override
+    public Object input() {
+        return new Input(messages);
     }
 
     @Override

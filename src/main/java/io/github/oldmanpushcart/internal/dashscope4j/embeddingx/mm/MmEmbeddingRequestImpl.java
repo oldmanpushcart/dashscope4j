@@ -14,16 +14,23 @@ import java.util.List;
 final class MmEmbeddingRequestImpl extends SpecifyModelAlgoRequestImpl<MmEmbeddingModel, MmEmbeddingResponse>
         implements MmEmbeddingRequest {
 
+    private final Input input;
     private final List<FactorContent<?>> contents;
 
     MmEmbeddingRequestImpl(MmEmbeddingModel model, Option option, Duration timeout, List<FactorContent<?>> contents) {
-        super(model, new Input(contents), option, timeout, MmEmbeddingResponseImpl.class);
+        super(model, option, timeout, MmEmbeddingResponseImpl.class);
+        this.input = new Input(contents);
         this.contents = contents;
     }
 
     @Override
     public List<FactorContent<?>> contents() {
         return contents;
+    }
+
+    @Override
+    public Object input() {
+        return input;
     }
 
     private record Input(

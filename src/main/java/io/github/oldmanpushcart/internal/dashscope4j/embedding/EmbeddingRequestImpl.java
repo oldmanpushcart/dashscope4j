@@ -11,17 +11,22 @@ import java.time.Duration;
 import java.util.List;
 
 final class EmbeddingRequestImpl extends SpecifyModelAlgoRequestImpl<EmbeddingModel, EmbeddingResponse> implements EmbeddingRequest {
-
+    
     private final List<String> documents;
 
     EmbeddingRequestImpl(EmbeddingModel model, Option option, Duration timeout, List<String> documents) {
-        super(model, new Input(documents), option, timeout, EmbeddingResponseImpl.class);
+        super(model, option, timeout, EmbeddingResponseImpl.class);
         this.documents = documents;
     }
 
     @Override
     public List<String> documents() {
         return documents;
+    }
+
+    @Override
+    public Object input() {
+        return new Input(documents);
     }
 
     private record Input(

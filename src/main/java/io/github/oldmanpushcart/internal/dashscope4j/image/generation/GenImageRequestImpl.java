@@ -16,7 +16,7 @@ final class GenImageRequestImpl extends SpecifyModelAlgoRequestImpl<GenImageMode
     private final String negative;
 
     GenImageRequestImpl(GenImageModel model, Option option, Duration timeout, String prompt, String negative) {
-        super(model, new Input(prompt, negative), option, timeout, GenImageResponseImpl.class);
+        super(model, option, timeout, GenImageResponseImpl.class);
         this.prompt = prompt;
         this.negative = negative;
     }
@@ -29,6 +29,11 @@ final class GenImageRequestImpl extends SpecifyModelAlgoRequestImpl<GenImageMode
     @Override
     public String negative() {
         return negative;
+    }
+
+    @Override
+    public Object input() {
+        return new Input(prompt, negative);
     }
 
     private record Input(
