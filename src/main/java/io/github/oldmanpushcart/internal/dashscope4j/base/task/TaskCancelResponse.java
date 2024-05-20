@@ -18,12 +18,16 @@ public record TaskCancelResponse(String uuid, Ret ret, Usage usage, Output outpu
 
     @JsonCreator
     static TaskCancelResponse of(
+
             @JsonProperty("request_id")
             String uuid,
+
             @JsonProperty("code")
             String code,
+
             @JsonProperty("message")
             String message
+
     ) {
         return new TaskCancelResponse(uuid, Ret.of(code, message));
     }

@@ -14,7 +14,6 @@ import java.util.List;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.requireNotEmpty;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.updateList;
-import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 public class ChatRequestBuilderImpl
@@ -70,9 +69,9 @@ public class ChatRequestBuilderImpl
                 model(),
                 option(),
                 timeout(),
-                unmodifiableList(messages),
-                unmodifiableList(plugins),
-                unmodifiableList(tools)
+                messages,
+                plugins,
+                tools
         );
     }
 

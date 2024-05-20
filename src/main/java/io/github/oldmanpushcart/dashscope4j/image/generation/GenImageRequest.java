@@ -68,23 +68,47 @@ public interface GenImageRequest extends SpecifyModelAlgoRequest<GenImageModel, 
      * 图片风格
      */
     enum Style {
-        @JsonProperty("<auto>") AUTO,
-        @JsonProperty("<3d cartoon>") CARTOON_3D,
-        @JsonProperty("<anime>") ANIME,
-        @JsonProperty("<oil painting>") OIL_PAINTING,
-        @JsonProperty("<watercolor>") WATERCOLOR,
-        @JsonProperty("<sketch>") SKETCH,
-        @JsonProperty("<chinese painting>") CHINESE_PAINTING,
-        @JsonProperty("<flat illustration>") FLAT_ILLUSTRATION
+
+        @JsonProperty("<auto>")
+        AUTO,
+
+        @JsonProperty("<3d cartoon>")
+        CARTOON_3D,
+
+        @JsonProperty("<anime>")
+        ANIME,
+
+        @JsonProperty("<oil painting>")
+        OIL_PAINTING,
+
+        @JsonProperty("<watercolor>")
+        WATERCOLOR,
+
+        @JsonProperty("<sketch>")
+        SKETCH,
+
+        @JsonProperty("<chinese painting>")
+        CHINESE_PAINTING,
+
+        @JsonProperty("<flat illustration>")
+        FLAT_ILLUSTRATION
+
     }
 
     /**
      * 图片尺寸
      */
     enum Size {
-        @JsonProperty("1024*1024") S_1024_1024,
-        @JsonProperty("720*1280") S_720_1280,
-        @JsonProperty("1280*720") S_1280_720
+
+        @JsonProperty("1024*1024")
+        S_1024_1024,
+
+        @JsonProperty("720*1280")
+        S_720_1280,
+
+        @JsonProperty("1280*720")
+        S_1280_720
+
     }
 
 }

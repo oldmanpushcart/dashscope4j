@@ -40,6 +40,13 @@ public interface ChatRequest extends SpecifyModelAlgoRequest<ChatModel, ChatResp
         return new ChatRequestBuilderImpl();
     }
 
+    /**
+     * 对话请求构建器
+     *
+     * @param request 对话请求
+     * @return 对话请求构建器
+     * @since 1.4.0
+     */
     static Builder newBuilder(ChatRequest request) {
         return new ChatRequestBuilderImpl(request);
     }

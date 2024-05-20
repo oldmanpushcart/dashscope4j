@@ -4,18 +4,19 @@ import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
+import io.github.oldmanpushcart.internal.dashscope4j.util.LRUCache;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 public class ProcessContentRequestInterceptorForUpload extends ProcessContentRequestInterceptor {
 
+    private static final int DEFAULT_CACHE_CAPACITY = 2048;
     private static final Duration DEFAULT_CACHE_EXPIRE = Duration.ofHours(48);
-    private final ConcurrentMap<CacheKey, CacheVal> cache = new ConcurrentHashMap<>();
+    private final Map<CacheKey, CacheVal> cache = new LRUCache<>(DEFAULT_CACHE_CAPACITY);
 
     @Override
     protected CompletableFuture<Object> processContentData(InvocationContext context, AlgoRequest<?> request, Object data) {
@@ -41,8 +42,14 @@ public class ProcessContentRequestInterceptorForUpload extends ProcessContentReq
         // 优先从缓存中寻找，如果缓存中找到则直接使用
         final var cacheKey = new CacheKey(resource, model);
         final var cacheVal = cache.get(cacheKey);
-        if (Objects.nonNull(cacheVal) && !cacheVal.isExpired()) {
-            return CompletableFuture.completedFuture(cacheVal.uploaded());
+        if (Objects.nonNull(cacheVal)) {
+            if (cacheVal.isExpired()) {
+                synchronized (cache) {
+                    cache.remove(cacheKey);
+                }
+            } else {
+                return CompletableFuture.completedFuture(cacheVal.uploaded());
+            }
         }
 
         // 上传资源
@@ -52,10 +59,12 @@ public class ProcessContentRequestInterceptorForUpload extends ProcessContentReq
                 .build();
         return client.base().upload(uploadRequest).async()
                 .thenApply(response -> {
-                    cache.put(cacheKey, new CacheVal(
-                            response.output().uploaded(),
-                            System.currentTimeMillis() + DEFAULT_CACHE_EXPIRE.toMillis()
-                    ));
+                    synchronized (cache) {
+                        cache.put(cacheKey, new CacheVal(
+                                response.output().uploaded(),
+                                System.currentTimeMillis() + DEFAULT_CACHE_EXPIRE.toMillis()
+                        ));
+                    }
                     return response;
                 })
                 .thenApply(response -> response.output().uploaded());

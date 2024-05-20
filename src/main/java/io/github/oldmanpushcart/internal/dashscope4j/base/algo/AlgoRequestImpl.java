@@ -23,14 +23,12 @@ public abstract class AlgoRequestImpl<M extends Model, R extends AlgoResponse<?>
     private final static Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     private final M model;
-    private final Object input;
     private final Option option;
     private final Duration timeout;
     private final Class<? extends R> responseType;
 
-    protected AlgoRequestImpl(M model, Object input, Option option, Duration timeout, Class<? extends R> responseType) {
+    protected AlgoRequestImpl(M model, Option option, Duration timeout, Class<? extends R> responseType) {
         this.model = model;
-        this.input = input;
         this.option = option;
         this.timeout = timeout;
         this.responseType = responseType;
@@ -63,9 +61,7 @@ public abstract class AlgoRequestImpl<M extends Model, R extends AlgoResponse<?>
 
     @JsonProperty("input")
     @Override
-    public Object input() {
-        return input;
-    }
+    abstract public Object input();
 
     @JsonProperty("parameters")
     @Override

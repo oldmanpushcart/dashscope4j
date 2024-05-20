@@ -13,7 +13,10 @@ record MmEmbeddingResponseImpl(String uuid, Ret ret, Usage usage, Output output)
 
         @JsonCreator
         static OutputImpl of(
-                @JsonProperty("embedding") float[] vector
+
+                @JsonProperty("embedding")
+                float[] vector
+
         ) {
             return new OutputImpl(new MmEmbeddingImpl(vector));
         }
@@ -26,11 +29,22 @@ record MmEmbeddingResponseImpl(String uuid, Ret ret, Usage usage, Output output)
 
     @JsonCreator
     static MmEmbeddingResponseImpl of(
-            @JsonProperty("request_id") String uuid,
-            @JsonProperty("code") String code,
-            @JsonProperty("message") String message,
-            @JsonProperty("usage") Usage usage,
-            @JsonProperty("output") MmEmbeddingResponseImpl.OutputImpl output
+
+            @JsonProperty("request_id")
+            String uuid,
+
+            @JsonProperty("code")
+            String code,
+
+            @JsonProperty("message")
+            String message,
+
+            @JsonProperty("usage")
+            Usage usage,
+
+            @JsonProperty("output")
+            OutputImpl output
+
     ) {
         return new MmEmbeddingResponseImpl(uuid, Ret.of(code, message), usage, output);
     }

@@ -59,12 +59,16 @@ public record Task(String id, Status status, Metrics metrics, Timing timing) {
      * @param failed    失败数
      */
     public record Metrics(
+
             @JsonProperty("TOTAL")
             int total,
+
             @JsonProperty("SUCCEEDED")
             int succeeded,
+
             @JsonProperty("FAILED")
             int failed
+
     ) {
 
     }

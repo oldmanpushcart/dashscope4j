@@ -40,8 +40,13 @@ public record Ret(String code, String message) {
 
     @JsonCreator
     public static Ret of(
-            @JsonProperty("code") String code,
-            @JsonProperty("message") String message
+
+            @JsonProperty("code")
+            String code,
+
+            @JsonProperty("message")
+            String message
+
     ) {
         return new Ret(
                 isNotBlankString(code) ? code : Ret.CODE_SUCCESS,

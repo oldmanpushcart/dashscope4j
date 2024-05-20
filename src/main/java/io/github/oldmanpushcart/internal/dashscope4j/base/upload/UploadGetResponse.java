@@ -20,16 +20,37 @@ public record UploadGetResponse(String uuid, Ret ret, Usage usage, Output output
 
         @JsonCreator
         static Output of(
-                @JsonProperty("policy") String policy,
-                @JsonProperty("signature") String signature,
-                @JsonProperty("upload_dir") String directory,
-                @JsonProperty("upload_host") String host,
-                @JsonProperty("expire_in_seconds") int expireInSeconds,
-                @JsonProperty("max_file_size_mb") int maxFileSizeMb,
-                @JsonProperty("capacity_limit_mb") long capacityLimitMb,
-                @JsonProperty("oss_access_key_id") String ossAccessKeyId,
-                @JsonProperty("x_oss_object_acl") String xOssObjectAcl,
-                @JsonProperty("x_oss_forbid_overwrite") boolean xOssForbidOverwrite
+
+                @JsonProperty("policy")
+                String policy,
+
+                @JsonProperty("signature")
+                String signature,
+
+                @JsonProperty("upload_dir")
+                String directory,
+
+                @JsonProperty("upload_host")
+                String host,
+
+                @JsonProperty("expire_in_seconds")
+                int expireInSeconds,
+
+                @JsonProperty("max_file_size_mb")
+                int maxFileSizeMb,
+
+                @JsonProperty("capacity_limit_mb")
+                long capacityLimitMb,
+
+                @JsonProperty("oss_access_key_id")
+                String ossAccessKeyId,
+
+                @JsonProperty("x_oss_object_acl")
+                String xOssObjectAcl,
+
+                @JsonProperty("x_oss_forbid_overwrite")
+                boolean xOssForbidOverwrite
+
         ) {
             return new Output(
                     new Upload(
@@ -39,7 +60,8 @@ public record UploadGetResponse(String uuid, Ret ret, Usage usage, Output output
                             maxFileSizeMb * MB_TO_BYTE,
                             capacityLimitMb * MB_TO_BYTE,
                             new Upload.Oss(
-                                    host, directory,
+                                    host,
+                                    directory,
                                     ossAccessKeyId,
                                     xOssObjectAcl,
                                     xOssForbidOverwrite
@@ -53,10 +75,19 @@ public record UploadGetResponse(String uuid, Ret ret, Usage usage, Output output
 
     @JsonCreator
     static UploadGetResponse of(
-            @JsonProperty("request_id") String uuid,
-            @JsonProperty("code") String code,
-            @JsonProperty("message") String message,
-            @JsonProperty("data") Output output
+
+            @JsonProperty("request_id")
+            String uuid,
+
+            @JsonProperty("code")
+            String code,
+
+            @JsonProperty("message")
+            String message,
+
+            @JsonProperty("data")
+            Output output
+
     ) {
         return new UploadGetResponse(uuid, Ret.of(code, message), Usage.empty(), output);
     }
