@@ -29,9 +29,10 @@ public abstract class ProcessContentRequestInterceptor implements RequestInterce
 
     private CompletableFuture<ApiRequest<?>> processChatRequest(InvocationContext context, ChatRequest request) {
         return CompletableFutureUtils.thenForEachCompose(request.messages(), message -> processChatMessage(context, request, message))
-                .thenApply(messages -> ChatRequest.newBuilder(request)
-                        .messages(false, messages)
-                        .build());
+                .thenApply(messages -> {
+                    CommonUtils.updateList(false, request.messages(), messages);
+                    return request;
+                });
     }
 
     private CompletableFuture<Message> processChatMessage(InvocationContext context, ChatRequest request, Message message) {
