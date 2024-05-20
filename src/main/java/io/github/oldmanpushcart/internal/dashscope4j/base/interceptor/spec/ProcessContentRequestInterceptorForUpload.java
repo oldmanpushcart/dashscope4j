@@ -15,7 +15,10 @@ import java.util.concurrent.ConcurrentMap;
 public class ProcessContentRequestInterceptorForUpload extends ProcessContentRequestInterceptor {
 
     private static final Duration DEFAULT_CACHE_EXPIRE = Duration.ofHours(48);
-    private final ConcurrentMap<CacheKey, CacheVal> cache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<CacheKey, CacheVal> cache = new ConcurrentHashMap<>() {
+
+
+    };
 
     @Override
     protected CompletableFuture<Object> processContentData(InvocationContext context, AlgoRequest<?> request, Object data) {
@@ -41,8 +44,12 @@ public class ProcessContentRequestInterceptorForUpload extends ProcessContentReq
         // 优先从缓存中寻找，如果缓存中找到则直接使用
         final var cacheKey = new CacheKey(resource, model);
         final var cacheVal = cache.get(cacheKey);
-        if (Objects.nonNull(cacheVal) && !cacheVal.isExpired()) {
-            return CompletableFuture.completedFuture(cacheVal.uploaded());
+        if (Objects.nonNull(cacheVal)) {
+            if (cacheVal.isExpired()) {
+                cache.remove(cacheKey);
+            } else {
+                return CompletableFuture.completedFuture(cacheVal.uploaded());
+            }
         }
 
         // 上传资源
