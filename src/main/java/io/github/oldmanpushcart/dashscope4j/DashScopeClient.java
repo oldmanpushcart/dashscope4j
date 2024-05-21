@@ -17,6 +17,7 @@ import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import io.github.oldmanpushcart.internal.dashscope4j.DashScopeClientImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils;
 
 import java.time.Duration;
 import java.util.List;
@@ -150,7 +151,16 @@ public interface DashScopeClient {
          * @return this
          * @since 1.4.0
          */
-        Builder requestInterceptors(boolean isAppend, List<RequestInterceptor> interceptors);
+        default Builder requestInterceptors(boolean isAppend, List<RequestInterceptor> interceptors) {
+            CommonUtils.updateList(isAppend, requestInterceptors(), interceptors);
+            return this;
+        }
+
+        /**
+         * @return 请求拦截器集合
+         * @since 1.4.2
+         */
+        List<RequestInterceptor> requestInterceptors();
 
         /**
          * 添加响应拦截器
@@ -182,7 +192,16 @@ public interface DashScopeClient {
          * @return this
          * @since 1.4.0
          */
-        Builder responseInterceptors(boolean isAppend, List<ResponseInterceptor> interceptors);
+        default Builder responseInterceptors(boolean isAppend, List<ResponseInterceptor> interceptors) {
+            CommonUtils.updateList(isAppend, responseInterceptors(), interceptors);
+            return this;
+        }
+
+        /**
+         * @return 应答拦截器集合
+         * @since 1.4.2
+         */
+        List<ResponseInterceptor> responseInterceptors();
 
     }
 

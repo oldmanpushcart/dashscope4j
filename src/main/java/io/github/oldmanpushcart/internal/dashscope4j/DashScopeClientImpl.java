@@ -18,7 +18,13 @@ import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.InterceptorApiExecutor;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupRequestInterceptor;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupResponseInterceptor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.InterceptorHelper;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentRequestInterceptorForByteArrayToFileUri;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentRequestInterceptorForFileToUri;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentRequestInterceptorForUpload;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContextRequestInterceptorForBufferedImageToFileUri;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadGetRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadPostRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadResponseImpl;
@@ -34,7 +40,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.requireNonBlankString;
-import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.updateList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
@@ -177,8 +182,27 @@ public class DashScopeClientImpl implements DashScopeClient {
         private Executor executor;
         private Duration connectTimeout;
         private Duration timeout;
-        private final List<RequestInterceptor> requestInterceptors = new ArrayList<>();
-        private final List<ResponseInterceptor> responseInterceptors = new ArrayList<>();
+
+        private final List<RequestInterceptor> requestInterceptors = new ArrayList<>() {{
+
+            // 添加系统默认请求拦截器
+            add(new GroupRequestInterceptor(List.of(
+                    new ProcessContentRequestInterceptorForByteArrayToFileUri(),
+                    new ProcessContextRequestInterceptorForBufferedImageToFileUri(),
+                    new ProcessContentRequestInterceptorForFileToUri(),
+                    new ProcessContentRequestInterceptorForUpload()
+            )));
+
+        }};
+
+        private final List<ResponseInterceptor> responseInterceptors = new ArrayList<>() {{
+
+            // 添加系统默认响应拦截器
+            add(new GroupResponseInterceptor(List.of(
+
+            )));
+
+        }};
 
         @Override
         public DashScopeClient.Builder ak(String ak) {
@@ -205,15 +229,13 @@ public class DashScopeClientImpl implements DashScopeClient {
         }
 
         @Override
-        public DashScopeClient.Builder requestInterceptors(boolean isAppend, List<RequestInterceptor> interceptors) {
-            updateList(isAppend, requestInterceptors, interceptors);
-            return this;
+        public List<RequestInterceptor> requestInterceptors() {
+            return requestInterceptors;
         }
 
         @Override
-        public DashScopeClient.Builder responseInterceptors(boolean isAppend, List<ResponseInterceptor> interceptors) {
-            updateList(isAppend, responseInterceptors, interceptors);
-            return this;
+        public List<ResponseInterceptor> responseInterceptors() {
+            return responseInterceptors;
         }
 
         @Override

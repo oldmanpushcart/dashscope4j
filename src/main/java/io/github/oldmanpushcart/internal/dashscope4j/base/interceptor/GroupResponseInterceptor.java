@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-class DefaultResponseInterceptor implements ResponseInterceptor {
+public class GroupResponseInterceptor implements ResponseInterceptor {
 
     private final List<ResponseInterceptor> interceptors;
 
-    public DefaultResponseInterceptor(List<ResponseInterceptor> interceptors) {
+    public GroupResponseInterceptor(List<ResponseInterceptor> interceptors) {
         this.interceptors = interceptors;
     }
 
