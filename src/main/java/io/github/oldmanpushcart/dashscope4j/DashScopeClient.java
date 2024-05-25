@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j;
 
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
@@ -305,6 +306,12 @@ public interface DashScopeClient {
          * @return 上传操作
          */
         OpAsync<UploadResponse> upload(UploadRequest request);
+
+        /**
+         * @return 资源操作
+         * @since 1.4.2
+         */
+        FilesOp resource();
 
     }
 

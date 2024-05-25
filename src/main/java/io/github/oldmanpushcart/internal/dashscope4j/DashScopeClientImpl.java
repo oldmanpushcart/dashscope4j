@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.internal.dashscope4j;
 import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
@@ -25,6 +26,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.Proce
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentRequestInterceptorForFileToUri;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentRequestInterceptorForUpload;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContextRequestInterceptorForBufferedImageToFileUri;
+import io.github.oldmanpushcart.internal.dashscope4j.base.resource.FilesOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadGetRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadPostRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadResponseImpl;
@@ -168,6 +170,11 @@ public class DashScopeClientImpl implements DashScopeClient {
 
                     )
                     .thenCompose(res -> interceptorHelper.postHandle(context, res));
+        }
+
+        @Override
+        public FilesOp resource() {
+            return new FilesOpImpl(apiExecutor);
         }
 
     }

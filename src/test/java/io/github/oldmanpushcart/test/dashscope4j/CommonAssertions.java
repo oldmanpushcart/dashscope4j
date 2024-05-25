@@ -37,7 +37,9 @@ public class CommonAssertions {
         try {
             runnable.run();
             throw new AssertionError("Expected %s to be thrown, but nothing was thrown.".formatted(exceptionClass.getSimpleName()));
-        } catch (Throwable ex) {
+        } catch (AssertionError error) {
+            throw error;
+        }catch (Throwable ex) {
             final Throwable cause;
 
             // Unwrap CompletionException

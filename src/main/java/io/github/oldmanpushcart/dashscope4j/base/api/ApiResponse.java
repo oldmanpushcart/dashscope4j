@@ -11,6 +11,13 @@ import io.github.oldmanpushcart.dashscope4j.Usage;
 public interface ApiResponse<D extends ApiResponse.Output> {
 
     /**
+     * 空UUID
+     *
+     * @since 1.4.2
+     */
+    String EMPTY_UUID = "";
+
+    /**
      * 获取唯一标识
      *
      * @return 唯一标识

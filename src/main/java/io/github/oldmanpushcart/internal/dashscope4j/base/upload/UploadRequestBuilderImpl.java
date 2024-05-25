@@ -45,7 +45,7 @@ public class UploadRequestBuilderImpl implements UploadRequest.Builder {
     @Override
     public UploadRequest build() {
         return new UploadRequestImpl(
-                requireNonNull(resource, "resource is required"),
+                requireNonNull(resource, "uri is required"),
                 requireNonNull(model, "model is required"),
                 timeout
         );

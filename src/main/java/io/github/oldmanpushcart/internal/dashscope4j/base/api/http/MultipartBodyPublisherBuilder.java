@@ -64,7 +64,20 @@ public class MultipartBodyPublisherBuilder implements Buildable<HttpRequest.Body
      * @return this
      */
     public MultipartBodyPublisherBuilder part(String name, URI uri) {
-        this.parts.add(new URIPart(name, uri));
+        this.parts.add(new AnonymousUriPart(name, uri));
+        return this;
+    }
+
+    /**
+     * 添加URI部分
+     *
+     * @param name     名称
+     * @param uri      URI
+     * @param filename 资源名
+     * @return this
+     */
+    public MultipartBodyPublisherBuilder part(String name, URI uri, String filename) {
+        this.parts.add(new UriPart(name, uri, filename));
         return this;
     }
 
@@ -128,12 +141,12 @@ public class MultipartBodyPublisherBuilder implements Buildable<HttpRequest.Body
     }
 
     /**
-     * URI部分
+     * 匿名URI部分
      *
      * @param name 名称
      * @param uri  URI
      */
-    private record URIPart(String name, URI uri) implements Part {
+    private record AnonymousUriPart(String name, URI uri) implements Part {
 
         @Override
         public byte[] body(String boundary) throws IOException {
@@ -153,6 +166,39 @@ public class MultipartBodyPublisherBuilder implements Buildable<HttpRequest.Body
                 // return body
                 return output.toByteArray();
             }
+        }
+
+    }
+
+    /**
+     * URI部分
+     *
+     * @param name     名称
+     * @param uri      URI
+     * @param filename 资源名
+     */
+    private record UriPart(String name, URI uri, String filename) implements Part {
+
+        @Override
+        public byte[] body(String boundary) throws IOException {
+
+            try (final var output = new ByteArrayOutputStream();
+                 final var input = uri.toURL().openStream()) {
+
+                // write header
+                final var header =
+                        "--%s\r\n".formatted(boundary) +
+                        "Content-Disposition: form-data; name=\"%s\"; filename=\"%s\"\r\n".formatted(name, filename) +
+                        "Content-Type: application/octet-stream\r\n\r\n";
+                output.write(header.getBytes());
+
+                // write data
+                input.transferTo(output);
+
+                // return body
+                return output.toByteArray();
+            }
+
         }
 
     }

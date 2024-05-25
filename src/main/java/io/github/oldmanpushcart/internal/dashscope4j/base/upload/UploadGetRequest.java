@@ -22,7 +22,7 @@ public record UploadGetRequest(Model model, Duration timeout) implements ApiRequ
 
     @Override
     public HttpRequest newHttpRequest() {
-        logger.debug("dashscope://upload/get => ?action=getPolicy&model={}", model.name());
+        logger.debug("dashscope://base/upload/get => ?action=getPolicy&model={}", model.name());
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/api/v1/uploads?action=getPolicy&model=%s".formatted(model.name())))
                 .GET()
@@ -32,7 +32,7 @@ public record UploadGetRequest(Model model, Duration timeout) implements ApiRequ
     @Override
     public Function<String, UploadGetResponse> responseDeserializer() {
         return body -> {
-            logger.debug("dashscope://upload/get <= {}", body);
+            logger.debug("dashscope://base/upload/get <= {}", body);
             return JacksonUtils.toObject(body, UploadGetResponse.class);
         };
     }

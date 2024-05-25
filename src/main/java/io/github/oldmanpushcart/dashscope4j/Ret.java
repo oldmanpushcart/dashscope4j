@@ -14,6 +14,12 @@ import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.isN
 public record Ret(String code, String message) {
 
     /**
+     * 空编码
+     * @since 1.4.2
+     */
+    public static final String EMPTY_CODE = "";
+
+    /**
      * 成功编码
      */
     public static final String CODE_SUCCESS = "SUCCESS";
