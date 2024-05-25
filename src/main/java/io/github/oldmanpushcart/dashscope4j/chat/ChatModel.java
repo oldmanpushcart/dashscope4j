@@ -108,7 +108,7 @@ public record ChatModel(Mode mode, String name, URI remote) implements Model {
      *
      * @since 1.4.2
      */
-    public static ChatModel QWEN_LONGCONTEXT = ofText("qwen-long");
+    public static ChatModel QWEN_LONG = ofText("qwen-long");
 
     /**
      * QWEN-VL-PLUS

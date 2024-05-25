@@ -22,10 +22,10 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.api.InterceptorApiExec
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupRequestInterceptor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupResponseInterceptor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.InterceptorHelper;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentRequestInterceptorForByteArrayToFileUri;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentRequestInterceptorForFileToUri;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentRequestInterceptorForUpload;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContextRequestInterceptorForBufferedImageToFileUri;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentDataRequestInterceptorForByteArrayToFileUri;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentDataRequestInterceptorForFileToUri;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentDataRequestInterceptorForUpload;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentDataRequestInterceptorForBufferedImageToFileUri;
 import io.github.oldmanpushcart.internal.dashscope4j.base.resource.FilesOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadGetRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadPostRequest;
@@ -194,10 +194,10 @@ public class DashScopeClientImpl implements DashScopeClient {
 
             // 添加系统默认请求拦截器
             add(new GroupRequestInterceptor(List.of(
-                    new ProcessContentRequestInterceptorForByteArrayToFileUri(),
-                    new ProcessContextRequestInterceptorForBufferedImageToFileUri(),
-                    new ProcessContentRequestInterceptorForFileToUri(),
-                    new ProcessContentRequestInterceptorForUpload()
+                    new ProcessContentDataRequestInterceptorForByteArrayToFileUri(),
+                    new ProcessContentDataRequestInterceptorForBufferedImageToFileUri(),
+                    new ProcessContentDataRequestInterceptorForFileToUri(),
+                    new ProcessContentDataRequestInterceptorForUpload()
             )));
 
         }};

@@ -6,7 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
-public class ProcessContentRequestInterceptorForFileToUri extends ProcessContentRequestInterceptor {
+public class ProcessContentDataRequestInterceptorForFileToUri extends ProcessContentDataRequestInterceptor {
 
     @Override
     protected CompletableFuture<Object> processContentData(InvocationContext context, AlgoRequest<?> request, Object data) {

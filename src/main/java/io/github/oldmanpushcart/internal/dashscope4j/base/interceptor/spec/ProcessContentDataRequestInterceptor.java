@@ -14,7 +14,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils
 
 import java.util.concurrent.CompletableFuture;
 
-public abstract class ProcessContentRequestInterceptor implements RequestInterceptor {
+public class ProcessContentDataRequestInterceptor implements RequestInterceptor {
 
     @Override
     public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
@@ -67,6 +67,8 @@ public abstract class ProcessContentRequestInterceptor implements RequestInterce
                 });
     }
 
-    abstract CompletableFuture<Object> processContentData(InvocationContext context, AlgoRequest<?> request, Object data);
+    protected CompletableFuture<Object> processContentData(InvocationContext context, AlgoRequest<?> request, Object data) {
+        return CompletableFuture.completedFuture(data);
+    }
 
 }

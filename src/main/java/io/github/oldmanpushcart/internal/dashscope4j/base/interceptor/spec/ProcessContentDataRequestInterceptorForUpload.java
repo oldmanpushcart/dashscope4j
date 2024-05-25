@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-public class ProcessContentRequestInterceptorForUpload extends ProcessContentRequestInterceptor {
+public class ProcessContentDataRequestInterceptorForUpload extends ProcessContentDataRequestInterceptor {
 
     private static final int DEFAULT_CACHE_CAPACITY = 2048;
     private static final Duration DEFAULT_CACHE_EXPIRE = Duration.ofHours(48);
