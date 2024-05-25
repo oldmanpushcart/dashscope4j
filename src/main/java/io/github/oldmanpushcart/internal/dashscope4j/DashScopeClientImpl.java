@@ -22,10 +22,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.api.InterceptorApiExec
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupRequestInterceptor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupResponseInterceptor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.InterceptorHelper;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentDataRequestInterceptorForByteArrayToFileUri;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentDataRequestInterceptorForFileToUri;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentDataRequestInterceptorForUpload;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentDataRequestInterceptorForBufferedImageToFileUri;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.*;
 import io.github.oldmanpushcart.internal.dashscope4j.base.resource.FilesOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadGetRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadPostRequest;
@@ -197,6 +194,7 @@ public class DashScopeClientImpl implements DashScopeClient {
                     new ProcessContentDataRequestInterceptorForByteArrayToFileUri(),
                     new ProcessContentDataRequestInterceptorForBufferedImageToFileUri(),
                     new ProcessContentDataRequestInterceptorForFileToUri(),
+                    new ProcessChatMessageRequestInterceptorForQwenLong(),
                     new ProcessContentDataRequestInterceptorForUpload()
             )));
 
