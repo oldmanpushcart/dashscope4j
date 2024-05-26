@@ -23,7 +23,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupReque
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupResponseInterceptor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.InterceptorHelper;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.*;
-import io.github.oldmanpushcart.internal.dashscope4j.base.resource.FilesOpImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.files.FilesOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadGetRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadPostRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadResponseImpl;

@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.internal.dashscope4j.base.resource;
+package io.github.oldmanpushcart.internal.dashscope4j.base.files;
 
 import io.github.oldmanpushcart.internal.dashscope4j.base.openai.OpenAiRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.openai.impl.OpenAiRequestBuilderImpl;

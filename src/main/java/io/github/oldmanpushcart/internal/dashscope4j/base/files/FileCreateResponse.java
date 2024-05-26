@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.internal.dashscope4j.base.resource;
+package io.github.oldmanpushcart.internal.dashscope4j.base.files;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -6,14 +6,22 @@ import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.internal.dashscope4j.base.openai.Error;
 import io.github.oldmanpushcart.internal.dashscope4j.base.openai.OpenAiResponse;
 
-public record FileDetailResponse(Error error, Output output)
-        implements OpenAiResponse<FileDetailResponse.Output> {
+public record FileCreateResponse(Error error, Output output)
+        implements OpenAiResponse<FileCreateResponse.Output> {
+
+    private FileCreateResponse(Error error) {
+        this(error, null);
+    }
+
+    private FileCreateResponse(Output output) {
+        this(null, output);
+    }
 
     public record Output(FileMeta meta) implements OpenAiResponse.Output {
     }
 
     @JsonCreator
-    static FileDetailResponse of(
+    static FileCreateResponse of(
 
             @JsonProperty("error")
             Error error,
@@ -34,10 +42,10 @@ public record FileDetailResponse(Error error, Output output)
             String purpose
 
     ) {
+
         return null != error ?
-                new FileDetailResponse(error, null) :
-                new FileDetailResponse(
-                        null,
+                new FileCreateResponse(error) :
+                new FileCreateResponse(
                         new Output(
                                 FileMetaImpl.of(
                                         id,
@@ -46,6 +54,7 @@ public record FileDetailResponse(Error error, Output output)
                                         created,
                                         purpose
                                 )));
+
     }
 
 }
