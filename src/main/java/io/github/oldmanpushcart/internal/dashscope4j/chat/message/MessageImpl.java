@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 /**
  * 消息实现
  */
-public class MessageImpl implements Message {
+public non-sealed class MessageImpl implements Message {
 
     private Format format;
     private final Message.Role role;
