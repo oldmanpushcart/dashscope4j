@@ -49,14 +49,14 @@ import static java.util.Optional.ofNullable;
  */
 public class DashScopeClientImpl implements DashScopeClient {
 
-    private final InterceptorHelper interceptorHelper;
     private final ApiExecutor apiExecutor;
-    private final CacheFactory cacheFactory;
     private final FilesOpImpl filesOpImpl;
     private final UploadOpImpl uploadOpImpl;
 
     public DashScopeClientImpl(Builder builder) {
-        this.interceptorHelper = new InterceptorHelper(
+        final var cacheFactory = Optional.ofNullable(builder.cacheFactory)
+                .orElseGet(LruCacheFactoryImpl::new);
+        final var interceptorHelper = new InterceptorHelper(
                 this,
                 builder.executor,
                 builder.requestInterceptors,
@@ -69,8 +69,6 @@ public class DashScopeClientImpl implements DashScopeClient {
                 builder.timeout,
                 interceptorHelper
         );
-        this.cacheFactory = Optional.ofNullable(builder.cacheFactory)
-                .orElseGet(LruCacheFactoryImpl::new);
         this.filesOpImpl  = new FilesOpImpl(apiExecutor, cacheFactory);
         this.uploadOpImpl = new UploadOpImpl(apiExecutor, cacheFactory, interceptorHelper);
     }
