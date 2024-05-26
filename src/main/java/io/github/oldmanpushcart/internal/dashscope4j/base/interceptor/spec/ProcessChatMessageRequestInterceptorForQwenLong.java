@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.internal.dashscope4j.chat.message.MessageImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils;
 
 import java.net.URI;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class ProcessChatMessageRequestInterceptorForQwenLong implements RequestInterceptor {
 
@@ -27,77 +29,66 @@ public class ProcessChatMessageRequestInterceptorForQwenLong implements RequestI
     }
 
     private CompletableFuture<ApiRequest<?>> processChatRequest(InvocationContext context, ChatRequest request) {
-        final var messages = request.messages();
-        final var fsMessage = removeFileSystemMessage(messages);
-        final var fContents = removeFileContent(messages);
-        return CompletableFutureUtils.thenForEachCompose(fContents, content -> processFileContent(context, content))
-                .thenApply(contents -> {
 
-                    final var segments = contents.stream()
-                            .map(Content::data)
-                            .map(URI::toString)
-                            .toList();
+        final var fmMessage = new FileMetaSystemMessage(new ArrayList<>());
+        final var waitingProcessUris = new ArrayList<URI>();
 
-                    final var merged = new ArrayList<>(segments);
-                    if (null != fsMessage) {
-                        merged.addAll(List.of(fsMessage.text().split(",")));
-                    }
-
-                    messages.add(0, Message.ofSystem(String.join(",", merged)));
-                    return ChatRequest.newBuilder(request)
-                            .messages(false, messages)
-                            .build();
-                });
-    }
-
-    private Message removeFileSystemMessage(List<Message> messages) {
-        final var messageIt = messages.iterator();
+        // 遍历处理消息
+        final var messageIt = request.messages().iterator();
         while (messageIt.hasNext()) {
             final var message = messageIt.next();
-            if (message.role() == Message.Role.SYSTEM
-                && message.text().matches("(fileid://file-fe-\\\\w+)(,fileid://file-fe-\\\\w+)*")) {
+
+            // 移除文件系统消息
+            if (message instanceof FileMetaSystemMessage existed) {
+                fmMessage.contents().addAll(existed.contents());
                 messageIt.remove();
-                return message;
             }
-        }
-        return null;
-    }
 
-    private List<Content<URI>> removeFileContent(List<Message> messages) {
-        final var contents = new ArrayList<Content<URI>>();
-        final var messageIt = messages.iterator();
-        while (messageIt.hasNext()) {
-            final var message = messageIt.next();
-
+            // 遍历处理消息内容：只需要处理FILE:URI类型的内容
             final var contentIt = message.contents().iterator();
             while (contentIt.hasNext()) {
                 final var content = contentIt.next();
-
-                // 将所有的FILE:URI类型的消息内容提取出来
-                if ((content.type() == Content.Type.FILE)
-                    && (content.data() instanceof URI)) {
-                    //noinspection unchecked
-                    contents.add((Content<URI>) content);
+                if (content.type() == Content.Type.FILE && content.data() instanceof URI uri) {
+                    waitingProcessUris.add(uri);
                     contentIt.remove();
                 }
-
-            }
-
-            // 如果提取后消息内容为空，则移除该消息
-            if (message.contents().isEmpty()) {
-                messageIt.remove();
             }
 
         }
-        return contents;
+
+        // 处理文件内容
+        return CompletableFutureUtils.thenForEachCompose(waitingProcessUris, uri -> processUri(context, uri))
+                .thenApply(uris -> uris.stream().map(Content::ofFile).toList())
+                .thenApply(contents -> {
+                    fmMessage.contents().addAll(contents);
+                    request.messages().add(0, fmMessage);
+                    return request;
+                });
     }
 
-    private CompletableFuture<Content<URI>> processFileContent(InvocationContext context, Content<URI> content) {
-        final var resource = content.data();
-        final var filename = content.data().getPath();
-        return context.client().base().resource()
-                .upload(resource, filename)
-                .thenApply(meta -> Content.of(Content.Type.FILE, URI.create("fileid://%s".formatted(meta.id()))));
+    private CompletableFuture<URI> processUri(InvocationContext context, URI uri) {
+        return context.client().base().resource().upload(uri, uri.getPath())
+                .thenApply(meta -> "fileid://%s".formatted(meta.id()))
+                .thenApply(URI::create);
+    }
+
+    /**
+     * 文件系统消息
+     */
+    public static class FileMetaSystemMessage extends MessageImpl implements Message {
+
+        public FileMetaSystemMessage(List<Content<?>> contents) {
+            super(Role.SYSTEM, contents);
+        }
+
+        @Override
+        public String text() {
+            return contents().stream()
+                    .map(Content::data)
+                    .map(Object::toString)
+                    .collect(Collectors.joining(","));
+        }
+
     }
 
 }
