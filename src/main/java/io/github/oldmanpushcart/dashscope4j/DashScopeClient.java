@@ -2,10 +2,12 @@ package io.github.oldmanpushcart.dashscope4j;
 
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
+import io.github.oldmanpushcart.dashscope4j.base.upload.UploadOp;
 import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
 import io.github.oldmanpushcart.dashscope4j.base.upload.UploadResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
@@ -204,6 +206,15 @@ public interface DashScopeClient {
          */
         List<ResponseInterceptor> responseInterceptors();
 
+        /**
+         * 设置缓存工厂
+         *
+         * @param factory 缓存工厂
+         * @return this
+         * @since 1.4.2
+         */
+        Builder cacheFactory(CacheFactory factory);
+
     }
 
     /**
@@ -304,14 +315,22 @@ public interface DashScopeClient {
          *
          * @param request 上传请求
          * @return 上传操作
+         * @deprecated 请使用{@link #upload()}代替
          */
+        @Deprecated
         OpAsync<UploadResponse> upload(UploadRequest request);
 
         /**
-         * @return 资源操作
+         * @return 临时空间上传操作
          * @since 1.4.2
          */
-        FilesOp resource();
+        UploadOp upload();
+
+        /**
+         * @return 文件操作
+         * @since 1.4.2
+         */
+        FilesOp files();
 
     }
 

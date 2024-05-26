@@ -3,10 +3,12 @@ package io.github.oldmanpushcart.internal.dashscope4j;
 import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
+import io.github.oldmanpushcart.dashscope4j.base.upload.UploadOp;
 import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
 import io.github.oldmanpushcart.dashscope4j.base.upload.UploadResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
@@ -19,14 +21,13 @@ import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.InterceptorApiExecutor;
+import io.github.oldmanpushcart.internal.dashscope4j.base.cache.LruCacheFactoryImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.files.FilesOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupRequestInterceptor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupResponseInterceptor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.InterceptorHelper;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.*;
-import io.github.oldmanpushcart.internal.dashscope4j.base.files.FilesOpImpl;
-import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadGetRequest;
-import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadPostRequest;
-import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadResponseImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpAsyncHandler;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpFlowHandler;
 
@@ -34,6 +35,7 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
@@ -49,6 +51,9 @@ public class DashScopeClientImpl implements DashScopeClient {
 
     private final InterceptorHelper interceptorHelper;
     private final ApiExecutor apiExecutor;
+    private final CacheFactory cacheFactory;
+    private final FilesOpImpl filesOpImpl;
+    private final UploadOpImpl uploadOpImpl;
 
     public DashScopeClientImpl(Builder builder) {
         this.interceptorHelper = new InterceptorHelper(
@@ -64,6 +69,10 @@ public class DashScopeClientImpl implements DashScopeClient {
                 builder.timeout,
                 interceptorHelper
         );
+        this.cacheFactory = Optional.ofNullable(builder.cacheFactory)
+                .orElseGet(LruCacheFactoryImpl::new);
+        this.filesOpImpl  = new FilesOpImpl(apiExecutor, cacheFactory);
+        this.uploadOpImpl = new UploadOpImpl(apiExecutor, cacheFactory, interceptorHelper);
     }
 
     // 构建HTTP客户端
@@ -135,43 +144,17 @@ public class DashScopeClientImpl implements DashScopeClient {
 
         @Override
         public OpAsync<UploadResponse> upload(UploadRequest request) {
-            final var context = interceptorHelper.newInvocationContext();
-            return () -> interceptorHelper.preHandle(context, request)
-                    .thenCompose(req -> CompletableFuture.completedFuture(null)
-
-                            // 获取上传凭证
-                            .thenCompose(unused -> apiExecutor.async(new UploadGetRequest(
-                                    req.model(),
-                                    req.timeout()
-                            )))
-
-                            // 上传资源
-                            .thenCompose(getResponse -> apiExecutor.async(new UploadPostRequest(
-                                    req.resource(),
-                                    req.model(),
-                                    getResponse.output().upload(),
-                                    req.timeout()
-                            )))
-
-                            // 构建上传响应
-                            .thenApply(postResponse -> new UploadResponseImpl(
-                                    postResponse.uuid(),
-                                    postResponse.ret(),
-                                    postResponse.usage(),
-                                    new UploadResponseImpl.OutputImpl(
-                                            req.resource(),
-                                            req.model(),
-                                            postResponse.output().uploaded()
-                                    )
-                            ))
-
-                    )
-                    .thenCompose(res -> interceptorHelper.postHandle(context, res));
+            return uploadOpImpl.upload(request);
         }
 
         @Override
-        public FilesOp resource() {
-            return new FilesOpImpl(apiExecutor);
+        public UploadOp upload() {
+            return uploadOpImpl;
+        }
+
+        @Override
+        public FilesOp files() {
+            return filesOpImpl;
         }
 
     }
@@ -186,6 +169,7 @@ public class DashScopeClientImpl implements DashScopeClient {
         private Executor executor;
         private Duration connectTimeout;
         private Duration timeout;
+        private CacheFactory cacheFactory;
 
         private final List<RequestInterceptor> requestInterceptors = new ArrayList<>() {{
 
@@ -241,6 +225,12 @@ public class DashScopeClientImpl implements DashScopeClient {
         @Override
         public List<ResponseInterceptor> responseInterceptors() {
             return responseInterceptors;
+        }
+
+        @Override
+        public DashScopeClient.Builder cacheFactory(CacheFactory factory) {
+            this.cacheFactory = factory;
+            return this;
         }
 
         @Override

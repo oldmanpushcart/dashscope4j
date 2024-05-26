@@ -95,7 +95,7 @@ public class ProcessChatMessageRequestInterceptorForQwenLong implements RequestI
         }
 
         // 其他协议类型：上传文件
-        return context.client().base().resource().upload(uri, uri.getPath())
+        return context.client().base().files().upload(uri, uri.getPath())
                 .thenApply(FileMeta::toURI);
     }
 

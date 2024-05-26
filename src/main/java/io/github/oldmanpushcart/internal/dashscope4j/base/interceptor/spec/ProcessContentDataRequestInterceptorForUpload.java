@@ -1,22 +1,13 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec;
 
-import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
-import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
-import io.github.oldmanpushcart.internal.dashscope4j.util.LRUCache;
 
 import java.net.URI;
-import java.time.Duration;
-import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 public class ProcessContentDataRequestInterceptorForUpload extends ProcessContentDataRequestInterceptor {
-
-    private static final int DEFAULT_CACHE_CAPACITY = 2048;
-    private static final Duration DEFAULT_CACHE_EXPIRE = Duration.ofHours(48);
-    private final Map<CacheKey, CacheVal> cache = new LRUCache<>(DEFAULT_CACHE_CAPACITY);
 
     @Override
     protected CompletableFuture<Object> processContentData(InvocationContext context, AlgoRequest<?> request, Object data) {
@@ -39,47 +30,10 @@ public class ProcessContentDataRequestInterceptorForUpload extends ProcessConten
         final var client = context.client();
         final var model = request.model();
 
-        // 优先从缓存中寻找，如果缓存中找到则直接使用
-        final var cacheKey = new CacheKey(resource, model);
-        final var cacheVal = cache.get(cacheKey);
-        if (Objects.nonNull(cacheVal)) {
-            if (cacheVal.isExpired()) {
-                synchronized (cache) {
-                    cache.remove(cacheKey);
-                }
-            } else {
-                return CompletableFuture.completedFuture(cacheVal.uploaded());
-            }
-        }
-
         // 上传资源
-        final var uploadRequest = UploadRequest.newBuilder()
-                .resource(resource)
-                .model(model)
-                .build();
-        return client.base().upload(uploadRequest).async()
-                .thenApply(response -> {
-                    synchronized (cache) {
-                        cache.put(cacheKey, new CacheVal(
-                                response.output().uploaded(),
-                                System.currentTimeMillis() + DEFAULT_CACHE_EXPIRE.toMillis()
-                        ));
-                    }
-                    return response;
-                })
-                .thenApply(response -> response.output().uploaded());
-    }
-
-    private record CacheKey(URI resource, Model model) {
-
-    }
-
-    private record CacheVal(URI uploaded, long expireMs) {
-
-        boolean isExpired() {
-            return System.currentTimeMillis() > expireMs;
-        }
-
+        return context.client().base().upload()
+                .upload(resource, model)
+                .thenApply(Function.identity());
     }
 
 }

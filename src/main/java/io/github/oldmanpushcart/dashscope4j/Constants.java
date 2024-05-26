@@ -28,4 +28,18 @@ public class Constants {
      */
     public static final String VERSION = properties.getProperty("version");
 
+    /**
+     * 缓存命名空间：临时空间
+     *
+     * @since 1.4.2
+     */
+    public static final String CACHE_NAMESPACE_FOR_UPLOAD = "upload";
+
+    /**
+     * 缓存命名空间：文件操作
+     *
+     * @since 1.4.2
+     */
+    public static final String CACHE_NAMESPACE_FOR_FILES = "files";
+
 }
