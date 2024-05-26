@@ -6,15 +6,15 @@ import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
-import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.FactorContent;
 import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.MmEmbeddingRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils;
-import io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils;
 
 import java.util.concurrent.CompletableFuture;
 
-public class ProcessContentDataRequestInterceptor implements RequestInterceptor {
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils.thenForEachCompose;
+
+public abstract class ProcessContentDataRequestInterceptor implements RequestInterceptor {
 
     @Override
     public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
@@ -28,24 +28,20 @@ public class ProcessContentDataRequestInterceptor implements RequestInterceptor 
     }
 
     private CompletableFuture<ApiRequest<?>> processChatRequest(InvocationContext context, ChatRequest request) {
-        return CompletableFutureUtils.thenForEachCompose(request.messages(), message -> processChatMessage(context, request, message))
+        return thenForEachCompose(request.messages(), message ->
+                thenForEachCompose(message.contents(), content -> processContent(context, request, content))
+                        .thenApply(contents -> {
+                            CommonUtils.updateList(false, message.contents(), contents);
+                            return message;
+                        }))
                 .thenApply(messages -> {
                     CommonUtils.updateList(false, request.messages(), messages);
                     return request;
                 });
     }
 
-    private CompletableFuture<Message> processChatMessage(InvocationContext context, ChatRequest request, Message message) {
-        return CompletableFutureUtils.thenForEachCompose(message.contents(), content -> processContent(context, request, content))
-                .thenApply(contents -> {
-                    CommonUtils.updateList(false, message.contents(), contents);
-                    return message;
-                });
-    }
-
     private CompletableFuture<ApiRequest<?>> processMmEmbeddingRequest(InvocationContext context, MmEmbeddingRequest request) {
-        return CompletableFutureUtils.thenForEachCompose(request.contents(), content -> processContent(context, request, content))
-                .thenApply(contents -> contents.stream().map(v -> (FactorContent<?>) v).toList())
+        return thenForEachCompose(request.contents(), content -> processContent(context, request, content))
                 .thenApply(contents -> {
                     CommonUtils.updateList(false, request.contents(), contents);
                     return request;
@@ -53,7 +49,8 @@ public class ProcessContentDataRequestInterceptor implements RequestInterceptor 
     }
 
 
-    private CompletableFuture<Content<?>> processContent(InvocationContext context, AlgoRequest<?> request, Content<?> content) {
+    private <T extends Content<?>> CompletableFuture<T> processContent(InvocationContext context, AlgoRequest<?> request, T content) {
+        //noinspection unchecked
         return processContentData(context, request, content.data())
                 .thenApply(data -> {
                     if (content instanceof FactorContent<?> factorContent) {
@@ -64,11 +61,10 @@ public class ProcessContentDataRequestInterceptor implements RequestInterceptor 
                         );
                     }
                     return Content.of(content.type(), data);
-                });
+                })
+                .thenApply(v -> (T) v);
     }
 
-    protected CompletableFuture<Object> processContentData(InvocationContext context, AlgoRequest<?> request, Object data) {
-        return CompletableFuture.completedFuture(data);
-    }
+    abstract protected CompletableFuture<Object> processContentData(InvocationContext context, AlgoRequest<?> request, Object data);
 
 }
