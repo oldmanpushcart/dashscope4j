@@ -95,6 +95,11 @@ public class LruCacheImpl<K, V> implements Cache<K, V> {
                 );
             }
 
+            @Override
+            public void remove() {
+                mapEntryIt.remove();
+            }
+
         };
     }
 
