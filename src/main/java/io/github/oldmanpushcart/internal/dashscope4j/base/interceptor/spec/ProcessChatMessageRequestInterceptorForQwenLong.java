@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec;
 
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
@@ -8,16 +9,26 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.MessageImpl;
-import io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.mapTo;
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils.thenForEachCompose;
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
 public class ProcessChatMessageRequestInterceptorForQwenLong implements RequestInterceptor {
+
+    private static final String FILEID_REGEX_PATTERN = Pattern
+            .compile("(fileid://file-fe-\\w+)(,fileid://file-fe-\\w+)*", CASE_INSENSITIVE)
+            .pattern();
 
     @Override
     public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
@@ -30,17 +41,27 @@ public class ProcessChatMessageRequestInterceptorForQwenLong implements RequestI
 
     private CompletableFuture<ApiRequest<?>> processChatRequest(InvocationContext context, ChatRequest request) {
 
-        final var fmMessage = new FileMetaSystemMessage(new ArrayList<>());
-        final var waitingProcessUris = new ArrayList<URI>();
+        final var waitingProcessContents = new LinkedHashSet<Content<?>>();
+        final var waitingProcessUris = new LinkedHashSet<URI>();
 
         // 遍历处理消息
         final var messageIt = request.messages().iterator();
         while (messageIt.hasNext()) {
             final var message = messageIt.next();
 
-            // 移除文件系统消息
+            // 合并并移除已有的文件系统消息
             if (message instanceof FileMetaSystemMessage existed) {
-                fmMessage.contents().addAll(existed.contents());
+                waitingProcessContents.addAll(existed.contents());
+                messageIt.remove();
+            }
+
+            // 合并并移除所有符合FileMetaSystemMessage格式的系统消息
+            else if (message.role() == Message.Role.SYSTEM
+                     && message.text().matches(FILEID_REGEX_PATTERN)) {
+                Stream.of(message.text().split(","))
+                        .map(URI::create)
+                        .map(Content::ofFile)
+                        .forEach(waitingProcessContents::add);
                 messageIt.remove();
             }
 
@@ -57,28 +78,34 @@ public class ProcessChatMessageRequestInterceptorForQwenLong implements RequestI
         }
 
         // 处理文件内容
-        return CompletableFutureUtils.thenForEachCompose(waitingProcessUris, uri -> processUri(context, uri))
-                .thenApply(uris -> uris.stream().map(Content::ofFile).toList())
+        return thenForEachCompose(waitingProcessUris, uri -> processUri(context, uri))
+                .thenApply(uris -> mapTo(uris, Content::ofFile))
                 .thenApply(contents -> {
-                    fmMessage.contents().addAll(contents);
-                    request.messages().add(0, fmMessage);
+                    waitingProcessContents.addAll(contents);
+                    request.messages().add(0, new FileMetaSystemMessage(waitingProcessContents));
                     return request;
                 });
     }
 
     private CompletableFuture<URI> processUri(InvocationContext context, URI uri) {
+
+        // fileid协议类型，不做处理
+        if ("fileid".equalsIgnoreCase(uri.getScheme())) {
+            return CompletableFuture.completedFuture(uri);
+        }
+
+        // 其他协议类型：上传文件
         return context.client().base().resource().upload(uri, uri.getPath())
-                .thenApply(meta -> "fileid://%s".formatted(meta.id()))
-                .thenApply(URI::create);
+                .thenApply(FileMeta::toURI);
     }
 
     /**
      * 文件系统消息
      */
-    public static class FileMetaSystemMessage extends MessageImpl implements Message {
+    private static class FileMetaSystemMessage extends MessageImpl implements Message {
 
-        public FileMetaSystemMessage(List<Content<?>> contents) {
-            super(Role.SYSTEM, contents);
+        public FileMetaSystemMessage(Set<Content<?>> contents) {
+            super(Role.SYSTEM, new ArrayList<>(contents));
         }
 
         @Override

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 
+import java.net.URI;
+
 public record FileMetaImpl(
         String id,
         String name,
@@ -38,6 +40,11 @@ public record FileMetaImpl(
                 created * 1000L,
                 purpose
         );
+    }
+
+    @Override
+    public URI toURI() {
+        return URI.create("fileid://%s".formatted(id));
     }
 
 }

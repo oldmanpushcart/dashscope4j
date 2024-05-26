@@ -18,7 +18,7 @@ import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import io.github.oldmanpushcart.internal.dashscope4j.DashScopeClientImpl;
-import io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils;
+import io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils;
 
 import java.time.Duration;
 import java.util.List;
@@ -153,7 +153,7 @@ public interface DashScopeClient {
          * @since 1.4.0
          */
         default Builder requestInterceptors(boolean isAppend, List<RequestInterceptor> interceptors) {
-            CommonUtils.updateList(isAppend, requestInterceptors(), interceptors);
+            CollectionUtils.updateList(isAppend, requestInterceptors(), interceptors);
             return this;
         }
 
@@ -194,7 +194,7 @@ public interface DashScopeClient {
          * @since 1.4.0
          */
         default Builder responseInterceptors(boolean isAppend, List<ResponseInterceptor> interceptors) {
-            CommonUtils.updateList(isAppend, responseInterceptors(), interceptors);
+            CollectionUtils.updateList(isAppend, responseInterceptors(), interceptors);
             return this;
         }
 

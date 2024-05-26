@@ -1,5 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.base.files;
 
+import java.net.URI;
+
 /**
  * 文件元数据
  *
@@ -31,5 +33,10 @@ public interface FileMeta {
      * @return 文件用途
      */
     String purpose();
+
+    /**
+     * @return 转换为URI
+     */
+    URI toURI();
 
 }

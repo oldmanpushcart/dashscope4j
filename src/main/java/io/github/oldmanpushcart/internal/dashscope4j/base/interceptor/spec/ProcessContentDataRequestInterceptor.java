@@ -8,7 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.FactorContent;
 import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.MmEmbeddingRequest;
-import io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils;
+import io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -31,11 +31,11 @@ public abstract class ProcessContentDataRequestInterceptor implements RequestInt
         return thenForEachCompose(request.messages(), message ->
                 thenForEachCompose(message.contents(), content -> processContent(context, request, content))
                         .thenApply(contents -> {
-                            CommonUtils.updateList(false, message.contents(), contents);
+                            CollectionUtils.updateList(false, message.contents(), contents);
                             return message;
                         }))
                 .thenApply(messages -> {
-                    CommonUtils.updateList(false, request.messages(), messages);
+                    CollectionUtils.updateList(false, request.messages(), messages);
                     return request;
                 });
     }
@@ -43,7 +43,7 @@ public abstract class ProcessContentDataRequestInterceptor implements RequestInt
     private CompletableFuture<ApiRequest<?>> processMmEmbeddingRequest(InvocationContext context, MmEmbeddingRequest request) {
         return thenForEachCompose(request.contents(), content -> processContent(context, request, content))
                 .thenApply(contents -> {
-                    CommonUtils.updateList(false, request.contents(), contents);
+                    CollectionUtils.updateList(false, request.contents(), contents);
                     return request;
                 });
     }
