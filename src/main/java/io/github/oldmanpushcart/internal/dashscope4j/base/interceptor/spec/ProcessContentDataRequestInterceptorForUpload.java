@@ -27,7 +27,6 @@ public class ProcessContentDataRequestInterceptorForUpload extends ProcessConten
             return CompletableFuture.completedFuture(data);
         }
 
-        final var client = context.client();
         final var model = request.model();
 
         // 上传资源
