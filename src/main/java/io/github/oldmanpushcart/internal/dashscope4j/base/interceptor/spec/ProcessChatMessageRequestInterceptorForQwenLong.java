@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.isNotEmptyCollection;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.mapTo;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils.thenForEachCompose;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
@@ -82,7 +83,9 @@ public class ProcessChatMessageRequestInterceptorForQwenLong implements RequestI
                 .thenApply(uris -> mapTo(uris, Content::ofFile))
                 .thenApply(contents -> {
                     waitingProcessContents.addAll(contents);
-                    request.messages().add(0, new FileMetaSystemMessage(waitingProcessContents));
+                    if (isNotEmptyCollection(waitingProcessContents)) {
+                        request.messages().add(0, new FileMetaSystemMessage(waitingProcessContents));
+                    }
                     return request;
                 });
     }
