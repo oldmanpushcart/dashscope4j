@@ -19,7 +19,7 @@ public record FileDetailRequest(String id, Duration timeout) implements OpenAiRe
 
     @Override
     public HttpRequest newHttpRequest() {
-        logger.debug("dashscope://base/resource/detail/{} <= GET", id);
+        logger.debug("dashscope://base/files/detail/{} <= GET", id);
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/compatible-mode/v1/files/%s".formatted(id)))
                 .GET()
@@ -29,7 +29,7 @@ public record FileDetailRequest(String id, Duration timeout) implements OpenAiRe
     @Override
     public Function<String, FileDetailResponse> responseDeserializer() {
         return body -> {
-            logger.debug("dashscope://base/resource/detail/{} <= {}", id, body);
+            logger.debug("dashscope://base/files/detail/{} <= {}", id, body);
             return JacksonUtils.toObject(body, FileDetailResponse.class);
         };
     }

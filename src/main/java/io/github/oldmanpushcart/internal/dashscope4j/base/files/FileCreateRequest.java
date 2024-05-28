@@ -24,7 +24,7 @@ public record FileCreateRequest(URI uri, String name, String purpose, Duration t
 
     @Override
     public HttpRequest newHttpRequest() {
-        logger.debug("dashscope://base/resource/create/{} => uri={};purpose={};", name, uri, purpose);
+        logger.debug("dashscope://base/files/create/{} => uri={};purpose={};", name, uri, purpose);
         final var boundary = "boundary%s".formatted(sequencer.incrementAndGet());
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/compatible-mode/v1/files"))
@@ -41,7 +41,7 @@ public record FileCreateRequest(URI uri, String name, String purpose, Duration t
     @Override
     public Function<String, FileCreateResponse> responseDeserializer() {
         return body -> {
-            logger.debug("dashscope://base/resource/create/{} <= {}", name, body);
+            logger.debug("dashscope://base/files/create/{} <= {}", name, body);
             return JacksonUtils.toObject(body, FileCreateResponse.class);
         };
     }

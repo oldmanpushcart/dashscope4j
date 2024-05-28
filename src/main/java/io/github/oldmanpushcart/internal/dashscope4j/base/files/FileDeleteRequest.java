@@ -20,7 +20,7 @@ public record FileDeleteRequest(String id, Duration timeout)
 
     @Override
     public HttpRequest newHttpRequest() {
-        logger.debug("dashscope://base/resource/delete/{} <= DELETE", id);
+        logger.debug("dashscope://base/files/delete/{} <= DELETE", id);
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/compatible-mode/v1/files/%s".formatted(id)))
                 .DELETE()
@@ -30,7 +30,7 @@ public record FileDeleteRequest(String id, Duration timeout)
     @Override
     public Function<String, FileDeleteResponse> responseDeserializer() {
         return body -> {
-            logger.debug("dashscope://base/resource/delete/{} <= {}", id, body);
+            logger.debug("dashscope://base/files/delete/{} <= {}", id, body);
             return JacksonUtils.toObject(body, FileDeleteResponse.class);
         };
     }

@@ -36,7 +36,8 @@ public class UploadOpImpl implements UploadOp {
                     .resource(resource)
                     .model(model)
                     .build();
-            return apiExecutor.async(request)
+            return upload(request)
+                    .async()
                     .thenApply(response -> response.output().uploaded());
         });
     }

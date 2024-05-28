@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.internal.dashscope4j.base.api.http;
 
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -12,6 +11,7 @@ import java.util.List;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.check;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.requireNonBlankString;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * HTTP-Multipart请求体发布器构建器
@@ -91,17 +91,13 @@ public class MultipartBodyPublisherBuilder implements Buildable<HttpRequest.Body
         parts.add(new FinishPart());
 
         // 构建请求体
-        try (final var output = new ByteArrayOutputStream()) {
-            for (final var part : parts) {
-                output.write(part.body(boundary));
-            }
-            return HttpRequest.BodyPublishers.ofByteArray(output.toByteArray());
-        } catch (IOException e) {
-            throw new RuntimeException("loading multipart error!", e);
-        }
+        return HttpRequest.BodyPublishers.concat(
+                parts.stream()
+                        .map(part -> part.body(boundary))
+                        .toArray(HttpRequest.BodyPublisher[]::new)
+        );
 
     }
-
 
     /**
      * HTTP-Multipart部分
@@ -113,9 +109,8 @@ public class MultipartBodyPublisherBuilder implements Buildable<HttpRequest.Body
          *
          * @param boundary 边界
          * @return 部分体
-         * @throws IOException IO异常
          */
-        byte[] body(String boundary) throws IOException;
+        HttpRequest.BodyPublisher body(String boundary);
 
     }
 
@@ -129,13 +124,13 @@ public class MultipartBodyPublisherBuilder implements Buildable<HttpRequest.Body
     private record TextPart(String name, String text, Charset charset) implements Part {
 
         @Override
-        public byte[] body(String boundary) {
+        public HttpRequest.BodyPublisher body(String boundary) {
             final var body =
                     "--" + boundary + "\r\n" +
                     "Content-Disposition: form-data; name=\"%s\"\r\n".formatted(name) +
                     "Content-Type: text/plain; charset=%s\r\n\r\n".formatted(charset.name()) +
                     "%s\r\n".formatted(text);
-            return body.getBytes(charset);
+            return HttpRequest.BodyPublishers.ofString(body, UTF_8);
         }
 
     }
@@ -149,25 +144,27 @@ public class MultipartBodyPublisherBuilder implements Buildable<HttpRequest.Body
     private record AnonymousUriPart(String name, URI uri) implements Part {
 
         @Override
-        public byte[] body(String boundary) throws IOException {
-            try (final var output = new ByteArrayOutputStream();
-                 final var input = uri.toURL().openStream()) {
+        public HttpRequest.BodyPublisher body(String boundary) {
 
-                // write header
-                final var header =
-                        "--%s\r\n".formatted(boundary) +
-                        "Content-Disposition: form-data; name=\"%s\"\r\n".formatted(name) +
-                        "Content-Type: application/octet-stream\r\n\r\n";
-                output.write(header.getBytes());
+            // header
+            final var header =
+                    "--%s\r\n".formatted(boundary) +
+                    "Content-Disposition: form-data; name=\"%s\"\r\n".formatted(name) +
+                    "Content-Type: application/octet-stream\r\n\r\n";
 
-                // write data
-                input.transferTo(output);
+            // header & input
+            return HttpRequest.BodyPublishers.concat(
+                    HttpRequest.BodyPublishers.ofString(header, UTF_8),
+                    HttpRequest.BodyPublishers.ofInputStream(() -> {
+                        try {
+                            return uri.toURL().openStream();
+                        } catch (IOException e) {
+                            throw new RuntimeException("open uri: %s failed!".formatted(uri), e);
+                        }
+                    })
+            );
 
-                // return body
-                return output.toByteArray();
-            }
         }
-
     }
 
     /**
@@ -180,24 +177,25 @@ public class MultipartBodyPublisherBuilder implements Buildable<HttpRequest.Body
     private record UriPart(String name, URI uri, String filename) implements Part {
 
         @Override
-        public byte[] body(String boundary) throws IOException {
+        public HttpRequest.BodyPublisher body(String boundary) {
 
-            try (final var output = new ByteArrayOutputStream();
-                 final var input = uri.toURL().openStream()) {
+            // header
+            final var header =
+                    "--%s\r\n".formatted(boundary) +
+                    "Content-Disposition: form-data; name=\"%s\"; filename=\"%s\"\r\n".formatted(name, filename) +
+                    "Content-Type: application/octet-stream\r\n\r\n";
 
-                // write header
-                final var header =
-                        "--%s\r\n".formatted(boundary) +
-                        "Content-Disposition: form-data; name=\"%s\"; filename=\"%s\"\r\n".formatted(name, filename) +
-                        "Content-Type: application/octet-stream\r\n\r\n";
-                output.write(header.getBytes());
-
-                // write data
-                input.transferTo(output);
-
-                // return body
-                return output.toByteArray();
-            }
+            // header & input
+            return HttpRequest.BodyPublishers.concat(
+                    HttpRequest.BodyPublishers.ofString(header, UTF_8),
+                    HttpRequest.BodyPublishers.ofInputStream(() -> {
+                        try {
+                            return uri.toURL().openStream();
+                        } catch (IOException e) {
+                            throw new RuntimeException("open uri: %s failed!".formatted(uri), e);
+                        }
+                    })
+            );
 
         }
 
@@ -209,9 +207,9 @@ public class MultipartBodyPublisherBuilder implements Buildable<HttpRequest.Body
     private record FinishPart() implements Part {
 
         @Override
-        public byte[] body(String boundary) {
-            return "\r\n--%s--\r\n".formatted(boundary)
-                    .getBytes();
+        public HttpRequest.BodyPublisher body(String boundary) {
+            final var body = "\r\n--%s--\r\n".formatted(boundary);
+            return HttpRequest.BodyPublishers.ofString(body, UTF_8);
         }
 
     }
