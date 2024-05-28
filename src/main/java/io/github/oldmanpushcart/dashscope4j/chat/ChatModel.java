@@ -103,6 +103,14 @@ public record ChatModel(Mode mode, String name, URI remote) implements Model {
     public static ChatModel QWEN_MAX_LONGCONTEXT = ofText("qwen-max-longcontext");
 
     /**
+     * QWEN-LONG
+     * <p>通义千问超大规模语言模型，支持长文本上下文，以及基于长文档、多文档等多个场景的对话功能。</p>
+     *
+     * @since 1.4.2
+     */
+    public static ChatModel QWEN_LONG = ofText("qwen-long");
+
+    /**
      * QWEN-VL-PLUS
      * <p>通义千问大规模视觉语言模型增强版。</p>
      * <p>大幅提升细节识别能力和文字识别能力，支持超百万像素分辨率和任意长宽比规格的图像。在广泛的视觉任务上提供卓越的性能。</p>

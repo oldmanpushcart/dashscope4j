@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.MultipartBodyPublisherBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +65,7 @@ public final class UploadPostRequest implements ApiRequest<UploadPostResponse> {
 
     @Override
     public HttpRequest newHttpRequest() {
-        logger.debug("dashscope://upload/post/{} => {}", ossKey, resource);
+        logger.debug("dashscope://base/upload/post/{} => {}", ossKey, resource);
         final var boundary = "boundary%s".formatted(sequencer.incrementAndGet());
         return HttpRequest.newBuilder()
                 .uri(URI.create(upload.oss().host()))
@@ -89,7 +90,7 @@ public final class UploadPostRequest implements ApiRequest<UploadPostResponse> {
     public <T> Function<HttpResponse<T>, HttpResponse<T>> httpResponseChecker() {
         return response -> {
             final var code = response.statusCode();
-            logger.debug("dashscope://upload/post/{} <= {}", ossKey, code);
+            logger.debug("dashscope://base/upload/post/{} <= {}", ossKey, code);
             if (code != SUCCESS_CODE) {
                 throw new RuntimeException("upload failed! code=%s;body=%s;".formatted(
                         code,
@@ -104,7 +105,7 @@ public final class UploadPostRequest implements ApiRequest<UploadPostResponse> {
     public Function<String, UploadPostResponse> responseDeserializer() {
         return unused ->
                 new UploadPostResponse(
-                        UUID.randomUUID().toString(),
+                        ApiResponse.EMPTY_UUID,
                         Ret.ofSuccess("success"),
                         Usage.empty(),
                         new UploadPostResponse.Output(

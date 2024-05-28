@@ -32,4 +32,14 @@ public class UploadTestCase implements LoadingEnv {
 
     }
 
+    @Test
+    public void test$upload$op() {
+
+        final var uri = client.base().upload()
+                .upload(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg"), ChatModel.QWEN_PLUS)
+                .join();
+
+        Assertions.assertNotNull(uri);
+    }
+
 }

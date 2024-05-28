@@ -14,8 +14,6 @@ import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import javax.imageio.ImageIO;
-import java.io.File;
 import java.net.URI;
 import java.time.Duration;
 
@@ -88,13 +86,12 @@ public class DebugTestCase implements LoadingEnv {
     @Disabled
     @Test
     public void test$debug() throws Exception {
-        final var image = ImageIO.read(new File("C:\\Users\\vlinux\\OneDrive\\图片\\image-002.jpeg"));
         final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_VL_MAX)
+                .model(ChatModel.QWEN_LONG)
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .user(
-                        Content.ofImage(image),
-                        Content.ofText("图片中一共多少辆自行车?")
+                        Content.ofText("文章在说什么?"),
+                        Content.ofFile(URI.create("https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf"))
                 )
                 .build();
         client.chat(request).flow()

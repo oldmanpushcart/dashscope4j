@@ -6,12 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentRequestInterceptorForByteArrayToFileUri;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentRequestInterceptorForFileToUri;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContentRequestInterceptorForUpload;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ProcessContextRequestInterceptorForBufferedImageToFileUri;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -29,17 +24,8 @@ public class InterceptorHelper {
                              final List<ResponseInterceptor> responseInterceptors) {
         this.client = client;
         this.executor = executor;
-        this.requestInterceptor = new DefaultRequestInterceptor(mergeRequestInterceptors(requestInterceptors));
-        this.responseInterceptor = new DefaultResponseInterceptor(responseInterceptors);
-    }
-
-    private static List<RequestInterceptor> mergeRequestInterceptors(List<RequestInterceptor> requestInterceptors) {
-        return new ArrayList<>(requestInterceptors) {{
-            add(new ProcessContentRequestInterceptorForByteArrayToFileUri());
-            add(new ProcessContextRequestInterceptorForBufferedImageToFileUri());
-            add(new ProcessContentRequestInterceptorForFileToUri());
-            add(new ProcessContentRequestInterceptorForUpload());
-        }};
+        this.requestInterceptor = new GroupRequestInterceptor(requestInterceptors);
+        this.responseInterceptor = new GroupResponseInterceptor(responseInterceptors);
     }
 
     public InvocationContext newInvocationContext() {

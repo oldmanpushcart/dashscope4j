@@ -7,7 +7,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.concurrent.CompletableFuture;
 
-public class ProcessContentRequestInterceptorForByteArrayToFileUri extends ProcessContentRequestInterceptor {
+public class ProcessContentDataRequestInterceptorForByteArrayToFileUri extends ProcessContentDataRequestInterceptor {
 
     @Override
     protected CompletableFuture<Object> processContentData(InvocationContext context, AlgoRequest<?> request, Object data) {

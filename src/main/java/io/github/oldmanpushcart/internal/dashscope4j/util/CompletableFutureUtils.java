@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 public class CompletableFutureUtils {
 
-    public static <T, R> CompletableFuture<List<R>> thenForEachCompose(List<T> source, Function<T, CompletableFuture<R>> function) {
+    public static <T, R> CompletableFuture<List<R>> thenForEachCompose(Iterable<T> source, Function<T, CompletableFuture<R>> function) {
         return thenForEachComposeByIterator(new ArrayList<>(), source.iterator(), function);
     }
 

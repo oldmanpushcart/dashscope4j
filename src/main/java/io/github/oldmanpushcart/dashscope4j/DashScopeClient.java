@@ -2,9 +2,12 @@ package io.github.oldmanpushcart.dashscope4j;
 
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
+import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
+import io.github.oldmanpushcart.dashscope4j.base.upload.UploadOp;
 import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
 import io.github.oldmanpushcart.dashscope4j.base.upload.UploadResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
@@ -17,6 +20,7 @@ import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import io.github.oldmanpushcart.internal.dashscope4j.DashScopeClientImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils;
 
 import java.time.Duration;
 import java.util.List;
@@ -150,7 +154,16 @@ public interface DashScopeClient {
          * @return this
          * @since 1.4.0
          */
-        Builder requestInterceptors(boolean isAppend, List<RequestInterceptor> interceptors);
+        default Builder requestInterceptors(boolean isAppend, List<RequestInterceptor> interceptors) {
+            CollectionUtils.updateList(isAppend, requestInterceptors(), interceptors);
+            return this;
+        }
+
+        /**
+         * @return 请求拦截器集合
+         * @since 1.4.2
+         */
+        List<RequestInterceptor> requestInterceptors();
 
         /**
          * 添加响应拦截器
@@ -182,7 +195,25 @@ public interface DashScopeClient {
          * @return this
          * @since 1.4.0
          */
-        Builder responseInterceptors(boolean isAppend, List<ResponseInterceptor> interceptors);
+        default Builder responseInterceptors(boolean isAppend, List<ResponseInterceptor> interceptors) {
+            CollectionUtils.updateList(isAppend, responseInterceptors(), interceptors);
+            return this;
+        }
+
+        /**
+         * @return 应答拦截器集合
+         * @since 1.4.2
+         */
+        List<ResponseInterceptor> responseInterceptors();
+
+        /**
+         * 设置缓存工厂
+         *
+         * @param factory 缓存工厂
+         * @return this
+         * @since 1.4.2
+         */
+        Builder cacheFactory(CacheFactory factory);
 
     }
 
@@ -284,8 +315,22 @@ public interface DashScopeClient {
          *
          * @param request 上传请求
          * @return 上传操作
+         * @deprecated 请使用{@link #upload()}代替
          */
+        @Deprecated
         OpAsync<UploadResponse> upload(UploadRequest request);
+
+        /**
+         * @return 临时空间上传操作
+         * @since 1.4.2
+         */
+        UploadOp upload();
+
+        /**
+         * @return 文件操作
+         * @since 1.4.2
+         */
+        FilesOp files();
 
     }
 

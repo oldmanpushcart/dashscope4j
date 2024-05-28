@@ -8,7 +8,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
-public class ProcessContextRequestInterceptorForBufferedImageToFileUri extends ProcessContentRequestInterceptor {
+public class ProcessContentDataRequestInterceptorForBufferedImageToFileUri extends ProcessContentDataRequestInterceptor {
 
     @Override
     protected CompletableFuture<Object> processContentData(InvocationContext context, AlgoRequest<?> request, Object data) {

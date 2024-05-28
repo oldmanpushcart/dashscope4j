@@ -8,8 +8,8 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.algo.SpecifyModelAlgoR
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.updateList;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.requireNotEmpty;
-import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.updateList;
 import static java.util.Objects.requireNonNull;
 
 public class MmEmbeddingRequestBuilderImpl
