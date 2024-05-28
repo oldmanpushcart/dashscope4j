@@ -84,7 +84,17 @@ public class ProcessChatMessageRequestInterceptorForQwenLong implements RequestI
                 .thenApply(contents -> {
                     waitingProcessContents.addAll(contents);
                     if (isNotEmptyCollection(waitingProcessContents)) {
-                        request.messages().add(0, new FileMetaSystemMessage(waitingProcessContents));
+
+                        // 插入到最后一个system之后
+                        int found = -1;
+                        for (int index = 0; index < request.messages().size(); index++) {
+                            final var message = request.messages().get(index);
+                            if (message.role() == Message.Role.SYSTEM) {
+                                found = index;
+                            }
+                        }
+
+                        request.messages().add(found + 1, new FileMetaSystemMessage(waitingProcessContents));
                     }
                     return request;
                 });
