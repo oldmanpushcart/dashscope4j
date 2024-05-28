@@ -76,16 +76,27 @@ public class QwenLongChatTestCase implements LoadingEnv {
                 .model(ChatModel.QWEN_LONG)
                 .system("You are a helpful assistant.")
                 .user(
-                        Content.ofText("中国政府在五年规划中如何看待炼金术的发展?"),
+                        Content.ofText("文档中如何阐述中国政府在五年规划中如何看待房地产问题的?"),
                         Content.ofFile(URI.create("https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf")),
                         Content.ofFile(URI.create("https://ompc.oss-cn-hangzhou.aliyuncs.com/share/%E6%83%B3%E5%BD%93%E5%88%9D%E7%9F%A5%E4%B9%8E%E4%B9%9F%E6%98%AF%E5%90%B9%E5%B7%A8%E4%BA%BA%E7%9A%84.pdf"))
                 )
                 .build();
+
         final var response = client.chat(request)
                 .async()
                 .join();
-        final var text = response.output().best().message().text();
-        Assertions.assertTrue(text.contains("五年规划"));
+        Assertions.assertTrue(response.output().best().message().text().contains("稳定"));
+
+        final var nextRequest = ChatRequest.newBuilder(request)
+                .messages(response.output().best().message())
+                .user("文档中是如何评价钢炼和巨人的?")
+                .build();
+
+        final var nextResponse = client.chat(nextRequest)
+                .async()
+                .join();
+        Assertions.assertTrue(nextResponse.output().best().message().text().contains("等价交换"));
+
     }
 
 }
