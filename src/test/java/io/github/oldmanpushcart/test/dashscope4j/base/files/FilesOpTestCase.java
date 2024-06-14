@@ -106,15 +106,15 @@ public class FilesOpTestCase implements LoadingEnv {
         Assertions.assertTrue(deleted);
     }
 
-    @Disabled
     @Test
     public void test$files$upload_hit_cache() {
 
         final var uri = URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg");
         final var name = "image-002.jpeg";
 
-        client.base().files().upload(uri, name).join();
-        client.base().files().upload(uri, name).join();
+        final var first = client.base().files().upload(uri, name).join();
+        final var second = client.base().files().upload(uri, name).join();
+        Assertions.assertEquals(first.id(), second.id());
 
     }
 

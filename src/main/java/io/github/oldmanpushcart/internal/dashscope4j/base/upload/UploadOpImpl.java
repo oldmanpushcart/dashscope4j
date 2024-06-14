@@ -19,7 +19,7 @@ import static io.github.oldmanpushcart.dashscope4j.Constants.CACHE_NAMESPACE_FOR
 public class UploadOpImpl implements UploadOp {
 
     private final ApiExecutor apiExecutor;
-    private final Cache<CacheKey, URI> cache;
+    private final Cache<String, String> cache;
     private final InterceptorHelper interceptorHelper;
 
     public UploadOpImpl(ApiExecutor apiExecutor, CacheFactory cacheFactory, InterceptorHelper interceptorHelper) {
@@ -28,18 +28,27 @@ public class UploadOpImpl implements UploadOp {
         this.interceptorHelper = interceptorHelper;
     }
 
+    private static String toCacheKey(URI resource, Model model) {
+        return "%s|%s".formatted(
+                resource.toString(),
+                model.name()
+        );
+    }
+
     @Override
     public CompletableFuture<URI> upload(URI resource, Model model) {
-        final var key = new CacheKey(resource, model);
-        return CacheUtils.asyncGetOrPut(cache, key, () -> {
-            final var request = UploadRequest.newBuilder()
-                    .resource(resource)
-                    .model(model)
-                    .build();
-            return upload(request)
-                    .async()
-                    .thenApply(response -> response.output().uploaded());
-        });
+        final var key = toCacheKey(resource, model);
+        return CacheUtils
+                .asyncGetOrPut(cache, key, () -> {
+                    final var request = UploadRequest.newBuilder()
+                            .resource(resource)
+                            .model(model)
+                            .build();
+                    return upload(request)
+                            .async()
+                            .thenApply(response -> response.output().uploaded().toString());
+                })
+                .thenApply(URI::create);
     }
 
     public DashScopeClient.OpAsync<UploadResponse> upload(UploadRequest request) {
@@ -75,10 +84,6 @@ public class UploadOpImpl implements UploadOp {
 
                 )
                 .thenCompose(res -> interceptorHelper.postHandle(context, res));
-    }
-
-    private record CacheKey(URI resource, Model model) {
-
     }
 
 }
