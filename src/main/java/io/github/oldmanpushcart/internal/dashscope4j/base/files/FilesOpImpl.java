@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.files;
 
-import io.github.oldmanpushcart.dashscope4j.base.cache.Cache;
-import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
+import io.github.oldmanpushcart.dashscope4j.base.cache.PersistentCache;
+import io.github.oldmanpushcart.dashscope4j.base.cache.PersistentCacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
@@ -20,11 +20,11 @@ import static io.github.oldmanpushcart.dashscope4j.Constants.CACHE_NAMESPACE_FOR
 public class FilesOpImpl implements FilesOp {
 
     private final ApiExecutor executor;
-    private final Cache<String, String> cache;
+    private final PersistentCache cache;
 
-    public FilesOpImpl(ApiExecutor executor, CacheFactory cacheFactory) {
+    public FilesOpImpl(ApiExecutor executor, PersistentCacheFactory persistentCacheFactory) {
         this.executor = executor;
-        this.cache = cacheFactory.make(CACHE_NAMESPACE_FOR_FILES);
+        this.cache = persistentCacheFactory.make(CACHE_NAMESPACE_FOR_FILES);
     }
 
     private static String toCacheKey(URI resource, String filename) {

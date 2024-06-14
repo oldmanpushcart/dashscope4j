@@ -2,8 +2,8 @@ package io.github.oldmanpushcart.internal.dashscope4j.base.upload;
 
 import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
 import io.github.oldmanpushcart.dashscope4j.Model;
-import io.github.oldmanpushcart.dashscope4j.base.cache.Cache;
-import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
+import io.github.oldmanpushcart.dashscope4j.base.cache.PersistentCache;
+import io.github.oldmanpushcart.dashscope4j.base.cache.PersistentCacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.upload.UploadOp;
 import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
 import io.github.oldmanpushcart.dashscope4j.base.upload.UploadResponse;
@@ -19,12 +19,12 @@ import static io.github.oldmanpushcart.dashscope4j.Constants.CACHE_NAMESPACE_FOR
 public class UploadOpImpl implements UploadOp {
 
     private final ApiExecutor apiExecutor;
-    private final Cache<String, String> cache;
+    private final PersistentCache cache;
     private final InterceptorHelper interceptorHelper;
 
-    public UploadOpImpl(ApiExecutor apiExecutor, CacheFactory cacheFactory, InterceptorHelper interceptorHelper) {
+    public UploadOpImpl(ApiExecutor apiExecutor, PersistentCacheFactory persistentCacheFactory, InterceptorHelper interceptorHelper) {
         this.apiExecutor = apiExecutor;
-        this.cache = cacheFactory.make(CACHE_NAMESPACE_FOR_UPLOAD);
+        this.cache = persistentCacheFactory.make(CACHE_NAMESPACE_FOR_UPLOAD);
         this.interceptorHelper = interceptorHelper;
     }
 

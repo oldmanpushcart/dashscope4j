@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
+import io.github.oldmanpushcart.dashscope4j.base.cache.PersistentCacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
@@ -22,6 +23,7 @@ import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.InterceptorApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.cache.LruCacheFactoryImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.cache.PersistentCacheProxy;
 import io.github.oldmanpushcart.internal.dashscope4j.base.files.FilesOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupRequestInterceptor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupResponseInterceptor;
@@ -54,7 +56,7 @@ public class DashScopeClientImpl implements DashScopeClient {
     private final UploadOpImpl uploadOpImpl;
 
     public DashScopeClientImpl(Builder builder) {
-        final var cacheFactory = Optional.ofNullable(builder.cacheFactory)
+        final var persistentCacheFactory = Optional.ofNullable(builder.persistentCacheFactory)
                 .orElseGet(LruCacheFactoryImpl::new);
         final var interceptorHelper = new InterceptorHelper(
                 this,
@@ -69,8 +71,8 @@ public class DashScopeClientImpl implements DashScopeClient {
                 builder.timeout,
                 interceptorHelper
         );
-        this.filesOpImpl  = new FilesOpImpl(apiExecutor, cacheFactory);
-        this.uploadOpImpl = new UploadOpImpl(apiExecutor, cacheFactory, interceptorHelper);
+        this.filesOpImpl = new FilesOpImpl(apiExecutor, persistentCacheFactory);
+        this.uploadOpImpl = new UploadOpImpl(apiExecutor, persistentCacheFactory, interceptorHelper);
     }
 
     // 构建HTTP客户端
@@ -167,7 +169,7 @@ public class DashScopeClientImpl implements DashScopeClient {
         private Executor executor;
         private Duration connectTimeout;
         private Duration timeout;
-        private CacheFactory cacheFactory;
+        private PersistentCacheFactory persistentCacheFactory;
 
         private final List<RequestInterceptor> requestInterceptors = new ArrayList<>() {{
 
@@ -227,7 +229,12 @@ public class DashScopeClientImpl implements DashScopeClient {
 
         @Override
         public DashScopeClient.Builder cacheFactory(CacheFactory factory) {
-            this.cacheFactory = factory;
+            return persistentCacheFactory(namespace -> new PersistentCacheProxy(factory.make(namespace)));
+        }
+
+        @Override
+        public DashScopeClient.Builder persistentCacheFactory(PersistentCacheFactory factory) {
+            this.persistentCacheFactory = factory;
             return this;
         }
 

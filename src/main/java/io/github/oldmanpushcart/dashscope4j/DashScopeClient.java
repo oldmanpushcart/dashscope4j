@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
+import io.github.oldmanpushcart.dashscope4j.base.cache.PersistentCacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
@@ -213,7 +214,17 @@ public interface DashScopeClient {
          * @return this
          * @since 1.4.2
          */
+        @Deprecated
         Builder cacheFactory(CacheFactory factory);
+
+        /**
+         * 设置持久化缓存工厂
+         *
+         * @param factory 持久化缓存工厂
+         * @return this
+         * @since 1.4.3
+         */
+        Builder persistentCacheFactory(PersistentCacheFactory factory);
 
     }
 
