@@ -5,7 +5,6 @@ import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.test.dashscope4j.CommonAssertions;
 import io.github.oldmanpushcart.test.dashscope4j.LoadingEnv;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;

@@ -120,8 +120,4 @@ public class FilesOpImpl implements FilesOp {
                 });
     }
 
-    private record CacheKey(URI resource, String filename) {
-
-    }
-
 }
