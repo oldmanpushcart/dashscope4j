@@ -13,21 +13,25 @@ public class InvokeCountInterceptor implements RequestInterceptor, ResponseInter
 
     private final AtomicInteger requestCountRef = new AtomicInteger(0);
     private final AtomicInteger responseCountRef = new AtomicInteger(0);
-    private final AtomicInteger sequence = new AtomicInteger(0);
+    private final AtomicInteger successCountRef = new AtomicInteger(0);
+    private final AtomicInteger failureCountRef = new AtomicInteger(0);
 
     @Override
     public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
         requestCountRef.incrementAndGet();
-        context.attachmentMap().put("TEST-SEQ-KEY", sequence.incrementAndGet());
-        System.out.println("preHandle: " + sequence.get() + " - " + request);
         return CompletableFuture.completedFuture(request);
     }
 
     @Override
-    public CompletableFuture<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response) {
+    public CompletableFuture<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response, Throwable ex) {
         responseCountRef.incrementAndGet();
-        System.out.println("postHandle: " + context.attachmentMap().get("TEST-SEQ-KEY") + " - " + response);
-        return CompletableFuture.completedFuture(response);
+        if(null != ex) {
+            failureCountRef.incrementAndGet();
+            return CompletableFuture.failedFuture(ex);
+        } else {
+            successCountRef.incrementAndGet();
+            return CompletableFuture.completedFuture(response);
+        }
     }
 
     public int getRequestCount() {
@@ -36,6 +40,14 @@ public class InvokeCountInterceptor implements RequestInterceptor, ResponseInter
 
     public int getResponseCount() {
         return responseCountRef.get();
+    }
+
+    public int getSuccessCount() {
+        return successCountRef.get();
+    }
+
+    public int getFailureCount() {
+        return failureCountRef.get();
     }
 
 }

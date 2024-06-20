@@ -7,7 +7,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 public class GroupResponseInterceptor implements ResponseInterceptor {
 
@@ -18,16 +18,17 @@ public class GroupResponseInterceptor implements ResponseInterceptor {
     }
 
     @Override
-    public CompletableFuture<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response) {
-        return CompletableFutureUtils.thenChainingCompose(
+    public CompletableFuture<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response, Throwable ex) {
+        return CompletableFutureUtils.handleChainingCompose(
                 response,
+                ex,
                 toFunctions(context, interceptors)
         );
     }
 
-    private static List<Function<ApiResponse<?>, CompletableFuture<ApiResponse<?>>>> toFunctions(InvocationContext context, List<ResponseInterceptor> interceptors) {
+    private static List<BiFunction<ApiResponse<?>, Throwable, CompletableFuture<ApiResponse<?>>>> toFunctions(InvocationContext context, List<ResponseInterceptor> interceptors) {
         return interceptors.stream()
-                .map(interceptor -> (Function<ApiResponse<?>, CompletableFuture<ApiResponse<?>>>) response -> interceptor.postHandle(context, response))
+                .map(interceptor -> (BiFunction<ApiResponse<?>, Throwable, CompletableFuture<ApiResponse<?>>>) (response, ex) -> interceptor.postHandle(context, response, ex))
                 .toList();
     }
 

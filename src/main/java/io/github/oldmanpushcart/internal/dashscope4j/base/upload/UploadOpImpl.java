@@ -10,6 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.base.upload.UploadResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.InterceptorHelper;
 import io.github.oldmanpushcart.internal.dashscope4j.util.CacheUtils;
+import io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -53,37 +54,41 @@ public class UploadOpImpl implements UploadOp {
 
     public DashScopeClient.OpAsync<UploadResponse> upload(UploadRequest request) {
         final var context = interceptorHelper.newInvocationContext();
-        return () -> interceptorHelper.preHandle(context, request)
-                .thenCompose(req -> CompletableFuture.completedFuture(null)
+        return () -> {
+            final var future = interceptorHelper.preHandle(context, request)
+                    .thenCompose(req -> CompletableFuture.completedFuture(null)
 
-                        // 获取上传凭证
-                        .thenCompose(unused -> apiExecutor.async(new UploadGetRequest(
-                                req.model(),
-                                req.timeout()
-                        )))
+                            // 获取上传凭证
+                            .thenCompose(unused -> apiExecutor.async(new UploadGetRequest(
+                                    req.model(),
+                                    req.timeout()
+                            )))
 
-                        // 上传资源
-                        .thenCompose(getResponse -> apiExecutor.async(new UploadPostRequest(
-                                req.resource(),
-                                req.model(),
-                                getResponse.output().upload(),
-                                req.timeout()
-                        )))
+                            // 上传资源
+                            .thenCompose(getResponse -> apiExecutor.async(new UploadPostRequest(
+                                    req.resource(),
+                                    req.model(),
+                                    getResponse.output().upload(),
+                                    req.timeout()
+                            )))
 
-                        // 构建上传响应
-                        .thenApply(postResponse -> new UploadResponseImpl(
-                                postResponse.uuid(),
-                                postResponse.ret(),
-                                postResponse.usage(),
-                                new UploadResponseImpl.OutputImpl(
-                                        req.resource(),
-                                        req.model(),
-                                        postResponse.output().uploaded()
-                                )
-                        ))
+                            // 构建上传响应
+                            .thenApply(postResponse -> new UploadResponseImpl(
+                                    postResponse.uuid(),
+                                    postResponse.ret(),
+                                    postResponse.usage(),
+                                    new UploadResponseImpl.OutputImpl(
+                                            req.resource(),
+                                            req.model(),
+                                            postResponse.output().uploaded()
+                                    )
+                            ))
 
-                )
-                .thenCompose(res -> interceptorHelper.postHandle(context, res));
+                    );
+            return CompletableFutureUtils.handleCompose(future, (response, ex) -> interceptorHelper.postHandle(context, response, ex));
+        };
     }
+
+
 
 }

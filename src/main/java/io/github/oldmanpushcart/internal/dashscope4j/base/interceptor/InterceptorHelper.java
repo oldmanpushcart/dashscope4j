@@ -38,8 +38,8 @@ public class InterceptorHelper {
                 .thenApply(InterceptorHelper::cast);
     }
 
-    public <T extends ApiResponse<?>> CompletableFuture<T> postHandle(InvocationContext context, T response) {
-        return responseInterceptor.postHandle(context, response)
+    public <T extends ApiResponse<?>> CompletableFuture<T> postHandle(InvocationContext context, T response, Throwable ex) {
+        return responseInterceptor.postHandle(context, response, ex)
                 .thenApply(InterceptorHelper::cast);
     }
 

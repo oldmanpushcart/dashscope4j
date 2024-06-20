@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.InterceptorHelper;
+import io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -33,16 +34,16 @@ public class InterceptorApiExecutor extends ApiExecutor {
         return interceptorHelper.preHandle(context, request);
     }
 
-    private <T extends ApiResponse<?>> CompletableFuture<T> postHandle(InvocationContext context, T response) {
-        return interceptorHelper.postHandle(context, response);
+    private <T extends ApiResponse<?>> CompletableFuture<T> postHandle(InvocationContext context, T response, Throwable ex) {
+        return interceptorHelper.postHandle(context, response, ex);
     }
 
     @Override
     public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<R> request) {
         final var context = interceptorHelper.newInvocationContext();
-        return preHandle(context, request)
-                .thenCompose(super::async)
-                .thenCompose(response -> postHandle(context, response));
+        final var future = preHandle(context, request)
+                .thenCompose(super::async);
+        return CompletableFutureUtils.handleCompose(future, (response, ex) -> postHandle(context, response, ex));
     }
 
     @Override
@@ -62,9 +63,7 @@ public class InterceptorApiExecutor extends ApiExecutor {
         final var context = interceptorHelper.newInvocationContext();
         return preHandle(context, request)
                 .thenCompose(super::task)
-                .thenApply(half -> strategy -> half.waitingFor(strategy)
-                        .thenCompose(response -> postHandle(context, response))
-                );
+                .thenApply(half -> strategy -> CompletableFutureUtils.handleCompose(half.waitingFor(strategy), (response, ex) -> postHandle(context, response, ex)));
     }
 
     private class PostHandleProcessor<R extends ApiResponse<?>> implements Flow.Processor<R, R> {
@@ -107,10 +106,10 @@ public class InterceptorApiExecutor extends ApiExecutor {
 
         @Override
         public void onNext(R response) {
-            interceptorHelper.postHandle(context, response)
+            interceptorHelper.postHandle(context, response, null)
                     .whenComplete((r, ex) -> {
                         if (ex != null) {
-                            onError(ex);
+                            subscriberRef.get().onError(ex);
                         } else {
                             subscriberRef.get().onNext(r);
                         }
@@ -119,7 +118,14 @@ public class InterceptorApiExecutor extends ApiExecutor {
 
         @Override
         public void onError(Throwable throwable) {
-            subscriberRef.get().onError(throwable);
+            interceptorHelper.<R>postHandle(context, null, throwable)
+                    .whenComplete((r,ex)-> {
+                        if (ex != null) {
+                            subscriberRef.get().onError(ex);
+                        } else {
+                            subscriberRef.get().onNext(r);
+                        }
+                    });
         }
 
         @Override
