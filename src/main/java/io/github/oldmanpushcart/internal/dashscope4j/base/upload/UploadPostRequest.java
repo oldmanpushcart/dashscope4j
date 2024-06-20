@@ -34,6 +34,16 @@ public final class UploadPostRequest implements ApiRequest<UploadPostResponse> {
     private final Duration timeout;
     private final String ossKey;
 
+    @Override
+    public String suite() {
+        return "/dashscope/base";
+    }
+
+    @Override
+    public String type() {
+        return "upload-post";
+    }
+
     /**
      * 构造上传请求
      *

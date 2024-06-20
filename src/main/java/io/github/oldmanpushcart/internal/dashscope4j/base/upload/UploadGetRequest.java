@@ -21,6 +21,16 @@ public record UploadGetRequest(Model model, Duration timeout) implements ApiRequ
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     @Override
+    public String suite() {
+        return "/dashscope/base";
+    }
+
+    @Override
+    public String type() {
+        return "upload-get";
+    }
+
+    @Override
     public HttpRequest newHttpRequest() {
         logger.debug("dashscope://base/upload/get => ?action=getPolicy&model={}", model.name());
         return HttpRequest.newBuilder()

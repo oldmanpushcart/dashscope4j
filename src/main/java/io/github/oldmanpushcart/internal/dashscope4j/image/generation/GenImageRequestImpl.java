@@ -22,6 +22,16 @@ final class GenImageRequestImpl extends SpecifyModelAlgoRequestImpl<GenImageMode
     }
 
     @Override
+    public String suite() {
+        return "/dashscope";
+    }
+
+    @Override
+    public String type() {
+        return "gen-image";
+    }
+
+    @Override
     public String prompt() {
         return prompt;
     }

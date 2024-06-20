@@ -18,6 +18,16 @@ public record FileDetailRequest(String id, Duration timeout) implements OpenAiRe
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     @Override
+    public String suite() {
+        return "/dashscope/base";
+    }
+
+    @Override
+    public String type() {
+        return "file-detail";
+    }
+
+    @Override
     public HttpRequest newHttpRequest() {
         logger.debug("dashscope://base/files/detail/{} <= GET", id);
         return HttpRequest.newBuilder()

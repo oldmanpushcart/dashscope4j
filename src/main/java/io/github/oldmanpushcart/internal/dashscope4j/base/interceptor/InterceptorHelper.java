@@ -9,6 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 public class InterceptorHelper {
@@ -29,7 +30,7 @@ public class InterceptorHelper {
     }
 
     public InvocationContext newInvocationContext() {
-        return new DefaultInvocationContext(client, executor);
+        return new DefaultInvocationContext(client, executor, new ConcurrentHashMap<>());
     }
 
     public <T extends ApiRequest<?>> CompletableFuture<T> preHandle(InvocationContext context, T request) {

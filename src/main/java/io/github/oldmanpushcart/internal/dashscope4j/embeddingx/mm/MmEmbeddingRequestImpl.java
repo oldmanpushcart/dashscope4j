@@ -24,6 +24,16 @@ final class MmEmbeddingRequestImpl extends SpecifyModelAlgoRequestImpl<MmEmbeddi
     }
 
     @Override
+    public String suite() {
+        return "/dashscope";
+    }
+
+    @Override
+    public String type() {
+        return "mm-embedding";
+    }
+
+    @Override
     public List<FactorContent<?>> contents() {
         return contents;
     }

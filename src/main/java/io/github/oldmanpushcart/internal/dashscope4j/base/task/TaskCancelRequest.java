@@ -22,6 +22,16 @@ public record TaskCancelRequest(String taskId, Duration timeout) implements ApiR
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     @Override
+    public String suite() {
+        return "/dashscope/base";
+    }
+
+    @Override
+    public String type() {
+        return "task-cancel";
+    }
+
+    @Override
     public HttpRequest newHttpRequest() {
         logger.debug("dashscope://task/cancel => {}", taskId);
         return HttpRequest.newBuilder()

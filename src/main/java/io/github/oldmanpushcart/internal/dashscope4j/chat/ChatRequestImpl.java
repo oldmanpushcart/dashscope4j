@@ -34,6 +34,15 @@ final class ChatRequestImpl extends SpecifyModelAlgoRequestImpl<ChatModel, ChatR
         this.tools = tools;
     }
 
+    @Override
+    public String suite() {
+        return "/dashscope";
+    }
+
+    @Override
+    public String type() {
+        return "chat";
+    }
 
     private record Input(
 

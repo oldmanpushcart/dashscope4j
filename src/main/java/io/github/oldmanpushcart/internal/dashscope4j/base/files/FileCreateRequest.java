@@ -23,6 +23,16 @@ public record FileCreateRequest(URI uri, String name, String purpose, Duration t
     private static final AtomicInteger sequencer = new AtomicInteger(1000);
 
     @Override
+    public String suite() {
+        return "/dashscope/base";
+    }
+
+    @Override
+    public String type() {
+        return "file-create";
+    }
+
+    @Override
     public HttpRequest newHttpRequest() {
         logger.debug("dashscope://base/files/create/{} => uri={};purpose={};", name, uri, purpose);
         final var boundary = "boundary%s".formatted(sequencer.incrementAndGet());

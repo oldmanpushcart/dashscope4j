@@ -14,6 +14,22 @@ import java.util.function.Function;
 public interface ApiRequest<R extends ApiResponse<?>> {
 
     /**
+     * @return 协议簇
+     * @since 1.4.3
+     */
+    default String suite() {
+        return getClass().getPackageName();
+    }
+
+    /**
+     * @return 协议类型
+     * @since 1.4.3
+     */
+    default String type() {
+        return getClass().getSimpleName();
+    }
+
+    /**
      * @return 请求超时
      */
     @JsonIgnore

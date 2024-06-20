@@ -19,6 +19,16 @@ public record FileDeleteRequest(String id, Duration timeout)
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     @Override
+    public String suite() {
+        return "/dashscope/base";
+    }
+
+    @Override
+    public String type() {
+        return "file-delete";
+    }
+
+    @Override
     public HttpRequest newHttpRequest() {
         logger.debug("dashscope://base/files/delete/{} <= DELETE", id);
         return HttpRequest.newBuilder()

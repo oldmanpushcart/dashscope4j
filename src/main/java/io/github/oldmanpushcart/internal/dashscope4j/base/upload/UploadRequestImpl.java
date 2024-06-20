@@ -11,4 +11,14 @@ import java.time.Duration;
  */
 public record UploadRequestImpl(URI resource, Model model, Duration timeout) implements UploadRequest {
 
+    @Override
+    public String suite() {
+        return "/dashscope/base";
+    }
+
+    @Override
+    public String type() {
+        return "upload";
+    }
+
 }

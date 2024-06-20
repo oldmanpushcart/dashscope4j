@@ -18,6 +18,16 @@ public record FileListRequest(Duration timeout) implements OpenAiRequest<FileLis
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     @Override
+    public String suite() {
+        return "/dashscope/base";
+    }
+
+    @Override
+    public String type() {
+        return "file-list";
+    }
+
+    @Override
     public HttpRequest newHttpRequest() {
         logger.debug("dashscope://base/files/list <= GET");
         return HttpRequest.newBuilder()

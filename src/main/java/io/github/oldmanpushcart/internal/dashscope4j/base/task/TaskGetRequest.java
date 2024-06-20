@@ -22,6 +22,16 @@ public record TaskGetRequest(String taskId, Duration timeout) implements ApiRequ
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     @Override
+    public String suite() {
+        return "/dashscope/base";
+    }
+
+    @Override
+    public String type() {
+        return "task-get";
+    }
+
+    @Override
     public HttpRequest newHttpRequest() {
         logger.debug("dashscope://task/get => {}", taskId);
         return HttpRequest.newBuilder()

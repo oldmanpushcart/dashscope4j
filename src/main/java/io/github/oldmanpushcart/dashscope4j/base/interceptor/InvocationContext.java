@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.base.interceptor;
 
 import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
 
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 /**
@@ -20,5 +21,11 @@ public interface InvocationContext {
      * @return 线程池
      */
     Executor executor();
+
+    /**
+     * @return 附件集合
+     * @since 1.4.3
+     */
+    Map<String, Object> attachmentMap();
 
 }

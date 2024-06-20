@@ -20,6 +20,16 @@ final class EmbeddingRequestImpl extends SpecifyModelAlgoRequestImpl<EmbeddingMo
     }
 
     @Override
+    public String suite() {
+        return "/dashscope";
+    }
+
+    @Override
+    public String type() {
+        return "embedding";
+    }
+
+    @Override
     public List<String> documents() {
         return documents;
     }
