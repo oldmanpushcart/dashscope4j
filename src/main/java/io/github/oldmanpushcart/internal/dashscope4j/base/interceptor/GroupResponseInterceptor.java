@@ -19,17 +19,17 @@ public class GroupResponseInterceptor implements ResponseInterceptor {
 
     @Override
     public CompletableFuture<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response, Throwable ex) {
-        return CompletableFutureUtils.handleChainingCompose(
-                response,
-                ex,
-                toFunctions(context, interceptors)
-        );
+        return CompletableFutureUtils.handleChainingCompose(response, ex, toFunctionList(context, interceptors));
     }
 
-    private static List<BiFunction<ApiResponse<?>, Throwable, CompletableFuture<ApiResponse<?>>>> toFunctions(InvocationContext context, List<ResponseInterceptor> interceptors) {
+    private static List<BiFunction<ApiResponse<?>, Throwable, CompletableFuture<ApiResponse<?>>>> toFunctionList(InvocationContext context, List<ResponseInterceptor> interceptors) {
         return interceptors.stream()
-                .map(interceptor -> (BiFunction<ApiResponse<?>, Throwable, CompletableFuture<ApiResponse<?>>>) (response, ex) -> interceptor.postHandle(context, response, ex))
+                .map(interceptor -> toFunction(context, interceptor))
                 .toList();
+    }
+
+    private static BiFunction<ApiResponse<?>, Throwable, CompletableFuture<ApiResponse<?>>> toFunction(InvocationContext context, ResponseInterceptor interceptor) {
+        return (r, ex) -> interceptor.postHandle(context, r, ex);
     }
 
 }

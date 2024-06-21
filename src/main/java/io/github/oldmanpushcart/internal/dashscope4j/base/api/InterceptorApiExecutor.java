@@ -30,26 +30,17 @@ public class InterceptorApiExecutor extends ApiExecutor {
         this.interceptorHelper = interceptorHelper;
     }
 
-    private <T extends ApiRequest<?>> CompletableFuture<T> preHandle(InvocationContext context, T request) {
-        return interceptorHelper.preHandle(context, request);
-    }
-
-    private <T extends ApiResponse<?>> CompletableFuture<T> postHandle(InvocationContext context, T response, Throwable ex) {
-        return interceptorHelper.postHandle(context, response, ex);
-    }
-
     @Override
     public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<R> request) {
         final var context = interceptorHelper.newInvocationContext();
-        final var future = preHandle(context, request)
-                .thenCompose(super::async);
-        return CompletableFutureUtils.handleCompose(future, (response, ex) -> postHandle(context, response, ex));
+        final var future = interceptorHelper.preHandle(context, request).thenCompose(super::async);
+        return CompletableFutureUtils.handleCompose(future, (response, ex) -> interceptorHelper.postHandle(context, response, ex));
     }
 
     @Override
     public <R extends ApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(ApiRequest<R> request) {
         final var context = interceptorHelper.newInvocationContext();
-        return preHandle(context, request)
+        return interceptorHelper.preHandle(context, request)
                 .thenCompose(super::flow)
                 .thenApply(publisher -> {
                     final var processor = new PostHandleProcessor<R>(context);
@@ -61,9 +52,9 @@ public class InterceptorApiExecutor extends ApiExecutor {
     @Override
     public <R extends ApiResponse<?>> CompletableFuture<Task.Half<R>> task(ApiRequest<R> request) {
         final var context = interceptorHelper.newInvocationContext();
-        return preHandle(context, request)
+        return interceptorHelper.preHandle(context, request)
                 .thenCompose(super::task)
-                .thenApply(half -> strategy -> CompletableFutureUtils.handleCompose(half.waitingFor(strategy), (response, ex) -> postHandle(context, response, ex)));
+                .thenApply(half -> strategy -> CompletableFutureUtils.handleCompose(half.waitingFor(strategy), (r, ex) -> interceptorHelper.postHandle(context, r, ex)));
     }
 
     private class PostHandleProcessor<R extends ApiResponse<?>> implements Flow.Processor<R, R> {
@@ -119,7 +110,7 @@ public class InterceptorApiExecutor extends ApiExecutor {
         @Override
         public void onError(Throwable throwable) {
             interceptorHelper.<R>postHandle(context, null, throwable)
-                    .whenComplete((r,ex)-> {
+                    .whenComplete((r, ex) -> {
                         if (ex != null) {
                             subscriberRef.get().onError(ex);
                         } else {

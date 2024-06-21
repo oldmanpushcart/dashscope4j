@@ -16,6 +16,8 @@ public class InterceptorTestCase implements LoadingEnv {
 
         final var beforeRequestCount = invokeCountInterceptor.getRequestCount();
         final var beforeResponseCount = invokeCountInterceptor.getResponseCount();
+        final var beforeFailureCount = invokeCountInterceptor.getFailureCount();
+        final var beforeSuccessCount = invokeCountInterceptor.getSuccessCount();
 
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
@@ -23,11 +25,10 @@ public class InterceptorTestCase implements LoadingEnv {
                 .build();
 
         client.chat(request).async().join();
-        Assertions.assertEquals(invokeCountInterceptor.getRequestCount(), beforeRequestCount + 1);
-        Assertions.assertEquals(invokeCountInterceptor.getResponseCount(), beforeResponseCount + 1);
-        Assertions.assertEquals(invokeCountInterceptor.getSuccessCount(), beforeResponseCount + 1);
-        Assertions.assertEquals(invokeCountInterceptor.getFailureCount(), beforeResponseCount);
-
+        Assertions.assertEquals(beforeRequestCount + 1, invokeCountInterceptor.getRequestCount());
+        Assertions.assertEquals(beforeResponseCount + 1, invokeCountInterceptor.getResponseCount());
+        Assertions.assertEquals(beforeSuccessCount + 1, invokeCountInterceptor.getSuccessCount());
+        Assertions.assertEquals(beforeFailureCount, invokeCountInterceptor.getFailureCount());
     }
 
     @Test
@@ -35,6 +36,8 @@ public class InterceptorTestCase implements LoadingEnv {
 
         final var beforeRequestCount = invokeCountInterceptor.getRequestCount();
         final var beforeResponseCount = invokeCountInterceptor.getResponseCount();
+        final var beforeFailureCount = invokeCountInterceptor.getFailureCount();
+        final var beforeSuccessCount = invokeCountInterceptor.getSuccessCount();
 
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
@@ -42,14 +45,13 @@ public class InterceptorTestCase implements LoadingEnv {
                 .timeout(Duration.ofMillis(1))
                 .build();
 
-        Assertions.assertThrows(Exception.class, ()-> client.chat(request).async().join());
+        Assertions.assertThrows(Exception.class, () -> client.chat(request).async().join());
         Assertions.assertEquals(invokeCountInterceptor.getRequestCount(), beforeRequestCount + 1);
         Assertions.assertEquals(invokeCountInterceptor.getResponseCount(), beforeResponseCount + 1);
-        Assertions.assertEquals(invokeCountInterceptor.getSuccessCount(), beforeResponseCount);
-        Assertions.assertEquals(invokeCountInterceptor.getFailureCount(), beforeResponseCount+1);
+        Assertions.assertEquals(invokeCountInterceptor.getSuccessCount(), beforeSuccessCount);
+        Assertions.assertEquals(invokeCountInterceptor.getFailureCount(), beforeFailureCount + 1);
 
     }
-
 
 
 }
