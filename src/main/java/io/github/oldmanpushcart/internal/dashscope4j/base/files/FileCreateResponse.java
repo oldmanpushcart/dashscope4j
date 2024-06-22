@@ -47,11 +47,11 @@ public record FileCreateResponse(Error error, Output output)
                 new FileCreateResponse(error) :
                 new FileCreateResponse(
                         new Output(
-                                FileMetaImpl.of(
+                                new FileMetaImpl(
                                         id,
                                         name,
                                         size,
-                                        created,
+                                        created * 1000L,
                                         purpose
                                 )));
 

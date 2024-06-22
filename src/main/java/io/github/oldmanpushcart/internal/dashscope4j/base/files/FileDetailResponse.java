@@ -39,11 +39,11 @@ public record FileDetailResponse(Error error, Output output)
                 new FileDetailResponse(
                         null,
                         new Output(
-                                FileMetaImpl.of(
+                                new FileMetaImpl(
                                         id,
                                         name,
                                         size,
-                                        created,
+                                        created * 1000L,
                                         purpose
                                 )));
     }

@@ -272,7 +272,7 @@ public class ChatTestCase implements LoadingEnv {
     @Test
     public void test$chat$function$echo() {
         final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_PLUS)
+                .model(ChatModel.QWEN_MAX)
                 .functions(new EchoFunction())
                 .user("echo: HELLO!")
                 .build();
@@ -302,7 +302,7 @@ public class ChatTestCase implements LoadingEnv {
     @Test
     public void test$chat$function$single_function() {
         final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_PLUS)
+                .model(ChatModel.QWEN_MAX)
                 .functions(new QueryScoreFunction())
                 .user("查询张三的数学成绩")
                 .build();
@@ -315,7 +315,7 @@ public class ChatTestCase implements LoadingEnv {
     @Test
     public void test$chat$function$multi_function() {
         final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_PLUS)
+                .model(ChatModel.QWEN_MAX)
                 .functions(new QueryScoreFunction(), new ComputeAvgScoreFunction())
                 .user("张三的所有成绩，并计算平均分")
                 .build();
