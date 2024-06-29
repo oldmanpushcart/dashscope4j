@@ -2,9 +2,14 @@ package io.github.oldmanpushcart.dashscope4j.base.cache;
 
 /**
  * 缓存工厂
+ * <p>
+ * 不建议直接使用，因为{@link Cache}无法很好的被实现持久化方案。
+ * 请使用{@link PersistentCacheFactory}代替
+ * </p>
  *
  * @since 1.4.2
  */
+@Deprecated
 public interface CacheFactory {
 
     /**

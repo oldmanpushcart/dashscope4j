@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.base.cache;
 
 /**
  * 持久化缓存工厂
+ * @since 1.4.3
  */
 public interface PersistentCacheFactory {
 

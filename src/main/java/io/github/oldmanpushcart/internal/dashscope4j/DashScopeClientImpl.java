@@ -227,6 +227,7 @@ public class DashScopeClientImpl implements DashScopeClient {
             return responseInterceptors;
         }
 
+        @SuppressWarnings("deprecation")
         @Override
         public DashScopeClient.Builder cacheFactory(CacheFactory factory) {
             return persistentCacheFactory(namespace -> new PersistentCacheProxy(factory.make(namespace)));
