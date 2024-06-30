@@ -14,11 +14,19 @@ import java.util.function.Function;
 public interface ApiRequest<R extends ApiResponse<?>> {
 
     /**
+     * @return 协议
+     * @since 1.4.3
+     */
+    default String protocol() {
+        return "%s/%s".formatted(suite(), type());
+    }
+
+    /**
      * @return 协议簇
      * @since 1.4.3
      */
     default String suite() {
-        return getClass().getPackageName();
+        return "/" + getClass().getPackageName();
     }
 
     /**

@@ -10,6 +10,15 @@ import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 public interface AlgoRequest<R extends AlgoResponse<?>> extends ApiRequest<R> {
 
     /**
+     * @return 协议
+     * @since 1.4.3
+     */
+    @Override
+    default String protocol() {
+        return "%s/%s".formatted(ApiRequest.super.protocol(), model().name());
+    }
+
+    /**
      * 获取模型
      *
      * @return 模型

@@ -15,15 +15,11 @@ import java.net.URI;
 public interface Content<T> {
 
     /**
-     * 类型
-     *
      * @return 类型
      */
     Type type();
 
     /**
-     * 数据
-     *
      * @return 数据
      */
     T data();

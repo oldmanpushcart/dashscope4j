@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.cache.PersistentCacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
@@ -197,6 +198,42 @@ public interface DashScopeClient {
          * @since 1.4.0
          */
         default Builder responseInterceptors(boolean isAppend, List<ResponseInterceptor> interceptors) {
+            CollectionUtils.updateList(isAppend, responseInterceptors(), interceptors);
+            return this;
+        }
+
+        /**
+         * 添加拦截器
+         *
+         * @param interceptors 拦截器
+         * @return this
+         * @since 1.4.3
+         */
+        default Builder interceptors(Interceptor... interceptors) {
+            return interceptors(List.of(interceptors));
+        }
+
+        /**
+         * 添加拦截器
+         *
+         * @param interceptors 拦截器
+         * @return this
+         * @since 1.4.3
+         */
+        default Builder interceptors(List<Interceptor> interceptors) {
+            return interceptors(true, interceptors);
+        }
+
+        /**
+         * 添加拦截器
+         *
+         * @param isAppend     是否追加
+         * @param interceptors 拦截器
+         * @return this
+         * @since 1.4.3
+         */
+        default Builder interceptors(boolean isAppend, List<Interceptor> interceptors) {
+            CollectionUtils.updateList(isAppend, requestInterceptors(), interceptors);
             CollectionUtils.updateList(isAppend, responseInterceptors(), interceptors);
             return this;
         }

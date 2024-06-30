@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.test.dashscope4j.base.interceptor;
 
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
@@ -9,7 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class InvokeCountInterceptor implements RequestInterceptor, ResponseInterceptor {
+public class InvokeCountInterceptor implements Interceptor {
 
     private final AtomicInteger requestCountRef = new AtomicInteger(0);
     private final AtomicInteger responseCountRef = new AtomicInteger(0);

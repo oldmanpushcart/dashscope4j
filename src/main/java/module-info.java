@@ -26,6 +26,7 @@ open module dashscope4j {
     exports io.github.oldmanpushcart.dashscope4j.embedding;
     exports io.github.oldmanpushcart.dashscope4j.embeddingx.mm;
     exports io.github.oldmanpushcart.dashscope4j.util;
+    exports io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit;
 
 
 }

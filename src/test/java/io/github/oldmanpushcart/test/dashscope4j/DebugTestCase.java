@@ -95,9 +95,12 @@ public class DebugTestCase implements LoadingEnv {
                 )
                 .build();
 
-        final var response = client.chat(request).async().join();
-        final var text = response.output().best().message().text();
-        System.out.println(text);
+        client.chat(request).flow()
+                .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
+                    System.out.println(r.output().best().message().text());
+                    DashScopeAssertions.assertChatResponse(r);
+                }))
+                .join();
 
     }
 
