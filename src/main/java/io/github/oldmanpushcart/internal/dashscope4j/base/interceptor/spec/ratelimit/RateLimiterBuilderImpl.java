@@ -1,14 +1,13 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ratelimit;
 
-import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.RateLimiter;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiPredicate;
 
 /**
@@ -19,8 +18,8 @@ public class RateLimiterBuilderImpl implements RateLimiter.Builder {
     private BiPredicate<InvocationContext, ApiRequest<?>> matcher;
     private Duration period;
     private RateLimiter.Strategy strategy;
-    private Integer maxAcquired, maxSucceed, maxFailed;
-    private final Map<String, Integer> maxUsageItemMap = new HashMap<>();
+    private Integer maxAcquired, maxSucceed, maxFailed, maxUsageCost;
+    private final Set<String> maxUsageNameSet = new HashSet<>();
 
     @Override
     public RateLimiter.Builder matches(BiPredicate<InvocationContext, ApiRequest<?>> matcher) {
@@ -53,8 +52,9 @@ public class RateLimiterBuilderImpl implements RateLimiter.Builder {
     }
 
     @Override
-    public RateLimiter.Builder maxUsage(String name, int maxCost) {
-        this.maxUsageItemMap.put(name, maxCost);
+    public RateLimiter.Builder maxUsage(Set<String> names, int maxCost) {
+        this.maxUsageNameSet.addAll(names);
+        this.maxUsageCost = maxCost;
         return this;
     }
 
@@ -64,20 +64,11 @@ public class RateLimiterBuilderImpl implements RateLimiter.Builder {
         return this;
     }
 
-    private Usage newMaxUsage() {
-        return new Usage(
-                maxUsageItemMap.entrySet().stream()
-                        .map(e -> new Usage.Item(e.getKey(), e.getValue()))
-                        .toList()
-        );
-    }
-
     @Override
     public RateLimiter build() {
         Objects.requireNonNull(period);
         Objects.requireNonNull(matcher);
         Objects.requireNonNull(strategy);
-        final var maxUsage = newMaxUsage();
         return new RateLimiter() {
 
             @Override
@@ -101,25 +92,26 @@ public class RateLimiterBuilderImpl implements RateLimiter.Builder {
             private boolean isLimited(Metric metric) {
 
                 // 限制最大请求量
-                if (maxAcquired != null && metric.acquired() >= maxAcquired) {
+                if (maxAcquired != null && metric.acquired() > maxAcquired) {
                     return true;
                 }
 
                 // 限制成功请求量
-                if (maxSucceed != null && metric.succeed() >= maxSucceed) {
+                if (maxSucceed != null && metric.succeed() > maxSucceed) {
                     return true;
                 }
 
                 // 限制失败请求量
-                if (maxFailed != null && metric.failed() >= maxFailed) {
+                if (maxFailed != null && metric.failed() > maxFailed) {
                     return true;
                 }
 
                 // 限制最大使用量
-                for (final var item : metric.usage().items()) {
-                    if (item.cost() >= maxUsage.total(e -> e.name().equals(item.name()))) {
-                        return true;
-                    }
+                if(maxUsageCost != null) {
+                    final var usageCost = maxUsageNameSet.isEmpty()
+                            ? metric.usage().total()
+                            : metric.usage().total(e -> maxUsageNameSet.contains(e.name()));
+                    return usageCost > maxUsageCost;
                 }
 
                 // 未触发限流

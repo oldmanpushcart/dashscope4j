@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.Rate
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.RateLimiter;
 import io.github.oldmanpushcart.test.dashscope4j.base.interceptor.InvokeCountInterceptor;
 
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -44,7 +45,7 @@ public interface LoadingEnv {
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(500)
-                            .maxUsage("total_tokens",500000)
+                            .maxUsage(Set.of("total_tokens"), 500000)
                             .build(),
 
                     // chat qwen-plus
@@ -53,7 +54,7 @@ public interface LoadingEnv {
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(200)
-                            .maxUsage("total_tokens",2000000)
+                            .maxUsage(Set.of("total_tokens"), 2000000)
                             .build(),
 
                     // chat qwen-max
@@ -62,7 +63,7 @@ public interface LoadingEnv {
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(60)
-                            .maxUsage("total_tokens",100000)
+                            .maxUsage(Set.of("total_tokens"), 100000)
                             .build(),
 
                     // chat qwen-audio-turbo
@@ -71,7 +72,7 @@ public interface LoadingEnv {
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(120)
-                            .maxUsage("total_tokens",100000)
+                            .maxUsage(100000)
                             .build(),
 
                     // chat qwen-audio-chat
@@ -80,9 +81,28 @@ public interface LoadingEnv {
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(120)
-                            .maxUsage("total_tokens",100000)
+                            .maxUsage(100000)
+                            .build(),
+
+                    // chat qwen-vl-plus 100000
+                    RateLimiter.newBuilder()
+                            .matchesByProtocolPrefix("/dashscope/chat/qwen-vl-plus")
+                            .periodByQPM()
+                            .strategyByDelay()
+                            .maxAcquired(60)
+                            .maxUsage(100000)
+                            .build(),
+
+                    // chat qwen-vl-max
+                    RateLimiter.newBuilder()
+                            .matchesByProtocolPrefix("/dashscope/chat/qwen-vl-max")
+                            .periodByQPM()
+                            .strategyByDelay()
+                            .maxAcquired(15)
+                            .maxUsage(25000)
                             .build()
-            )
+
+                    )
             .build();
 
 

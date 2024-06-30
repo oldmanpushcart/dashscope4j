@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ratel
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Set;
 import java.util.function.BiPredicate;
 
 /**
@@ -284,11 +285,21 @@ public interface RateLimiter {
         /**
          * 设置最大允许耗用量
          *
-         * @param name    用量名称
-         * @param maxCost 最大允许耗用量
+         * @param names   用量名称集合
+         * @param maxCost 最大用量
          * @return this
          */
-        Builder maxUsage(String name, int maxCost);
+        Builder maxUsage(Set<String> names, int maxCost);
+
+        /**
+         * 设置最大允许耗用量
+         *
+         * @param maxCost 最大用量
+         * @return this
+         */
+        default Builder maxUsage(int maxCost) {
+            return maxUsage(Set.of(), maxCost);
+        }
 
     }
 
