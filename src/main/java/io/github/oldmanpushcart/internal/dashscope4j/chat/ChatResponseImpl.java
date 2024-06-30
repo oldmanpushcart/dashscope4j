@@ -8,6 +8,12 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 
 record ChatResponseImpl(String uuid, Ret ret, Usage usage, Output output) implements ChatResponse {
 
+    @Override
+    public boolean isLast() {
+        return output().choices().stream()
+                .noneMatch(choice -> choice.finish() == ChatResponse.Finish.NONE);
+    }
+
     @JsonCreator
     static ChatResponseImpl of(
 

@@ -46,6 +46,14 @@ public interface ApiResponse<D extends ApiResponse.Output> {
     D output();
 
     /**
+     * @return 是否为最后一个应答
+     * @since 1.4.3
+     */
+    default boolean isLast() {
+        return true;
+    }
+
+    /**
      * 应答数据
      */
     interface Output {
