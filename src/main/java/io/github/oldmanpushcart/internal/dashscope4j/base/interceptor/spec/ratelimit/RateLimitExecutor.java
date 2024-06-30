@@ -51,9 +51,9 @@ interface RateLimitExecutor {
         /**
          * 释放令牌：成功
          *
-         * @param spend 已用量
+         * @param usage 已用量
          */
-        void success(Usage spend);
+        void success(Usage usage);
 
         /**
          * 释放令牌：失败

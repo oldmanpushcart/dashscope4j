@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.RateLimitInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.RateLimiter;
+import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,10 +86,11 @@ public class RateLimitInterceptorImpl implements RateLimitInterceptor {
 
         // 拿到请求时候放入的token，注意，只有PASS的策略才会有值
         final var token = (RateLimitExecutor.Token) context.attachmentMap().get(KEY_TOKEN);
+        final var isLast = isLastResponse(response);
 
         // 响应异常
         if (null != ex) {
-            if (null != token) {
+            if (null != token && isLast) {
                 token.failure();
             }
             return CompletableFuture.failedFuture(ex);
@@ -96,12 +98,20 @@ public class RateLimitInterceptorImpl implements RateLimitInterceptor {
 
         // 响应成功
         else {
-            if (null != token) {
+            if (null != token && isLast) {
                 token.success(response.usage());
             }
             return CompletableFuture.completedFuture(response);
         }
 
+    }
+
+    private static boolean isLastResponse(ApiResponse<?> response) {
+        if (response instanceof ChatResponse chatResponse) {
+            return chatResponse.output().choices().stream()
+                    .noneMatch(choice -> choice.finish() == ChatResponse.Finish.NONE);
+        }
+        return true;
     }
 
     /**

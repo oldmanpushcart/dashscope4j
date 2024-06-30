@@ -19,11 +19,24 @@ record GroupRateLimitExecutor(List<? extends RateLimitExecutor> executors) imple
         final var tokens = new ArrayList<Token>();
         for (final var executor : executors) {
             final var token = executor.tryAcquire(context, request);
-            if (!token.isAcquired()) {
+            final var strategy = token.strategy();
+
+            // 跳过则忽略
+            if (strategy == RateLimiter.Strategy.SKIP) {
+                continue;
+            }
+
+            // 申请到则添加到令牌集
+            else if (strategy == RateLimiter.Strategy.PASS) {
+                tokens.add(token);
+            }
+
+            // 其他状态为被限流或非法，取消之前已经申请的令牌
+            else {
                 tokens.forEach(Token::cancel);
                 return token;
             }
-            tokens.add(token);
+
         }
         return new TokenImpl(RateLimiter.Strategy.PASS, Duration.ZERO, tokens);
     }

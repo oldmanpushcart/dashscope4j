@@ -65,6 +65,13 @@ class CasRateLimitExecutor implements RateLimitExecutor {
     private MetricImpl updateMetric(Instant instant) {
         while (true) {
             final var metric = metricRef.get();
+
+            assert metric != null;
+            assert metric.acquired() >= 0;
+            assert metric.succeed() >= 0;
+            assert metric.failed() >= 0;
+            assert metric.acquired() >= metric.failed() + metric.succeed();
+
             if (instant.isAfter(metric.since().plusMillis(limiter.period().toMillis()))) {
                 final var update = MetricImpl.next(instant, metric);
                 if (metricRef.compareAndSet(metric, update)) {
@@ -156,7 +163,7 @@ class CasRateLimitExecutor implements RateLimitExecutor {
         }
 
         @Override
-        public void success(Usage spend) {
+        public void success(Usage usage) {
             checkAcquired();
             completed();
             while (true) {
@@ -167,7 +174,7 @@ class CasRateLimitExecutor implements RateLimitExecutor {
                         metric.acquired(),
                         metric.succeed() + 1,
                         metric.failed(),
-                        mergeUsages(metric.usage, spend)
+                        mergeUsages(metric.usage(), usage)
                 );
                 if (metricRef.compareAndSet(metric, update)) {
                     break;

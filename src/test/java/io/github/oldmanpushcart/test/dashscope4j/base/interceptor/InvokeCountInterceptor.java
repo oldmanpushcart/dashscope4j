@@ -4,8 +4,6 @@ import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
-import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
-import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
