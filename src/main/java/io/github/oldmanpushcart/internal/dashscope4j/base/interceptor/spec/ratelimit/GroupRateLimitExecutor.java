@@ -21,18 +21,13 @@ record GroupRateLimitExecutor(List<? extends RateLimitExecutor> executors) imple
             final var token = executor.tryAcquire(context, request);
             final var strategy = token.strategy();
 
-            // 跳过则忽略
-            if (strategy == RateLimiter.Strategy.SKIP) {
-                continue;
-            }
-
             // 申请到则添加到令牌集
-            else if (strategy == RateLimiter.Strategy.PASS) {
+            if (strategy == RateLimiter.Strategy.PASS) {
                 tokens.add(token);
             }
 
-            // 其他状态为被限流或非法，取消之前已经申请的令牌
-            else {
+            // 不是SKIP状态则为被限流或非法，取消之前已经申请的令牌
+            else if (strategy != RateLimiter.Strategy.SKIP) {
                 tokens.forEach(Token::cancel);
                 return token;
             }

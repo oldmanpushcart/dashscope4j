@@ -52,7 +52,7 @@ public class FilesOpTestCase implements LoadingEnv {
                     }
                 });
 
-        client.base().files().delete(res.id());
+        client.base().files().delete(res.id()).join();
 
         Assertions.assertTrue(existed.get());
 
