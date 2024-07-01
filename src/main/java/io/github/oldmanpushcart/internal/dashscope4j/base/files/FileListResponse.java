@@ -33,7 +33,7 @@ public record FileListResponse(Error error, Output output)
             Boolean hasMore,
 
             @JsonProperty("data")
-            List<FileMetaImpl> metas
+            List<FileData> list
 
     ) {
 
@@ -42,8 +42,45 @@ public record FileListResponse(Error error, Output output)
                 new FileListResponse(
                         new Output(
                                 hasMore,
-                                metas
+                                list.stream().map(FileData::toMeta).toList()
                         ));
+
+    }
+
+    private record FileData(
+
+            @JsonProperty("id")
+            String id,
+
+            @JsonProperty("object")
+            String object,
+
+            @JsonProperty("bytes")
+            long bytes,
+
+            @JsonProperty("created_at")
+            int secCreatedAt,
+
+            @JsonProperty("filename")
+            String filename,
+
+            @JsonProperty("purpose")
+            String purpose,
+
+            @JsonProperty("status")
+            String status
+
+    ) {
+
+        FileMeta toMeta() {
+            return new FileMetaImpl(
+                    id,
+                    filename,
+                    bytes,
+                    secCreatedAt * 1000L,
+                    purpose
+            );
+        }
 
     }
 

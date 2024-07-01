@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.test.dashscope4j;
 
+import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatOptions;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.net.URI;
 import java.time.Duration;
+import java.util.concurrent.Flow;
 
 @Disabled
 public class DebugTestCase implements LoadingEnv {
@@ -84,9 +86,8 @@ public class DebugTestCase implements LoadingEnv {
 
     }
 
-    @Disabled
     @Test
-    public void test$debug() throws Exception {
+    public void test$debug$qwen_long() throws Exception {
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_LONG)
                 .user(
@@ -102,6 +103,37 @@ public class DebugTestCase implements LoadingEnv {
                 }))
                 .join();
 
+    }
+
+    @Test
+    public void test$debug() {
+        client.base().files().flow().join().subscribe(new Flow.Subscriber<>() {
+
+            private Flow.Subscription subscription;
+
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                this.subscription = subscription;
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(FileMeta item) {
+                System.out.println(item);
+                subscription.request(1);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+
+        });
     }
 
 }
