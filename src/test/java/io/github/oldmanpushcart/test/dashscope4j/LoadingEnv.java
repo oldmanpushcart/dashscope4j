@@ -100,6 +100,47 @@ public interface LoadingEnv {
                             .strategyByDelay()
                             .maxAcquired(15)
                             .maxUsage(25000)
+                            .build(),
+
+                    // embedding text-embedding-v1 QPS
+                    RateLimiter.newBuilder()
+                            .matchesByProtocolPrefix("/dashscope/embedding/text-embedding-v1")
+                            .periodByQPS()
+                            .strategyByDelay()
+                            .maxAcquired(30)
+                            .build(),
+
+                    // embedding text-embedding-v1 QPS
+                    RateLimiter.newBuilder()
+                            .matchesByProtocolPrefix("/dashscope/embedding/text-embedding-v1")
+                            .periodByQPM()
+                            .strategyByDelay()
+                            .maxUsage(600000)
+                            .build(),
+
+                    // embedding text-embedding-v2 QPS
+                    RateLimiter.newBuilder()
+                            .matchesByProtocolPrefix("/dashscope/embedding/text-embedding-v2")
+                            .periodByQPS()
+                            .strategyByDelay()
+                            .maxAcquired(30)
+                            .build(),
+
+                    // embedding text-embedding-v2 QPS
+                    RateLimiter.newBuilder()
+                            .matchesByProtocolPrefix("/dashscope/embedding/text-embedding-v2")
+                            .periodByQPM()
+                            .strategyByDelay()
+                            .maxUsage(600000)
+                            .build(),
+
+                    //
+                    RateLimiter.newBuilder()
+                            .matchesByProtocolPrefix("/dashscope/mm-embedding/multimodal-embedding-one-peace-v1")
+                            .periodByQPM()
+                            .strategyByDelay()
+                            .maxAcquired(20)
+                            .maxUsage(20)
                             .build()
 
                     )

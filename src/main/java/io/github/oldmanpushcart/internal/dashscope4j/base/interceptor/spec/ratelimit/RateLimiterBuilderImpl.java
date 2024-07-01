@@ -92,17 +92,17 @@ public class RateLimiterBuilderImpl implements RateLimiter.Builder {
             private boolean isLimited(Metric metric) {
 
                 // 限制最大请求量
-                if (maxAcquired != null && metric.acquired() > maxAcquired) {
+                if (maxAcquired != null && metric.acquired() >= maxAcquired) {
                     return true;
                 }
 
                 // 限制成功请求量
-                if (maxSucceed != null && metric.succeed() > maxSucceed) {
+                if (maxSucceed != null && metric.succeed() >= maxSucceed) {
                     return true;
                 }
 
                 // 限制失败请求量
-                if (maxFailed != null && metric.failed() > maxFailed) {
+                if (maxFailed != null && metric.failed() >= maxFailed) {
                     return true;
                 }
 
@@ -111,7 +111,7 @@ public class RateLimiterBuilderImpl implements RateLimiter.Builder {
                     final var usageCost = maxUsageNameSet.isEmpty()
                             ? metric.usage().total()
                             : metric.usage().total(e -> maxUsageNameSet.contains(e.name()));
-                    return usageCost > maxUsageCost;
+                    return usageCost >= maxUsageCost;
                 }
 
                 // 未触发限流
