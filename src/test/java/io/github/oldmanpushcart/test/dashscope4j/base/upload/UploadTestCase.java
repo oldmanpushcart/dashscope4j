@@ -87,8 +87,8 @@ public class UploadTestCase implements LoadingEnv {
                     }
 
                     @Override
-                    public void onError(Throwable throwable) {
-
+                    public void onError(Throwable ex) {
+                        throw new RuntimeException(ex);
                     }
 
                     @Override

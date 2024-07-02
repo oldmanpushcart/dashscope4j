@@ -28,7 +28,7 @@ public interface LoadingEnv {
                             .matchesByProtocolPrefix("/dashscope/base/file-")
                             .periodByQPS()
                             .strategyByDelay()
-                            .maxAcquired(1)
+                            .maxAcquired(10)
                             .build(),
 
                     // chat qwen-long

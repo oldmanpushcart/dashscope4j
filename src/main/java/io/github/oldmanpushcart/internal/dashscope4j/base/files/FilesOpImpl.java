@@ -6,14 +6,13 @@ import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.util.CacheUtils;
+import io.github.oldmanpushcart.internal.dashscope4j.util.IteratorPublisher;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 
 import java.net.URI;
 import java.util.Objects;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.CACHE_NAMESPACE_FOR_FILES;
 
@@ -89,35 +88,7 @@ public class FilesOpImpl implements FilesOp {
         final var request = FileListRequest.newBuilder()
                 .build();
         return executor.async(request)
-                .thenApply(FileListResponse::output)
-                .thenApply(output -> {
-                    final var iterator = output.data().iterator();
-                    final var isCancelled = new AtomicBoolean(false);
-                    return subscriber -> subscriber.onSubscribe(new Flow.Subscription() {
-
-                        @Override
-                        public void request(long n) {
-                            try {
-                                for (long i = 0; i < n && iterator.hasNext() && !isCancelled.get(); i++) {
-                                    subscriber.onNext(iterator.next());
-                                }
-                                if (!iterator.hasNext()) {
-                                    subscriber.onComplete();
-                                } else if (isCancelled.get()) {
-                                    throw new CancellationException();
-                                }
-                            } catch (Throwable ex) {
-                                subscriber.onError(ex);
-                            }
-                        }
-
-                        @Override
-                        public void cancel() {
-                            isCancelled.set(true);
-                        }
-
-                    });
-                });
+                .thenApply(response -> IteratorPublisher.of(response.output().data()));
     }
 
 }
