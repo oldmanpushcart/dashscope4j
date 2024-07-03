@@ -1,20 +1,26 @@
-package io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec;
+package io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.content;
 
-import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
-import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process.ProcessContentDataRequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.FactorContent;
 import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.MmEmbeddingRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils.thenForEachCompose;
 
-public abstract class ProcessContentDataRequestInterceptor implements RequestInterceptor {
+public class ProcessContentDataRequestInterceptorImpl implements ProcessContentDataRequestInterceptor {
+
+    private final Processor processor;
+
+    private ProcessContentDataRequestInterceptorImpl(Processor processor) {
+        this.processor = processor;
+    }
 
     @Override
     public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
@@ -48,23 +54,32 @@ public abstract class ProcessContentDataRequestInterceptor implements RequestInt
                 });
     }
 
-
-    private <T extends Content<?>> CompletableFuture<T> processContent(InvocationContext context, AlgoRequest<?> request, T content) {
+    private <T extends Content<?>> CompletableFuture<T> processContent(InvocationContext context, ApiRequest<?> request, T content) {
         //noinspection unchecked
-        return processContentData(context, request, content.data())
-                .thenApply(data -> {
-                    if (content instanceof FactorContent<?> factorContent) {
-                        return FactorContent.of(
-                                factorContent.factor(),
-                                factorContent.type(),
-                                data
-                        );
-                    }
-                    return Content.of(content.type(), data);
-                })
+        return processor.process(context, request, content.type(), content.data())
+                .thenApply(data -> content instanceof FactorContent<?> factorContent
+                        ? FactorContent.of(factorContent.factor(), content.type(), data)
+                        : Content.of(content.type(), data)
+                )
                 .thenApply(v -> (T) v);
     }
 
-    abstract protected CompletableFuture<Object> processContentData(InvocationContext context, AlgoRequest<?> request, Object data);
+    public static class Builder implements ProcessContentDataRequestInterceptor.Builder {
+
+        private Processor processor;
+
+        @Override
+        public Builder processor(Processor processor) {
+            this.processor = Objects.requireNonNull(processor);
+            return this;
+        }
+
+        @Override
+        public ProcessContentDataRequestInterceptor build() {
+            Objects.requireNonNull(processor);
+            return new ProcessContentDataRequestInterceptorImpl(processor);
+        }
+
+    }
 
 }

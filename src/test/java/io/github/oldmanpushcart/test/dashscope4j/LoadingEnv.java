@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.Rate
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.RateLimiter;
 import io.github.oldmanpushcart.test.dashscope4j.base.interceptor.InvokeCountInterceptor;
 
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -151,6 +152,8 @@ public interface LoadingEnv {
             .ak(AK)
             .executor(executor)
             .interceptors(invokeCountInterceptor, rateLimitInterceptor)
+            .connectTimeout(Duration.ofSeconds(60))
+            .timeout(Duration.ofSeconds(60))
             .build();
 
 }

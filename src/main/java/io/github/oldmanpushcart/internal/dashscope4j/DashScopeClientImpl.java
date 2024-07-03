@@ -8,6 +8,8 @@ import io.github.oldmanpushcart.dashscope4j.base.cache.PersistentCacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process.ProcessContentDataRequestInterceptor;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process.ProcessMessagesRequestInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 import io.github.oldmanpushcart.dashscope4j.base.upload.UploadOp;
 import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
@@ -28,7 +30,11 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.files.FilesOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupRequestInterceptor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupResponseInterceptor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.InterceptorHelper;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.*;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.content.ProcessingContentDataForBufferedImageToFile;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.content.ProcessingContentDataForByteArrayToFile;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.content.ProcessingContentDataForChatQwenLong;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.content.ProcessingContentDataForFileUpload;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.messages.ProcessingMessagesForQwenLong;
 import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpAsyncHandler;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpFlowHandler;
@@ -175,11 +181,32 @@ public class DashScopeClientImpl implements DashScopeClient {
 
             // 添加系统默认请求拦截器
             add(new GroupRequestInterceptor(List.of(
-                    new ProcessContentDataRequestInterceptorForByteArrayToFileUri(),
-                    new ProcessContentDataRequestInterceptorForBufferedImageToFileUri(),
-                    new ProcessContentDataRequestInterceptorForFileToUri(),
-                    new ProcessChatMessageRequestInterceptorForQwenLong(),
-                    new ProcessContentDataRequestInterceptorForUpload()
+
+                    // 处理BufferedImage内容数据
+                    ProcessContentDataRequestInterceptor.newBuilder()
+                            .processor(new ProcessingContentDataForBufferedImageToFile())
+                            .build(),
+
+                    // 处理byte[]内容数据
+                    ProcessContentDataRequestInterceptor.newBuilder()
+                            .processor(new ProcessingContentDataForByteArrayToFile())
+                            .build(),
+
+                    // 处理QwenLong对话内容
+                    ProcessContentDataRequestInterceptor.newBuilder()
+                            .processor(new ProcessingContentDataForChatQwenLong())
+                            .build(),
+
+                    // 处理文件上传
+                    ProcessContentDataRequestInterceptor.newBuilder()
+                            .processor(new ProcessingContentDataForFileUpload())
+                            .build(),
+
+                    // 处理QwenLong消息列表
+                    ProcessMessagesRequestInterceptor.newBuilder()
+                            .processor(new ProcessingMessagesForQwenLong())
+                            .build()
+
             )));
 
         }};
