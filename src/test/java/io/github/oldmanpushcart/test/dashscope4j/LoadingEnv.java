@@ -4,6 +4,9 @@ import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.RateLimitInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.RateLimiter;
+import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingModel;
+import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.MmEmbeddingModel;
 import io.github.oldmanpushcart.test.dashscope4j.base.interceptor.InvokeCountInterceptor;
 
 import java.time.Duration;
@@ -34,7 +37,7 @@ public interface LoadingEnv {
 
                     // chat qwen-long
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/chat/qwen-long")
+                            .matchesByModel(ChatModel.QWEN_LONG)
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(100)
@@ -42,7 +45,7 @@ public interface LoadingEnv {
 
                     // chat qwen-turbo
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/chat/qwen-turbo")
+                            .matchesByModel(ChatModel.QWEN_TURBO)
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(500)
@@ -51,7 +54,7 @@ public interface LoadingEnv {
 
                     // chat qwen-plus
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/chat/qwen-plus")
+                            .matchesByModel(ChatModel.QWEN_PLUS)
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(200)
@@ -60,7 +63,7 @@ public interface LoadingEnv {
 
                     // chat qwen-max
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/chat/qwen-max")
+                            .matchesByModel(ChatModel.QWEN_MAX)
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(60)
@@ -69,7 +72,7 @@ public interface LoadingEnv {
 
                     // chat qwen-audio-turbo
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/chat/qwen-audio-turbo")
+                            .matchesByModel(ChatModel.QWEN_AUDIO_TURBO)
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(120)
@@ -78,7 +81,7 @@ public interface LoadingEnv {
 
                     // chat qwen-audio-chat
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/chat/qwen-audio-chat")
+                            .matchesByModel(ChatModel.QWEN_AUDIO_CHAT)
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(120)
@@ -87,7 +90,7 @@ public interface LoadingEnv {
 
                     // chat qwen-vl-plus 100000
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/chat/qwen-vl-plus")
+                            .matchesByModel(ChatModel.QWEN_VL_PLUS)
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(60)
@@ -96,7 +99,7 @@ public interface LoadingEnv {
 
                     // chat qwen-vl-max
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/chat/qwen-vl-max")
+                            .matchesByModel(ChatModel.QWEN_VL_MAX)
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(15)
@@ -105,7 +108,7 @@ public interface LoadingEnv {
 
                     // embedding text-embedding-v1 QPS
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/embedding/text-embedding-v1")
+                            .matchesByModel(EmbeddingModel.TEXT_EMBEDDING_V1)
                             .periodByQPS()
                             .strategyByDelay()
                             .maxAcquired(30)
@@ -113,7 +116,7 @@ public interface LoadingEnv {
 
                     // embedding text-embedding-v1 QPS
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/embedding/text-embedding-v1")
+                            .matchesByModel(EmbeddingModel.TEXT_EMBEDDING_V1)
                             .periodByQPM()
                             .strategyByDelay()
                             .maxUsage(600000)
@@ -121,7 +124,7 @@ public interface LoadingEnv {
 
                     // embedding text-embedding-v2 QPS
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/embedding/text-embedding-v2")
+                            .matchesByModel(EmbeddingModel.TEXT_EMBEDDING_V2)
                             .periodByQPS()
                             .strategyByDelay()
                             .maxAcquired(30)
@@ -129,7 +132,7 @@ public interface LoadingEnv {
 
                     // embedding text-embedding-v2 QPS
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/embedding/text-embedding-v2")
+                            .matchesByModel(EmbeddingModel.TEXT_EMBEDDING_V2)
                             .periodByQPM()
                             .strategyByDelay()
                             .maxUsage(600000)
@@ -137,7 +140,7 @@ public interface LoadingEnv {
 
                     //
                     RateLimiter.newBuilder()
-                            .matchesByProtocolPrefix("/dashscope/mm-embedding/multimodal-embedding-one-peace-v1")
+                            .matchesByModel(MmEmbeddingModel.MM_EMBEDDING_ONE_PEACE_V1)
                             .periodByQPM()
                             .strategyByDelay()
                             .maxAcquired(20)

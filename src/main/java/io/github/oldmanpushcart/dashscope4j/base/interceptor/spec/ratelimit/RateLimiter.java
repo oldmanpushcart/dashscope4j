@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit;
 
+import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Usage;
+import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
@@ -100,6 +102,36 @@ public interface RateLimiter {
          */
         static BiPredicate<InvocationContext, ApiRequest<?>> matchesByProtocolRegex(String regex) {
             return (context, request) -> request.protocol().matches(regex);
+        }
+
+        /**
+         * 请求类型匹配
+         *
+         * @param clazz 请求类型
+         * @return 匹配器
+         */
+        static BiPredicate<InvocationContext, ApiRequest<?>> matchesByRequestType(Class<? extends ApiRequest<?>> clazz) {
+            return (context, request) -> clazz.isInstance(request);
+        }
+
+        /**
+         * 模型匹配
+         *
+         * @param model 模型
+         * @return 匹配器
+         */
+        static BiPredicate<InvocationContext, ApiRequest<?>> matchesByModel(Model model) {
+            return matchesByModel(model.name());
+        }
+
+        /**
+         * 模型匹配
+         *
+         * @param name 模型名称
+         * @return 匹配器
+         */
+        static BiPredicate<InvocationContext, ApiRequest<?>> matchesByModel(String name) {
+            return (context, request) -> request instanceof AlgoRequest<?> algoRequest && algoRequest.model().name().equals(name);
         }
 
     }
@@ -204,6 +236,36 @@ public interface RateLimiter {
          */
         default Builder matchesByProtocolRegex(String regex) {
             return matches(Matchers.matchesByProtocolRegex(regex));
+        }
+
+        /**
+         * 设置限流匹配器：按请求类型匹配
+         *
+         * @param clazz 请求类型
+         * @return this
+         */
+        default Builder matchesByRequestType(Class<? extends ApiRequest<?>> clazz) {
+            return matches(Matchers.matchesByRequestType(clazz));
+        }
+
+        /**
+         * 设置限流匹配器：按模型匹配
+         *
+         * @param model 模型
+         * @return this
+         */
+        default Builder matchesByModel(Model model) {
+            return matches(Matchers.matchesByModel(model));
+        }
+
+        /**
+         * 设置限流匹配器：按模型匹配
+         *
+         * @param name 模型名称
+         * @return this
+         */
+        default Builder matchesByModel(String name) {
+            return matches(Matchers.matchesByModel(name));
         }
 
         /**
