@@ -28,6 +28,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
 import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.*;
@@ -67,8 +68,7 @@ public class ApiExecutor {
         final var builder = HttpRequest.newBuilder(request, (k, v) -> true)
                 .header(HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
                 .header(HEADER_X_DASHSCOPE_CLIENT, CLIENT_INFO)
-                .header(HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, "enable")
-                ;
+                .header(HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, "enable");
         consumer.accept(builder);
         return builder.build();
     }
@@ -103,6 +103,11 @@ public class ApiExecutor {
                 });
     }
 
+    /*
+     * 在SSE事件的meta属性中提取HTTP状态提取匹配器
+     */
+    private static final Pattern httpStatusPattern = Pattern.compile("HTTP_STATUS/(\\d+)");
+
     /**
      * 流式处理API请求
      *
@@ -114,6 +119,7 @@ public class ApiExecutor {
             builder.header(HttpHeader.HEADER_X_DASHSCOPE_SSE, "enable");
             setupTimeout(builder, request);
         });
+
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApplyAsync(identity(), executor)
                 .thenApply(request.httpResponseChecker())
@@ -121,34 +127,36 @@ public class ApiExecutor {
                 // 从HTTP响应数据流转换为SSE事件流
                 .thenApply(httpResponse -> {
 
-                            // 解析CT
-                            final var ct = HttpHeader.ContentType.parse(httpResponse.headers());
+                    // 解析CT
+                    final var ct = HttpHeader.ContentType.parse(httpResponse.headers());
 
-                            // 检查是否为SSE
-                            if (!HttpHeader.ContentType.MIME_TEXT_EVENT_STREAM.equals(ct.mime())) {
-                                throw new IllegalStateException("Illegal HTTP Content-Type! expect:%s, actual:%s".formatted(
-                                        HttpHeader.ContentType.MIME_TEXT_EVENT_STREAM,
-                                        ct.mime()
-                                ));
-                            }
+                    // 检查是否为SSE
+                    if (!HttpHeader.ContentType.MIME_TEXT_EVENT_STREAM.equals(ct.mime())) {
+                        throw new IllegalStateException("Illegal HTTP Content-Type! expect:%s, actual:%s".formatted(
+                                HttpHeader.ContentType.MIME_TEXT_EVENT_STREAM,
+                                ct.mime()
+                        ));
+                    }
 
-                            // 开始处理SSE事件流
-                            return HttpSsEventProcessor
-                                    .fromByteBuffers(HttpHeader.ContentType.parse(httpResponse.headers()).charset(), 10240)
-                                    .transform(httpResponse.body());
+                    // 获取字符编码
+                    final var charset = HttpHeader.ContentType.parse(httpResponse.headers()).charset();
 
-                        }
-                )
+                    // 开始处理SSE事件流
+                    return HttpSsEventProcessor
+                            .fromByteBuffers(charset, 10240)
+                            .transform(httpResponse.body());
+
+                })
 
                 // 从SSE事件流中转换为API应答流
                 .thenApply(ssePublisher -> TransformFlowProcessor.transform(ssePublisher, event ->
                         switch (event.type()) {
                             case "error" -> throw new ApiException(
-                                    // 解析HTTP状态：HTTP_STATUS/429
+                                    // 解析HTTP状态：HTTP_STATUS/429 -> 429
                                     event.meta().stream()
                                             .filter(meta -> meta.startsWith("HTTP_STATUS/"))
-                                            .map(meta -> Integer.parseInt(meta.substring("HTTP_STATUS/".length())))
                                             .findFirst()
+                                            .map(meta -> Integer.parseInt(httpStatusPattern.matcher(meta).group(1)))
                                             .orElse(200),
                                     // 解析应答
                                     request.responseDeserializer().apply(event.data())
@@ -248,7 +256,7 @@ public class ApiExecutor {
                                         .taskId(task.id())
                                         .build();
                                 return async(taskCancelRequest)
-                                        .handle((cv, cex)-> {
+                                        .handle((cv, cex) -> {
                                             logger.warn("dashscope://task/cancel completed: task={};", task.id(), cex);
                                             return cv;
                                         })

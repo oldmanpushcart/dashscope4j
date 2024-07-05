@@ -36,12 +36,17 @@ public class ConsumeFlowSubscriber<T> implements Flow.Subscriber<T> {
 
     @Override
     public void onNext(T item) {
-        consumer.accept(item);
-        subscriptionRef.get().request(1);
+        try {
+            consumer.accept(item);
+            subscriptionRef.get().request(1);
+        } catch (Throwable t) {
+            onError(t);
+        }
     }
 
     @Override
     public void onError(Throwable ex) {
+        subscriptionRef.get().cancel();
         completed.completeExceptionally(ex);
     }
 
