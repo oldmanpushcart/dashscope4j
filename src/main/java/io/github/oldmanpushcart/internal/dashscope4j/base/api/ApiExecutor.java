@@ -156,7 +156,12 @@ public class ApiExecutor {
                                     event.meta().stream()
                                             .filter(meta -> meta.startsWith("HTTP_STATUS/"))
                                             .findFirst()
-                                            .map(meta -> Integer.parseInt(httpStatusPattern.matcher(meta).group(1)))
+                                            .map(meta -> {
+                                                final var matcher = httpStatusPattern.matcher(meta);
+                                                return matcher.find()
+                                                        ? Integer.parseInt(matcher.group(1))
+                                                        : null;
+                                            })
                                             .orElse(200),
                                     // 解析应答
                                     request.responseDeserializer().apply(event.data())

@@ -5,7 +5,6 @@ import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.InterceptorHelper;
-import io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -13,6 +12,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils.handleCompose;
 
 public class InterceptorApiExecutor extends ApiExecutor {
 
@@ -34,7 +35,7 @@ public class InterceptorApiExecutor extends ApiExecutor {
     public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<R> request) {
         final var context = interceptorHelper.newInvocationContext();
         final var future = interceptorHelper.preHandle(context, request).thenCompose(super::async);
-        return CompletableFutureUtils.handleCompose(future, (response, ex) -> interceptorHelper.postHandle(context, response, ex));
+        return handleCompose(future, (r, ex) -> interceptorHelper.postHandle(context, r, ex));
     }
 
     @Override
@@ -54,14 +55,14 @@ public class InterceptorApiExecutor extends ApiExecutor {
         final var context = interceptorHelper.newInvocationContext();
         return interceptorHelper.preHandle(context, request)
                 .thenCompose(super::task)
-                .thenApply(half -> strategy -> CompletableFutureUtils.handleCompose(half.waitingFor(strategy), (r, ex) -> interceptorHelper.postHandle(context, r, ex)));
+                .thenApply(half -> strategy -> handleCompose(half.waitingFor(strategy), (r, ex) -> interceptorHelper.postHandle(context, r, ex)));
     }
 
     private class PostHandleProcessor<R extends ApiResponse<?>> implements Flow.Processor<R, R> {
 
         private final InvocationContext context;
-        private final AtomicReference<Flow.Subscriber<? super R>> subscriberRef = new AtomicReference<>();
-        private final AtomicReference<Flow.Subscription> subscriptionRef = new AtomicReference<>();
+        private final AtomicReference<Flow.Subscriber<? super R>> downstreamRef = new AtomicReference<>();
+        private final AtomicReference<Flow.Subscription> upstreamRef = new AtomicReference<>();
 
         private PostHandleProcessor(InvocationContext context) {
             this.context = context;
@@ -69,19 +70,19 @@ public class InterceptorApiExecutor extends ApiExecutor {
 
         @Override
         public void subscribe(Flow.Subscriber<? super R> subscriber) {
-            if (!subscriberRef.compareAndSet(null, subscriber)) {
-                throw new IllegalStateException("processor publisher already subscribed");
+            if (!downstreamRef.compareAndSet(null, subscriber)) {
+                throw new IllegalStateException("already onSubscribed!");
             }
             subscriber.onSubscribe(new Flow.Subscription() {
 
                 @Override
                 public void request(long n) {
-                    subscriptionRef.get().request(n);
+                    upstreamRef.get().request(n);
                 }
 
                 @Override
                 public void cancel() {
-                    subscriptionRef.get().cancel();
+                    upstreamRef.get().cancel();
                 }
 
             });
@@ -89,9 +90,9 @@ public class InterceptorApiExecutor extends ApiExecutor {
 
         @Override
         public void onSubscribe(Flow.Subscription subscription) {
-            if (!subscriptionRef.compareAndSet(null, subscription)) {
+            if (!upstreamRef.compareAndSet(null, subscription)) {
                 subscription.cancel();
-                throw new IllegalStateException("already subscribed");
+                throw new IllegalStateException("already subscribed!");
             }
         }
 
@@ -100,9 +101,9 @@ public class InterceptorApiExecutor extends ApiExecutor {
             interceptorHelper.postHandle(context, response, null)
                     .whenComplete((r, ex) -> {
                         if (ex != null) {
-                            subscriberRef.get().onError(ex);
+                            downstreamRef.get().onError(ex);
                         } else {
-                            subscriberRef.get().onNext(r);
+                            downstreamRef.get().onNext(r);
                         }
                     });
         }
@@ -112,16 +113,16 @@ public class InterceptorApiExecutor extends ApiExecutor {
             interceptorHelper.<R>postHandle(context, null, throwable)
                     .whenComplete((r, ex) -> {
                         if (ex != null) {
-                            subscriberRef.get().onError(ex);
+                            downstreamRef.get().onError(ex);
                         } else {
-                            subscriberRef.get().onNext(r);
+                            downstreamRef.get().onNext(r);
                         }
                     });
         }
 
         @Override
         public void onComplete() {
-            subscriberRef.get().onComplete();
+            downstreamRef.get().onComplete();
         }
 
     }
