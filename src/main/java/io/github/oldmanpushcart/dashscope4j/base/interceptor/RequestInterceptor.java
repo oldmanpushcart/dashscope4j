@@ -18,6 +18,8 @@ public interface RequestInterceptor {
      * @param request 请求
      * @return 请求
      */
-    CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request);
+    default CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
+        return CompletableFuture.completedFuture(request);
+    }
 
 }

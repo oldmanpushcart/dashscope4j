@@ -12,7 +12,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-import static io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils.thenForEachCompose;
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils.thenIterateCompose;
 
 public class ProcessContentDataRequestInterceptorImpl implements ProcessContentDataRequestInterceptor {
 
@@ -34,8 +34,8 @@ public class ProcessContentDataRequestInterceptorImpl implements ProcessContentD
     }
 
     private CompletableFuture<ApiRequest<?>> processChatRequest(InvocationContext context, ChatRequest request) {
-        return thenForEachCompose(request.messages(), message ->
-                thenForEachCompose(message.contents(), content -> processContent(context, request, content))
+        return thenIterateCompose(request.messages(), message ->
+                thenIterateCompose(message.contents(), content -> processContent(context, request, content))
                         .thenApply(contents -> {
                             CollectionUtils.updateList(false, message.contents(), contents);
                             return message;
@@ -47,7 +47,7 @@ public class ProcessContentDataRequestInterceptorImpl implements ProcessContentD
     }
 
     private CompletableFuture<ApiRequest<?>> processMmEmbeddingRequest(InvocationContext context, MmEmbeddingRequest request) {
-        return thenForEachCompose(request.contents(), content -> processContent(context, request, content))
+        return thenIterateCompose(request.contents(), content -> processContent(context, request, content))
                 .thenApply(contents -> {
                     CollectionUtils.updateList(false, request.contents(), contents);
                     return request;

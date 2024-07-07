@@ -19,7 +19,7 @@ public class GroupResponseInterceptor implements ResponseInterceptor {
 
     @Override
     public CompletableFuture<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response, Throwable ex) {
-        return CompletableFutureUtils.handleChainingCompose(response, ex, toFunctionList(context, interceptors));
+        return CompletableFutureUtils.handleChainCompose(response, ex, toFunctionList(context, interceptors));
     }
 
     private static List<BiFunction<ApiResponse<?>, Throwable, CompletableFuture<ApiResponse<?>>>> toFunctionList(InvocationContext context, List<ResponseInterceptor> interceptors) {

@@ -6,4 +6,5 @@ package io.github.oldmanpushcart.dashscope4j.base.interceptor;
  * @since 1.4.3
  */
 public interface Interceptor extends RequestInterceptor, ResponseInterceptor {
+
 }

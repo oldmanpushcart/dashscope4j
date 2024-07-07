@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class RateLimitInterceptorImpl implements RateLimitInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(Constants.LOGGER_NAME);
-    private static final String KEY_TOKEN = "RateLimitInterceptor-token";
+    private static final String KEY_TOKEN = "RateLimitInterceptor$token";
     private final ScheduledExecutorService scheduler;
     private final RateLimitExecutor executor;
 
@@ -84,7 +84,7 @@ public class RateLimitInterceptorImpl implements RateLimitInterceptor {
     public CompletableFuture<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response, Throwable ex) {
 
         // 拿到请求时候放入的token，注意，只有PASS的策略才会有值
-        final var token = (RateLimitExecutor.Token) context.attachmentMap().get(KEY_TOKEN);
+        final var token = (RateLimitExecutor.Token) context.attachmentMap().remove(KEY_TOKEN);
 
         // 响应异常
         if (null != ex) {

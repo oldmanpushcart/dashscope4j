@@ -19,7 +19,7 @@ public class GroupRequestInterceptor implements RequestInterceptor {
 
     @Override
     public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
-        return CompletableFutureUtils.thenChainingCompose(
+        return CompletableFutureUtils.thenChainCompose(
                 request,
                 toFunctions(context, interceptors)
         );
