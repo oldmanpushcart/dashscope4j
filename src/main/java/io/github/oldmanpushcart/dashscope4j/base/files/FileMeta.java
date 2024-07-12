@@ -4,8 +4,6 @@ import java.net.URI;
 
 /**
  * 文件元数据
- *
- * @since 1.4.2
  */
 public interface FileMeta {
 

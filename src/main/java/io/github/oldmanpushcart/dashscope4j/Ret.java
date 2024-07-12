@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.isNotBlankString;
+import static io.github.oldmanpushcart.internal.dashscope4j.util.StringUtils.isNotBlank;
 
 /**
  * 应答结果
@@ -15,7 +15,6 @@ public record Ret(String code, String message) {
 
     /**
      * 空编码
-     * @since 1.4.2
      */
     public static final String EMPTY_CODE = "";
 
@@ -38,7 +37,6 @@ public record Ret(String code, String message) {
      *
      * @param message 结果信息
      * @return 应答结果
-     * @since 1.4.0
      */
     public static Ret ofSuccess(String message) {
         return new Ret(Ret.CODE_SUCCESS, message);
@@ -55,8 +53,8 @@ public record Ret(String code, String message) {
 
     ) {
         return new Ret(
-                isNotBlankString(code) ? code : Ret.CODE_SUCCESS,
-                isNotBlankString(message) ? message : "succeeded"
+                isNotBlank(code) ? code : Ret.CODE_SUCCESS,
+                isNotBlank(message) ? message : "succeeded"
         );
     }
 

@@ -23,17 +23,17 @@ public record TaskCancelRequest(String taskId, Duration timeout) implements ApiR
 
     @Override
     public String suite() {
-        return "/dashscope/base";
+        return "dashscope://base/task";
     }
 
     @Override
     public String type() {
-        return "task-cancel";
+        return "cancel";
     }
 
     @Override
     public HttpRequest newHttpRequest() {
-        logger.debug("dashscope://task/cancel => {}", taskId);
+        logger.debug("{} => {}", protocol(), taskId);
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/api/v1/tasks/%s/cancel".formatted(taskId)))
                 .POST(HttpRequest.BodyPublishers.ofString(""))
@@ -43,7 +43,7 @@ public record TaskCancelRequest(String taskId, Duration timeout) implements ApiR
     @Override
     public Function<String, TaskCancelResponse> responseDeserializer() {
         return body -> {
-            logger.debug("dashscope://task/cancel <= {}", body);
+            logger.debug("{} <= {}", protocol(), body);
             return JacksonUtils.toObject(body, TaskCancelResponse.class);
         };
     }

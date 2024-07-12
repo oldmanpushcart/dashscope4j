@@ -16,8 +16,6 @@ public class TaskException extends RuntimeException {
     }
 
     /**
-     * 获取任务ID
-     *
      * @return 任务ID
      */
     public String taskId() {
@@ -59,8 +57,6 @@ public class TaskException extends RuntimeException {
         }
 
         /**
-         * 获取应答结果
-         *
          * @return 应答结果
          */
         public Ret ret() {

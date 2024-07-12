@@ -56,8 +56,6 @@ public class ConsumeFlowSubscriber<T> implements Flow.Subscriber<T> {
     }
 
     /**
-     * 获取完成通知
-     *
      * @return 完成通知
      */
     public CompletableFuture<Void> completed() {

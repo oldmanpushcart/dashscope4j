@@ -7,8 +7,6 @@ import java.util.concurrent.Executor;
 
 /**
  * 拦截器上下文
- *
- * @since 1.4.0
  */
 public interface InvocationContext {
 
@@ -24,7 +22,6 @@ public interface InvocationContext {
 
     /**
      * @return 附件集合
-     * @since 1.4.3
      */
     Map<String, Object> attachmentMap();
 

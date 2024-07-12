@@ -6,8 +6,8 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import java.util.List;
 import java.util.Optional;
 
-@JsonDeserialize(using = OutputJsonDeserializer.class)
-public record OutputImpl(List<ChatResponse.Choice> choices) implements ChatResponse.Output {
+@JsonDeserialize(using = OutputImplJsonDeserializer.class)
+record OutputImpl(List<ChatResponse.Choice> choices) implements ChatResponse.Output {
 
     public OutputImpl(ChatResponse.Choice choice) {
         this(List.of(choice));

@@ -15,7 +15,6 @@ public interface ApiRequest<R extends ApiResponse<?>> {
 
     /**
      * @return 协议
-     * @since 1.4.3
      */
     default String protocol() {
         return "%s/%s".formatted(suite(), type());
@@ -23,15 +22,13 @@ public interface ApiRequest<R extends ApiResponse<?>> {
 
     /**
      * @return 协议簇
-     * @since 1.4.3
      */
     default String suite() {
-        return "/" + getClass().getPackageName();
+        return "dashscope://" + getClass().getPackageName();
     }
 
     /**
      * @return 协议类型
-     * @since 1.4.3
      */
     default String type() {
         return getClass().getSimpleName();
@@ -51,10 +48,9 @@ public interface ApiRequest<R extends ApiResponse<?>> {
     }
 
     /**
-     * @return 应答检查器
-     * @since 1.4.0
+     * @return HTTP应答处理器
      */
-    default <T> Function<HttpResponse<T>, HttpResponse<T>> httpResponseChecker() {
+    default <T> Function<HttpResponse<T>, HttpResponse<T>> httpResponseHandler() {
         return Function.identity();
     }
 

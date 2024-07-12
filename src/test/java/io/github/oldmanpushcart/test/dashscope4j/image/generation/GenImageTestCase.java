@@ -32,7 +32,7 @@ public class GenImageTestCase implements LoadingEnv {
 
         DashScopeAssertions.assertGenImageRequest(request);
 
-        final var response = client.genImage(request)
+        final var response = client.image().generation(request)
                 .task(Task.WaitStrategies.perpetual(Duration.ofSeconds(1)))
                 .join();
 
@@ -51,7 +51,7 @@ public class GenImageTestCase implements LoadingEnv {
                 .prompt("一只五彩斑斓的美女")
                 .build();
         CommonAssertions.assertRootThrows(CancellationException.class, () ->
-                client.genImage(request)
+                client.image().generation(request)
                         .task(Task.WaitStrategies.timeout(Duration.ofSeconds(1), Duration.ofSeconds(5)))
                         .join());
     }

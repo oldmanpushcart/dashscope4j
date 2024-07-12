@@ -18,8 +18,6 @@ public interface GenImageResponse extends AlgoResponse<GenImageResponse.Output> 
     interface Output extends ApiResponse.Output {
 
         /**
-         * 获取结果
-         *
          * @return 结果
          */
         List<Item> results();

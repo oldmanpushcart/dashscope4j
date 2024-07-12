@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
+/**
+ * 集合工具类
+ */
 public class CollectionUtils {
 
     /**
@@ -33,19 +36,41 @@ public class CollectionUtils {
     }
 
     /**
+     * 更新模式
+     */
+    public enum UpdateMode {
+
+        /**
+         * 全量替换
+         */
+        REPLACE_ALL,
+
+        /**
+         * 追加到尾部
+         */
+        APPEND_TAIL
+
+    }
+
+    /**
      * 更新列表
      *
-     * @param isAppend 是否追加
-     * @param target   目标列表
-     * @param source   源列表
-     * @param <T>      对象类型
+     * @param mode   更新模式
+     * @param target 目标列表
+     * @param source 源列表
+     * @param <E>    元素类型
+     * @param <T>    列表类型
+     * @return 目标列表
      */
-    public static <T> void updateList(boolean isAppend, List<? super T> target, Collection<? extends T> source) {
-        if (!isAppend) {
-            target.clear();
+    public static <E, T extends Collection<E>> T updateList(UpdateMode mode, T target, Collection<E> source) {
+        switch (mode) {
+            case REPLACE_ALL -> {
+                target.clear();
+                target.addAll(source);
+            }
+            case APPEND_TAIL -> target.addAll(source);
         }
-        if (isNotEmptyCollection(source)) {
-            target.addAll(source);
-        }
+        return target;
     }
+
 }

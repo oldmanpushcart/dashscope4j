@@ -1,41 +1,32 @@
 package io.github.oldmanpushcart.internal.dashscope4j;
 
 import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
+import io.github.oldmanpushcart.dashscope4j.OpAsync;
+import io.github.oldmanpushcart.dashscope4j.OpAsyncOpFlow;
+import io.github.oldmanpushcart.dashscope4j.OpAsyncOpFlowOpTask;
+import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
-import io.github.oldmanpushcart.dashscope4j.base.cache.PersistentCacheFactory;
-import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
-import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
-import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
-import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process.ProcessContentDataRequestInterceptor;
-import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process.ProcessMessagesRequestInterceptor;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process.ProcessContentInterceptor;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process.ProcessMessageListInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
-import io.github.oldmanpushcart.dashscope4j.base.upload.UploadOp;
-import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
-import io.github.oldmanpushcart.dashscope4j.base.upload.UploadResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingRequest;
-import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingResponse;
-import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.MmEmbeddingRequest;
-import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.MmEmbeddingResponse;
-import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
-import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
+import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingOp;
+import io.github.oldmanpushcart.dashscope4j.embedding.mm.MmEmbeddingRequest;
+import io.github.oldmanpushcart.dashscope4j.embedding.mm.MmEmbeddingResponse;
+import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingRequest;
+import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingResponse;
+import io.github.oldmanpushcart.dashscope4j.image.ImageOp;
+import io.github.oldmanpushcart.internal.dashscope4j.base.BaseOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
+import io.github.oldmanpushcart.internal.dashscope4j.base.api.HttpApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.InterceptorApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.cache.LruCacheFactoryImpl;
-import io.github.oldmanpushcart.internal.dashscope4j.base.cache.PersistentCacheProxy;
-import io.github.oldmanpushcart.internal.dashscope4j.base.files.FilesOpImpl;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupRequestInterceptor;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.GroupResponseInterceptor;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.InterceptorHelper;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.content.ProcessingContentDataForBufferedImageToFile;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.content.ProcessingContentDataForByteArrayToFile;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.content.ProcessingContentDataForChatQwenLong;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.content.ProcessingContentDataForFileUpload;
-import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.messages.ProcessingMessagesForQwenLong;
-import io.github.oldmanpushcart.internal.dashscope4j.base.upload.UploadOpImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.ProcessingContentForUpload;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.ProcessingMessageListForQwenLong;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpAsyncHandler;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpFlowHandler;
 
@@ -48,7 +39,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 
-import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
@@ -58,27 +48,18 @@ import static java.util.Optional.ofNullable;
 public class DashScopeClientImpl implements DashScopeClient {
 
     private final ApiExecutor apiExecutor;
-    private final FilesOpImpl filesOpImpl;
-    private final UploadOpImpl uploadOpImpl;
+    private final BaseOp baseOp;
+
 
     public DashScopeClientImpl(Builder builder) {
-        final var persistentCacheFactory = Optional.ofNullable(builder.persistentCacheFactory)
+        this.apiExecutor = newInterceptorApiExecutor(builder);
+        this.baseOp = new BaseOpImpl(apiExecutor, newCacheFactory(builder));
+    }
+
+    // 构建缓存工厂
+    private CacheFactory newCacheFactory(Builder builder) {
+        return Optional.ofNullable(builder.cacheFactory)
                 .orElseGet(LruCacheFactoryImpl::new);
-        final var interceptorHelper = new InterceptorHelper(
-                this,
-                builder.executor,
-                builder.requestInterceptors,
-                builder.responseInterceptors
-        );
-        this.apiExecutor = new InterceptorApiExecutor(
-                requireNonBlankString(builder.ak, "ak is blank"),
-                newHttpClient(builder),
-                requireNonNull(builder.executor),
-                builder.timeout,
-                interceptorHelper
-        );
-        this.filesOpImpl = new FilesOpImpl(apiExecutor, persistentCacheFactory);
-        this.uploadOpImpl = new UploadOpImpl(apiExecutor, persistentCacheFactory, interceptorHelper);
     }
 
     // 构建HTTP客户端
@@ -87,6 +68,45 @@ public class DashScopeClientImpl implements DashScopeClient {
         ofNullable(builder.connectTimeout).ifPresent(httpBuilder::connectTimeout);
         ofNullable(builder.executor).ifPresent(httpBuilder::executor);
         return httpBuilder.build();
+    }
+
+    // 构建ApiExecutor(Http)
+    private ApiExecutor newHttpApiExecutor(Builder builder) {
+        return new HttpApiExecutor(
+                builder.ak,
+                newHttpClient(builder),
+                builder.executor,
+                builder.timeout
+        );
+    }
+
+    // 构建ApiExecutor(拦截器)
+    private ApiExecutor newInterceptorApiExecutor(Builder builder) {
+        var target = newHttpApiExecutor(builder);
+        if (null != builder.interceptors) {
+
+            final var interceptors = new ArrayList<>(builder.interceptors);
+
+            // 文件内容上传
+            interceptors.add(ProcessContentInterceptor.newBuilder()
+                    .processor(new ProcessingContentForUpload())
+                    .build());
+
+            // QwenLong 对话模型支撑
+            interceptors.add(ProcessMessageListInterceptor.newBuilder()
+                    .processor(new ProcessingMessageListForQwenLong())
+                    .build());
+
+            for (final var interceptor : interceptors) {
+                target = new InterceptorApiExecutor(
+                        this,
+                        builder.executor,
+                        interceptor,
+                        target
+                );
+            }
+        }
+        return target;
     }
 
     @Override
@@ -104,21 +124,6 @@ public class DashScopeClientImpl implements DashScopeClient {
                         .thenApply(new ChatResponseOpFlowHandler(DashScopeClientImpl.this, request));
             }
         };
-    }
-
-    @Override
-    public OpTask<GenImageResponse> genImage(GenImageRequest request) {
-        return () -> apiExecutor.task(request);
-    }
-
-    @Override
-    public OpAsync<EmbeddingResponse> embedding(EmbeddingRequest request) {
-        return () -> apiExecutor.async(request);
-    }
-
-    @Override
-    public OpAsync<MmEmbeddingResponse> mmEmbedding(MmEmbeddingRequest request) {
-        return () -> apiExecutor.async(request);
     }
 
     @Override
@@ -143,26 +148,27 @@ public class DashScopeClientImpl implements DashScopeClient {
 
     @Override
     public BaseOp base() {
-        return new BaseOpImpl();
+        return baseOp;
     }
 
-    private class BaseOpImpl implements BaseOp {
+    @Override
+    public EmbeddingOp embedding() {
+        return new EmbeddingOp() {
+            @Override
+            public OpAsync<EmbeddingResponse> text(EmbeddingRequest request) {
+                return () -> apiExecutor.async(request);
+            }
 
-        @Override
-        public OpAsync<UploadResponse> upload(UploadRequest request) {
-            return uploadOpImpl.upload(request);
-        }
+            @Override
+            public OpAsync<MmEmbeddingResponse> mm(MmEmbeddingRequest request) {
+                return () -> apiExecutor.async(request);
+            }
+        };
+    }
 
-        @Override
-        public UploadOp upload() {
-            return uploadOpImpl;
-        }
-
-        @Override
-        public FilesOp files() {
-            return filesOpImpl;
-        }
-
+    @Override
+    public ImageOp image() {
+        return request -> () -> apiExecutor.task(request);
     }
 
 
@@ -175,54 +181,12 @@ public class DashScopeClientImpl implements DashScopeClient {
         private Executor executor;
         private Duration connectTimeout;
         private Duration timeout;
-        private PersistentCacheFactory persistentCacheFactory;
-
-        private final List<RequestInterceptor> requestInterceptors = new ArrayList<>() {{
-
-            // 添加系统默认请求拦截器
-            add(new GroupRequestInterceptor(List.of(
-
-                    // 处理BufferedImage内容数据
-                    ProcessContentDataRequestInterceptor.newBuilder()
-                            .processor(new ProcessingContentDataForBufferedImageToFile())
-                            .build(),
-
-                    // 处理byte[]内容数据
-                    ProcessContentDataRequestInterceptor.newBuilder()
-                            .processor(new ProcessingContentDataForByteArrayToFile())
-                            .build(),
-
-                    // 处理QwenLong对话内容
-                    ProcessContentDataRequestInterceptor.newBuilder()
-                            .processor(new ProcessingContentDataForChatQwenLong())
-                            .build(),
-
-                    // 处理文件上传
-                    ProcessContentDataRequestInterceptor.newBuilder()
-                            .processor(new ProcessingContentDataForFileUpload())
-                            .build(),
-
-                    // 处理QwenLong消息列表
-                    ProcessMessagesRequestInterceptor.newBuilder()
-                            .processor(new ProcessingMessagesForQwenLong())
-                            .build()
-
-            )));
-
-        }};
-
-        private final List<ResponseInterceptor> responseInterceptors = new ArrayList<>() {{
-
-            // 添加系统默认响应拦截器
-            add(new GroupResponseInterceptor(List.of(
-
-            )));
-
-        }};
+        private CacheFactory cacheFactory;
+        private List<Interceptor> interceptors = new ArrayList<>();
 
         @Override
         public DashScopeClient.Builder ak(String ak) {
-            this.ak = requireNonBlankString(ak, "ak is blank");
+            this.ak = requireNonNull(ak);
             return this;
         }
 
@@ -245,29 +209,27 @@ public class DashScopeClientImpl implements DashScopeClient {
         }
 
         @Override
-        public List<RequestInterceptor> requestInterceptors() {
-            return requestInterceptors;
+        public DashScopeClient.Builder interceptors(List<Interceptor> interceptors) {
+            this.interceptors = requireNonNull(interceptors);
+            return this;
         }
 
         @Override
-        public List<ResponseInterceptor> responseInterceptors() {
-            return responseInterceptors;
+        public DashScopeClient.Builder appendInterceptors(List<Interceptor> interceptors) {
+            this.interceptors.addAll(interceptors);
+            return this;
         }
 
-        @SuppressWarnings("deprecation")
         @Override
         public DashScopeClient.Builder cacheFactory(CacheFactory factory) {
-            return persistentCacheFactory(namespace -> new PersistentCacheProxy(factory.make(namespace)));
-        }
-
-        @Override
-        public DashScopeClient.Builder persistentCacheFactory(PersistentCacheFactory factory) {
-            this.persistentCacheFactory = factory;
+            this.cacheFactory = requireNonNull(factory);
             return this;
         }
 
         @Override
         public DashScopeClient build() {
+            requireNonNull(ak, "ak is required!");
+            requireNonNull(executor, "executor is required!");
             return new DashScopeClientImpl(this);
         }
 

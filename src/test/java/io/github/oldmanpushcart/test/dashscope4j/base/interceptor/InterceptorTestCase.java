@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.List;
 
 public class InterceptorTestCase implements LoadingEnv {
 
@@ -21,7 +22,7 @@ public class InterceptorTestCase implements LoadingEnv {
 
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
-                .messages(Message.ofUser("HELLO!"))
+                .messages(List.of(Message.ofUser("HELLO!")))
                 .build();
 
         client.chat(request).async().join();
@@ -41,7 +42,7 @@ public class InterceptorTestCase implements LoadingEnv {
 
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
-                .messages(Message.ofUser("HELLO!"))
+                .messages(List.of(Message.ofUser("HELLO!")))
                 .timeout(Duration.ofMillis(1))
                 .build();
 

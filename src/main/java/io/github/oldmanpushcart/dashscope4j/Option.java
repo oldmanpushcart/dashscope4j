@@ -35,7 +35,6 @@ public final class Option {
      * 构造选项
      *
      * @param map 选项KV集合
-     * @since 1.4.0
      */
     public Option(Map<String, Object> map) {
         this.map.putAll(map);

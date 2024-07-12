@@ -36,7 +36,6 @@ public interface Message {
      * @param role     角色
      * @param contents 内容
      * @return 消息
-     * @since 1.4.0
      */
     static Message of(Role role, List<Content<?>> contents) {
         return new MessageImpl(role, contents);
@@ -78,8 +77,8 @@ public interface Message {
      * @param contents 内容
      * @return 消息
      */
-    static Message ofUser(Content<?>... contents) {
-        return new MessageImpl(Role.USER, List.of(contents));
+    static Message ofUser(List<Content<?>> contents) {
+        return new MessageImpl(Role.USER, contents);
     }
 
     /**
@@ -113,8 +112,6 @@ public interface Message {
 
         /**
          * 工具
-         *
-         * @since 1.2.0
          */
         @JsonProperty("tool")
         TOOL

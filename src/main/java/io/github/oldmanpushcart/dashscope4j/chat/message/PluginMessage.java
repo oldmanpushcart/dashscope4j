@@ -4,8 +4,6 @@ import io.github.oldmanpushcart.dashscope4j.chat.plugin.Plugin;
 
 /**
  * 插件应答消息
- *
- * @since 1.2.0
  */
 public interface PluginMessage extends Message {
 

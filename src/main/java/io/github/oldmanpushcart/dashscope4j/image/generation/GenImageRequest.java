@@ -1,30 +1,26 @@
 package io.github.oldmanpushcart.dashscope4j.image.generation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.base.algo.SpecifyModelAlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.image.generation.GenImageRequestBuilderImpl;
 
 /**
  * 文生图请求
  */
-public interface GenImageRequest extends SpecifyModelAlgoRequest<GenImageModel, GenImageResponse> {
+public interface GenImageRequest extends AlgoRequest<GenImageModel, GenImageResponse> {
 
     /**
      * @return 正向提示
-     * @since 1.4.0
      */
     String prompt();
 
     /**
      * @return 负向提示
-     * @since 1.4.0
      */
     String negative();
 
     /**
-     * 构建文生图请求
-     *
-     * @return 构建器
+     * @return 构建文生图请求
      */
     static Builder newBuilder() {
         return new GenImageRequestBuilderImpl();
@@ -35,16 +31,15 @@ public interface GenImageRequest extends SpecifyModelAlgoRequest<GenImageModel, 
      *
      * @param request 请求
      * @return 构建器
-     * @since 1.4.0
      */
     static Builder newBuilder(GenImageRequest request) {
         return new GenImageRequestBuilderImpl(request);
     }
 
     /**
-     * 文生图请求构建器
+     * 构建器
      */
-    interface Builder extends SpecifyModelAlgoRequest.Builder<GenImageModel, GenImageRequest, Builder> {
+    interface Builder extends AlgoRequest.Builder<GenImageModel, GenImageRequest, Builder> {
 
         /**
          * 正向提示

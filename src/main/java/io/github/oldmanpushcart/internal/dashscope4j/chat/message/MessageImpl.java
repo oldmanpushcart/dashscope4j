@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.internal.dashscope4j.chat.message;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 
@@ -13,7 +12,6 @@ import java.util.stream.Collectors;
  */
 public class MessageImpl implements Message {
 
-    private Format format;
     private final Message.Role role;
     private final List<Content<?>> contents = new ArrayList<>();
 
@@ -22,7 +20,6 @@ public class MessageImpl implements Message {
         this.contents.addAll(contents);
     }
 
-    @JsonProperty("role")
     @Override
     public Message.Role role() {
         return role;
@@ -40,41 +37,6 @@ public class MessageImpl implements Message {
                 .map(Content::data)
                 .map(Object::toString)
                 .collect(Collectors.joining());
-    }
-
-    @JsonProperty("content")
-    Object content() {
-        return switch (format) {
-            case MULTIMODAL_MESSAGE -> contents;
-            case TEXT_MESSAGE -> text();
-        };
-    }
-
-    /**
-     * 设置消息格式
-     *
-     * @param format 消息格式
-     */
-    public void format(Format format) {
-        this.format = format;
-    }
-
-    /**
-     * 消息格式
-     */
-    public enum Format {
-
-        /**
-         * 文本消息格式
-         * <p>{@code {content:"..."}}</p>
-         */
-        TEXT_MESSAGE,
-
-        /**
-         * 多模态消息格式
-         * <p>{@code {content:[{"text":"..."},{"file":"http://..."}]}}</p>
-         */
-        MULTIMODAL_MESSAGE
     }
 
 }

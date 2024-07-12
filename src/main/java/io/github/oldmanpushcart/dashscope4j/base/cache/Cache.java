@@ -4,12 +4,8 @@ import java.time.Duration;
 
 /**
  * 缓存
- *
- * @param <K> KEY 类型
- * @param <V> VAL 类型
- * @since 1.4.2
  */
-public interface Cache<K, V> extends Iterable<Cache.Entry<K, V>> {
+public interface Cache extends Iterable<Cache.Entry> {
 
     /**
      * @return 命名空间
@@ -22,7 +18,7 @@ public interface Cache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param key KEY
      * @return VAL
      */
-    V get(K key);
+    String get(String key);
 
     /**
      * 存储值
@@ -31,7 +27,7 @@ public interface Cache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param value VAL
      * @return 是否成功
      */
-    boolean put(K key, V value);
+    boolean put(String key, String value);
 
     /**
      * 存储值
@@ -41,7 +37,7 @@ public interface Cache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param duration 有效时长
      * @return 是否成功
      */
-    boolean put(K key, V value, Duration duration);
+    boolean put(String key, String value, Duration duration);
 
     /**
      * 移除值
@@ -49,7 +45,7 @@ public interface Cache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param key KEY
      * @return VALUE
      */
-    V remove(K key);
+    String remove(String key);
 
     /**
      * 清空缓存
@@ -60,21 +56,18 @@ public interface Cache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * 缓存数据项
-     *
-     * @param <K> KEY 类型
-     * @param <V> VAL 类型
      */
-    interface Entry<K, V> {
+    interface Entry {
 
         /**
          * @return KEY
          */
-        K key();
+        String key();
 
         /**
          * @return VAL
          */
-        V value();
+        String value();
 
         /**
          * @return 是否过期

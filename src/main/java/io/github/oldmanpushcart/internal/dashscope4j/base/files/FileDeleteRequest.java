@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
@@ -20,17 +21,17 @@ public record FileDeleteRequest(String id, Duration timeout)
 
     @Override
     public String suite() {
-        return "/dashscope/base";
+        return "dashscope://base/files";
     }
 
     @Override
     public String type() {
-        return "file-delete";
+        return "delete";
     }
 
     @Override
     public HttpRequest newHttpRequest() {
-        logger.debug("dashscope://base/files/delete/{} <= DELETE", id);
+        logger.debug("{}/{} <= DELETE", protocol(), id);
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/compatible-mode/v1/files/%s".formatted(id)))
                 .DELETE()
@@ -40,7 +41,7 @@ public record FileDeleteRequest(String id, Duration timeout)
     @Override
     public Function<String, FileDeleteResponse> responseDeserializer() {
         return body -> {
-            logger.debug("dashscope://base/files/delete/{} <= {}", id, body);
+            logger.debug("{}/{} <= {}", protocol(), id, body);
             return JacksonUtils.toObject(body, FileDeleteResponse.class);
         };
     }
@@ -54,13 +55,16 @@ public record FileDeleteRequest(String id, Duration timeout)
         private String id;
 
         public Builder id(String id) {
-            this.id = id;
+            this.id = Objects.requireNonNull(id);
             return this;
         }
 
         @Override
         public FileDeleteRequest build() {
-            return new FileDeleteRequest(id, timeout());
+            return new FileDeleteRequest(
+                    Objects.requireNonNull(id, "id is required!"),
+                    timeout()
+            );
         }
 
     }

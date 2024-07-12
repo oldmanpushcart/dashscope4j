@@ -9,31 +9,28 @@ import java.util.function.Function;
 
 /**
  * 对话函数工具
- *
- * @since 1.2.0
  */
 public interface ChatFunctionTool extends Tool {
 
     /**
      * @return 函数元数据
-     * @since 1.2.2
      */
     Meta meta();
 
     /**
      * @return 对话函数
-     * @since 1.2.2
      */
     ChatFunction<?, ?> function();
 
+    /**
+     * @return 构建器
+     */
     static Builder newBuilder() {
         return new ChatFunctionToolBuilderImpl();
     }
 
     /**
      * 对话函数调用
-     *
-     * @since 1.2.0
      */
     interface Call extends Tool.Call {
 
@@ -51,8 +48,6 @@ public interface ChatFunctionTool extends Tool {
 
     /**
      * 函数元数据
-     *
-     * @since 1.2.2
      */
     interface Meta extends Tool.Meta {
 
@@ -73,8 +68,6 @@ public interface ChatFunctionTool extends Tool {
 
         /**
          * 类型结构(json-schema)
-         *
-         * @since 1.2.2
          */
         interface TypeSchema {
 
@@ -94,8 +87,6 @@ public interface ChatFunctionTool extends Tool {
 
     /**
      * 对话函数工具构建器
-     *
-     * @since 1.2.2
      */
     interface Builder extends Buildable<ChatFunctionTool, Builder> {
 

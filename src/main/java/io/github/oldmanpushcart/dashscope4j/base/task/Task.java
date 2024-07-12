@@ -43,11 +43,35 @@ public record Task(String id, Status status, Metrics metrics, Timing timing) {
      * 任务状态
      */
     public enum Status {
+
+        /**
+         * 等待
+         */
         PENDING,
+
+        /**
+         * 运行中
+         */
         RUNNING,
+
+        /**
+         * 成功
+         */
         SUCCEEDED,
+
+        /**
+         * 失败
+         */
         FAILED,
+
+        /**
+         * 取消
+         */
         CANCELED,
+
+        /**
+         * 未知
+         */
         UNKNOWN
     }
 
@@ -195,7 +219,7 @@ public record Task(String id, Status status, Metrics metrics, Timing timing) {
     }
 
     /**
-     * 半任务
+     * 半提交任务
      *
      * @param <V>
      */

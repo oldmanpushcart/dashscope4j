@@ -14,9 +14,7 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 
 /**
- * 限流器
- *
- * @since 1.4.3
+ * 限流
  */
 public interface RateLimiter {
 
@@ -131,7 +129,7 @@ public interface RateLimiter {
          * @return 匹配器
          */
         static BiPredicate<InvocationContext, ApiRequest<?>> matchesByModel(String name) {
-            return (context, request) -> request instanceof AlgoRequest<?> algoRequest && algoRequest.model().name().equals(name);
+            return (context, request) -> request instanceof AlgoRequest<?, ?> algoRequest && algoRequest.model().name().equals(name);
         }
 
     }
@@ -219,98 +217,12 @@ public interface RateLimiter {
         Builder matches(BiPredicate<InvocationContext, ApiRequest<?>> matcher);
 
         /**
-         * 设置限流匹配器：按协议前缀匹配
-         *
-         * @param prefix 前缀表达式
-         * @return this
-         */
-        default Builder matchesByProtocolPrefix(String prefix) {
-            return matches(Matchers.matchesByProtocolPrefix(prefix));
-        }
-
-        /**
-         * 设置限流匹配器：按协议正则匹配
-         *
-         * @param regex 正则表达式
-         * @return this
-         */
-        default Builder matchesByProtocolRegex(String regex) {
-            return matches(Matchers.matchesByProtocolRegex(regex));
-        }
-
-        /**
-         * 设置限流匹配器：按请求类型匹配
-         *
-         * @param clazz 请求类型
-         * @return this
-         */
-        default Builder matchesByRequestType(Class<? extends ApiRequest<?>> clazz) {
-            return matches(Matchers.matchesByRequestType(clazz));
-        }
-
-        /**
-         * 设置限流匹配器：按模型匹配
-         *
-         * @param model 模型
-         * @return this
-         */
-        default Builder matchesByModel(Model model) {
-            return matches(Matchers.matchesByModel(model));
-        }
-
-        /**
-         * 设置限流匹配器：按模型匹配
-         *
-         * @param name 模型名称
-         * @return this
-         */
-        default Builder matchesByModel(String name) {
-            return matches(Matchers.matchesByModel(name));
-        }
-
-        /**
          * 设置限流周期
          *
          * @param period 限流周期
          * @return this
          */
         Builder period(Duration period);
-
-        /**
-         * 设置限流周期：QPS
-         *
-         * @return this
-         */
-        default Builder periodByQPS() {
-            return period(Periods.QPS);
-        }
-
-        /**
-         * 设置限流周期：QPM
-         *
-         * @return this
-         */
-        default Builder periodByQPM() {
-            return period(Periods.QPM);
-        }
-
-        /**
-         * 设置限流策略：延迟到下个周期
-         *
-         * @return this
-         */
-        default Builder strategyByDelay() {
-            return strategy(Strategy.DELAY);
-        }
-
-        /**
-         * 设置限流策略：阻塞
-         *
-         * @return this
-         */
-        default Builder strategyByBlock() {
-            return strategy(Strategy.BLOCK);
-        }
 
         /**
          * 设置限流策略

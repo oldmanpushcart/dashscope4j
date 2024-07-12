@@ -7,15 +7,17 @@ import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.RateLimitInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.RateLimiter;
 import io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils;
+import io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.check;
+import static java.util.Objects.requireNonNull;
 
 /**
  * 限流拦截器
@@ -54,7 +56,7 @@ public class RateLimitInterceptorImpl implements RateLimitInterceptor {
             // 阻塞
             case BLOCK -> {
                 final var protocol = request.protocol();
-                logger.warn("dashscope://rate-limit/blocked! protocol={};", protocol);
+                logger.warn("{}/rate-limit/blocked!", protocol);
                 return CompletableFuture.failedFuture(new RateLimiter.BlockException(request));
             }
 
@@ -62,7 +64,7 @@ public class RateLimitInterceptorImpl implements RateLimitInterceptor {
             case DELAY -> {
                 final var protocol = request.protocol();
                 final var delayMs = token.delay().toMillis();
-                logger.warn("dashscope://rate-limit/delay! protocol={};delay={}ms;", protocol, delayMs);
+                logger.warn("{}/rate-limit/delay={}ms!", protocol, delayMs);
                 final var future = new CompletableFuture<ApiRequest<?>>();
                 scheduler.schedule(
                         () -> {
@@ -71,7 +73,7 @@ public class RateLimitInterceptorImpl implements RateLimitInterceptor {
                         delayMs,
                         TimeUnit.MILLISECONDS
                 );
-                return future;
+                return future.thenApply(CommonUtils::cast);
             }
 
             // 不支持的状态
@@ -110,23 +112,24 @@ public class RateLimitInterceptorImpl implements RateLimitInterceptor {
     public static class Builder implements RateLimitInterceptor.Builder {
 
         private ScheduledExecutorService scheduler;
-        private final List<RateLimiter> limiters = new ArrayList<>();
+        private List<RateLimiter> limiters;
 
         @Override
-        public RateLimitInterceptor.Builder limiters(boolean isAppend, List<RateLimiter> limiters) {
-            CollectionUtils.updateList(isAppend, this.limiters, limiters);
+        public RateLimitInterceptor.Builder limiters(List<RateLimiter> limiters) {
+            this.limiters = requireNonNull(limiters);
             return this;
         }
 
         @Override
         public RateLimitInterceptor.Builder scheduler(ScheduledExecutorService scheduler) {
-            this.scheduler = Objects.requireNonNull(scheduler);
+            this.scheduler = requireNonNull(scheduler);
             return this;
         }
 
         @Override
         public RateLimitInterceptor build() {
-            Objects.requireNonNull(scheduler);
+            check(limiters, CollectionUtils::isNotEmptyCollection, "limiters is empty!");
+            requireNonNull(scheduler, "scheduler is required!");
             return new RateLimitInterceptorImpl(this);
         }
 

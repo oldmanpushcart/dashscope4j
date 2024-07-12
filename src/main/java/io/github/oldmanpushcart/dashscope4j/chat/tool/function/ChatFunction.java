@@ -7,7 +7,6 @@ import java.util.concurrent.CompletableFuture;
  *
  * @param <T> 参数类型
  * @param <R> 返回值类型
- * @since 1.2.0
  */
 @FunctionalInterface
 public interface ChatFunction<T, R> {

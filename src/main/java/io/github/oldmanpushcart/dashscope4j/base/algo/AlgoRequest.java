@@ -7,15 +7,11 @@ import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 /**
  * 算法请求
  */
-public interface AlgoRequest<R extends AlgoResponse<?>> extends ApiRequest<R> {
-
-    /**
-     * @return 协议
-     * @since 1.4.3
-     */
+public interface AlgoRequest<M extends Model, R extends AlgoResponse<?>> extends ApiRequest<R> {
+    
     @Override
-    default String protocol() {
-        return "%s/%s".formatted(ApiRequest.super.protocol(), model().name());
+    default String type() {
+        return model().name();
     }
 
     /**
@@ -23,14 +19,7 @@ public interface AlgoRequest<R extends AlgoResponse<?>> extends ApiRequest<R> {
      *
      * @return 模型
      */
-    Model model();
-
-    /**
-     * 获取输入
-     *
-     * @return 输入
-     */
-    Object input();
+    M model();
 
     /**
      * 获取选项
@@ -40,13 +29,13 @@ public interface AlgoRequest<R extends AlgoResponse<?>> extends ApiRequest<R> {
     Option option();
 
     /**
-     * 算法请求构建器
+     * 构建器
      *
      * @param <M> 模型
      * @param <T> 请求
      * @param <B> 构建器
      */
-    interface Builder<M extends Model, T extends AlgoRequest<?>, B extends Builder<M, T, B>> extends ApiRequest.Builder<T, B> {
+    interface Builder<M extends Model, T extends AlgoRequest<M, ?>, B extends Builder<M, T, B>> extends ApiRequest.Builder<T, B> {
 
         /**
          * 设置模型

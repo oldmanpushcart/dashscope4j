@@ -19,17 +19,17 @@ public record FileListRequest(Duration timeout) implements OpenAiRequest<FileLis
 
     @Override
     public String suite() {
-        return "/dashscope/base";
+        return "dashscope://base/files";
     }
 
     @Override
     public String type() {
-        return "file-list";
+        return "list";
     }
 
     @Override
     public HttpRequest newHttpRequest() {
-        logger.debug("dashscope://base/files/list <= GET");
+        logger.debug("{} <= GET", protocol());
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/compatible-mode/v1/files"))
                 .GET()
@@ -39,7 +39,7 @@ public record FileListRequest(Duration timeout) implements OpenAiRequest<FileLis
     @Override
     public Function<String, FileListResponse> responseDeserializer() {
         return body -> {
-            logger.debug("dashscope://base/files/list <= {}", body);
+            logger.debug("{} <= {}", protocol(), body);
             return JacksonUtils.toObject(body, FileListResponse.class);
         };
     }

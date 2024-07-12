@@ -3,26 +3,33 @@ package io.github.oldmanpushcart.internal.dashscope4j.base.cache;
 import io.github.oldmanpushcart.dashscope4j.base.cache.Cache;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public class LruCacheImpl<K, V> implements Cache<K, V> {
+/**
+ * LRU缓存实现
+ */
+public class LruCacheImpl implements Cache {
 
     private final String namespace;
     private final int capacity;
-
-    private final Map<CacheKey<K>, CacheVal<V>> map = new LinkedHashMap<>() {
+    private final Map<CacheKey, CacheVal> map = new LinkedHashMap<>() {
 
         @Override
-        protected boolean removeEldestEntry(Map.Entry<CacheKey<K>, CacheVal<V>> eldest) {
+        protected boolean removeEldestEntry(Map.Entry<CacheKey, CacheVal> eldest) {
             return size() > capacity;
         }
 
     };
 
+    /**
+     * 构造LRU缓存
+     *
+     * @param namespace 命名空间
+     * @param capacity  容量
+     */
     public LruCacheImpl(String namespace, int capacity) {
         this.namespace = namespace;
         this.capacity = capacity;
@@ -34,34 +41,36 @@ public class LruCacheImpl<K, V> implements Cache<K, V> {
     }
 
     @Override
-    public V get(K key) {
-        return Optional.ofNullable(map.get(new CacheKey<>(namespace, key)))
+    public String get(String key) {
+        final var cacheKey = new CacheKey(namespace, key);
+        return Optional.ofNullable(map.get(cacheKey))
                 .map(CacheVal::val)
                 .orElse(null);
     }
 
     @Override
-    public boolean put(K key, V value) {
+    public boolean put(String key, String value) {
         return put(key, value, null);
     }
 
     @Override
-    public boolean put(K key, V value, Duration duration) {
-        map.put(
-                new CacheKey<>(namespace, key),
-                new CacheVal<>(
-                        value,
-                        Optional.ofNullable(duration)
-                                .map(v -> System.currentTimeMillis() + v.toMillis())
-                                .orElse(null)
-                )
-        );
+    public boolean put(String key, String value, Duration duration) {
+        final var cacheKey = new CacheKey(namespace, key);
+        final var cacheVal = new CacheVal(value, computeExpireAt(duration));
+        map.put(cacheKey, cacheVal);
         return true;
     }
 
+    private static Long computeExpireAt(Duration duration) {
+        return Optional.ofNullable(duration)
+                .map(v -> System.currentTimeMillis() + v.toMillis())
+                .orElse(null);
+    }
+
     @Override
-    public V remove(K key) {
-        return Optional.ofNullable(map.remove(new CacheKey<>(namespace, key)))
+    public String remove(String key) {
+        final var cacheKey = new CacheKey(namespace, key);
+        return Optional.ofNullable(map.remove(cacheKey))
                 .map(CacheVal::val)
                 .orElse(null);
     }
@@ -74,7 +83,7 @@ public class LruCacheImpl<K, V> implements Cache<K, V> {
     }
 
     @Override
-    public Iterator<Entry<K, V>> iterator() {
+    public Iterator<Entry> iterator() {
         final var mapEntryIt = map.entrySet().iterator();
         return new Iterator<>() {
 
@@ -84,15 +93,8 @@ public class LruCacheImpl<K, V> implements Cache<K, V> {
             }
 
             @Override
-            public Entry<K, V> next() {
-                final var mapEntry = mapEntryIt.next();
-                return new CacheEntry<>(
-                        mapEntry.getKey().key(),
-                        mapEntry.getValue().val(),
-                        Optional.ofNullable(mapEntry.getValue().expireAt())
-                                .map(v -> Instant.now().toEpochMilli() > v)
-                                .orElse(false)
-                );
+            public Entry next() {
+                return CacheEntry.of(mapEntryIt.next());
             }
 
             @Override
@@ -103,15 +105,55 @@ public class LruCacheImpl<K, V> implements Cache<K, V> {
         };
     }
 
-    private record CacheKey<K>(String namespace, K key) {
+    /**
+     * 缓存键
+     *
+     * @param namespace 命名空间
+     * @param key       键
+     */
+    private record CacheKey(String namespace, String key) {
 
     }
 
-    private record CacheVal<V>(V val, Long expireAt) {
+    /**
+     * 缓存值
+     *
+     * @param val      值
+     * @param expireAt 过期时间
+     */
+    private record CacheVal(String val, Long expireAt) {
 
     }
 
-    private record CacheEntry<K, V>(K key, V value, boolean isExpired) implements Entry<K, V> {
+    /**
+     * 缓存数据项
+     *
+     * @param key      键
+     * @param value    值
+     * @param expireAt 过期时间戳
+     */
+    private record CacheEntry(String key, String value, Long expireAt) implements Entry {
+
+        @Override
+        public boolean isExpired() {
+            return Optional.ofNullable(expireAt)
+                    .map(v -> System.currentTimeMillis() > v)
+                    .orElse(false);
+        }
+
+        /**
+         * 从Map.Entry转换
+         *
+         * @param mapEntry Map.Entry
+         * @return CacheEntry
+         */
+        static CacheEntry of(Map.Entry<CacheKey, CacheVal> mapEntry) {
+            return new CacheEntry(
+                    mapEntry.getKey().key(),
+                    mapEntry.getValue().val(),
+                    mapEntry.getValue().expireAt()
+            );
+        }
 
     }
 

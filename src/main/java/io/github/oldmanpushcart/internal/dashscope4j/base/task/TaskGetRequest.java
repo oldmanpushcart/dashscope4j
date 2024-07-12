@@ -23,17 +23,17 @@ public record TaskGetRequest(String taskId, Duration timeout) implements ApiRequ
 
     @Override
     public String suite() {
-        return "/dashscope/base";
+        return "dashscope://base/task";
     }
 
     @Override
     public String type() {
-        return "task-get";
+        return "get";
     }
 
     @Override
     public HttpRequest newHttpRequest() {
-        logger.debug("dashscope://task/get => {}", taskId);
+        logger.debug("{} => {}", protocol(), taskId);
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/api/v1/tasks/%s".formatted(taskId)))
                 .GET()
@@ -43,7 +43,7 @@ public record TaskGetRequest(String taskId, Duration timeout) implements ApiRequ
     @Override
     public Function<String, TaskGetResponse> responseDeserializer() {
         return body -> {
-            logger.debug("dashscope://task/get <= {}", body);
+            logger.debug("{} <= {}", protocol(), body);
             return JacksonUtils.toObject(body, TaskGetResponse.class);
         };
     }
@@ -60,12 +60,15 @@ public record TaskGetRequest(String taskId, Duration timeout) implements ApiRequ
          */
         public Builder taskId(String taskId) {
             this.taskId = requireNonNull(taskId);
-            return self();
+            return this;
         }
 
         @Override
         public TaskGetRequest build() {
-            return new TaskGetRequest(requireNonNull(taskId), timeout());
+            return new TaskGetRequest(
+                    requireNonNull(taskId, "taskId is required!"),
+                    timeout()
+            );
         }
 
     }

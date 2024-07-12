@@ -13,6 +13,9 @@ import java.lang.reflect.Type;
 import java.util.LinkedHashSet;
 import java.util.TimeZone;
 
+/**
+ * Jackson工具类
+ */
 public class JacksonUtils {
 
     private static final ObjectMapper mapper = new ObjectMapper()

@@ -1,29 +1,28 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.files;
 
-import io.github.oldmanpushcart.dashscope4j.base.cache.PersistentCache;
-import io.github.oldmanpushcart.dashscope4j.base.cache.PersistentCacheFactory;
+import io.github.oldmanpushcart.dashscope4j.base.cache.Cache;
+import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.util.CacheUtils;
-import io.github.oldmanpushcart.internal.dashscope4j.util.IteratorPublisher;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 
 import java.net.URI;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.CACHE_NAMESPACE_FOR_FILES;
 
 public class FilesOpImpl implements FilesOp {
 
     private final ApiExecutor executor;
-    private final PersistentCache cache;
+    private final Cache cache;
 
-    public FilesOpImpl(ApiExecutor executor, PersistentCacheFactory persistentCacheFactory) {
+    public FilesOpImpl(ApiExecutor executor, CacheFactory cacheFactory) {
         this.executor = executor;
-        this.cache = persistentCacheFactory.make(CACHE_NAMESPACE_FOR_FILES);
+        this.cache = cacheFactory.make(CACHE_NAMESPACE_FOR_FILES);
     }
 
     private static String toCacheKey(URI resource, String filename) {
@@ -84,11 +83,11 @@ public class FilesOpImpl implements FilesOp {
     }
 
     @Override
-    public CompletableFuture<Flow.Publisher<FileMeta>> flow() {
+    public CompletableFuture<Iterator<FileMeta>> iterator() {
         final var request = FileListRequest.newBuilder()
                 .build();
         return executor.async(request)
-                .thenApply(response -> IteratorPublisher.of(response.output().data()));
+                .thenApply(response -> response.output().data().iterator());
     }
 
 }
