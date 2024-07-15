@@ -8,6 +8,8 @@ import io.github.oldmanpushcart.dashscope4j.embedding.mm.MmEmbeddingRequest;
 
 import java.util.concurrent.CompletableFuture;
 
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.UpdateMode.REPLACE_ALL;
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.updateList;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CompletableFutureUtils.thenIterateCompose;
 
 public class ProcessContentInterceptorImpl implements ProcessContentInterceptor {
@@ -36,20 +38,21 @@ public class ProcessContentInterceptorImpl implements ProcessContentInterceptor 
         return thenIterateCompose(request.messages(), message ->
                 thenIterateCompose(message.contents(), content -> processor.process(context, request, content))
                         .thenApply(newContents -> {
-                            message.contents().clear();
-                            message.contents().addAll(newContents);
+                            updateList(REPLACE_ALL, message.contents(), newContents);
                             return message;
                         }))
-                .thenApply(newMessages -> ChatRequest.newBuilder(request)
-                        .messages(newMessages)
-                        .build());
+                .thenApply(newMessages -> {
+                    updateList(REPLACE_ALL, request.messages(), newMessages);
+                    return request;
+                });
     }
 
     private CompletableFuture<ApiRequest<?>> preHandleByMmEmbeddingRequest(InvocationContext context, MmEmbeddingRequest request) {
         return thenIterateCompose(request.contents(), content -> processor.process(context, request, content))
-                .thenApply(newContents -> MmEmbeddingRequest.newBuilder(request)
-                        .contents(newContents)
-                        .build());
+                .thenApply(newContents -> {
+                    updateList(REPLACE_ALL, request.contents(), newContents);
+                    return request;
+                });
     }
 
     public static class Builder implements ProcessContentInterceptor.Builder {

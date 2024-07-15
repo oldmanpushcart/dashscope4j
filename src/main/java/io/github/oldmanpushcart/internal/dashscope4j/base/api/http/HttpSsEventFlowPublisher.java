@@ -1,7 +1,10 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.api.http;
 
+import io.github.oldmanpushcart.dashscope4j.Constants;
 import io.github.oldmanpushcart.internal.dashscope4j.util.FeatureDetection;
 import io.github.oldmanpushcart.internal.dashscope4j.util.MapFlowProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -15,6 +18,7 @@ import java.util.concurrent.Flow;
  */
 public class HttpSsEventFlowPublisher implements Flow.Publisher<HttpSsEvent> {
 
+    private static final Logger logger = LoggerFactory.getLogger(Constants.LOGGER_NAME);
     private static final int DEFAULT_BUFFER_SIZE = 10240;
     private final Flow.Publisher<HttpSsEvent> delegate;
 
@@ -71,6 +75,11 @@ public class HttpSsEventFlowPublisher implements Flow.Publisher<HttpSsEvent> {
                             // 转换SSE
                             try {
                                 final var body = output.toString(charset).trim();
+
+                                if(logger.isTraceEnabled()) {
+                                    logger.trace("HTTP-SSE: << {}", String.join("|", body.split("\n")));
+                                }
+
                                 final var event = HttpSsEvent.parse(body);
                                 events.add(event);
                             } finally {

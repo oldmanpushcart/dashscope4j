@@ -39,6 +39,7 @@ public interface ProcessContentInterceptor extends Interceptor {
     /**
      * 内容处理器
      */
+    @FunctionalInterface
     interface Processor {
 
         /**

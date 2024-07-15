@@ -20,7 +20,7 @@ public record HttpSsEvent(String id, String type, String data, Set<String> metas
 
     @Override
     public String toString() {
-        return "SSE|%s|%s|%s|%s".formatted(id, type, data, String.join(",", metas));
+        return "%s|%s|%s|%s".formatted(id, type, data, String.join(",", metas));
     }
 
     /**

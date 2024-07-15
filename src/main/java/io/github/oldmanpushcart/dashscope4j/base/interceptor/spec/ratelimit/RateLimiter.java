@@ -10,8 +10,9 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.ratel
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 /**
  * 限流
@@ -78,58 +79,82 @@ public interface RateLimiter {
     }
 
     /**
-     * 匹配器常量
+     * 限流匹配器
      */
-    interface Matchers {
+    @FunctionalInterface
+    interface Matcher {
 
         /**
-         * 协议前缀匹配
+         * 匹配
          *
-         * @param prefix 前缀表达式
-         * @return 匹配器
+         * @param context 调用上下文
+         * @param request 发送请求
+         * @return 是否匹配
          */
-        static BiPredicate<InvocationContext, ApiRequest<?>> matchesByProtocolPrefix(String prefix) {
-            return (context, request) -> request.protocol().startsWith(prefix);
+        boolean matches(InvocationContext context, ApiRequest<?> request);
+
+        /**
+         * 与
+         *
+         * @param after 后续匹配器
+         * @return 新匹配器
+         */
+        default Matcher andThen(Matcher after) {
+            return (c, r) -> matches(c, r) && after.matches(c, r);
         }
 
         /**
-         * 协议正则匹配
+         * 通过协议匹配
          *
-         * @param regex 正则表达式
+         * @param filter 过滤器
          * @return 匹配器
          */
-        static BiPredicate<InvocationContext, ApiRequest<?>> matchesByProtocolRegex(String regex) {
-            return (context, request) -> request.protocol().matches(regex);
+        static Matcher byProtocol(Predicate<String> filter) {
+            return (c, r) -> filter.test(r.protocol());
         }
 
         /**
-         * 请求类型匹配
+         * 通过请求匹配
          *
-         * @param clazz 请求类型
+         * @param filter 过滤器
          * @return 匹配器
          */
-        static BiPredicate<InvocationContext, ApiRequest<?>> matchesByRequestType(Class<? extends ApiRequest<?>> clazz) {
-            return (context, request) -> clazz.isInstance(request);
+        static Matcher byRequest(Predicate<? super ApiRequest<?>> filter) {
+            return (c, r) -> filter.test(r);
         }
 
         /**
-         * 模型匹配
+         * 通过请求匹配
+         *
+         * @param type 请求类型
+         * @return 匹配器
+         */
+        static Matcher byRequest(Class<? extends ApiRequest<?>> type) {
+            return (c, r) -> type.isInstance(r);
+        }
+
+        /**
+         * 通过模型匹配
          *
          * @param model 模型
          * @return 匹配器
          */
-        static BiPredicate<InvocationContext, ApiRequest<?>> matchesByModel(Model model) {
-            return matchesByModel(model.name());
+        static Matcher byModel(Model model) {
+            return (c, r) -> r instanceof AlgoRequest<?, ?> algoRequest
+                             && Objects.nonNull(algoRequest.model())
+                             && Objects.equals(algoRequest.model().name(), model.name());
         }
 
         /**
-         * 模型匹配
+         * 通过模型匹配
          *
          * @param name 模型名称
          * @return 匹配器
          */
-        static BiPredicate<InvocationContext, ApiRequest<?>> matchesByModel(String name) {
-            return (context, request) -> request instanceof AlgoRequest<?, ?> algoRequest && algoRequest.model().name().equals(name);
+        static Matcher byModel(String name) {
+            return (c, r) -> r instanceof AlgoRequest<?, ?> algoRequest
+                             && Objects.nonNull(algoRequest.model())
+                             && Objects.equals(algoRequest.model().name(), name);
         }
 
     }
@@ -194,10 +219,15 @@ public interface RateLimiter {
             return "rate-limit blocked: %s".formatted(request.protocol());
         }
 
+        @Override
+        public synchronized Throwable fillInStackTrace() {
+            return this;
+        }
+
     }
 
     /**
-     * @return 限流器构建器
+     * @return 构建器
      */
     static Builder newBuilder() {
         return new RateLimiterBuilderImpl();
@@ -214,7 +244,7 @@ public interface RateLimiter {
          * @param matcher 匹配器
          * @return this
          */
-        Builder matches(BiPredicate<InvocationContext, ApiRequest<?>> matcher);
+        Builder matches(Matcher matcher);
 
         /**
          * 设置限流周期

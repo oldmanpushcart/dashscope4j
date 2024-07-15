@@ -40,6 +40,7 @@ public interface ProcessMessageListInterceptor extends Interceptor {
     /**
      * 消息列表处理
      */
+    @FunctionalInterface
     interface Processor {
 
         /**

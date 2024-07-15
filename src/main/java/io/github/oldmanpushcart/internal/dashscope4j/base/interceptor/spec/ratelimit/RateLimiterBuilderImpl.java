@@ -8,21 +8,20 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiPredicate;
 
 /**
  * 限流器构建器实现
  */
 public class RateLimiterBuilderImpl implements RateLimiter.Builder {
 
-    private BiPredicate<InvocationContext, ApiRequest<?>> matcher;
+    private RateLimiter.Matcher matcher;
     private Duration period;
     private RateLimiter.Strategy strategy;
     private Integer maxAcquired, maxSucceed, maxFailed, maxUsageCost;
     private final Set<String> maxUsageNameSet = new HashSet<>();
 
     @Override
-    public RateLimiter.Builder matches(BiPredicate<InvocationContext, ApiRequest<?>> matcher) {
+    public RateLimiter.Builder matches(RateLimiter.Matcher matcher) {
         this.matcher = matcher;
         return this;
     }
@@ -80,7 +79,7 @@ public class RateLimiterBuilderImpl implements RateLimiter.Builder {
             public Strategy limit(InvocationContext context, ApiRequest<?> request, Metric metric) {
 
                 // 不匹配流控规则，跳过流控限制
-                if (!matcher.test(context, request)) {
+                if (!matcher.matches(context, request)) {
                     return Strategy.SKIP;
                 }
 

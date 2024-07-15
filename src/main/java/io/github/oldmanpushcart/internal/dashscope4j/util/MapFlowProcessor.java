@@ -166,18 +166,17 @@ public class MapFlowProcessor<T, R> implements Flow.Processor<T, R> {
             return;
         }
 
-        mapper.apply(item, null).whenComplete((list, ex) -> {
+        mapper.apply(item, null)
 
-            // 转换过程中出现异常，当成流处理失败
-            if (null != ex) {
-                onError(ex);
-                return;
-            }
+                // 背压处理数据
+                .thenAccept(this::backpressure)
 
-            // 背压处理数据
-            backpressure(list);
-
-        });
+                // 转换过程中出现任何异常，都当成流处理失败
+                .whenComplete((r, ex) -> {
+                    if (null != ex) {
+                        onError(ex);
+                    }
+                });
 
     }
 
@@ -188,21 +187,20 @@ public class MapFlowProcessor<T, R> implements Flow.Processor<T, R> {
             return;
         }
 
-        mapper.apply(null, ex).whenComplete((list, _ex) -> {
+        mapper.apply(null, ex)
 
-            // 转换过程中出现任何异常，都当成流处理失败
-            if (null != _ex) {
-                if (isCompletedRef.compareAndSet(false, true)) {
-                    upstreamRef.get().cancel();
-                    downstreamRef.get().onError(_ex);
-                }
-                return;
-            }
+                // 背压处理数据
+                .thenAccept(this::backpressure)
 
-            // 背压处理数据
-            backpressure(list);
-
-        });
+                // 转换过程中出现任何异常，都当成流处理失败
+                .whenComplete((r, _ex) -> {
+                    if (null != _ex) {
+                        if (isCompletedRef.compareAndSet(false, true)) {
+                            upstreamRef.get().cancel();
+                            downstreamRef.get().onError(_ex);
+                        }
+                    }
+                });
 
     }
 

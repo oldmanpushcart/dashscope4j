@@ -50,6 +50,7 @@ public class InterceptorApiExecutor implements ApiExecutor {
                 .handle((resp, ex) -> interceptor.postHandle(context, resp, ex))
                 .thenCompose(v -> v)
                 .thenApply(CommonUtils::cast);
+
     }
 
     @Override
@@ -67,6 +68,7 @@ public class InterceptorApiExecutor implements ApiExecutor {
 
                 // post-handle
                 .thenApply(p -> asyncOneToOne(p, (r, ex) -> interceptor.postHandle(context, r, ex).thenApply(CommonUtils::<R>cast)));
+
     }
 
     @Override
@@ -88,6 +90,7 @@ public class InterceptorApiExecutor implements ApiExecutor {
                         .thenCompose(v -> v)
                         .thenApply(CommonUtils::cast)
                 );
+
     }
 
 

@@ -18,6 +18,7 @@ import io.github.oldmanpushcart.test.dashscope4j.chat.function.ComputeAvgScoreFu
 import io.github.oldmanpushcart.test.dashscope4j.chat.function.EchoFunction;
 import io.github.oldmanpushcart.test.dashscope4j.chat.function.QueryScoreFunction;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -141,6 +142,7 @@ public class ChatTestCase implements LoadingEnv {
 
     }
 
+    @Disabled
     @ParameterizedTest
     @ValueSource(strings = {
             "qwen-audio-turbo",

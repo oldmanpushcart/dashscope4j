@@ -22,6 +22,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -88,12 +89,20 @@ public class HttpApiExecutor implements ApiExecutor {
      */
     @Override
     public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<R> request) {
+
+        // 构建委派请求
         final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder.header(HEADER_X_DASHSCOPE_SSE, DISABLE);
             setupTimeout(builder, request);
         });
+
+        // 记录请求日志
+        loggingHttpRequest(delegateHttpRequest);
+
+        // 发送请求
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
+                .whenComplete(HttpApiExecutor::loggingHttpResponse)
                 .thenApply(request.httpResponseHandler())
                 .thenApply(httpResponse -> {
                     final var response = request.responseDeserializer().apply(httpResponse.body());
@@ -102,6 +111,51 @@ public class HttpApiExecutor implements ApiExecutor {
                     }
                     return response;
                 });
+    }
+
+    // 记录HTTP请求日志
+    private static void loggingHttpRequest(HttpRequest request) {
+
+        if (!logger.isTraceEnabled()) {
+            return;
+        }
+
+        logger.trace("HTTP-REQUEST: >> {} {} {}",
+                request.method(),
+                request.uri(),
+                request.headers().map().entrySet().stream()
+                        .filter(entry -> !Objects.equals(entry.getKey(), HEADER_AUTHORIZATION))
+                        .map(entry -> "%s: %s".formatted(entry.getKey(), String.join(", ", entry.getValue())))
+                        .reduce("%s, %s"::formatted)
+                        .orElse("")
+        );
+
+    }
+
+    // 记录HTTP响应日志
+    private static void loggingHttpResponse(HttpResponse<?> response, Throwable ex) {
+
+        if (!logger.isTraceEnabled()) {
+            return;
+        }
+
+        // HTTP错误
+        if (null != ex) {
+            logger.trace("HTTP-RESPONSE: << {}", ex.getLocalizedMessage());
+        }
+
+        // HTTP应答
+        else {
+            logger.trace("HTTP-RESPONSE: << {} {} {}",
+                    response.statusCode(),
+                    response.uri(),
+                    response.headers().map().entrySet().stream()
+                            .map(entry -> "%s: %s".formatted(entry.getKey(), String.join(", ", entry.getValue())))
+                            .reduce("%s, %s"::formatted)
+                            .orElse("")
+            );
+        }
+
     }
 
     // 在SSE事件的meta属性中提取HTTP状态提取匹配器
@@ -129,13 +183,17 @@ public class HttpApiExecutor implements ApiExecutor {
      */
     @Override
     public <R extends ApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(ApiRequest<R> request) {
+
         final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder.header(HEADER_X_DASHSCOPE_SSE, ENABLE);
             setupTimeout(builder, request);
         });
 
+        loggingHttpRequest(delegateHttpRequest);
+
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApplyAsync(identity(), executor)
+                .whenComplete(HttpApiExecutor::loggingHttpResponse)
                 .thenApply(request.httpResponseHandler())
 
                 // 从HTTP响应数据流转换为SSE事件流
@@ -164,8 +222,7 @@ public class HttpApiExecutor implements ApiExecutor {
                 })
 
                 // 从SSE事件流中转换为API应答流
-                .thenApply(ssePublisher -> MapFlowProcessor.syncOneToOne(ssePublisher, event ->
-                        switch (event.type()) {
+                .thenApply(ssePublisher -> MapFlowProcessor.syncOneToOne(ssePublisher, event -> switch (event.type()) {
                             case "error" -> throw new ApiException(
                                     parseHttpStatus(event),
                                     request.responseDeserializer().apply(event.data())
@@ -174,6 +231,7 @@ public class HttpApiExecutor implements ApiExecutor {
                             default -> throw new RuntimeException("Unsupported event type: %s".formatted(event.type()));
                         })
                 );
+
     }
 
     /**
@@ -185,14 +243,19 @@ public class HttpApiExecutor implements ApiExecutor {
      */
     @Override
     public <R extends ApiResponse<?>> CompletableFuture<Task.Half<R>> task(ApiRequest<R> request) {
+
         final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder
                     .header(HEADER_X_DASHSCOPE_SSE, DISABLE)
                     .header(HEADER_X_DASHSCOPE_ASYNC, ENABLE);
             setupTimeout(builder, request);
         });
+
+        loggingHttpRequest(delegateHttpRequest);
+
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
+                .whenComplete(HttpApiExecutor::loggingHttpResponse)
                 .thenApply(request.httpResponseHandler())
 
                 // 解析HTTP响应为任务半应答

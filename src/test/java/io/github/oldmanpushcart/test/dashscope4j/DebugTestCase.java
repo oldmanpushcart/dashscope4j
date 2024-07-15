@@ -12,8 +12,7 @@ import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageModel;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageOptions;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
-import io.github.oldmanpushcart.test.dashscope4j.chat.function.ComputeAvgScoreFunction;
-import io.github.oldmanpushcart.test.dashscope4j.chat.function.QueryScoreFunction;
+import io.github.oldmanpushcart.dashscope4j.util.ExceptionUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -21,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -50,7 +50,7 @@ public class DebugTestCase implements LoadingEnv {
         {
             client.chat(request).flow()
                     .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
-                        System.out.println(r.output().best().message().text());
+                        System.out.println(r);
                         DashScopeAssertions.assertChatResponse(r);
                     }))
                     .join();
@@ -118,26 +118,25 @@ public class DebugTestCase implements LoadingEnv {
     }
 
     @Test
-    public void test$debug() {
+    public void test$debug() throws InterruptedException {
 
-        final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_MAX)
-                // .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                .functions(List.of(
-                        new QueryScoreFunction(),
-                        new ComputeAvgScoreFunction()
-                ))
-                .messages(List.of(
-                        Message.ofUser("张三的所有成绩，并计算平均分")
-                ))
-                .build();
+        final var latch = new CountDownLatch(1);
+        CompletableFuture.completedFuture("hello")
+                .thenApplyAsync(it -> it + " world")
+                .thenApply(it -> it + "!")
+                .thenAccept(s-> {
+                    throw new IllegalArgumentException("test error!");
+                })
+                .whenComplete((r,ex)-> {
 
-        client.chat(request).flow()
-                .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
-                    System.out.println(r.output().best().message().text());
-                    DashScopeAssertions.assertChatResponse(r);
-                }))
-                .join();
+                    if(null != ex) {
+                        final var cause = ExceptionUtils.causeBy(ex, UnsupportedOperationException.class);
+                        System.out.println(null == cause);
+                    }
+                    latch.countDown();
+                });
+
+        latch.await();
 
     }
 

@@ -7,11 +7,17 @@ import io.github.oldmanpushcart.dashscope4j.embedding.mm.MmEmbeddingRequest;
 import io.github.oldmanpushcart.test.dashscope4j.DashScopeAssertions;
 import io.github.oldmanpushcart.test.dashscope4j.LoadingEnv;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.List;
 
+/**
+ * MM Embedding 测试用例
+ * <p>阿里云的免费额度耗尽，暂停测试用例执行</p>
+ */
+@Disabled
 public class MmEmbeddingTestCase implements LoadingEnv {
 
     @Test

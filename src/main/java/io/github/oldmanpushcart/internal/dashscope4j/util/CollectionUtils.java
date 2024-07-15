@@ -65,10 +65,18 @@ public class CollectionUtils {
     public static <E, T extends Collection<E>> T updateList(UpdateMode mode, T target, Collection<E> source) {
         switch (mode) {
             case REPLACE_ALL -> {
-                target.clear();
-                target.addAll(source);
+                if (target != source) {
+                    target.clear();
+                    target.addAll(source);
+                }
             }
-            case APPEND_TAIL -> target.addAll(source);
+            case APPEND_TAIL -> {
+                if (target != source) {
+                    target.addAll(source);
+                } else {
+                    target.addAll(List.copyOf(source));
+                }
+            }
         }
         return target;
     }
