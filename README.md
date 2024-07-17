@@ -45,7 +45,7 @@ DashScopeClient client = DashScopeClient.newBuilder()
 
 在`对话`、`多模态向量计算`和`文档分析插件`等请求中如果需要解析图片、音频、文档等内容，不再需要提前上传到OSS转换为外网可访问的URL连接。这样极不方便也不安全。
 
-通过灵积平台提供的[临时空间](https://help.aliyun.com/zh/dashscope/developer-reference/guidance-of-temporary-storage-space)可以很好的解决这个问题，但操作起来需要调用额外的api且需要对url进行拼接和替换，略为繁琐。
+通过灵积平台提供的[临时空间](https://help.aliyun.com/zh/dashscope/developer-reference/guidance-of-temporary-storage-space)可以很好解决这个问题，但操作起来需要调用额外的api且需要对url进行拼接和替换，略为繁琐。
 
 dashscope4j帮你封装了这个繁琐的操作，你只需要设置内容的时候将本地文件直接传入Content，框架会自动识别并帮你完成临时空间上传和转换连接操作。并自带一个缓存避免重复上传。
 
@@ -358,7 +358,7 @@ final var response = client.image().generation(request)
 
 #### PDF提取插件
 
-我从网上下载了一份[《十四五规划》](https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf)的PDF文件，然后通过`PDF提取插件`来提取PDF文件的内容。
+我从网上下载了一份[《第十四个五年规划》](https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf)的PDF文件，然后通过`PDF提取插件`来提取PDF文件的内容。
 
 ```java
 final var request = ChatRequest.newBuilder()
