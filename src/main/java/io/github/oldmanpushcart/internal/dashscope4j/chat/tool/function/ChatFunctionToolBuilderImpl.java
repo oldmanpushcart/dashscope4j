@@ -25,18 +25,21 @@ public class ChatFunctionToolBuilderImpl implements ChatFunctionTool.Builder {
 
     @Override
     public ChatFunctionTool.Builder description(String description) {
-        this.description = requireNonBlankString(description, "description is blank");
+        this.description = requireNonNull(description);
         return this;
     }
 
     @Override
     public ChatFunctionTool.Builder parameterType(Type parameterType) {
+        requireNonNull(parameterType);
         this.parameterTs = ChatFunctionToolImpl.TypeSchemaImpl.ofType(parameterType);
         return this;
     }
 
     @Override
     public ChatFunctionTool.Builder parameterType(Type parameterType, String schema) {
+        requireNonNull(parameterType);
+        requireNonBlankString(schema, "schema is blank");
         this.parameterTs = ChatFunctionToolImpl.TypeSchemaImpl.ofType(parameterType, schema);
         return this;
     }
@@ -49,6 +52,7 @@ public class ChatFunctionToolBuilderImpl implements ChatFunctionTool.Builder {
 
     @Override
     public <T, R> ChatFunctionTool.Builder function(Function<T, R> function) {
+        requireNonNull(function);
         this.function = (ChatFunction<T, R>) t -> CompletableFuture.completedFuture(function.apply(t));
         return this;
     }

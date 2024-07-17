@@ -54,7 +54,7 @@ public interface ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         /**
          * 设置插件集合
          *
-         * @param plugins  插件集合
+         * @param plugins 插件集合
          * @return this
          */
         Builder plugins(List<Plugin> plugins);
@@ -70,7 +70,7 @@ public interface ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         /**
          * 设置工具集合
          *
-         * @param tools    工具集合
+         * @param tools 工具集合
          * @return this
          */
         Builder tools(List<Tool> tools);
@@ -85,6 +85,7 @@ public interface ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
         /**
          * 添加消息集合
+         *
          * @param messages 消息集合
          * @return this
          */

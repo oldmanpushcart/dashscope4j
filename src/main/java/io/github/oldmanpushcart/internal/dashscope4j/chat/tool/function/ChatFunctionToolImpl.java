@@ -88,6 +88,12 @@ public record ChatFunctionToolImpl(Meta meta, ChatFunction<?, ?> function) imple
     }
 
 
+    /**
+     * 通过注解构建函数工具
+     *
+     * @param function 函数
+     * @return 函数工具
+     */
     public static ChatFunctionTool byAnnotation(ChatFunction<?, ?> function) {
 
         // 获取函数类
