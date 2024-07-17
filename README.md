@@ -53,10 +53,12 @@ dashscope4j帮你封装了这个繁琐的操作，你只需要设置内容的时
 final var request = ChatRequest.newBuilder()
     .model(ChatModel.QWEN_VL_MAX)
     .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-    .user(
-        Content.ofImage(new File("C:\\Users\\vlinux\\图片\\image-002.jpeg").toURI()),
-        Content.ofText("图片中一共多少辆自行车?")
-    )
+    .messages(List.of(
+        Message.ofUser(List.of(
+            Content.ofImage(new File("./document/image/image-002.jpeg").toURI()),
+            Content.ofText("图片中一共多少辆自行车?")
+        ))
+    ))
     .build();
 ```
 
