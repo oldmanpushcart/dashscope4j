@@ -2,15 +2,22 @@ package io.github.oldmanpushcart.dashscope4j.base.files;
 
 import java.io.File;
 import java.net.URI;
+import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow;
 
 /**
  * 文件操作
- *
- * @since 1.4.2
  */
 public interface FilesOp {
+
+    /**
+     * 上传资源
+     *
+     * @param resource 资源URI
+     * @param filename 文件名
+     * @return 创建操作
+     */
+    CompletableFuture<FileMeta> upload(URI resource, String filename);
 
     /**
      * 上传文件
@@ -26,10 +33,11 @@ public interface FilesOp {
      * 上传资源
      *
      * @param resource 资源URI
-     * @param filename 文件名
      * @return 创建操作
      */
-    CompletableFuture<FileMeta> upload(URI resource, String filename);
+    default CompletableFuture<FileMeta> upload(URI resource) {
+        return upload(resource, resource.getPath());
+    }
 
     /**
      * 文件详情
@@ -57,10 +65,8 @@ public interface FilesOp {
     CompletableFuture<Boolean> delete(String id, boolean isForce);
 
     /**
-     * 查询文件列表（响应式流）
-     *
-     * @return 查询操作
+     * @return 文件迭代器
      */
-    CompletableFuture<Flow.Publisher<FileMeta>> flow();
+    CompletableFuture<Iterator<FileMeta>> iterator();
 
 }

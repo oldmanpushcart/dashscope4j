@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public record ChoiceImpl(ChatResponse.Finish finish, List<Message> history) implements ChatResponse.Choice {
+record ChoiceImpl(ChatResponse.Finish finish, List<Message> history) implements ChatResponse.Choice {
 
     public ChoiceImpl(ChatResponse.Finish finish, Message message) {
         this(finish, new ArrayList<>(List.of(message)));

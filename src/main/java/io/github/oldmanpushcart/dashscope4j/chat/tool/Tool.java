@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * 工具
- *
- * @since 1.2.0
  */
 public interface Tool {
 
@@ -16,8 +14,6 @@ public interface Tool {
 
     /**
      * 分类
-     *
-     * @since 1.2.0
      */
     enum Classify {
 
@@ -28,8 +24,6 @@ public interface Tool {
 
     /**
      * 工具调用
-     *
-     * @since 1.2.0
      */
     interface Call {
 
@@ -42,8 +36,6 @@ public interface Tool {
 
     /**
      * 工具元数据
-     *
-     * @since 1.2.2
      */
     interface Meta {
 

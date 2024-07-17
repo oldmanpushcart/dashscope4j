@@ -44,8 +44,6 @@ public interface ChatResponse extends AlgoResponse<ChatResponse.Output> {
 
         /**
          * 工具调用
-         *
-         * @since 1.2.0
          */
         @JsonProperty("tool_calls")
         TOOL_CALLS(1),
@@ -90,7 +88,6 @@ public interface ChatResponse extends AlgoResponse<ChatResponse.Output> {
 
         /**
          * @return 历史消息
-         * @since 1.2.0
          */
         List<Message> history();
 

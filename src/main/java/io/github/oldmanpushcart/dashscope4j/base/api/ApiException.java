@@ -30,8 +30,6 @@ public class ApiException extends RuntimeException {
     }
 
     /**
-     * 获取HTTP状态
-     *
      * @return HTTP状态
      */
     public int status() {
@@ -39,8 +37,6 @@ public class ApiException extends RuntimeException {
     }
 
     /**
-     * 获取唯一标识
-     *
      * @return 唯一标识
      */
     public String uuid() {
@@ -48,8 +44,6 @@ public class ApiException extends RuntimeException {
     }
 
     /**
-     * 获取应答结果
-     *
      * @return 应答结果
      */
     public Ret ret() {

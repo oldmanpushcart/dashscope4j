@@ -6,31 +6,33 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+/**
+ * CompletableFuture工具类
+ */
 public class CompletableFutureUtils {
 
-    public static <T, R> CompletableFuture<List<R>> thenForEachCompose(Iterable<T> source, Function<T, CompletableFuture<R>> function) {
-        return thenForEachComposeByIterator(new ArrayList<>(), source.iterator(), function);
+    /**
+     * 迭代组合
+     *
+     * @param source   待处理数据集合
+     * @param function 组合处理函数
+     * @param <T>      待处理类型
+     * @param <R>      处理后类型
+     * @return 迭代组合器
+     */
+    public static <T, R> CompletableFuture<List<R>> thenIterateCompose(Iterable<T> source, Function<T, CompletableFuture<R>> function) {
+        return thenIterateComposeByIterator(new ArrayList<>(), source.iterator(), function);
     }
 
-    private static <T, R> CompletableFuture<List<R>> thenForEachComposeByIterator(List<R> results, Iterator<T> iterator, Function<T, CompletableFuture<R>> function) {
+    private static <T, R> CompletableFuture<List<R>> thenIterateComposeByIterator(List<R> results, Iterator<T> iterator, Function<T, CompletableFuture<R>> function) {
         if (!iterator.hasNext()) {
             return CompletableFuture.completedFuture(results);
         }
         return function.apply(iterator.next())
                 .thenCompose(result -> {
                     results.add(result);
-                    return thenForEachComposeByIterator(results, iterator, function);
+                    return thenIterateComposeByIterator(results, iterator, function);
                 });
-    }
-
-    public static <T> CompletableFuture<T> thenChainingCompose(T source, Iterable<Function<T, CompletableFuture<T>>> iterable) {
-        return thenChainingComposeByIterator(source, iterable.iterator());
-    }
-
-    private static <T> CompletableFuture<T> thenChainingComposeByIterator(T source, Iterator<Function<T, CompletableFuture<T>>> iterator) {
-        return iterator.hasNext()
-                ? iterator.next().apply(source).thenCompose(v -> thenChainingComposeByIterator(v, iterator))
-                : CompletableFuture.completedFuture(source);
     }
 
 }

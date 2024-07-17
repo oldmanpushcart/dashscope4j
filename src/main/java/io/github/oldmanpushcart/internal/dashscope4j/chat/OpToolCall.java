@@ -1,14 +1,15 @@
 package io.github.oldmanpushcart.internal.dashscope4j.chat;
 
 import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
-import io.github.oldmanpushcart.dashscope4j.DashScopeClient.OpAsyncOpFlow;
+import io.github.oldmanpushcart.dashscope4j.OpAsyncOpFlow;
+import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.chat.message.ToolCallMessage;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunctionTool;
-import io.github.oldmanpushcart.dashscope4j.util.TransformFlowProcessor;
-import io.github.oldmanpushcart.internal.dashscope4j.chat.message.ToolCallMessageImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.ToolMessageImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
+import io.github.oldmanpushcart.internal.dashscope4j.util.MapFlowProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,10 +29,10 @@ class OpToolCall {
 
     private final static Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
-    private final ChatRequestImpl request;
-    private final ToolCallMessageImpl message;
+    private final ChatRequest request;
+    private final ToolCallMessage message;
 
-    public OpToolCall(ChatRequestImpl request, ToolCallMessageImpl message) {
+    public OpToolCall(ChatRequest request, ToolCallMessage message) {
         this.request = request;
         this.message = message;
     }
@@ -46,12 +47,12 @@ class OpToolCall {
 
         // 检查工具调用中是否只有函数调用，当前只支持函数调用
         if (!message.calls().stream().allMatch(call -> call instanceof ChatFunctionTool.Call)) {
-            throw new IllegalArgumentException("only support function call in tool call.");
+            throw new UnsupportedOperationException("only support function call in tool call.");
         }
 
         // 检查函数调用是否有多个，当前只支持单一函数调用
         if (message.calls().size() != 1) {
-            throw new IllegalArgumentException("only support single function call in tool call.");
+            throw new UnsupportedOperationException("only support single function call in tool call.");
         }
 
         // 获取函数调用
@@ -59,16 +60,15 @@ class OpToolCall {
 
         // 找到函数工具
         final var functionTool = request.tools().stream()
-                .filter(tool -> tool instanceof ChatFunctionTool)
-                .map(tool -> (ChatFunctionTool) tool)
+                .filter(ChatFunctionTool.class::isInstance)
+                .map(ChatFunctionTool.class::cast)
                 .filter(tool -> Objects.equals(tool.meta().name(), functionCall.name()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("not found tool by name: %s".formatted(functionCall.name())));
 
         if (logger.isDebugEnabled()) {
-            logger.debug("dashscope://{}/{}/function/{} <= {}",
-                    request.model().label(),
-                    request.model().name(),
+            logger.debug("{}/function/{} <= {}",
+                    request.protocol(),
                     functionCall.name(),
                     compact(functionCall.arguments())
             );
@@ -79,9 +79,8 @@ class OpToolCall {
                 .thenApply(resultJson -> {
 
                     if (logger.isDebugEnabled()) {
-                        logger.debug("dashscope://{}/{}/function/{} => {}",
-                                request.model().label(),
-                                request.model().name(),
+                        logger.debug("{}/function/{} => {}",
+                                request.protocol(),
                                 functionCall.name(),
                                 compact(resultJson)
                         );
@@ -92,20 +91,10 @@ class OpToolCall {
                     history.add(message);
                     history.add(new ToolMessageImpl(resultJson, functionCall.name()));
 
-                    // 工具调用应答消息，由本次请求中的消息和本次工具调用的对话历史构成
-                    final var messages = new ArrayList<Message>();
-                    messages.addAll(request.messages());
-                    messages.addAll(history);
-
                     // 工具调用结果的请求
-                    final var newRequest = new ChatRequestImpl(
-                            request.model(),
-                            request.option(),
-                            request.timeout(),
-                            messages,
-                            request.plugins(),
-                            request.tools()
-                    );
+                    final var newRequest = ChatRequest.newBuilder(request)
+                            .appendMessages(history)
+                            .build();
 
                     /*
                      * 处理工具调用结果的请求
@@ -147,14 +136,12 @@ class OpToolCall {
 
             @Override
             public CompletableFuture<ChatResponse> async() {
-                return op.async()
-                        .thenApply(this::onResponse);
+                return op.async().thenApply(this::onResponse);
             }
 
             @Override
             public CompletableFuture<Flow.Publisher<ChatResponse>> flow() {
-                return op.flow()
-                        .thenApply(source -> TransformFlowProcessor.transform(source, v -> List.of(onResponse(v))));
+                return op.flow().thenApply(source -> MapFlowProcessor.syncOneToOne(source, this::onResponse));
             }
 
         };

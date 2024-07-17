@@ -11,7 +11,6 @@ public interface Model {
 
     /**
      * @return 模型标签
-     * @since 1.2.2
      */
     default String label() {
         return "model";

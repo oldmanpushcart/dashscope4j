@@ -4,8 +4,8 @@ import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingRequest;
-import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingResponse;
+import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingRequest;
+import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingResponse;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
 import org.junit.jupiter.api.Assertions;
@@ -36,7 +36,6 @@ public class DashScopeAssertions {
         assertApiRequest(request);
         Assertions.assertNotNull(request.option());
         Assertions.assertNotNull(request.model());
-        Assertions.assertNotNull(request.input());
     }
 
     public static void assertChatResponse(ChatResponse response) {
@@ -58,7 +57,6 @@ public class DashScopeAssertions {
         assertApiRequest(request);
         Assertions.assertNotNull(request.option());
         Assertions.assertNotNull(request.model());
-        Assertions.assertNotNull(request.input());
     }
 
     public static void assertEmbeddingResponse(EmbeddingResponse response) {
@@ -79,7 +77,6 @@ public class DashScopeAssertions {
     public static void assertGenImageRequest(GenImageRequest request) {
         assertApiRequest(request);
         Assertions.assertNotNull(request.model());
-        Assertions.assertNotNull(request.input());
         Assertions.assertNotNull(request.option());
     }
 

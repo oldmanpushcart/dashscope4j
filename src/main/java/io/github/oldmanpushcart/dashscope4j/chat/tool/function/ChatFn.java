@@ -8,8 +8,6 @@ import java.lang.annotation.Target;
 /**
  * 对话函数注解
  * <p>用于标记函数相关信息</p>
- *
- * @since 1.2.0
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

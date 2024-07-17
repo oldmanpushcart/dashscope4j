@@ -7,14 +7,11 @@ import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import java.net.URI;
 import java.util.Map;
 
-/**
- * 内容实现
- *
- * @param type 类型
- * @param data 数据
- * @param <T>
- */
-public record ContentImpl<T>(Type type, T data) implements Content<T> {
+public record ContentImpl<T>(float factor, Type type, T data) implements Content<T> {
+
+    public ContentImpl(Type type, T data) {
+        this(1f, type, data);
+    }
 
     /**
      * 序列化为 {@code {"<TYPE>":"<DATA>"}} 格式
@@ -22,8 +19,8 @@ public record ContentImpl<T>(Type type, T data) implements Content<T> {
      * @return Json Object Map
      */
     @JsonValue
-    Map<Type, T> extract() {
-        return Map.of(type, data());
+    Map<Object, Object> extract() {
+        return Map.of(type, data(), "factor", factor());
     }
 
     /**
@@ -46,5 +43,14 @@ public record ContentImpl<T>(Type type, T data) implements Content<T> {
                 .orElse(null);
     }
 
+    @Override
+    public <U> Content<U> newData(U data) {
+        return new ContentImpl<>(factor, type, data);
+    }
+
+    @Override
+    public <U> Content<U> newFactorData(float factor, U data) {
+        return new ContentImpl<>(factor, type, data);
+    }
 
 }

@@ -61,8 +61,6 @@ public class HttpHeader {
         private static final FeatureCodec codec = new FeatureCodec(';', '=');
 
         /**
-         * 获取字符集
-         *
          * @return 字符集
          */
         public Charset charset() {

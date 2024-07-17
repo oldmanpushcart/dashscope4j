@@ -6,20 +6,16 @@ import java.util.Map;
 
 /**
  * 插件
- *
- * @since 1.2.0
  */
 public interface Plugin {
 
     /**
      * @return 插件名称
-     * @since 1.4.0
      */
     String name();
 
     /**
      * @return 插件参数
-     * @since 1.4.0
      */
     Map<String, Object> arguments();
 

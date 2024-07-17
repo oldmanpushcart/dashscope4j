@@ -5,17 +5,24 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
-import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingModel;
-import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingRequest;
+import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingModel;
+import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageModel;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageOptions;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
+import io.github.oldmanpushcart.dashscope4j.util.ExceptionUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
+import java.io.File;
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Disabled
 public class DebugTestCase implements LoadingEnv {
@@ -26,14 +33,12 @@ public class DebugTestCase implements LoadingEnv {
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                .user(
-                        Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
-                        Content.ofText("图片中一共多少辆自行车?")
-                )
-//                .user(
-//                        Content.ofAudio(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/audios/2channel_16K.wav")),
-//                        Content.ofText("请告诉我说话的人的性别。请不要告诉我其他无关的信息")
-//                )
+                .messages(List.of(
+                        Message.ofUser(List.of(
+                                Content.ofImage(new File("./document/image/image-002.jpeg").toURI()),
+                                Content.ofText("图片中一共多少辆自行车?")
+                        ))
+                ))
                 .build();
 
 //        {
@@ -45,7 +50,7 @@ public class DebugTestCase implements LoadingEnv {
         {
             client.chat(request).flow()
                     .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
-                        System.out.println(r.output().best().message().text());
+                        System.out.println(r);
                         DashScopeAssertions.assertChatResponse(r);
                     }))
                     .join();
@@ -61,7 +66,7 @@ public class DebugTestCase implements LoadingEnv {
                 .option(GenImageOptions.NUMBER, 1)
                 .prompt("画一只猫")
                 .build();
-        final var response = client.genImage(request)
+        final var response = client.image().generation(request)
                 .task(Task.WaitStrategies.perpetual(Duration.ofMillis(1000L)))
                 .join();
         System.out.println(response);
@@ -72,10 +77,10 @@ public class DebugTestCase implements LoadingEnv {
 
         final var request = EmbeddingRequest.newBuilder()
                 .model(EmbeddingModel.TEXT_EMBEDDING_V2)
-                .documents("我爱北京天安门", "天安门上太阳升")
+                .documents(List.of("我爱北京天安门", "天安门上太阳升"))
                 .build();
 
-        final var response = client.embedding(request)
+        final var response = client.embedding().text(request)
                 .async()
                 .join();
 
@@ -83,23 +88,56 @@ public class DebugTestCase implements LoadingEnv {
 
     }
 
-    @Disabled
     @Test
-    public void test$debug() throws Exception {
-        final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_LONG)
-                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                .user(
-                        Content.ofText("文章在说什么?"),
-                        Content.ofFile(URI.create("https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf"))
-                )
-                .build();
-        client.chat(request).flow()
-                .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
-                    System.out.println(r.output().best().message().text());
-                    DashScopeAssertions.assertChatResponse(r);
-                }))
-                .join();
+    public void test$debug$ratelimit() throws Exception {
+        final var total = 201;
+        final var successRef = new AtomicInteger();
+        final var failureRef = new AtomicInteger();
+        final var launch = new CountDownLatch(total);
+        for (int i = 0; i < total; i++) {
+            final var request = ChatRequest.newBuilder()
+                    .model(ChatModel.QWEN_PLUS)
+                    .messages(List.of(
+                            Message.ofUser("我有100块钱存银行，利率3个点，请告诉我%s年后，我连本带利有多少钱?".formatted(i+1))
+                    ))
+                    .build();
+            client.chat(request).async().whenComplete((r, ex) -> {
+                if (null != ex) {
+                    failureRef.incrementAndGet();
+                } else {
+                    successRef.incrementAndGet();
+                }
+                launch.countDown();
+            });
+        }
+
+        launch.await();
+        System.out.println("success: " + successRef.get());
+        System.out.println("failure: " + failureRef.get());
+        Assertions.assertEquals(total, successRef.get() + failureRef.get());
+    }
+
+    @Test
+    public void test$debug() throws InterruptedException {
+
+        final var latch = new CountDownLatch(1);
+        CompletableFuture.completedFuture("hello")
+                .thenApplyAsync(it -> it + " world")
+                .thenApply(it -> it + "!")
+                .thenAccept(s-> {
+                    throw new IllegalArgumentException("test error!");
+                })
+                .whenComplete((r,ex)-> {
+
+                    if(null != ex) {
+                        final var cause = ExceptionUtils.causeBy(ex, UnsupportedOperationException.class);
+                        System.out.println(null == cause);
+                    }
+                    latch.countDown();
+                });
+
+        latch.await();
+
     }
 
 }

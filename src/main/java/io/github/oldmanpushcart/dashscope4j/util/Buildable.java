@@ -11,9 +11,7 @@ import java.util.function.Consumer;
 public interface Buildable<T, B extends Buildable<T, B>> {
 
     /**
-     * 返回自身
-     *
-     * @return this
+     * @return 返回自身
      */
     @SuppressWarnings("unchecked")
     default B self() {
@@ -32,8 +30,6 @@ public interface Buildable<T, B extends Buildable<T, B>> {
     }
 
     /**
-     * 构建目标
-     *
      * @return 构建目标
      */
     T build();

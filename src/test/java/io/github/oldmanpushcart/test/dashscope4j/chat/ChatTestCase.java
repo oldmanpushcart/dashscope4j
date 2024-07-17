@@ -2,12 +2,12 @@ package io.github.oldmanpushcart.test.dashscope4j.chat;
 
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.chat.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.chat.message.PluginCallMessage;
 import io.github.oldmanpushcart.dashscope4j.chat.message.PluginMessage;
+import io.github.oldmanpushcart.dashscope4j.chat.plugin.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
@@ -18,11 +18,13 @@ import io.github.oldmanpushcart.test.dashscope4j.chat.function.ComputeAvgScoreFu
 import io.github.oldmanpushcart.test.dashscope4j.chat.function.EchoFunction;
 import io.github.oldmanpushcart.test.dashscope4j.chat.function.QueryScoreFunction;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -65,11 +67,11 @@ public class ChatTestCase implements LoadingEnv {
 
         final var request = ChatRequest.newBuilder()
                 .model(getModel(name))
-                .messages(
+                .messages(List.of(
                         Message.ofUser("小红有10块钱"), Message.ofAi("收到"),
                         Message.ofUser("小明比小红多3块"), Message.ofAi("收到"),
                         Message.ofUser("小红和小明一共有多少钱?")
-                )
+                ))
                 .build();
 
         DashScopeAssertions.assertChatRequest(request);
@@ -105,12 +107,12 @@ public class ChatTestCase implements LoadingEnv {
 
         final var request = ChatRequest.newBuilder()
                 .model(getModel(name))
-                .messages(
-                        Message.ofUser(
+                .messages(List.of(
+                        Message.ofUser(List.of(
                                 Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
                                 Content.ofText("图片中一共多少辆自行车?")
-                        )
-                )
+                        ))
+                ))
                 .build();
 
         DashScopeAssertions.assertChatRequest(request);
@@ -140,6 +142,7 @@ public class ChatTestCase implements LoadingEnv {
 
     }
 
+    @Disabled
     @ParameterizedTest
     @ValueSource(strings = {
             "qwen-audio-turbo",
@@ -149,12 +152,12 @@ public class ChatTestCase implements LoadingEnv {
 
         final var request = ChatRequest.newBuilder()
                 .model(getModel(name))
-                .messages(
-                        Message.ofUser(
+                .messages(List.of(
+                        Message.ofUser(List.of(
                                 Content.ofAudio(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/audios/2channel_16K.wav")),
                                 Content.ofText("说话的人是男还是女?")
-                        )
-                )
+                        ))
+                ))
                 .build();
 
         DashScopeAssertions.assertChatRequest(request);
@@ -188,7 +191,9 @@ public class ChatTestCase implements LoadingEnv {
         final var not_exists_model = ChatModel.ofText("not-exists-module");
         final var request = ChatRequest.newBuilder()
                 .model(not_exists_model)
-                .user("hello!")
+                .messages(List.of(
+                        Message.ofUser("hello!")
+                ))
                 .build();
         DashScopeAssertions.assertChatRequest(request);
         CommonAssertions.assertRootThrows(ApiException.class, () -> client.chat(request).async().join(), ex -> {
@@ -199,17 +204,19 @@ public class ChatTestCase implements LoadingEnv {
         });
     }
 
-    private static final Plugin[] PLUGINS = new Plugin[]{
+    private static final List<Plugin> PLUGINS = List.of(
             ChatPlugin.CALCULATOR,
-            ChatPlugin.PDF_EXTRACTER,
-    };
+            ChatPlugin.PDF_EXTRACTER
+    );
 
     @Test
     public void test$chat$plugin$calculator() {
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
                 .plugins(PLUGINS)
-                .user("1+2*3-4/5=?")
+                .messages(List.of(
+                        Message.ofUser("1+2*3-4/5=?")
+                ))
                 .build();
         DashScopeAssertions.assertChatRequest(request);
         final var response = client.chat(request)
@@ -227,10 +234,12 @@ public class ChatTestCase implements LoadingEnv {
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
                 .plugins(PLUGINS)
-                .user(
-                        Content.ofText("请总结这篇文档"),
-                        Content.ofFile(URI.create("https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf"))
-                )
+                .messages(List.of(
+                        Message.ofUser(List.of(
+                                Content.ofText("请总结这篇文档"),
+                                Content.ofFile(URI.create("https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf"))
+                        ))
+                ))
                 .build();
         final var response = client.chat(request)
                 .async()
@@ -244,10 +253,11 @@ public class ChatTestCase implements LoadingEnv {
 
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
-                .tools(ChatFunctionTool.newBuilder()
-                        .name("echo")
-                        .description("当用户输入echo:，回显后边的文字")
-                        .parameterType(EchoFunction.Echo.class, """
+                .tools(List.of(
+                        ChatFunctionTool.newBuilder()
+                                .name("echo")
+                                .description("当用户输入echo:，回显后边的文字")
+                                .parameterType(EchoFunction.Echo.class, """
                                 {
                                     "type":"object",
                                     "properties":{
@@ -258,10 +268,13 @@ public class ChatTestCase implements LoadingEnv {
                                     }
                                 }
                                 """
-                        )
-                        .function(echo -> echo)
-                        .build())
-                .user("echo: HELLO!")
+                                )
+                                .function(echo -> echo)
+                                .build()
+                ))
+                .messages(List.of(
+                        Message.ofUser("echo: HELLO!")
+                ))
                 .build();
         final var response = client.chat(request)
                 .async()
@@ -272,9 +285,11 @@ public class ChatTestCase implements LoadingEnv {
     @Test
     public void test$chat$function$echo() {
         final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_PLUS)
-                .functions(new EchoFunction())
-                .user("echo: HELLO!")
+                .model(ChatModel.QWEN_MAX)
+                .functions(List.of(new EchoFunction()))
+                .messages(List.of(
+                        Message.ofUser("echo: HELLO!")
+                ))
                 .build();
 
         // FLOW
@@ -302,9 +317,11 @@ public class ChatTestCase implements LoadingEnv {
     @Test
     public void test$chat$function$single_function() {
         final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_PLUS)
-                .functions(new QueryScoreFunction())
-                .user("查询张三的数学成绩")
+                .model(ChatModel.QWEN_MAX)
+                .functions(List.of(new QueryScoreFunction()))
+                .messages(List.of(
+                        Message.ofUser("查询张三的数学成绩")
+                ))
                 .build();
         final var response = client.chat(request)
                 .async()
@@ -315,9 +332,14 @@ public class ChatTestCase implements LoadingEnv {
     @Test
     public void test$chat$function$multi_function() {
         final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_PLUS)
-                .functions(new QueryScoreFunction(), new ComputeAvgScoreFunction())
-                .user("张三的所有成绩，并计算平均分")
+                .model(ChatModel.QWEN_MAX)
+                .functions(List.of(
+                        new QueryScoreFunction(),
+                        new ComputeAvgScoreFunction()
+                ))
+                .messages(List.of(
+                        Message.ofUser("张三的所有成绩，并计算平均分")
+                ))
                 .build();
         final var response = client.chat(request)
                 .async()

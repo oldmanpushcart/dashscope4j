@@ -30,16 +30,22 @@ public class Constants {
 
     /**
      * 缓存命名空间：临时空间
-     *
-     * @since 1.4.2
      */
-    public static final String CACHE_NAMESPACE_FOR_UPLOAD = "upload";
+    public static final String CACHE_NAMESPACE_FOR_STORE = "store";
 
     /**
      * 缓存命名空间：文件操作
-     *
-     * @since 1.4.2
      */
     public static final String CACHE_NAMESPACE_FOR_FILES = "files";
+
+    /**
+     * 启用
+     */
+    public static final String ENABLE = "enable";
+
+    /**
+     * 禁用
+     */
+    public static final String DISABLE = "disable";
 
 }

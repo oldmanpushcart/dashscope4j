@@ -5,8 +5,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.isBlankString;
-import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.isNotBlankString;
+import static io.github.oldmanpushcart.internal.dashscope4j.util.StringUtils.isBlank;
+import static io.github.oldmanpushcart.internal.dashscope4j.util.StringUtils.isNotBlank;
 
 /**
  * Feature编解器(线程安全)
@@ -66,7 +66,7 @@ public class FeatureCodec {
         }
 
         for (String value : collection) {
-            if (isNotBlankString(value)) {
+            if (isNotBlank(value)) {
                 featureSB
                         .append(escapeEncode(value))
                         .append(kvSegmentSeparator)
@@ -86,13 +86,13 @@ public class FeatureCodec {
 
         final Collection<String> collection = new ArrayList<>();
 
-        if (isBlankString(featureString)) {
+        if (isBlank(featureString)) {
             return collection;
         }
 
         for (String value : escapeSplit(featureString, kvSegmentSeparator)) {
 
-            if (isBlankString(value)) {
+            if (isBlank(value)) {
                 // 过滤掉为空的字符串片段
                 continue;
             }
@@ -122,8 +122,8 @@ public class FeatureCodec {
         for (Map.Entry<String, String> entry : map.entrySet()) {
             final String key = entry.getKey();
             final String value = entry.getValue();
-            if (isNotBlankString(key)
-                    && isNotBlankString(value)) {
+            if (isNotBlank(key)
+                && isNotBlank(value)) {
                 featureSB
                         .append(escapeEncode(key))
                         .append(kvSeparator)
@@ -147,13 +147,13 @@ public class FeatureCodec {
 
         final Map<String, String> map = new HashMap<>();
 
-        if (isBlankString(featureString)) {
+        if (isBlank(featureString)) {
             return map;
         }
 
         for (String kv : escapeSplit(featureString, kvSegmentSeparator)) {
 
-            if (isBlankString(kv)) {
+            if (isBlank(kv)) {
                 // 过滤掉为空的字符串片段
                 continue;
             }
@@ -166,8 +166,8 @@ public class FeatureCodec {
 
             final String k = ar[0];
             final String v = ar[1];
-            if (isNotBlankString(k)
-                    && isNotBlankString(v)) {
+            if (isNotBlank(k)
+                && isNotBlank(v)) {
                 map.put(escapeDecode(k), escapeDecode(v));
             }
 

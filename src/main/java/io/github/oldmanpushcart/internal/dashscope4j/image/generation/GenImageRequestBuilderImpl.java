@@ -2,12 +2,12 @@ package io.github.oldmanpushcart.internal.dashscope4j.image.generation;
 
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageModel;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
-import io.github.oldmanpushcart.internal.dashscope4j.base.algo.SpecifyModelAlgoRequestBuilderImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestBuilderImpl;
 
 import static java.util.Objects.requireNonNull;
 
 public class GenImageRequestBuilderImpl
-        extends SpecifyModelAlgoRequestBuilderImpl<GenImageModel, GenImageRequest, GenImageRequest.Builder>
+        extends AlgoRequestBuilderImpl<GenImageModel, GenImageRequest, GenImageRequest.Builder>
         implements GenImageRequest.Builder {
 
     private String prompt;
@@ -36,7 +36,7 @@ public class GenImageRequestBuilderImpl
 
     @Override
     public GenImageRequest build() {
-        requireNonNull(model(), "model is required");
+        requireNonNull(model(), "model is required!");
         return new GenImageRequestImpl(
                 model(),
                 option(),

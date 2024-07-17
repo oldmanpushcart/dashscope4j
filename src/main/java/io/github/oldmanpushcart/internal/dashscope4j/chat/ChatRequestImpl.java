@@ -1,27 +1,29 @@
 package io.github.oldmanpushcart.internal.dashscope4j.chat;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.chat.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.chat.plugin.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.Tool;
-import io.github.oldmanpushcart.internal.dashscope4j.base.algo.SpecifyModelAlgoRequestImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader;
-import io.github.oldmanpushcart.internal.dashscope4j.chat.message.MessageImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 
 import java.net.http.HttpRequest;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.isNotEmptyCollection;
 import static java.util.stream.Collectors.toMap;
 
-final class ChatRequestImpl extends SpecifyModelAlgoRequestImpl<ChatModel, ChatResponse> implements ChatRequest {
+class ChatRequestImpl extends AlgoRequestImpl<ChatModel, ChatResponse> implements ChatRequest {
 
     private final List<Message> messages;
     private final List<Plugin> plugins;
@@ -34,14 +36,9 @@ final class ChatRequestImpl extends SpecifyModelAlgoRequestImpl<ChatModel, ChatR
         this.tools = tools;
     }
 
-
-    private record Input(
-
-            @JsonProperty("messages")
-            List<Message> messages
-
-    ) {
-
+    @Override
+    public String suite() {
+        return "dashscope://chat";
     }
 
     @Override
@@ -60,8 +57,46 @@ final class ChatRequestImpl extends SpecifyModelAlgoRequestImpl<ChatModel, ChatR
     }
 
     @Override
-    public Object input() {
-        return new Input(messages);
+    protected Object input() {
+
+        // 默认格式为对话模型所指定的格式
+        final var modeRef = new AtomicReference<>(model().mode());
+
+        // 是否有PDFExtract插件
+        final var hasPdfExtractPlugin = plugins.stream()
+                .anyMatch(plugin -> plugin.name().equals(ChatPlugin.PDF_EXTRACTER.name()));
+
+        // 聊天消息列表中是否包含File类型的内容
+        final var hasFileContent = messages.stream()
+                .flatMap(message-> message.contents().stream())
+                .anyMatch(content -> content.type() == Content.Type.FILE);
+
+        /*
+         * PDFExtract插件比较特殊，
+         * 他在有File类型的内容时，消息列表格式为为多模态格式，否则则为文本格式
+         */
+        if(hasPdfExtractPlugin && hasFileContent) {
+            modeRef.set(ChatModel.Mode.MULTIMODAL);
+        }
+
+        /*
+         * 构造消息列表，根据模式的不同构造不同的消息列表格式
+         */
+        return new HashMap<>() {{
+            put("messages", new ArrayList<>() {{
+                for (final var message : messages) {
+                    add(new HashMap<>() {{
+                        put("role", message.role());
+                        if(modeRef.get() == ChatModel.Mode.TEXT) {
+                            put("content", message.text());
+                        } else {
+                            put("content", message.contents());
+                        }
+                    }});
+                }
+            }});
+        }};
+
     }
 
     @Override
@@ -85,44 +120,11 @@ final class ChatRequestImpl extends SpecifyModelAlgoRequestImpl<ChatModel, ChatR
     @Override
     public HttpRequest newHttpRequest() {
 
-        // 为消息设置模型
-        messages.stream()
-                .filter(message -> message instanceof MessageImpl)
-                .map(message -> (MessageImpl) message)
-                .forEach(message -> {
-
-                    // 默认是文本消息格式
-                    var format = MessageImpl.Format.TEXT_MESSAGE;
-
-                    // 如果是多模态模型，则需要设置多模态的消息格式
-                    if (model().mode() == ChatModel.Mode.MULTIMODAL) {
-                        format = MessageImpl.Format.MULTIMODAL_MESSAGE;
-                    }
-
-                    /*
-                     * 如果是PDF提取插件，而且消息中包含了file内容
-                     * 这种情况下需要转成多模态消息格式
-                     */
-                    {
-                        final var hasPdfExtractPlugin = plugins.stream()
-                                .anyMatch(plugin -> plugin.name().equals(ChatPlugin.PDF_EXTRACTER.name()));
-                        final var hasFileContent = message.contents().stream()
-                                .anyMatch(content -> content.type() == Content.Type.FILE);
-                        if (hasPdfExtractPlugin && hasFileContent) {
-                            format = MessageImpl.Format.MULTIMODAL_MESSAGE;
-                        }
-                    }
-
-                    // 设置消息格式
-                    message.format(format);
-
-                });
-
         // 构造HTTP请求
         final var builder = HttpRequest.newBuilder(super.newHttpRequest(), (k, v) -> true);
 
         // 添加插件
-        if (!plugins.isEmpty()) {
+        if (isNotEmptyCollection(plugins)) {
             final var pluginArgMap = plugins.stream()
                     .collect(toMap(
                             Plugin::name,

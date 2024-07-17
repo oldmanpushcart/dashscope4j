@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -23,8 +24,18 @@ public record FileCreateRequest(URI uri, String name, String purpose, Duration t
     private static final AtomicInteger sequencer = new AtomicInteger(1000);
 
     @Override
+    public String suite() {
+        return "dashscope://base/files";
+    }
+
+    @Override
+    public String type() {
+        return "create";
+    }
+
+    @Override
     public HttpRequest newHttpRequest() {
-        logger.debug("dashscope://base/files/create/{} => uri={};purpose={};", name, uri, purpose);
+        logger.debug("{}/{} => uri={};purpose={};", protocol(), name, uri, purpose);
         final var boundary = "boundary%s".formatted(sequencer.incrementAndGet());
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/compatible-mode/v1/files"))
@@ -41,7 +52,7 @@ public record FileCreateRequest(URI uri, String name, String purpose, Duration t
     @Override
     public Function<String, FileCreateResponse> responseDeserializer() {
         return body -> {
-            logger.debug("dashscope://base/files/create/{} <= {}", name, body);
+            logger.debug("{}/{} <= {}", protocol(), name, body);
             return JacksonUtils.toObject(body, FileCreateResponse.class);
         };
     }
@@ -57,26 +68,26 @@ public record FileCreateRequest(URI uri, String name, String purpose, Duration t
         private String purpose;
 
         public Builder uri(URI uri) {
-            this.uri = uri;
+            this.uri = Objects.requireNonNull(uri);
             return this;
         }
 
         public Builder name(String name) {
-            this.name = name;
+            this.name = Objects.requireNonNull(name);
             return this;
         }
 
         public Builder purpose(String purpose) {
-            this.purpose = purpose;
+            this.purpose = Objects.requireNonNull(purpose);
             return this;
         }
 
         @Override
         public FileCreateRequest build() {
             return new FileCreateRequest(
-                    uri,
-                    name,
-                    purpose,
+                    Objects.requireNonNull(uri, "uri is required!"),
+                    Objects.requireNonNull(name, "name is required!"),
+                    Objects.requireNonNull(purpose, "purpose is required!"),
                     timeout()
             );
         }

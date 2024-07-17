@@ -14,6 +14,27 @@ import java.util.function.Function;
 public interface ApiRequest<R extends ApiResponse<?>> {
 
     /**
+     * @return 协议
+     */
+    default String protocol() {
+        return "%s/%s".formatted(suite(), type());
+    }
+
+    /**
+     * @return 协议簇
+     */
+    default String suite() {
+        return "dashscope://" + getClass().getPackageName();
+    }
+
+    /**
+     * @return 协议类型
+     */
+    default String type() {
+        return getClass().getSimpleName();
+    }
+
+    /**
      * @return 请求超时
      */
     @JsonIgnore
@@ -27,10 +48,9 @@ public interface ApiRequest<R extends ApiResponse<?>> {
     }
 
     /**
-     * @return 应答检查器
-     * @since 1.4.0
+     * @return HTTP应答处理器
      */
-    default <T> Function<HttpResponse<T>, HttpResponse<T>> httpResponseChecker() {
+    default <T> Function<HttpResponse<T>, HttpResponse<T>> httpResponseHandler() {
         return Function.identity();
     }
 

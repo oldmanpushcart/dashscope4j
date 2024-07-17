@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.internal.dashscope4j.base.algo;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Option;
+import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoResponse;
-import io.github.oldmanpushcart.dashscope4j.base.algo.SpecifyModelAlgoRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +18,7 @@ import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHe
 import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.HEADER_CONTENT_TYPE;
 
 public abstract class AlgoRequestImpl<M extends Model, R extends AlgoResponse<?>>
-        implements SpecifyModelAlgoRequest<M, R> {
+        implements AlgoRequest<M, R> {
 
     private final static Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
@@ -37,7 +37,7 @@ public abstract class AlgoRequestImpl<M extends Model, R extends AlgoResponse<?>
     @Override
     public HttpRequest newHttpRequest() {
         final var body = JacksonUtils.toJson(this);
-        logger.debug("dashscope://{}/{} => {}", model.label(), model.name(), body);
+        logger.debug("{} => {}", protocol(), body);
         return HttpRequest.newBuilder()
                 .uri(model().remote())
                 .header(HEADER_CONTENT_TYPE, MIME_APPLICATION_JSON)
@@ -48,7 +48,7 @@ public abstract class AlgoRequestImpl<M extends Model, R extends AlgoResponse<?>
     @Override
     public Function<String, R> responseDeserializer() {
         return body -> {
-            logger.debug("dashscope://{}/{} <= {}", model.label(), model.name(), body);
+            logger.debug("{} <= {}", protocol(), body);
             return JacksonUtils.toObject(body, responseType);
         };
     }
@@ -59,15 +59,14 @@ public abstract class AlgoRequestImpl<M extends Model, R extends AlgoResponse<?>
         return model;
     }
 
-    @JsonProperty("input")
-    @Override
-    abstract public Object input();
-
     @JsonProperty("parameters")
     @Override
     public Option option() {
         return option;
     }
+
+    @JsonProperty("input")
+    abstract protected Object input();
 
     @Override
     public Duration timeout() {

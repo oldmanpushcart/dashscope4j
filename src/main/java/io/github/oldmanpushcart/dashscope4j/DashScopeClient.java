@@ -1,34 +1,24 @@
 package io.github.oldmanpushcart.dashscope4j;
 
+import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
-import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
-import io.github.oldmanpushcart.dashscope4j.base.interceptor.RequestInterceptor;
-import io.github.oldmanpushcart.dashscope4j.base.interceptor.ResponseInterceptor;
-import io.github.oldmanpushcart.dashscope4j.base.task.Task;
-import io.github.oldmanpushcart.dashscope4j.base.upload.UploadOp;
-import io.github.oldmanpushcart.dashscope4j.base.upload.UploadRequest;
-import io.github.oldmanpushcart.dashscope4j.base.upload.UploadResponse;
+import io.github.oldmanpushcart.dashscope4j.base.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingRequest;
-import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingResponse;
-import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.MmEmbeddingRequest;
-import io.github.oldmanpushcart.dashscope4j.embeddingx.mm.MmEmbeddingResponse;
-import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
-import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
+import io.github.oldmanpushcart.dashscope4j.embedding.EmbeddingOp;
+import io.github.oldmanpushcart.dashscope4j.image.ImageOp;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import io.github.oldmanpushcart.internal.dashscope4j.DashScopeClientImpl;
-import io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Flow;
 
-
+/**
+ * DashScope客户端
+ */
 public interface DashScopeClient {
 
     /**
@@ -38,30 +28,6 @@ public interface DashScopeClient {
      * @return 操作
      */
     OpAsyncOpFlow<ChatResponse> chat(ChatRequest request);
-
-    /**
-     * 文生图
-     *
-     * @param request 文生图请求
-     * @return 操作
-     */
-    OpTask<GenImageResponse> genImage(GenImageRequest request);
-
-    /**
-     * 向量计算
-     *
-     * @param request 向量计算请求
-     * @return 操作
-     */
-    OpAsync<EmbeddingResponse> embedding(EmbeddingRequest request);
-
-    /**
-     * 多模态向量计算
-     *
-     * @param request 多模态向量计算请求
-     * @return 操作
-     */
-    OpAsync<MmEmbeddingResponse> mmEmbedding(MmEmbeddingRequest request);
 
     /**
      * 通用API
@@ -78,8 +44,16 @@ public interface DashScopeClient {
     BaseOp base();
 
     /**
-     * DashScope客户端构建器
-     *
+     * @return 向量计算操作
+     */
+    EmbeddingOp embedding();
+
+    /**
+     * @return 图片操作
+     */
+    ImageOp image();
+
+    /**
      * @return 构建器
      */
     static Builder newBuilder() {
@@ -125,212 +99,27 @@ public interface DashScopeClient {
         Builder timeout(Duration timeout);
 
         /**
-         * 添加请求拦截器
+         * 设置拦截器
          *
-         * @param interceptors 请求拦截器
+         * @param interceptors 拦截器集合
          * @return this
-         * @since 1.4.0
          */
-        default Builder requestInterceptors(RequestInterceptor... interceptors) {
-            return requestInterceptors(List.of(interceptors));
-        }
+        Builder interceptors(List<Interceptor> interceptors);
 
         /**
-         * 添加请求拦截器
-         *
-         * @param interceptors 请求拦截器
+         * 添加拦截器
+         * @param interceptors 拦截器集合
          * @return this
-         * @since 1.4.0
          */
-        default Builder requestInterceptors(List<RequestInterceptor> interceptors) {
-            return requestInterceptors(true, interceptors);
-        }
-
-        /**
-         * 添加或设置请求拦截器
-         *
-         * @param isAppend     是否追加
-         * @param interceptors 请求拦截器
-         * @return this
-         * @since 1.4.0
-         */
-        default Builder requestInterceptors(boolean isAppend, List<RequestInterceptor> interceptors) {
-            CollectionUtils.updateList(isAppend, requestInterceptors(), interceptors);
-            return this;
-        }
-
-        /**
-         * @return 请求拦截器集合
-         * @since 1.4.2
-         */
-        List<RequestInterceptor> requestInterceptors();
-
-        /**
-         * 添加响应拦截器
-         *
-         * @param interceptors 响应拦截器
-         * @return this
-         * @since 1.4.0
-         */
-        default Builder responseInterceptors(ResponseInterceptor... interceptors) {
-            return responseInterceptors(List.of(interceptors));
-        }
-
-        /**
-         * 添加响应拦截器
-         *
-         * @param interceptors 响应拦截器
-         * @return this
-         * @since 1.4.0
-         */
-        default Builder responseInterceptors(List<ResponseInterceptor> interceptors) {
-            return responseInterceptors(true, interceptors);
-        }
-
-        /**
-         * 添加或设置响应拦截器
-         *
-         * @param isAppend     是否追加
-         * @param interceptors 响应拦截器
-         * @return this
-         * @since 1.4.0
-         */
-        default Builder responseInterceptors(boolean isAppend, List<ResponseInterceptor> interceptors) {
-            CollectionUtils.updateList(isAppend, responseInterceptors(), interceptors);
-            return this;
-        }
-
-        /**
-         * @return 应答拦截器集合
-         * @since 1.4.2
-         */
-        List<ResponseInterceptor> responseInterceptors();
+        Builder appendInterceptors(List<Interceptor> interceptors);
 
         /**
          * 设置缓存工厂
          *
-         * @param factory 缓存工厂
+         * @param cacheFactory 缓存工厂
          * @return this
-         * @since 1.4.2
          */
-        Builder cacheFactory(CacheFactory factory);
-
-    }
-
-    /**
-     * 异步&流式操作
-     *
-     * @param <R> 结果类型
-     */
-    interface OpAsyncOpFlow<R> extends OpAsync<R>, OpFlow<R> {
-
-    }
-
-    /**
-     * 异步&流式&任务操作
-     *
-     * @param <R> 结果类型
-     */
-    interface OpAsyncOpFlowOpTask<R> extends OpAsync<R>, OpFlow<R>, OpTask<R> {
-
-    }
-
-    /**
-     * 异步操作
-     *
-     * @param <R> 结果类型
-     */
-    interface OpAsync<R> {
-
-        /**
-         * 异步
-         *
-         * @return 操作结果
-         */
-        CompletableFuture<R> async();
-
-    }
-
-    /**
-     * 流式操作
-     *
-     * @param <R> 结果类型
-     */
-    interface OpFlow<R> {
-
-        /**
-         * 流式操作
-         *
-         * @return 操作结果
-         */
-        CompletableFuture<Flow.Publisher<R>> flow();
-
-        /**
-         * 流式操作
-         *
-         * @param subscriber 订阅者
-         * @return 操作结果
-         */
-        default CompletableFuture<Void> flow(Flow.Subscriber<R> subscriber) {
-            return flow().thenAccept(publisher -> publisher.subscribe(subscriber));
-        }
-
-    }
-
-    /**
-     * 任务操作
-     *
-     * @param <R> 结果类型
-     */
-    interface OpTask<R> {
-
-        /**
-         * 任务操作
-         *
-         * @return 结果类型
-         */
-        CompletableFuture<Task.Half<R>> task();
-
-        /**
-         * 任务操作
-         *
-         * @param strategy 等待策略
-         * @return 结果类型
-         */
-        default CompletableFuture<R> task(Task.WaitStrategy strategy) {
-            return task().thenCompose(half -> half.waitingFor(strategy));
-        }
-
-    }
-
-    /**
-     * 辅助功能操作
-     *
-     * @since 1.4.0
-     */
-    interface BaseOp {
-
-        /**
-         * 上传文件到临时空间
-         *
-         * @param request 上传请求
-         * @return 上传操作
-         * @deprecated 请使用{@link #upload()}代替
-         */
-        @Deprecated
-        OpAsync<UploadResponse> upload(UploadRequest request);
-
-        /**
-         * @return 临时空间上传操作
-         * @since 1.4.2
-         */
-        UploadOp upload();
-
-        /**
-         * @return 文件操作
-         * @since 1.4.2
-         */
-        FilesOp files();
+        Builder cacheFactory(CacheFactory cacheFactory);
 
     }
 

@@ -18,8 +18,18 @@ public record FileListRequest(Duration timeout) implements OpenAiRequest<FileLis
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
     @Override
+    public String suite() {
+        return "dashscope://base/files";
+    }
+
+    @Override
+    public String type() {
+        return "list";
+    }
+
+    @Override
     public HttpRequest newHttpRequest() {
-        logger.debug("dashscope://base/files/list <= GET");
+        logger.debug("{} <= GET", protocol());
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/compatible-mode/v1/files"))
                 .GET()
@@ -29,7 +39,7 @@ public record FileListRequest(Duration timeout) implements OpenAiRequest<FileLis
     @Override
     public Function<String, FileListResponse> responseDeserializer() {
         return body -> {
-            logger.debug("dashscope://base/files/list <= {}", body);
+            logger.debug("{} <= {}", protocol(), body);
             return JacksonUtils.toObject(body, FileListResponse.class);
         };
     }

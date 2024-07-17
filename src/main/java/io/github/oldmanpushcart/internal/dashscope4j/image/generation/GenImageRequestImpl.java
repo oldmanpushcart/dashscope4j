@@ -1,15 +1,15 @@
 package io.github.oldmanpushcart.internal.dashscope4j.image.generation;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageModel;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
-import io.github.oldmanpushcart.internal.dashscope4j.base.algo.SpecifyModelAlgoRequestImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestImpl;
 
 import java.time.Duration;
+import java.util.HashMap;
 
-final class GenImageRequestImpl extends SpecifyModelAlgoRequestImpl<GenImageModel, GenImageResponse>
+final class GenImageRequestImpl extends AlgoRequestImpl<GenImageModel, GenImageResponse>
         implements GenImageRequest {
 
     private final String prompt;
@@ -19,6 +19,11 @@ final class GenImageRequestImpl extends SpecifyModelAlgoRequestImpl<GenImageMode
         super(model, option, timeout, GenImageResponseImpl.class);
         this.prompt = prompt;
         this.negative = negative;
+    }
+
+    @Override
+    public String suite() {
+        return "dashscope://image/generation";
     }
 
     @Override
@@ -32,20 +37,11 @@ final class GenImageRequestImpl extends SpecifyModelAlgoRequestImpl<GenImageMode
     }
 
     @Override
-    public Object input() {
-        return new Input(prompt, negative);
-    }
-
-    private record Input(
-
-            @JsonProperty("prompt")
-            String prompt,
-
-            @JsonProperty("negative_prompt")
-            String negative
-
-    ) {
-
+    protected Object input() {
+        return new HashMap<>() {{
+            put("prompt", prompt);
+            put("negative_prompt", negative);
+        }};
     }
 
 }
