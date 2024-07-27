@@ -7,9 +7,7 @@ open module dashscope4j {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.module.jsonSchema;
 
-
     exports io.github.oldmanpushcart.dashscope4j;
-
     exports io.github.oldmanpushcart.dashscope4j.base;
     exports io.github.oldmanpushcart.dashscope4j.base.algo;
     exports io.github.oldmanpushcart.dashscope4j.base.api;
@@ -18,8 +16,8 @@ open module dashscope4j {
     exports io.github.oldmanpushcart.dashscope4j.base.store;
     exports io.github.oldmanpushcart.dashscope4j.base.cache;
     exports io.github.oldmanpushcart.dashscope4j.base.interceptor;
-    exports io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process;
     exports io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit;
+    exports io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process;
     exports io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.retry;
 
     exports io.github.oldmanpushcart.dashscope4j.chat;
@@ -36,6 +34,5 @@ open module dashscope4j {
     exports io.github.oldmanpushcart.dashscope4j.embedding.mm;
 
     exports io.github.oldmanpushcart.dashscope4j.util;
-    exports io.github.oldmanpushcart.internal.dashscope4j.util;
 
 }
