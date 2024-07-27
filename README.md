@@ -8,6 +8,9 @@
 > 请注意：在使用 DashScope4j 时，你需要遵守灵积API的使用条款和条件。
 
 ## 重要更新
+- **2.1.0：** 不兼容API修复
+  - 修复模块中错误的exports，该修复会将模块中不应该暴露的内部api重新收回。本次修复不向下兼容。
+  - 修复ChatRequest中函数调用因为Message序列化问题丢失PluginCall、Plugin、ToolCall、Tool等信息的BUG
 - **2.0.0：** 大版本重构。核心API进行不兼容调整和实现重构（请注意），删除1.x.x版本被标记为已废弃的方法
   - 重构拦截器接口和实现重构，并添加了流控、重试等拦截器实现
   - 调整部分类、API的位置和命名；删除已废弃的方法
@@ -69,7 +72,7 @@ final var request = ChatRequest.newBuilder()
 <dependency>
     <groupId>io.github.oldmanpushcart</groupId>
     <artifactId>dashscope4j</artifactId>
-    <version>2.0.0</version>
+    <version>2.1.0</version>
 </dependency>
 ```
 

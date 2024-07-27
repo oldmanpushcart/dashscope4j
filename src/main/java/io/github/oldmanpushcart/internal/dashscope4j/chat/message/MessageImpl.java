@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.internal.dashscope4j.chat.message;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 
@@ -20,6 +21,7 @@ public class MessageImpl implements Message {
         this.contents.addAll(contents);
     }
 
+    @JsonProperty("role")
     @Override
     public Message.Role role() {
         return role;

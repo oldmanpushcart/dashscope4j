@@ -25,7 +25,8 @@ public class JacksonUtils {
 
     /**
      * 压缩Json字符串
-     * @param json   json
+     *
+     * @param json json
      * @return json
      */
     public static String compact(String json) {
@@ -35,7 +36,7 @@ public class JacksonUtils {
     /**
      * {@code json -> node}
      *
-     * @param json   json
+     * @param json json
      * @return node
      */
     public static JsonNode toNode(String json) {
@@ -44,6 +45,16 @@ public class JacksonUtils {
         } catch (JsonProcessingException cause) {
             throw new RuntimeException("parse json to node failed!", cause);
         }
+    }
+
+    /**
+     * {@code object -> node}
+     *
+     * @param object object
+     * @return node
+     */
+    public static JsonNode toNode(Object object) {
+        return mapper.valueToTree(object);
     }
 
     /**

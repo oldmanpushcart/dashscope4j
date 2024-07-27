@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.internal.dashscope4j.chat;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
@@ -68,14 +69,14 @@ class ChatRequestImpl extends AlgoRequestImpl<ChatModel, ChatResponse> implement
 
         // 聊天消息列表中是否包含File类型的内容
         final var hasFileContent = messages.stream()
-                .flatMap(message-> message.contents().stream())
+                .flatMap(message -> message.contents().stream())
                 .anyMatch(content -> content.type() == Content.Type.FILE);
 
         /*
          * PDFExtract插件比较特殊，
          * 他在有File类型的内容时，消息列表格式为为多模态格式，否则则为文本格式
          */
-        if(hasPdfExtractPlugin && hasFileContent) {
+        if (hasPdfExtractPlugin && hasFileContent) {
             modeRef.set(ChatModel.Mode.MULTIMODAL);
         }
 
@@ -85,14 +86,28 @@ class ChatRequestImpl extends AlgoRequestImpl<ChatModel, ChatResponse> implement
         return new HashMap<>() {{
             put("messages", new ArrayList<>() {{
                 for (final var message : messages) {
-                    add(new HashMap<>() {{
-                        put("role", message.role());
-                        if(modeRef.get() == ChatModel.Mode.TEXT) {
-                            put("content", message.text());
+
+                    /*
+                     * 根据模式的不同，构造不同的消息列表格式
+                     * 之所以要如此繁琐的原因，是要保持Message无状态实现Json时根据ChatModel的不同而做出不同的序列化结果
+                     * 所以在此对message的序列化做精细化控制
+                     *
+                     * FIX BUG: 2.0.0 版本中此处有严重问题，会丢失PluginCall、Plugin、ToolCall、Tool等信息
+                     */
+                    final var messageNode = JacksonUtils.toNode(message);
+                    if (messageNode instanceof ObjectNode node) {
+                        if (modeRef.get() == ChatModel.Mode.TEXT) {
+                            node.put("content", message.text());
                         } else {
-                            put("content", message.contents());
+                            node.putPOJO("content", message.contents());
                         }
-                    }});
+                    }
+
+                    /*
+                     * 将JsonNode代替原来的Message参与接下来ChatRequest的序列化操作
+                     */
+                    add(messageNode);
+
                 }
             }});
         }};

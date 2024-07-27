@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.internal.dashscope4j.chat.message.MessageImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils;
 
 import java.net.URI;
@@ -42,7 +43,7 @@ public class ProcessingMessageListForQwenLong implements ProcessMessageListInter
         }
 
         // 新的 QwenLong 系统消息
-        final var newQwenLongSystemMessage = new QwenLongSystemMessage(new ArrayList<>());
+        final var newQwenLongSystemMessage = new QwenLongSystemMessageImpl(new ArrayList<>());
 
         // 新的对话消息列表
         final var newMessages = new ArrayList<Message>();
@@ -54,7 +55,7 @@ public class ProcessingMessageListForQwenLong implements ProcessMessageListInter
              * 如果消息列表中已经有了 QwenLong 系统消息，则合并到新的系统消息中。
              * 本条消息将不会加入到新的对话消息列表中，后边会再重建加回
              */
-            if (message instanceof QwenLongSystemMessage original) {
+            if (message instanceof QwenLongSystemMessageImpl original) {
                 newQwenLongSystemMessage.contents().addAll(original.contents());
                 return;
             }
@@ -113,7 +114,7 @@ public class ProcessingMessageListForQwenLong implements ProcessMessageListInter
         if (content.type() != Content.Type.FILE || !(content.data() instanceof URI resource)) {
             return false;
         }
-        
+
         final var schema = resource.getScheme();
 
         /*
@@ -132,10 +133,10 @@ public class ProcessingMessageListForQwenLong implements ProcessMessageListInter
      * @param qwenLongSystemMessage QwenLong 模型的系统消息
      * @return 重建后的消息列表
      */
-    private static List<Message> rebuildMessageList(List<Message> messages, QwenLongSystemMessage qwenLongSystemMessage) {
+    private static List<Message> rebuildMessageList(List<Message> messages, Message qwenLongSystemMessage) {
 
         // 将 QwenLong 系统消息作为最后一个SystemMessage注入到聊天列表中
-        if (!qwenLongSystemMessage.isEmpty()) {
+        if (!qwenLongSystemMessage.contents().isEmpty()) {
 
             // 找到最后一个系统消息
             int found = -1;
@@ -157,14 +158,11 @@ public class ProcessingMessageListForQwenLong implements ProcessMessageListInter
 
     /**
      * 特殊系统消息
-     *
-     * @param contents 内容集合
      */
-    private record QwenLongSystemMessage(List<Content<?>> contents) implements Message {
+    private static class QwenLongSystemMessageImpl extends MessageImpl {
 
-        @Override
-        public Role role() {
-            return Role.SYSTEM;
+        public QwenLongSystemMessageImpl(List<Content<?>> contents) {
+            super(Role.SYSTEM, contents);
         }
 
         @Override
@@ -174,13 +172,6 @@ public class ProcessingMessageListForQwenLong implements ProcessMessageListInter
                     .map(Object::toString)
                     .distinct()
                     .collect(Collectors.joining(","));
-        }
-
-        /**
-         * @return 是否为空
-         */
-        boolean isEmpty() {
-            return contents.isEmpty();
         }
 
     }
