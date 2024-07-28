@@ -43,6 +43,16 @@ public interface RetryInterceptor extends Interceptor {
         }
 
         /**
+         * 总是匹配
+         *
+         * @return 匹配器
+         * @since 2.1.1
+         */
+        static Matcher alwaysTrue() {
+            return (c, r, ex) -> true;
+        }
+
+        /**
          * 通过协议匹配
          *
          * @param filter 过滤器

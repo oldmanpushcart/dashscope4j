@@ -104,6 +104,16 @@ public interface RateLimiter {
         }
 
         /**
+         * 始终通过
+         *
+         * @return 匹配器
+         * @since 2.1.1
+         */
+        static Matcher alwaysTrue() {
+            return (c, r) -> true;
+        }
+
+        /**
          * 通过协议匹配
          *
          * @param filter 过滤器
