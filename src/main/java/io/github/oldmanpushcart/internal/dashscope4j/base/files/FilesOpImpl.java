@@ -10,19 +10,21 @@ import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 
 import java.net.URI;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.CACHE_NAMESPACE_FOR_FILES;
+import static io.github.oldmanpushcart.dashscope4j.Constants.CACHE_NAMESPACE_FOR_IDX_CACHE_FILES_FILEID_CACHE_KEY;
 
 public class FilesOpImpl implements FilesOp {
 
     private final ApiExecutor executor;
     private final Cache cache;
+    private final Cache index;
 
     public FilesOpImpl(ApiExecutor executor, CacheFactory cacheFactory) {
         this.executor = executor;
         this.cache = cacheFactory.make(CACHE_NAMESPACE_FOR_FILES);
+        this.index = cacheFactory.make(CACHE_NAMESPACE_FOR_IDX_CACHE_FILES_FILEID_CACHE_KEY);
     }
 
     private static String toCacheKey(URI resource, String filename) {
@@ -46,7 +48,17 @@ public class FilesOpImpl implements FilesOp {
                             .thenApply(response -> response.output().meta())
                             .thenApply(JacksonUtils::toJson);
                 })
-                .thenApply(json -> JacksonUtils.toObject(json, FileMetaImpl.class));
+                .<FileMeta>thenApply(json -> JacksonUtils.toObject(json, FileMetaImpl.class))
+
+                /*
+                 * 添加[fileid-key]倒排索引，在其他场景可以通过fileid找回key
+                 * fix: 2.1.1
+                 */
+                .whenComplete((r, ex) -> {
+                    if (null == ex) {
+                        index.put(r.id(), key);
+                    }
+                });
     }
 
     @Override
@@ -70,10 +82,16 @@ public class FilesOpImpl implements FilesOp {
                 .build();
         return executor.async(request)
                 .thenApply(response -> {
-                    CacheUtils.removeIf(cache, json -> {
-                        final var meta = JacksonUtils.toObject(json, FileMetaImpl.class);
-                        return Objects.equals(meta.id(), id);
-                    });
+
+                    /*
+                     * 根据[fileid-key]倒排索引找回key，根据key完成对cache数据的清理
+                     * fix: 2.1.1
+                     */
+                    final var key = index.remove(id);
+                    if (null != key) {
+                        cache.remove(key);
+                    }
+
                     return response.output().deleted();
                 })
                 .exceptionallyCompose(ex -> isForce

@@ -39,6 +39,12 @@ public class Constants {
     public static final String CACHE_NAMESPACE_FOR_FILES = "files";
 
     /**
+     * 缓存命名空间：文件操作-文件ID与缓存KEY倒排索引
+     * @since 2.1.1
+     */
+    public static final String CACHE_NAMESPACE_FOR_IDX_CACHE_FILES_FILEID_CACHE_KEY = "idx.files.fileid_cache-key";
+
+    /**
      * 启用
      */
     public static final String ENABLE = "enable";
