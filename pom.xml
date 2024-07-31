@@ -84,6 +84,7 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
+                    <include>qwen/qwen.tiktoken</include>
                     <include>dashscope4j-meta.properties</include>
                 </includes>
             </resource>

@@ -16,6 +16,7 @@ open module dashscope4j {
     exports io.github.oldmanpushcart.dashscope4j.base.store;
     exports io.github.oldmanpushcart.dashscope4j.base.cache;
     exports io.github.oldmanpushcart.dashscope4j.base.interceptor;
+    exports io.github.oldmanpushcart.dashscope4j.base.tokenizer;
     exports io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit;
     exports io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process;
     exports io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.retry;

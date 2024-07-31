@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.github.oldmanpushcart.dashscope4j.Constants.ENABLE;
+import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.isNotEmptyCollection;
 import static java.util.stream.Collectors.toMap;
 
@@ -147,6 +149,7 @@ class ChatRequestImpl extends AlgoRequestImpl<ChatModel, ChatResponse> implement
                             (a, b) -> b
                     ));
             final var pluginArgJson = JacksonUtils.toJson(pluginArgMap);
+            builder.header(HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE);
             builder.header(HttpHeader.HEADER_X_DASHSCOPE_PLUGIN, pluginArgJson);
         }
 

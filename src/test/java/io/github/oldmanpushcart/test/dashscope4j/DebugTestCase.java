@@ -12,7 +12,6 @@ import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageModel;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageOptions;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
-import io.github.oldmanpushcart.dashscope4j.util.ExceptionUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -20,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -118,26 +116,31 @@ public class DebugTestCase implements LoadingEnv {
     }
 
     @Test
-    public void test$debug() throws InterruptedException {
-
-        final var latch = new CountDownLatch(1);
-        CompletableFuture.completedFuture("hello")
-                .thenApplyAsync(it -> it + " world")
-                .thenApply(it -> it + "!")
-                .thenAccept(s-> {
-                    throw new IllegalArgumentException("test error!");
-                })
-                .whenComplete((r,ex)-> {
-
-                    if(null != ex) {
-                        final var cause = ExceptionUtils.causeBy(ex, UnsupportedOperationException.class);
-                        System.out.println(null == cause);
-                    }
-                    latch.countDown();
-                });
-
-        latch.await();
-
+    public void test$debug() {
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_PLUS)
+                .messages(List.of(
+                        Message.ofUser("""
+                                常见问题
+                                通义千问、灵积、DashScope、百炼是什么关系？
+                                通义千问是阿里云研发的大语言模型；灵积是阿里云推出的模型服务平台，提供了包括通义千问在内的多种模型的服务接口，DashScope是灵积的英文名，两者指的是同一平台；百炼是阿里云推出的一站式大模型应用开发平台。
+                                我如果想调用通义千问模型，是要通过DashScope还是百炼平台？
+                                对于需要模型调用的开发者而言，通过DashScope与百炼平台调用通义千问模型都是通过dashscope SDK或OpenAI兼容或HTTP方式实现。两个平台都可以获取到API-KEY，且是同步的。因此您只需准备好计算环境，并在两个平台任选其一创建API-KEY，即可发起通义千问模型的调用。
+                                我想通过灵积调用通义千问开源模型，但是文档中没有相应介绍，我该看哪篇文档？
+                                qwen开源模型的使用方法请参考大语言模型文档。
+                                我可以通过OpenAI兼容方式调用通义千问的多模态模型吗？
+                                可以，详情请您参考VL模型流式调用示例（输入图片url）。
+                                
+                                请帮我将上边的段落总结，要求生成的token在100-200之间
+                                """
+                        )
+                ))
+                .build();
+        final var response = client.chat(request).async().join();
+        System.out.printf(
+                "usage=%s;text=%s%n", response.usage(),
+                response.output().best().message().text()
+        );
     }
 
 }

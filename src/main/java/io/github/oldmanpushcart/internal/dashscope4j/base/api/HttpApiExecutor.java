@@ -68,8 +68,7 @@ public class HttpApiExecutor implements ApiExecutor {
     private HttpRequest delegateHttpRequest(HttpRequest request, Consumer<HttpRequest.Builder> consumer) {
         final var builder = HttpRequest.newBuilder(request, (k, v) -> true)
                 .header(HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
-                .header(HEADER_X_DASHSCOPE_CLIENT, CLIENT_INFO)
-                .header(HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE);
+                .header(HEADER_X_DASHSCOPE_CLIENT, CLIENT_INFO);
         consumer.accept(builder);
         return builder.build();
     }
