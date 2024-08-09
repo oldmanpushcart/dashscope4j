@@ -4,13 +4,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse.Output;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 
 /**
  * 任务取消应答
  */
-public record TaskCancelResponse(String uuid, Ret ret, Usage usage, Output output) implements ApiResponse<Output> {
+public record TaskCancelResponse(String uuid, Ret ret, Usage usage, Output output) implements HttpApiResponse<HttpApiResponse.Output> {
 
     private TaskCancelResponse(String uuid, Ret ret) {
         this(uuid, ret, Usage.empty(), null);

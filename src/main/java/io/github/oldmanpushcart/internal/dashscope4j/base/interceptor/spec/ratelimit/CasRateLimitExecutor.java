@@ -27,7 +27,7 @@ class CasRateLimitExecutor implements RateLimitExecutor {
     }
 
     @Override
-    public Token tryAcquire(InvocationContext context, ApiRequest<?> request) {
+    public Token tryAcquire(InvocationContext context, ApiRequest request) {
         while (true) {
             final var instant = Instant.now();
             final var metric = updateMetric(instant);

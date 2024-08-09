@@ -34,7 +34,7 @@ public class ProcessingMessageListForQwenLong implements ProcessMessageListInter
             .pattern();
 
     @Override
-    public CompletableFuture<? extends List<Message>> process(InvocationContext context, ApiRequest<?> request, List<Message> messages) {
+    public CompletableFuture<? extends List<Message>> process(InvocationContext context, ApiRequest request, List<Message> messages) {
 
         // 仅处理 QwenLong 模型的对话请求
         if (!(request instanceof ChatRequest chatRequest)

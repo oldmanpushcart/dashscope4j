@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.internal.dashscope4j.base.tokenize.remote;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils;
@@ -25,7 +26,7 @@ import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.check;
 import static java.util.Objects.requireNonNull;
 
-public class TokenizeRequest implements ApiRequest<TokenizeResponse> {
+public class TokenizeRequest implements HttpApiRequest<TokenizeResponse> {
 
     private final static Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
@@ -90,7 +91,7 @@ public class TokenizeRequest implements ApiRequest<TokenizeResponse> {
     }
 
     @Override
-    public Function<String, TokenizeResponse> responseDeserializer() {
+    public Function<String, TokenizeResponse> newResponseDecoder() {
         return body -> {
             logger.debug("{} <= {}", protocol(), body);
             return JacksonUtils.toObject(body, TokenizeResponse.class);

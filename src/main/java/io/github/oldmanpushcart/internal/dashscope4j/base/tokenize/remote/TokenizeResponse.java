@@ -4,12 +4,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 
 import java.util.List;
 
 public record TokenizeResponse(String uuid, Ret ret, Usage usage, Output output)
-        implements ApiResponse<TokenizeResponse.Output> {
+        implements HttpApiResponse<TokenizeResponse.Output> {
 
     public record Output(
 
@@ -22,7 +22,7 @@ public record TokenizeResponse(String uuid, Ret ret, Usage usage, Output output)
             @JsonProperty("input_tokens")
             int total
 
-    ) implements ApiResponse.Output {
+    ) implements HttpApiResponse.Output {
 
     }
 

@@ -5,8 +5,8 @@ import io.github.oldmanpushcart.dashscope4j.OpAsync;
 import io.github.oldmanpushcart.dashscope4j.OpAsyncOpFlow;
 import io.github.oldmanpushcart.dashscope4j.OpAsyncOpFlowOpTask;
 import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process.ProcessContentInterceptor;
@@ -127,7 +127,7 @@ public class DashScopeClientImpl implements DashScopeClient {
     }
 
     @Override
-    public <R extends ApiResponse<?>> OpAsyncOpFlowOpTask<R> api(ApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> OpAsyncOpFlowOpTask<R> http(HttpApiRequest<R> request) {
         return new OpAsyncOpFlowOpTask<>() {
             @Override
             public CompletableFuture<R> async() {

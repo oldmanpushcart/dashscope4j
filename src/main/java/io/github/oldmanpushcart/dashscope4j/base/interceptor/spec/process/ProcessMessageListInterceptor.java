@@ -51,7 +51,7 @@ public interface ProcessMessageListInterceptor extends Interceptor {
          * @param messages 消息列表
          * @return 处理后的消息列表
          */
-        CompletableFuture<? extends List<Message>> process(InvocationContext context, ApiRequest<?> request, List<Message> messages);
+        CompletableFuture<? extends List<Message>> process(InvocationContext context, ApiRequest request, List<Message> messages);
 
     }
 

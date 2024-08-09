@@ -4,13 +4,13 @@ import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingModel;
 import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingRequest;
 import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingResponse;
-import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.algo.HttpAlgoRequestImpl;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 
-class EmbeddingRequestImpl extends AlgoRequestImpl<EmbeddingModel, EmbeddingResponse> implements EmbeddingRequest {
+class EmbeddingRequestImpl extends HttpAlgoRequestImpl<EmbeddingModel, EmbeddingResponse> implements EmbeddingRequest {
 
     private final List<String> documents;
 

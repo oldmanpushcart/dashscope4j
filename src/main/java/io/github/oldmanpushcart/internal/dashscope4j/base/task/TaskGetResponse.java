@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 
 import java.io.IOException;
@@ -16,7 +16,7 @@ import java.io.IOException;
  */
 @JsonDeserialize(using = TaskGetResponse.TaskGetResponseJsonDeserializer.class)
 public record TaskGetResponse(String uuid, Ret ret, Usage usage, Output output, String raw)
-        implements ApiResponse<TaskGetResponse.Output> {
+        implements HttpApiResponse<TaskGetResponse.Output> {
 
     /**
      * 任务获取应答输出
@@ -24,7 +24,7 @@ public record TaskGetResponse(String uuid, Ret ret, Usage usage, Output output, 
      * @param task 任务
      */
     @JsonDeserialize(using = Output.OutputJsonDeserializer.class)
-    public record Output(Task task) implements ApiResponse.Output {
+    public record Output(Task task) implements HttpApiResponse.Output {
 
         static class OutputJsonDeserializer extends JsonDeserializer<Output> {
 

@@ -50,7 +50,7 @@ public interface ProcessContentInterceptor extends Interceptor {
          * @param content 内容
          * @return 处理后的内容
          */
-        CompletableFuture<Content<?>> process(InvocationContext context, ApiRequest<?> request, Content<?> content);
+        CompletableFuture<Content<?>> process(InvocationContext context, ApiRequest request, Content<?> content);
 
     }
 }

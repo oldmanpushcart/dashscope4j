@@ -2,7 +2,8 @@ package io.github.oldmanpushcart.dashscope4j;
 
 import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
@@ -36,7 +37,7 @@ public interface DashScopeClient {
      * @param <R>     结果类型
      * @return 操作
      */
-    <R extends ApiResponse<?>> OpAsyncOpFlowOpTask<R> api(ApiRequest<R> request);
+    <R extends HttpApiResponse<?>> OpAsyncOpFlowOpTask<R> http(HttpApiRequest<R> request);
 
     /**
      * @return 辅助操作

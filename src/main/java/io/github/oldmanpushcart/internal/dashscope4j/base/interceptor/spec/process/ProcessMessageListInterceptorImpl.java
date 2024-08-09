@@ -21,7 +21,7 @@ public class ProcessMessageListInterceptorImpl implements ProcessMessageListInte
     }
 
     @Override
-    public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
+    public CompletableFuture<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
         if (request instanceof ChatRequest chatRequest) {
             return processor.process(context, chatRequest, chatRequest.messages())
                     .thenApply(messages -> {

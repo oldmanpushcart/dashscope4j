@@ -21,7 +21,7 @@ public class ProcessContentInterceptorImpl implements ProcessContentInterceptor 
     }
 
     @Override
-    public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
+    public CompletableFuture<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
 
         if (request instanceof ChatRequest chatRequest) {
             return preHandleByChatRequest(context, chatRequest);
@@ -34,7 +34,7 @@ public class ProcessContentInterceptorImpl implements ProcessContentInterceptor 
         return ProcessContentInterceptor.super.preHandle(context, request);
     }
 
-    private CompletableFuture<ApiRequest<?>> preHandleByChatRequest(InvocationContext context, ChatRequest request) {
+    private CompletableFuture<ApiRequest> preHandleByChatRequest(InvocationContext context, ChatRequest request) {
         return thenIterateCompose(request.messages(), message ->
                 thenIterateCompose(message.contents(), content -> processor.process(context, request, content))
                         .thenApply(newContents -> {
@@ -47,7 +47,7 @@ public class ProcessContentInterceptorImpl implements ProcessContentInterceptor 
                 });
     }
 
-    private CompletableFuture<ApiRequest<?>> preHandleByMmEmbeddingRequest(InvocationContext context, MmEmbeddingRequest request) {
+    private CompletableFuture<ApiRequest> preHandleByMmEmbeddingRequest(InvocationContext context, MmEmbeddingRequest request) {
         return thenIterateCompose(request.contents(), content -> processor.process(context, request, content))
                 .thenApply(newContents -> {
                     updateList(REPLACE_ALL, request.contents(), newContents);

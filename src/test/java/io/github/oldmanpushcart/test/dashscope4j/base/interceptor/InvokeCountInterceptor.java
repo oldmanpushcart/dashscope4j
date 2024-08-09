@@ -16,7 +16,7 @@ public class InvokeCountInterceptor implements Interceptor {
     private final AtomicInteger failureCountRef = new AtomicInteger(0);
 
     @Override
-    public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
+    public CompletableFuture<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
         requestCountRef.incrementAndGet();
         return CompletableFuture.completedFuture(request);
     }

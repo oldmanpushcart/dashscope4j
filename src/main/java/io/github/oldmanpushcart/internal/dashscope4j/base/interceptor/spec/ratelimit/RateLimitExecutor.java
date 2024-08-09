@@ -19,7 +19,7 @@ interface RateLimitExecutor {
      * @param request 请求
      * @return 获取结果
      */
-    Token tryAcquire(InvocationContext context, ApiRequest<?> request);
+    Token tryAcquire(InvocationContext context, ApiRequest request);
 
     /**
      * 令牌

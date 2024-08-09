@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.embedding.text;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.base.algo.HttpAlgoRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.embedding.text.EmbeddingRequestBuilderImpl;
 
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 向量计算请求
  */
-public interface EmbeddingRequest extends AlgoRequest<EmbeddingModel, EmbeddingResponse> {
+public interface EmbeddingRequest extends HttpAlgoRequest<EmbeddingModel, EmbeddingResponse> {
 
     /**
      * @return 文档列表
@@ -36,7 +36,7 @@ public interface EmbeddingRequest extends AlgoRequest<EmbeddingModel, EmbeddingR
     /**
      * 向量计算请求构建器
      */
-    interface Builder extends AlgoRequest.Builder<EmbeddingModel, EmbeddingRequest, Builder> {
+    interface Builder extends HttpAlgoRequest.Builder<EmbeddingModel, EmbeddingRequest, Builder> {
 
         /**
          * 设置文档集合

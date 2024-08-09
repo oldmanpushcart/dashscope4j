@@ -17,10 +17,10 @@ import java.util.concurrent.CompletableFuture;
 public class ProcessingContentForUpload implements ProcessContentInterceptor.Processor {
 
     @Override
-    public CompletableFuture<Content<?>> process(InvocationContext context, ApiRequest<?> request, Content<?> content) {
+    public CompletableFuture<Content<?>> process(InvocationContext context, ApiRequest request, Content<?> content) {
 
         // 只有算法类的请求才需要上传临时空间
-        if (request instanceof AlgoRequest<?, ?> algoRequest) {
+        if (request instanceof AlgoRequest<?> algoRequest) {
 
             final var model = algoRequest.model();
             final var data = content.data();

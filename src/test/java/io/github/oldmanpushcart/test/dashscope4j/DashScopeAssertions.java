@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Assertions;
 
 public class DashScopeAssertions {
 
-    public static void assertApiRequest(ApiRequest<?> request) {
+    public static void assertApiRequest(ApiRequest request) {
         Assertions.assertNotNull(request);
     }
 

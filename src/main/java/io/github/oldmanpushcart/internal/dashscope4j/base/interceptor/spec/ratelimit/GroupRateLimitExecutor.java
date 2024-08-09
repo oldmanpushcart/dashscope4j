@@ -15,7 +15,7 @@ import java.util.List;
 record GroupRateLimitExecutor(List<? extends RateLimitExecutor> executors) implements RateLimitExecutor {
 
     @Override
-    public Token tryAcquire(InvocationContext context, ApiRequest<?> request) {
+    public Token tryAcquire(InvocationContext context, ApiRequest request) {
         final var tokens = new ArrayList<Token>();
         for (final var executor : executors) {
             final var token = executor.tryAcquire(context, request);

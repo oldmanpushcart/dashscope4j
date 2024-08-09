@@ -4,53 +4,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
-import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoResponse;
-import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.net.http.HttpRequest;
 import java.time.Duration;
-import java.util.function.Function;
 
-import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
-import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.ContentType.MIME_APPLICATION_JSON;
-import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.HEADER_CONTENT_TYPE;
-
-public abstract class AlgoRequestImpl<M extends Model, R extends AlgoResponse<?>>
-        implements AlgoRequest<M, R> {
-
-    private final static Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
+public abstract class AlgoRequestImpl<M extends Model>
+        implements AlgoRequest<M> {
 
     private final M model;
     private final Option option;
     private final Duration timeout;
-    private final Class<? extends R> responseType;
 
-    protected AlgoRequestImpl(M model, Option option, Duration timeout, Class<? extends R> responseType) {
+    protected AlgoRequestImpl(M model, Option option, Duration timeout) {
         this.model = model;
         this.option = option;
         this.timeout = timeout;
-        this.responseType = responseType;
     }
 
     @Override
-    public HttpRequest newHttpRequest() {
-        final var body = JacksonUtils.toJson(this);
-        logger.debug("{} => {}", protocol(), body);
-        return HttpRequest.newBuilder()
-                .uri(model().remote())
-                .header(HEADER_CONTENT_TYPE, MIME_APPLICATION_JSON)
-                .POST(HttpRequest.BodyPublishers.ofString(body))
-                .build();
-    }
-
-    @Override
-    public Function<String, R> responseDeserializer() {
-        return body -> {
-            logger.debug("{} <= {}", protocol(), body);
-            return JacksonUtils.toObject(body, responseType);
-        };
+    public Duration timeout() {
+        return timeout;
     }
 
     @JsonProperty("model")
@@ -67,10 +39,5 @@ public abstract class AlgoRequestImpl<M extends Model, R extends AlgoResponse<?>
 
     @JsonProperty("input")
     abstract protected Object input();
-
-    @Override
-    public Duration timeout() {
-        return timeout;
-    }
 
 }

@@ -35,7 +35,7 @@ public class RateLimitInterceptorImpl implements RateLimitInterceptor {
     }
 
     @Override
-    public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
+    public CompletableFuture<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
 
         final var token = executor.tryAcquire(context, request);
         final var strategy = token.strategy();
@@ -65,7 +65,7 @@ public class RateLimitInterceptorImpl implements RateLimitInterceptor {
                 final var protocol = request.protocol();
                 final var delayMs = token.delay().toMillis();
                 logger.warn("{}/rate-limit/delay={}ms!", protocol, delayMs);
-                final var future = new CompletableFuture<ApiRequest<?>>();
+                final var future = new CompletableFuture<ApiRequest>();
                 scheduler.schedule(
                         () -> {
                             preHandle(context, request).thenAccept(future::complete);

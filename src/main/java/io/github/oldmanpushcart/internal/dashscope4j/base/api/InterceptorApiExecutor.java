@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.api;
 
 import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.cast;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.MapFlowProcessor.asyncOneToOne;
 
 /**
@@ -34,16 +35,15 @@ public class InterceptorApiExecutor implements ApiExecutor {
     }
 
     @Override
-    public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletableFuture<R> async(HttpApiRequest<R> request) {
         final var context = new CtxImpl(client, executor);
         return CompletableFuture.completedFuture(null)
 
                 // pre-handle
                 .thenCompose(unused -> interceptor.preHandle(context, request))
-                .thenApply(CommonUtils::<ApiRequest<R>>cast)
 
                 // handle
-                .thenCompose(req -> interceptor.handle(context, req, target::async))
+                .thenCompose(req -> interceptor.handle(context, req, v -> target.async(cast(v))))
                 .thenApply(CommonUtils::<R>cast)
 
                 // post-handle
@@ -54,16 +54,15 @@ public class InterceptorApiExecutor implements ApiExecutor {
     }
 
     @Override
-    public <R extends ApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(ApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(HttpApiRequest<R> request) {
         final var context = new CtxImpl(client, executor);
         return CompletableFuture.completedFuture(null)
 
                 // pre-handle
                 .thenCompose(unused -> interceptor.preHandle(context, request))
-                .thenApply(CommonUtils::<ApiRequest<R>>cast)
 
                 // handle
-                .thenCompose(req -> interceptor.handle(context, req, target::flow))
+                .thenCompose(req -> interceptor.handle(context, req, v -> target.flow(cast(v))))
                 .thenApply(CommonUtils::<Flow.Publisher<R>>cast)
 
                 // post-handle
@@ -72,16 +71,15 @@ public class InterceptorApiExecutor implements ApiExecutor {
     }
 
     @Override
-    public <R extends ApiResponse<?>> CompletableFuture<Task.Half<R>> task(ApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletableFuture<Task.Half<R>> task(HttpApiRequest<R> request) {
         final var context = new CtxImpl(client, executor);
         return CompletableFuture.completedFuture(null)
 
                 // pre-handle
                 .thenCompose(unused -> interceptor.preHandle(context, request))
-                .thenApply(CommonUtils::<ApiRequest<R>>cast)
 
                 // handle
-                .thenCompose(req -> interceptor.handle(context, req, target::task))
+                .thenCompose(req -> interceptor.handle(context, req, v -> target.task(cast(v))))
                 .thenApply(CommonUtils::<Task.Half<R>>cast)
 
                 // post-handle

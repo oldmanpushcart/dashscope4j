@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.task;
 
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiRequestBuilderImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import org.slf4j.Logger;
@@ -17,7 +17,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * 任务获取请求
  */
-public record TaskGetRequest(String taskId, Duration timeout) implements ApiRequest<TaskGetResponse> {
+public record TaskGetRequest(String taskId, Duration timeout) implements HttpApiRequest<TaskGetResponse> {
 
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
@@ -41,7 +41,7 @@ public record TaskGetRequest(String taskId, Duration timeout) implements ApiRequ
     }
 
     @Override
-    public Function<String, TaskGetResponse> responseDeserializer() {
+    public Function<String, TaskGetResponse> newResponseDecoder() {
         return body -> {
             logger.debug("{} <= {}", protocol(), body);
             return JacksonUtils.toObject(body, TaskGetResponse.class);

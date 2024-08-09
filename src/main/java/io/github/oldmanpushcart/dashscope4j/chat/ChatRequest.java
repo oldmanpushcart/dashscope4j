@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.chat;
 
 import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.base.algo.HttpAlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.Tool;
@@ -12,7 +14,7 @@ import java.util.List;
 /**
  * 对话请求
  */
-public interface ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
+public interface ChatRequest extends HttpAlgoRequest<ChatModel, ChatResponse> {
 
     /**
      * @return 对话消息列表
@@ -49,7 +51,7 @@ public interface ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     /**
      * 对话请求构建器
      */
-    interface Builder extends AlgoRequest.Builder<ChatModel, ChatRequest, Builder> {
+    interface Builder extends AlgoRequest.Builder<ChatModel, ChatRequest, Builder>, HttpApiRequest.Builder<ChatRequest, Builder> {
 
         /**
          * 设置插件集合

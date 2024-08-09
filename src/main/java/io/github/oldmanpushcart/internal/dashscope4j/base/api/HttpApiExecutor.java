@@ -3,7 +3,8 @@ package io.github.oldmanpushcart.internal.dashscope4j.base.api;
 import io.github.oldmanpushcart.dashscope4j.Constants;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 import io.github.oldmanpushcart.dashscope4j.base.task.TaskException;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader;
@@ -74,7 +75,7 @@ public class HttpApiExecutor implements ApiExecutor {
     }
 
     // 设置超时时间
-    private void setupTimeout(HttpRequest.Builder builder, ApiRequest<?> request) {
+    private void setupTimeout(HttpRequest.Builder builder, ApiRequest request) {
         Optional.ofNullable(request.timeout())
                 .or(() -> Optional.ofNullable(timeout))
                 .ifPresent(builder::timeout);
@@ -87,7 +88,7 @@ public class HttpApiExecutor implements ApiExecutor {
      * @return 异步应答
      */
     @Override
-    public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletableFuture<R> async(HttpApiRequest<R> request) {
 
         // 构建委派请求
         final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
@@ -102,9 +103,9 @@ public class HttpApiExecutor implements ApiExecutor {
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
                 .whenComplete(HttpApiExecutor::loggingHttpResponse)
-                .thenApply(request.httpResponseHandler())
+                .thenApply(request.newHttpResponseHandler())
                 .thenApply(httpResponse -> {
-                    final var response = request.responseDeserializer().apply(httpResponse.body());
+                    final var response = request.newResponseDecoder().apply(httpResponse.body());
                     if (!response.ret().isSuccess()) {
                         throw new ApiException(httpResponse.statusCode(), response);
                     }
@@ -181,7 +182,7 @@ public class HttpApiExecutor implements ApiExecutor {
      * @return 流式应答
      */
     @Override
-    public <R extends ApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(ApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(HttpApiRequest<R> request) {
 
         final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder.header(HEADER_X_DASHSCOPE_SSE, ENABLE);
@@ -193,7 +194,7 @@ public class HttpApiExecutor implements ApiExecutor {
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApplyAsync(identity(), executor)
                 .whenComplete(HttpApiExecutor::loggingHttpResponse)
-                .thenApply(request.httpResponseHandler())
+                .thenApply(request.newHttpResponseHandler())
 
                 // 从HTTP响应数据流转换为SSE事件流
                 .thenApply(httpResponse -> {
@@ -224,9 +225,9 @@ public class HttpApiExecutor implements ApiExecutor {
                 .thenApply(ssePublisher -> MapFlowProcessor.syncOneToOne(ssePublisher, event -> switch (event.type()) {
                             case "error" -> throw new ApiException(
                                     parseHttpStatus(event),
-                                    request.responseDeserializer().apply(event.data())
+                                    request.newResponseDecoder().apply(event.data())
                             );
-                            case "result" -> request.responseDeserializer().apply(event.data());
+                            case "result" -> request.newResponseDecoder().apply(event.data());
                             default -> throw new RuntimeException("Unsupported event type: %s".formatted(event.type()));
                         })
                 );
@@ -241,7 +242,7 @@ public class HttpApiExecutor implements ApiExecutor {
      * @return 任务应答
      */
     @Override
-    public <R extends ApiResponse<?>> CompletableFuture<Task.Half<R>> task(ApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletableFuture<Task.Half<R>> task(HttpApiRequest<R> request) {
 
         final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
             builder
@@ -255,7 +256,7 @@ public class HttpApiExecutor implements ApiExecutor {
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
                 .whenComplete(HttpApiExecutor::loggingHttpResponse)
-                .thenApply(request.httpResponseHandler())
+                .thenApply(request.newHttpResponseHandler())
 
                 // 解析HTTP响应为任务半应答
                 .thenApply(httpResponse -> {
@@ -273,7 +274,7 @@ public class HttpApiExecutor implements ApiExecutor {
                                 .building(builder -> Optional.ofNullable(request.timeout()).ifPresent(builder::timeout))
                                 .build(),
                         strategy,
-                        request.responseDeserializer()
+                        request.newResponseDecoder()
                 ));
     }
 

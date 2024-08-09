@@ -1,8 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoResponse;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.algo.HttpAlgoResponse;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 
 import java.util.List;
@@ -10,12 +9,12 @@ import java.util.List;
 /**
  * 对话应答
  */
-public interface ChatResponse extends AlgoResponse<ChatResponse.Output> {
+public interface ChatResponse extends HttpAlgoResponse<ChatResponse.Output> {
 
     /**
      * 对话应答数据
      */
-    interface Output extends ApiResponse.Output {
+    interface Output extends HttpAlgoResponse.Output {
 
         /**
          * @return 应答选择

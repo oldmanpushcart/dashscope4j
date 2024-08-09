@@ -7,7 +7,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiRequestBuilderI
 
 import static java.util.Objects.requireNonNull;
 
-public abstract class AlgoRequestBuilderImpl<M extends Model, T extends AlgoRequest<M, ?>, B extends AlgoRequest.Builder<M, T, B>>
+public abstract class AlgoRequestBuilderImpl<M extends Model, T extends AlgoRequest<M>, B extends AlgoRequest.Builder<M, T, B>>
         extends ApiRequestBuilderImpl<T, B>
         implements AlgoRequest.Builder<M, T, B> {
 

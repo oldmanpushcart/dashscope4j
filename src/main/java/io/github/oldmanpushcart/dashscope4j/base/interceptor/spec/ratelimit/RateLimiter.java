@@ -32,7 +32,7 @@ public interface RateLimiter {
      * @param metric  周期度量
      * @return 限流策略
      */
-    Strategy limit(InvocationContext context, ApiRequest<?> request, Metric metric);
+    Strategy limit(InvocationContext context, ApiRequest request, Metric metric);
 
     /**
      * 限制策略
@@ -91,7 +91,7 @@ public interface RateLimiter {
          * @param request 发送请求
          * @return 是否匹配
          */
-        boolean matches(InvocationContext context, ApiRequest<?> request);
+        boolean matches(InvocationContext context, ApiRequest request);
 
         /**
          * 与
@@ -129,7 +129,7 @@ public interface RateLimiter {
          * @param filter 过滤器
          * @return 匹配器
          */
-        static Matcher byRequest(Predicate<? super ApiRequest<?>> filter) {
+        static Matcher byRequest(Predicate<? super ApiRequest> filter) {
             return (c, r) -> filter.test(r);
         }
 
@@ -139,7 +139,7 @@ public interface RateLimiter {
          * @param type 请求类型
          * @return 匹配器
          */
-        static Matcher byRequest(Class<? extends ApiRequest<?>> type) {
+        static Matcher byRequest(Class<? extends ApiRequest> type) {
             return (c, r) -> type.isInstance(r);
         }
 
@@ -150,7 +150,7 @@ public interface RateLimiter {
          * @return 匹配器
          */
         static Matcher byModel(Model model) {
-            return (c, r) -> r instanceof AlgoRequest<?, ?> algoRequest
+            return (c, r) -> r instanceof AlgoRequest<?> algoRequest
                              && Objects.nonNull(algoRequest.model())
                              && Objects.equals(algoRequest.model().name(), model.name());
         }
@@ -162,7 +162,7 @@ public interface RateLimiter {
          * @return 匹配器
          */
         static Matcher byModel(String name) {
-            return (c, r) -> r instanceof AlgoRequest<?, ?> algoRequest
+            return (c, r) -> r instanceof AlgoRequest<?> algoRequest
                              && Objects.nonNull(algoRequest.model())
                              && Objects.equals(algoRequest.model().name(), name);
         }
@@ -206,21 +206,21 @@ public interface RateLimiter {
      */
     class BlockException extends RuntimeException {
 
-        private final ApiRequest<?> request;
+        private final ApiRequest request;
 
         /**
          * 构建阻塞异常
          *
          * @param request 发送请求
          */
-        public BlockException(ApiRequest<?> request) {
+        public BlockException(ApiRequest request) {
             this.request = request;
         }
 
         /**
          * @return 阻塞发生时的发送请求
          */
-        public ApiRequest<?> request() {
+        public ApiRequest request() {
             return request;
         }
 

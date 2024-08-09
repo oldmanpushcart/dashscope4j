@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 
 import java.time.Duration;
 
@@ -16,9 +16,9 @@ public record StoreGetPolicyResponse(
         Ret ret,
         Usage usage,
         Output output
-) implements ApiResponse<StoreGetPolicyResponse.Output> {
+) implements HttpApiResponse<StoreGetPolicyResponse.Output> {
 
-    public record Output(StorePolicy policy) implements ApiResponse.Output {
+    public record Output(StorePolicy policy) implements HttpApiResponse.Output {
 
         private static final long MB_TO_BYTE = 1024L * 1024L;
 

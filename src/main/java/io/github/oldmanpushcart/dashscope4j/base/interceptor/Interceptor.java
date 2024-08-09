@@ -17,7 +17,7 @@ public interface Interceptor {
      * @param request 请求
      * @return 请求
      */
-    default CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
+    default CompletableFuture<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
         return CompletableFuture.completedFuture(request);
     }
 
@@ -29,7 +29,7 @@ public interface Interceptor {
      * @param opHandler 操作处理器
      * @return 处理结果
      */
-    default CompletableFuture<?> handle(InvocationContext context, ApiRequest<?> request, OpHandler opHandler) {
+    default CompletableFuture<?> handle(InvocationContext context, ApiRequest request, OpHandler opHandler) {
         return opHandler.handle(request);
     }
 
@@ -44,7 +44,7 @@ public interface Interceptor {
          * @param request 请求
          * @return 结果
          */
-        CompletableFuture<?> handle(ApiRequest<?> request);
+        CompletableFuture<?> handle(ApiRequest request);
 
     }
 

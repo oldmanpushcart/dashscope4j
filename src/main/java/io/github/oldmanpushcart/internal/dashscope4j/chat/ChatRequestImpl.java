@@ -10,8 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.chat.plugin.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.Tool;
-import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestImpl;
-import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader;
+import io.github.oldmanpushcart.internal.dashscope4j.base.algo.HttpAlgoRequestImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 
 import java.net.http.HttpRequest;
@@ -23,10 +22,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.ENABLE;
 import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE;
+import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.HEADER_X_DASHSCOPE_PLUGIN;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.isNotEmptyCollection;
 import static java.util.stream.Collectors.toMap;
 
-class ChatRequestImpl extends AlgoRequestImpl<ChatModel, ChatResponse> implements ChatRequest {
+class ChatRequestImpl extends HttpAlgoRequestImpl<ChatModel, ChatResponse> implements ChatRequest {
 
     private final List<Message> messages;
     private final List<Plugin> plugins;
@@ -138,7 +138,8 @@ class ChatRequestImpl extends AlgoRequestImpl<ChatModel, ChatResponse> implement
     public HttpRequest newHttpRequest() {
 
         // 构造HTTP请求
-        final var builder = HttpRequest.newBuilder(super.newHttpRequest(), (k, v) -> true);
+        final var builder = HttpRequest.newBuilder(super.newHttpRequest(), (k, v) -> true)
+                .header(HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE);
 
         // 添加插件
         if (isNotEmptyCollection(plugins)) {
@@ -149,8 +150,7 @@ class ChatRequestImpl extends AlgoRequestImpl<ChatModel, ChatResponse> implement
                             (a, b) -> b
                     ));
             final var pluginArgJson = JacksonUtils.toJson(pluginArgMap);
-            builder.header(HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE);
-            builder.header(HttpHeader.HEADER_X_DASHSCOPE_PLUGIN, pluginArgJson);
+            builder.header(HEADER_X_DASHSCOPE_PLUGIN, pluginArgJson);
         }
 
         return builder.build();

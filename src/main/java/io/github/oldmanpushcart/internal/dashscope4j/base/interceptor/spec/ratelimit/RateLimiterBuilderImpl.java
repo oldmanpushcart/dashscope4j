@@ -76,7 +76,7 @@ public class RateLimiterBuilderImpl implements RateLimiter.Builder {
             }
 
             @Override
-            public Strategy limit(InvocationContext context, ApiRequest<?> request, Metric metric) {
+            public Strategy limit(InvocationContext context, ApiRequest request, Metric metric) {
 
                 // 不匹配流控规则，跳过流控限制
                 if (!matcher.matches(context, request)) {

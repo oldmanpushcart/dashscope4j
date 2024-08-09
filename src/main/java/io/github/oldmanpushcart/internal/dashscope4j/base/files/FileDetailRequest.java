@@ -38,7 +38,7 @@ public record FileDetailRequest(String id, Duration timeout) implements OpenAiRe
     }
 
     @Override
-    public Function<String, FileDetailResponse> responseDeserializer() {
+    public Function<String, FileDetailResponse> newResponseDecoder() {
         return body -> {
             logger.debug("{}/{} <= {}", protocol(), id, body);
             return JacksonUtils.toObject(body, FileDetailResponse.class);
