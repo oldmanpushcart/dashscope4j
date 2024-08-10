@@ -8,7 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.Usage;
  *
  * @param <D> 数据类型
  */
-public interface ApiResponse<D extends ApiResponse.Output> {
+public interface ApiResponse<D> {
 
     /**
      * 空UUID
@@ -40,12 +40,6 @@ public interface ApiResponse<D extends ApiResponse.Output> {
      */
     default boolean isLast() {
         return true;
-    }
-
-    /**
-     * 应答数据
-     */
-    interface Output {
     }
 
 }

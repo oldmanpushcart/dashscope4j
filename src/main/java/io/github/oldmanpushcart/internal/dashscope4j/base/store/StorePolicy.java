@@ -1,7 +1,5 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.store;
 
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
-
 import java.time.Duration;
 
 /**
@@ -21,7 +19,7 @@ public record StorePolicy(
         long max,
         long capacity,
         Oss oss
-) implements ApiResponse.Output {
+) {
 
     /**
      * OSS配置

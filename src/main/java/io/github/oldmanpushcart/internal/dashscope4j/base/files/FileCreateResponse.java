@@ -11,7 +11,7 @@ import java.time.Instant;
 public record FileCreateResponse(Error error, Output output)
         implements OpenAiResponse<FileCreateResponse.Output> {
 
-    public record Output(FileMeta meta) implements OpenAiResponse.Output {
+    public record Output(FileMeta meta) {
     }
 
     @JsonCreator

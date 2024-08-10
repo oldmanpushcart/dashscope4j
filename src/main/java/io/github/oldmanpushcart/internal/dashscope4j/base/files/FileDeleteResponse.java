@@ -8,7 +8,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.openai.OpenAiResponse;
 public record FileDeleteResponse(Error error, Output output)
         implements OpenAiResponse<FileDeleteResponse.Output> {
 
-    public record Output(Boolean deleted) implements OpenAiResponse.Output {
+    public record Output(Boolean deleted) {
 
     }
 

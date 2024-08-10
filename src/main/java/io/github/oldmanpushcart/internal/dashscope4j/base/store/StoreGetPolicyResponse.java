@@ -18,7 +18,7 @@ public record StoreGetPolicyResponse(
         Output output
 ) implements HttpApiResponse<StoreGetPolicyResponse.Output> {
 
-    public record Output(StorePolicy policy) implements HttpApiResponse.Output {
+    public record Output(StorePolicy policy) {
 
         private static final long MB_TO_BYTE = 1024L * 1024L;
 

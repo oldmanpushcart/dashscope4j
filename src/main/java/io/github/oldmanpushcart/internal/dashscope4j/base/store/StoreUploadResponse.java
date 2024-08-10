@@ -17,11 +17,7 @@ public record StoreUploadResponse(
         Output output
 ) implements HttpApiResponse<StoreUploadResponse.Output> {
 
-    public record Output(
-            URI resource,
-            Model model,
-            URI uploaded
-    ) implements HttpApiResponse.Output {
+    public record Output(URI resource, Model model, URI uploaded) {
     }
 
 }

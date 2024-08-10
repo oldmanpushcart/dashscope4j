@@ -14,7 +14,7 @@ public interface GenImageResponse extends HttpAlgoResponse<GenImageResponse.Outp
     /**
      * 文生图应答数据
      */
-    interface Output extends HttpAlgoResponse.Output {
+    interface Output {
 
         /**
          * @return 结果

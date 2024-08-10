@@ -9,10 +9,16 @@ import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 /**
  * 任务取消应答
  */
-public record TaskCancelResponse(String uuid, Ret ret, Usage usage, Output output) implements HttpApiResponse<HttpApiResponse.Output> {
+public record TaskCancelResponse(String uuid, Ret ret) implements HttpApiResponse<Object> {
 
-    private TaskCancelResponse(String uuid, Ret ret) {
-        this(uuid, ret, Usage.empty(), null);
+    @Override
+    public Object output() {
+        return null;
+    }
+
+    @Override
+    public Usage usage() {
+        return Usage.empty();
     }
 
     @JsonCreator

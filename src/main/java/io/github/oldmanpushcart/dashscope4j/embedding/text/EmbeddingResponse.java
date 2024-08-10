@@ -12,7 +12,7 @@ public interface EmbeddingResponse extends HttpAlgoResponse<EmbeddingResponse.Ou
     /**
      * 输出
      */
-    interface Output extends HttpAlgoResponse.Output {
+    interface Output {
 
         /**
          * @return 向量计算结果

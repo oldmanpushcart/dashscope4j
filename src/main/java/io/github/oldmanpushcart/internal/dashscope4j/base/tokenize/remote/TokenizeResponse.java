@@ -22,12 +22,12 @@ public record TokenizeResponse(String uuid, Ret ret, Usage usage, Output output)
             @JsonProperty("input_tokens")
             int total
 
-    ) implements HttpApiResponse.Output {
+    ) {
 
     }
 
     @JsonCreator
-    public static TokenizeResponse of(
+    static TokenizeResponse of(
 
             @JsonProperty("request_id")
             String uuid,

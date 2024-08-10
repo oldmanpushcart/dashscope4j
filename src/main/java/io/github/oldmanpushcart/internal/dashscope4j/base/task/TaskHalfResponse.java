@@ -13,7 +13,7 @@ import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 public record TaskHalfResponse(String uuid, Ret ret, Usage usage, Output output)
         implements HttpApiResponse<TaskHalfResponse.Output> {
 
-    public record Output(String taskId, Task.Status status) implements HttpApiResponse.Output {
+    public record Output(String taskId, Task.Status status) {
 
         @JsonCreator
         static Output of(

@@ -11,7 +11,7 @@ public interface MmEmbeddingResponse extends HttpAlgoResponse<MmEmbeddingRespons
     /**
      * 多模态向量计算响应输出
      */
-    interface Output extends HttpAlgoResponse.Output {
+    interface Output {
 
         /**
          * @return 多模态向量计算结果

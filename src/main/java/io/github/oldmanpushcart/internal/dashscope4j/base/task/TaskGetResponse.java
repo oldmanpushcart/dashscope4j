@@ -24,7 +24,7 @@ public record TaskGetResponse(String uuid, Ret ret, Usage usage, Output output, 
      * @param task 任务
      */
     @JsonDeserialize(using = Output.OutputJsonDeserializer.class)
-    public record Output(Task task) implements HttpApiResponse.Output {
+    public record Output(Task task) {
 
         static class OutputJsonDeserializer extends JsonDeserializer<Output> {
 

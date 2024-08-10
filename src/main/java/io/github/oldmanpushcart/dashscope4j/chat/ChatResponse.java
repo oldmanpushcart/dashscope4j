@@ -14,7 +14,7 @@ public interface ChatResponse extends HttpAlgoResponse<ChatResponse.Output> {
     /**
      * 对话应答数据
      */
-    interface Output extends HttpAlgoResponse.Output {
+    interface Output {
 
         /**
          * @return 应答选择

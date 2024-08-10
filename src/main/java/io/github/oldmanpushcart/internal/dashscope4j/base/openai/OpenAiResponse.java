@@ -12,7 +12,7 @@ import java.util.Optional;
  *
  * @param <D> 输出
  */
-public interface OpenAiResponse<D extends OpenAiResponse.Output> extends HttpApiResponse<D> {
+public interface OpenAiResponse<D> extends HttpApiResponse<D> {
 
     @Override
     default String uuid() {
@@ -39,9 +39,5 @@ public interface OpenAiResponse<D extends OpenAiResponse.Output> extends HttpApi
     }
 
     Error error();
-
-    interface Output extends HttpApiResponse.Output {
-
-    }
 
 }

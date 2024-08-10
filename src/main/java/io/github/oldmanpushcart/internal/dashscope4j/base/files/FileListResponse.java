@@ -13,7 +13,7 @@ import java.util.List;
 public record FileListResponse(Error error, Output output)
         implements OpenAiResponse<FileListResponse.Output> {
 
-    public record Output(boolean hasMore, List<FileMeta> data) implements OpenAiResponse.Output {
+    public record Output(boolean hasMore, List<FileMeta> data) {
 
     }
 

@@ -7,6 +7,6 @@ import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
  *
  * @param <D> 数据类型
  */
-public interface AlgoResponse<D extends ApiResponse.Output> extends ApiResponse<D> {
+public interface AlgoResponse<D> extends ApiResponse<D> {
 
 }
