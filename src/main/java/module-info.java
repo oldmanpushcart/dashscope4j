@@ -15,11 +15,16 @@ open module dashscope4j {
     exports io.github.oldmanpushcart.dashscope4j.base.files;
     exports io.github.oldmanpushcart.dashscope4j.base.store;
     exports io.github.oldmanpushcart.dashscope4j.base.cache;
+    exports io.github.oldmanpushcart.dashscope4j.base.exchange;
     exports io.github.oldmanpushcart.dashscope4j.base.interceptor;
     exports io.github.oldmanpushcart.dashscope4j.base.tokenizer;
     exports io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit;
     exports io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process;
     exports io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.retry;
+
+    exports io.github.oldmanpushcart.dashscope4j.audio;
+    exports io.github.oldmanpushcart.dashscope4j.audio.asr;
+    exports io.github.oldmanpushcart.dashscope4j.audio.tts;
 
     exports io.github.oldmanpushcart.dashscope4j.chat;
     exports io.github.oldmanpushcart.dashscope4j.chat.message;

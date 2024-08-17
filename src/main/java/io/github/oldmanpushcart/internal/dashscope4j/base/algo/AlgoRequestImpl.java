@@ -34,7 +34,13 @@ public abstract class AlgoRequestImpl<M extends Model>
     @JsonProperty("parameters")
     @Override
     public Option option() {
-        return option;
+        if(model.option() == null || model.option().isEmpty()) {
+            return option;
+        }
+        final var merged = new Option();
+        model.option().export().forEach(merged::option);
+        option.export().forEach(merged::option);
+        return merged;
     }
 
     @JsonProperty("input")

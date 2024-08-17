@@ -44,7 +44,8 @@ public class ChatTestCase implements LoadingEnv {
 
             // AUDIO
             ChatModel.QWEN_AUDIO_CHAT,
-            ChatModel.QWEN_AUDIO_TURBO
+            ChatModel.QWEN_AUDIO_TURBO,
+            ChatModel.QWEN2_AUDIO_INSTRUCT
     );
 
     private static ChatModel getModel(String name) {
@@ -146,7 +147,8 @@ public class ChatTestCase implements LoadingEnv {
     @ParameterizedTest
     @ValueSource(strings = {
             "qwen-audio-turbo",
-            "qwen-audio-chat"
+            "qwen-audio-chat",
+            "qwen2-audio-instruct"
     })
     public void test$chat$audio(String name) {
 

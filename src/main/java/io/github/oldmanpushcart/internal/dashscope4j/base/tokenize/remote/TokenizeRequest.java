@@ -1,10 +1,10 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.tokenize.remote;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiRequestBuilderImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import org.slf4j.Logger;
@@ -106,7 +106,7 @@ public class TokenizeRequest implements HttpApiRequest<TokenizeResponse> {
         return new Builder(request);
     }
 
-    public static class Builder implements ApiRequest.Builder<TokenizeRequest, Builder> {
+    public static class Builder extends ApiRequestBuilderImpl<TokenizeRequest, Builder> {
 
         private Duration timeout;
         private ChatModel model;

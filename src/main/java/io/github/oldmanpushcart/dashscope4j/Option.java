@@ -14,13 +14,13 @@ import java.util.function.Function;
 public final class Option {
 
     @JsonValue
-    private final Map<String, Object> map = new HashMap<>();
+    private final Map<String, Object> map;
 
     /**
      * 构造选项
      */
     public Option() {
-
+        this.map = new HashMap<>();
     }
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
@@ -37,7 +37,7 @@ public final class Option {
      * @param map 选项KV集合
      */
     public Option(Map<String, Object> map) {
-        this.map.putAll(map);
+        this.map = map;
     }
 
     /**
@@ -169,6 +169,14 @@ public final class Option {
      */
     public boolean isEmpty() {
         return map.isEmpty();
+    }
+
+    /**
+     * @return 索性选项
+     * @since 2.2.0
+     */
+    public Option unmodifiable() {
+        return new Option(Collections.unmodifiableMap(map));
     }
 
     /**

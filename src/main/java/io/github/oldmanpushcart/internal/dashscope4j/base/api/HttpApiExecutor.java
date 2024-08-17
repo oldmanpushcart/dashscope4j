@@ -1,34 +1,37 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.api;
 
 import io.github.oldmanpushcart.dashscope4j.Constants;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiException;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
-import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.*;
+import io.github.oldmanpushcart.dashscope4j.base.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 import io.github.oldmanpushcart.dashscope4j.base.task.TaskException;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpSsEvent;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpSsEventFlowPublisher;
+import io.github.oldmanpushcart.internal.dashscope4j.base.exchange.ExchangeListenerAdapter;
 import io.github.oldmanpushcart.internal.dashscope4j.base.task.TaskCancelRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.task.TaskGetRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.task.TaskGetResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.base.task.TaskHalfResponse;
+import io.github.oldmanpushcart.internal.dashscope4j.util.Building;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import io.github.oldmanpushcart.internal.dashscope4j.util.MapFlowProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.WebSocket;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -65,20 +68,14 @@ public class HttpApiExecutor implements ApiExecutor {
         this.timeout = timeout;
     }
 
-    // 委派API请求
-    private HttpRequest delegateHttpRequest(HttpRequest request, Consumer<HttpRequest.Builder> consumer) {
-        final var builder = HttpRequest.newBuilder(request, (k, v) -> true)
+    // 创建委派HTTP请求构建器
+    private HttpRequest.Builder newDelegateHttpRequestBuilder(HttpApiRequest<?> request) {
+        return Building.of(HttpRequest.newBuilder(request.newHttpRequest(), (k, v) -> true))
+                .acceptIfNotNull(timeout, HttpRequest.Builder::timeout)
+                .acceptIfNotNull(request.timeout(), HttpRequest.Builder::timeout)
+                .apply()
                 .header(HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
                 .header(HEADER_X_DASHSCOPE_CLIENT, CLIENT_INFO);
-        consumer.accept(builder);
-        return builder.build();
-    }
-
-    // 设置超时时间
-    private void setupTimeout(HttpRequest.Builder builder, ApiRequest request) {
-        Optional.ofNullable(request.timeout())
-                .or(() -> Optional.ofNullable(timeout))
-                .ifPresent(builder::timeout);
     }
 
     /**
@@ -91,10 +88,9 @@ public class HttpApiExecutor implements ApiExecutor {
     public <R extends HttpApiResponse<?>> CompletableFuture<R> async(HttpApiRequest<R> request) {
 
         // 构建委派请求
-        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
-            builder.header(HEADER_X_DASHSCOPE_SSE, DISABLE);
-            setupTimeout(builder, request);
-        });
+        final var delegateHttpRequest = newDelegateHttpRequestBuilder(request)
+                .header(HEADER_X_DASHSCOPE_SSE, DISABLE)
+                .build();
 
         // 记录请求日志
         loggingHttpRequest(delegateHttpRequest);
@@ -184,10 +180,9 @@ public class HttpApiExecutor implements ApiExecutor {
     @Override
     public <R extends HttpApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(HttpApiRequest<R> request) {
 
-        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
-            builder.header(HEADER_X_DASHSCOPE_SSE, ENABLE);
-            setupTimeout(builder, request);
-        });
+        final var delegateHttpRequest = newDelegateHttpRequestBuilder(request)
+                .header(HEADER_X_DASHSCOPE_SSE, ENABLE)
+                .build();
 
         loggingHttpRequest(delegateHttpRequest);
 
@@ -244,12 +239,10 @@ public class HttpApiExecutor implements ApiExecutor {
     @Override
     public <R extends HttpApiResponse<?>> CompletableFuture<Task.Half<R>> task(HttpApiRequest<R> request) {
 
-        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
-            builder
-                    .header(HEADER_X_DASHSCOPE_SSE, DISABLE)
-                    .header(HEADER_X_DASHSCOPE_ASYNC, ENABLE);
-            setupTimeout(builder, request);
-        });
+        final var delegateHttpRequest = newDelegateHttpRequestBuilder(request)
+                .header(HEADER_X_DASHSCOPE_SSE, DISABLE)
+                .header(HEADER_X_DASHSCOPE_ASYNC, ENABLE)
+                .build();
 
         loggingHttpRequest(delegateHttpRequest);
 
@@ -341,5 +334,33 @@ public class HttpApiExecutor implements ApiExecutor {
                             .thenCompose(unused -> _rollingTask(taskGetRequest, strategy));
                 });
     }
+
+    @Override
+    public <T extends ExchangeApiRequest<R>, R extends ExchangeApiResponse<?>>
+    CompletableFuture<Exchange<T, R>> exchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
+
+        final URI remote = request instanceof AlgoRequest<?> algoRequest
+                ? algoRequest.model().remote()
+                : WSS_REMOTE;
+
+        final var uuid = UUID.randomUUID().toString();
+        final var exchangeListener = new ExchangeListenerAdapter<>(
+                uuid,
+                mode,
+                r -> request.newExchangeRequestEncoder(uuid).apply(r),
+                s -> request.newExchangeResponseDecoder(uuid).apply(s),
+                listener
+        );
+
+        return Building.of(http.newWebSocketBuilder())
+                .accept(builder -> builder.header(HEADER_AUTHORIZATION, ak))
+                .acceptIfNotNull(timeout, WebSocket.Builder::connectTimeout)
+                .acceptIfNotNull(request.timeout(), WebSocket.Builder::connectTimeout)
+                .apply()
+                .buildAsync(remote, exchangeListener)
+                .thenCompose(v -> exchangeListener.getExchange())
+                .thenCompose(exchange -> exchange.write(request));
+    }
+
 
 }

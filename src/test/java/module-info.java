@@ -5,5 +5,6 @@ open module test.dashscope4j {
     requires org.junit.jupiter.api;
     requires org.junit.jupiter.params;
     requires java.desktop;
+    requires java.net.http;
 
 }

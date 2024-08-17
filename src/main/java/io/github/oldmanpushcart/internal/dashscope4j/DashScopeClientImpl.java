@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
 import io.github.oldmanpushcart.dashscope4j.OpAsync;
 import io.github.oldmanpushcart.dashscope4j.OpAsyncOpFlow;
 import io.github.oldmanpushcart.dashscope4j.OpAsyncOpFlowOpTask;
+import io.github.oldmanpushcart.dashscope4j.audio.AudioOp;
 import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
@@ -20,6 +21,7 @@ import io.github.oldmanpushcart.dashscope4j.embedding.mm.MmEmbeddingResponse;
 import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingRequest;
 import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingResponse;
 import io.github.oldmanpushcart.dashscope4j.image.ImageOp;
+import io.github.oldmanpushcart.internal.dashscope4j.audio.AudioOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.BaseOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.HttpApiExecutor;
@@ -169,6 +171,11 @@ public class DashScopeClientImpl implements DashScopeClient {
     @Override
     public ImageOp image() {
         return request -> () -> apiExecutor.task(request);
+    }
+
+    @Override
+    public AudioOp audio() {
+        return new AudioOpImpl(apiExecutor);
     }
 
 

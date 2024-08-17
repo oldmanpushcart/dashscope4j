@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j;
 
+import io.github.oldmanpushcart.dashscope4j.audio.AudioOp;
 import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
@@ -53,6 +54,12 @@ public interface DashScopeClient {
      * @return 图片操作
      */
     ImageOp image();
+
+    /**
+     * @return 音频操作
+     * @since 2.2.0
+     */
+    AudioOp audio();
 
     /**
      * @return 构建器
@@ -109,6 +116,7 @@ public interface DashScopeClient {
 
         /**
          * 添加拦截器
+         *
          * @param interceptors 拦截器集合
          * @return this
          */

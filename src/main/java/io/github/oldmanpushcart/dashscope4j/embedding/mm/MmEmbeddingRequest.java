@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.embedding.mm;
 
+import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.base.algo.HttpAlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.internal.dashscope4j.embedding.mm.MmEmbeddingRequestBuilderImpl;
@@ -36,7 +37,7 @@ public interface MmEmbeddingRequest extends HttpAlgoRequest<MmEmbeddingModel, Mm
     /**
      * 构造器
      */
-    interface Builder extends HttpAlgoRequest.Builder<MmEmbeddingModel, MmEmbeddingRequest, Builder> {
+    interface Builder extends AlgoRequest.Builder<MmEmbeddingModel, MmEmbeddingRequest, Builder> {
 
         /**
          * 设置文档内容集合

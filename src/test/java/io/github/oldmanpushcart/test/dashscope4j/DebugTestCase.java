@@ -1,5 +1,14 @@
 package io.github.oldmanpushcart.test.dashscope4j;
 
+import io.github.oldmanpushcart.dashscope4j.audio.asr.RecognitionModel;
+import io.github.oldmanpushcart.dashscope4j.audio.asr.RecognitionOptions;
+import io.github.oldmanpushcart.dashscope4j.audio.asr.RecognitionRequest;
+import io.github.oldmanpushcart.dashscope4j.audio.asr.RecognitionResponse;
+import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisModel;
+import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisOptions;
+import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisRequest;
+import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisResponse;
+import io.github.oldmanpushcart.dashscope4j.base.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatOptions;
@@ -17,8 +26,12 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -96,7 +109,7 @@ public class DebugTestCase implements LoadingEnv {
             final var request = ChatRequest.newBuilder()
                     .model(ChatModel.QWEN_PLUS)
                     .messages(List.of(
-                            Message.ofUser("我有100块钱存银行，利率3个点，请告诉我%s年后，我连本带利有多少钱?".formatted(i+1))
+                            Message.ofUser("我有100块钱存银行，利率3个点，请告诉我%s年后，我连本带利有多少钱?".formatted(i + 1))
                     ))
                     .build();
             client.chat(request).async().whenComplete((r, ex) -> {
@@ -116,31 +129,79 @@ public class DebugTestCase implements LoadingEnv {
     }
 
     @Test
-    public void test$debug() {
-        final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_PLUS)
-                .messages(List.of(
-                        Message.ofUser("""
-                                常见问题
-                                通义千问、灵积、DashScope、百炼是什么关系？
-                                通义千问是阿里云研发的大语言模型；灵积是阿里云推出的模型服务平台，提供了包括通义千问在内的多种模型的服务接口，DashScope是灵积的英文名，两者指的是同一平台；百炼是阿里云推出的一站式大模型应用开发平台。
-                                我如果想调用通义千问模型，是要通过DashScope还是百炼平台？
-                                对于需要模型调用的开发者而言，通过DashScope与百炼平台调用通义千问模型都是通过dashscope SDK或OpenAI兼容或HTTP方式实现。两个平台都可以获取到API-KEY，且是同步的。因此您只需准备好计算环境，并在两个平台任选其一创建API-KEY，即可发起通义千问模型的调用。
-                                我想通过灵积调用通义千问开源模型，但是文档中没有相应介绍，我该看哪篇文档？
-                                qwen开源模型的使用方法请参考大语言模型文档。
-                                我可以通过OpenAI兼容方式调用通义千问的多模态模型吗？
-                                可以，详情请您参考VL模型流式调用示例（输入图片url）。
-                                
-                                请帮我将上边的段落总结，要求生成的token在100-200之间
-                                """
-                        )
-                ))
+    public void test$debug() throws Exception {
+        final var request = SpeechSynthesisRequest.newBuilder()
+                .model(SpeechSynthesisModel.SAMBERT_ZHICHU_V1)
+                .text("白日依山尽，黄河入海流！")
+                .option(SpeechSynthesisOptions.ENABLE_PHONEME_TIMESTAMP, true)
+                .option(SpeechSynthesisOptions.ENABLE_WORDS_TIMESTAMP, true)
+                //.option("voice", "longxiaochun")
+                //.option("text_type", "PlainText")
                 .build();
-        final var response = client.chat(request).async().join();
-        System.out.printf(
-                "usage=%s;text=%s%n", response.usage(),
-                response.output().best().message().text()
-        );
+
+        final var exchange = client.audio().tts(request).exchange(Exchange.Mode.DUPLEX, new Exchange.Listener<>() {
+
+            @Override
+            public CompletableFuture<?> onData(Exchange<SpeechSynthesisRequest, SpeechSynthesisResponse> exchange, SpeechSynthesisResponse data) {
+                System.out.printf("onItem: %s%n", data.output());
+                return CompletableFuture.completedFuture(null)
+                        .thenAccept(v -> exchange.request(1));
+            }
+
+        }).join();
+
+        exchange.write(SpeechSynthesisRequest.newBuilder(request)
+                .text("欲穷千里目，更上一层楼！")
+                .build()
+        ).join();
+
+        exchange.finishing();
+
+        Thread.sleep(1000 * 30L);
+        exchange.abort();
+
+    }
+
+    @Test
+    public void test$debug$asr() throws Exception {
+
+        final var latch = new CountDownLatch(1);
+
+        final var request = RecognitionRequest.newBuilder()
+                .model(RecognitionModel.PARAFORMER_REALTIME_V2)
+                .option(RecognitionOptions.SAMPLE_RATE, 16000)
+                .option(RecognitionOptions.FORMAT, RecognitionRequest.Format.WAV)
+                .build();
+
+        final var exchange = client.audio().asr(request).exchange(Exchange.Mode.DUPLEX, new Exchange.Listener<>() {
+
+            @Override
+            public CompletableFuture<?> onData(Exchange<RecognitionRequest, RecognitionResponse> exchange, RecognitionResponse data) {
+                if(data.output().sentence().isEnd()) {
+                    System.out.printf("onItem: %s%n", data.output());
+                }
+                return Exchange.Listener.super.onData(exchange, data);
+            }
+
+        }).join();
+
+        final var buffer = ByteBuffer.allocate(2048);
+        final var url = new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/samples/audio/paraformer/hello_world_female2.wav");
+
+        // 使用ReadableByteChannel读取数据到buffer，并写入到exchange中
+        try (final var channel = Channels.newChannel(url.openStream())) {
+            while (channel.read(buffer) != -1) {
+                buffer.flip();
+                exchange.write(buffer).join();
+                buffer.clear();
+            }
+        } finally {
+            exchange.finishing().join();
+        }
+
+        Thread.sleep(1000L * 30);
+        exchange.abort();
+
     }
 
 }

@@ -31,4 +31,12 @@ public interface Model {
      */
     URI remote();
 
+    /**
+     * @return 模型默认参数
+     * @since 2.2.0
+     */
+    default Option option() {
+        return new Option().unmodifiable();
+    }
+
 }

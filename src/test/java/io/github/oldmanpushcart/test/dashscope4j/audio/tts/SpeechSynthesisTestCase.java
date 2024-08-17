@@ -1,0 +1,120 @@
+package io.github.oldmanpushcart.test.dashscope4j.audio.tts;
+
+import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisModel;
+import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisRequest;
+import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisResponse;
+import io.github.oldmanpushcart.dashscope4j.base.exchange.Exchange;
+import io.github.oldmanpushcart.test.dashscope4j.LoadingEnv;
+import io.github.oldmanpushcart.test.dashscope4j.audio.CheckExchangeListener;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+public class SpeechSynthesisTestCase implements LoadingEnv {
+
+    @Test
+    public void test$tts$none() {
+
+        final var request = SpeechSynthesisRequest.newBuilder()
+                .model(SpeechSynthesisModel.COSYVOICE_LONGXIAOCHUN_V1)
+                .text("""
+                        白日依山尽，
+                        黄河入海流。
+                        欲穷千里目，
+                        更上一层楼。
+                        """)
+                .build();
+
+        final var listener = new CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse>();
+        client.audio().tts(request).exchange(Exchange.Mode.NONE, listener);
+
+        listener.getCompleteFuture().join();
+        Assertions.assertEquals(1, listener.getDataCnt());
+        Assertions.assertTrue(listener.getByteCnt() > 0);
+    }
+
+    @Test
+    public void test$tts$in() {
+
+        final var request = SpeechSynthesisRequest.newBuilder()
+                .model(SpeechSynthesisModel.COSYVOICE_LONGXIAOCHUN_V1)
+                .build();
+
+        final var listener = new CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse>();
+        final var exchange = client.audio().tts(request).exchange(Exchange.Mode.IN, listener).join();
+
+        final var texts = new String[]{
+                "白日依山尽",
+                "黄河入海流",
+                "欲穷千里目",
+                "更上一层楼"
+        };
+
+        for (final var text : texts) {
+            exchange.write(SpeechSynthesisRequest.newBuilder(request)
+                    .text(text)
+                    .build()).join();
+        }
+
+        exchange.finishing().join();
+
+        listener.getCompleteFuture().join();
+        Assertions.assertEquals(1, listener.getDataCnt());
+        Assertions.assertTrue(listener.getByteCnt() > 0);
+
+    }
+
+    @Test
+    public void test$tts$out() {
+
+        final var request = SpeechSynthesisRequest.newBuilder()
+                .model(SpeechSynthesisModel.COSYVOICE_LONGXIAOCHUN_V1)
+                .text("""
+                        白日依山尽，
+                        黄河入海流。
+                        欲穷千里目，
+                        更上一层楼。
+                        """)
+                .build();
+
+        final var listener = new CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse>();
+        client.audio().tts(request).exchange(Exchange.Mode.OUT, listener).join();
+
+        listener.getCompleteFuture().join();
+        Assertions.assertTrue(listener.getDataCnt() > 0);
+        Assertions.assertTrue(listener.getByteCnt() > 0);
+
+    }
+
+    @Test
+    public void test$tts$duplex() {
+
+        final var request = SpeechSynthesisRequest.newBuilder()
+                .model(SpeechSynthesisModel.COSYVOICE_LONGXIAOCHUN_V1)
+                .build();
+
+        final var listener = new CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse>();
+        final var exchange = client.audio().tts(request).exchange(Exchange.Mode.DUPLEX, listener).join();
+
+        final var texts = new String[]{
+                "白日依山尽",
+                "黄河入海流",
+                "欲穷千里目",
+                "更上一层楼"
+        };
+
+        for (final var text : texts) {
+            exchange.write(SpeechSynthesisRequest.newBuilder(request)
+                    .text(text)
+                    .build()).join();
+        }
+
+        exchange.finishing().join();
+
+        listener.getCompleteFuture().join();
+        Assertions.assertTrue(listener.getDataCnt() > 0);
+        Assertions.assertTrue(listener.getByteCnt() > 0);
+
+    }
+
+
+}
