@@ -23,6 +23,16 @@ public class JacksonUtils {
             .setTimeZone(TimeZone.getTimeZone("GMT+8"))
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
+    public static String defaultAsText(JsonNode node, String propertyName, String def) {
+        return node.has(propertyName)
+                ? node.get(propertyName).asText()
+                : def;
+    }
+
+    public static String getAsText(JsonNode node, String propertyName) {
+        return defaultAsText(node, propertyName, null);
+    }
+
     /**
      * 压缩Json字符串
      *

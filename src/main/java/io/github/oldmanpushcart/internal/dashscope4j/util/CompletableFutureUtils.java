@@ -10,7 +10,7 @@ import java.util.function.Function;
  * CompletableFuture工具类
  */
 public class CompletableFutureUtils {
-    
+
     /**
      * 迭代组合
      *

@@ -34,7 +34,7 @@ public abstract class AlgoRequestImpl<M extends Model>
     @JsonProperty("parameters")
     @Override
     public Option option() {
-        if(model.option() == null || model.option().isEmpty()) {
+        if (model.option() == null || model.option().isEmpty()) {
             return option;
         }
         final var merged = new Option();

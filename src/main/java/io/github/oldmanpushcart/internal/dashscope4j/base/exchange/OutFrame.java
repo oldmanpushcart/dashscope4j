@@ -23,7 +23,7 @@ record OutFrame(
 
     public static class PayloadAsStringDeserializer extends JsonDeserializer<String> {
         @Override
-        public String deserialize(JsonParser parser, DeserializationContext context) throws IOException  {
+        public String deserialize(JsonParser parser, DeserializationContext context) throws IOException {
             return parser.getCodec().<JsonNode>readTree(parser).toString();
         }
     }

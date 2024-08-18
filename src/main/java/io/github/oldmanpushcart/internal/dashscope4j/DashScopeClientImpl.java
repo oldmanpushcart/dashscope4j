@@ -27,6 +27,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.HttpApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.InterceptorApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.cache.LruCacheFactoryImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.ProcessTranscriptionForUpload;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.ProcessingContentForUpload;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.ProcessingMessageListForQwenLong;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpAsyncHandler;
@@ -98,6 +99,9 @@ public class DashScopeClientImpl implements DashScopeClient {
             interceptors.add(ProcessMessageListInterceptor.newBuilder()
                     .processor(new ProcessingMessageListForQwenLong())
                     .build());
+
+            // 语音转录文件上传
+            interceptors.add(new ProcessTranscriptionForUpload());
 
             for (final var interceptor : interceptors) {
                 target = new InterceptorApiExecutor(

@@ -31,7 +31,7 @@ class EmbeddingRequestImpl extends HttpAlgoRequestImpl<EmbeddingModel, Embedding
 
     @Override
     protected Object input() {
-        return new HashMap<>(){{
+        return new HashMap<>() {{
             put("texts", documents);
         }};
     }

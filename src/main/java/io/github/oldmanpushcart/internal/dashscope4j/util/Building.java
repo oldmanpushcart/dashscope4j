@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.internal.dashscope4j.util;
 
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -14,6 +15,11 @@ public class Building<T> {
 
     public Building<T> accept(Consumer<T> consumer) {
         consumer.accept(target);
+        return this;
+    }
+
+    public <U> Building<T> acceptRequireNonNull(U update, BiConsumer<T, U> consumer) {
+        consumer.accept(target, Objects.requireNonNull(update));
         return this;
     }
 

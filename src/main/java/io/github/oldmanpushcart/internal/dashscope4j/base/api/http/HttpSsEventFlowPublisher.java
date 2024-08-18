@@ -76,7 +76,7 @@ public class HttpSsEventFlowPublisher implements Flow.Publisher<HttpSsEvent> {
                             try {
                                 final var body = output.toString(charset).trim();
 
-                                if(logger.isTraceEnabled()) {
+                                if (logger.isTraceEnabled()) {
                                     logger.trace("HTTP-SSE: << {}", String.join("|", body.split("\n")));
                                 }
 

@@ -8,7 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
  * 算法请求
  */
 public interface AlgoRequest<M extends Model> extends ApiRequest {
-    
+
     @Override
     default String type() {
         return model().name();

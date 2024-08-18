@@ -15,6 +15,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.task.TaskGetRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.task.TaskGetResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.base.task.TaskHalfResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.util.Building;
+import io.github.oldmanpushcart.internal.dashscope4j.util.HttpUtils;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import io.github.oldmanpushcart.internal.dashscope4j.util.MapFlowProcessor;
 import org.slf4j.Logger;
@@ -26,7 +27,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.*;
 import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.*;
+import static io.github.oldmanpushcart.internal.dashscope4j.util.HttpUtils.loggingHttpRequest;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.function.Function.identity;
 
@@ -98,7 +99,7 @@ public class HttpApiExecutor implements ApiExecutor {
         // 发送请求
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
-                .whenComplete(HttpApiExecutor::loggingHttpResponse)
+                .whenComplete(HttpUtils::loggingHttpResponse)
                 .thenApply(request.newHttpResponseHandler())
                 .thenApply(httpResponse -> {
                     final var response = request.newResponseDecoder().apply(httpResponse.body());
@@ -109,50 +110,6 @@ public class HttpApiExecutor implements ApiExecutor {
                 });
     }
 
-    // 记录HTTP请求日志
-    private static void loggingHttpRequest(HttpRequest request) {
-
-        if (!logger.isTraceEnabled()) {
-            return;
-        }
-
-        logger.trace("HTTP-REQUEST: >> {} {} {}",
-                request.method(),
-                request.uri(),
-                request.headers().map().entrySet().stream()
-                        .filter(entry -> !Objects.equals(entry.getKey(), HEADER_AUTHORIZATION))
-                        .map(entry -> "%s: %s".formatted(entry.getKey(), String.join(", ", entry.getValue())))
-                        .reduce("%s, %s"::formatted)
-                        .orElse("")
-        );
-
-    }
-
-    // 记录HTTP响应日志
-    private static void loggingHttpResponse(HttpResponse<?> response, Throwable ex) {
-
-        if (!logger.isTraceEnabled()) {
-            return;
-        }
-
-        // HTTP错误
-        if (null != ex) {
-            logger.trace("HTTP-RESPONSE: << {}", ex.getLocalizedMessage());
-        }
-
-        // HTTP应答
-        else {
-            logger.trace("HTTP-RESPONSE: << {} {} {}",
-                    response.statusCode(),
-                    response.uri(),
-                    response.headers().map().entrySet().stream()
-                            .map(entry -> "%s: %s".formatted(entry.getKey(), String.join(", ", entry.getValue())))
-                            .reduce("%s, %s"::formatted)
-                            .orElse("")
-            );
-        }
-
-    }
 
     // 在SSE事件的meta属性中提取HTTP状态提取匹配器
     private static final Pattern httpStatusPattern = Pattern.compile("HTTP_STATUS/(\\d+)");
@@ -188,7 +145,7 @@ public class HttpApiExecutor implements ApiExecutor {
 
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApplyAsync(identity(), executor)
-                .whenComplete(HttpApiExecutor::loggingHttpResponse)
+                .whenComplete(HttpUtils::loggingHttpResponse)
                 .thenApply(request.newHttpResponseHandler())
 
                 // 从HTTP响应数据流转换为SSE事件流
@@ -242,13 +199,14 @@ public class HttpApiExecutor implements ApiExecutor {
         final var delegateHttpRequest = newDelegateHttpRequestBuilder(request)
                 .header(HEADER_X_DASHSCOPE_SSE, DISABLE)
                 .header(HEADER_X_DASHSCOPE_ASYNC, ENABLE)
+                .header(HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
                 .build();
 
         loggingHttpRequest(delegateHttpRequest);
 
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
-                .whenComplete(HttpApiExecutor::loggingHttpResponse)
+                .whenComplete(HttpUtils::loggingHttpResponse)
                 .thenApply(request.newHttpResponseHandler())
 
                 // 解析HTTP响应为任务半应答

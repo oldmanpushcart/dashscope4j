@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisResponse;
+import io.github.oldmanpushcart.dashscope4j.audio.tts.timespan.SentenceTimeSpan;
 
 import java.util.Optional;
 

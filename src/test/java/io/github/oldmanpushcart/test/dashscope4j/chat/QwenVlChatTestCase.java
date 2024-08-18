@@ -21,7 +21,7 @@ public class QwenVlChatTestCase implements LoadingEnv {
                 .model(ChatModel.QWEN_VL_MAX)
                 .messages(List.of(
                         Message.ofUser(List.of(
-                                Content.ofImage(new File("./document/image/IMG_0942.JPG").toURI()),
+                                Content.ofImage(new File("./document/test-resources/image/IMG_0942.JPG").toURI()),
                                 Content.ofText("图片中一共多少个男孩?")
                         ))
                 ))

@@ -1,9 +1,12 @@
 package io.github.oldmanpushcart.internal.dashscope4j.audio;
 
 import io.github.oldmanpushcart.dashscope4j.OpExchange;
+import io.github.oldmanpushcart.dashscope4j.OpTask;
 import io.github.oldmanpushcart.dashscope4j.audio.AudioOp;
 import io.github.oldmanpushcart.dashscope4j.audio.asr.RecognitionRequest;
 import io.github.oldmanpushcart.dashscope4j.audio.asr.RecognitionResponse;
+import io.github.oldmanpushcart.dashscope4j.audio.asr.TranscriptionRequest;
+import io.github.oldmanpushcart.dashscope4j.audio.asr.TranscriptionResponse;
 import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisRequest;
 import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisResponse;
 import io.github.oldmanpushcart.dashscope4j.base.exchange.Exchange;
@@ -21,12 +24,12 @@ public class AudioOpImpl implements AudioOp {
     }
 
     @Override
-    public OpExchange<SpeechSynthesisRequest, SpeechSynthesisResponse> tts(SpeechSynthesisRequest request) {
+    public OpExchange<SpeechSynthesisRequest, SpeechSynthesisResponse> synthesis(SpeechSynthesisRequest request) {
         return (mode, listener) -> apiExecutor.exchange(request, mode, listener);
     }
 
     @Override
-    public OpExchange<RecognitionRequest, RecognitionResponse> asr(RecognitionRequest request) {
+    public OpExchange<RecognitionRequest, RecognitionResponse> recognition(RecognitionRequest request) {
         return (mode, listener) -> {
 
             /*
@@ -56,6 +59,11 @@ public class AudioOpImpl implements AudioOp {
 
             });
         };
+    }
+
+    @Override
+    public OpTask<TranscriptionResponse> transcription(TranscriptionRequest request) {
+        return () -> apiExecutor.task(request);
     }
 
 }

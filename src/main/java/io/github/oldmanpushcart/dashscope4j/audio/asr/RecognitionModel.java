@@ -51,7 +51,7 @@ public record RecognitionModel(String name, URI remote, Option option) implement
     public static final RecognitionModel PARAFORMER_REALTIME_8K_V1 = new RecognitionModel(
             "paraformer-realtime-8k-v1",
             WSS_REMOTE,
-            new Option().option(SAMPLE_RATE, 16000).unmodifiable()
+            new Option().option(SAMPLE_RATE, 8000).unmodifiable()
     );
 
 }

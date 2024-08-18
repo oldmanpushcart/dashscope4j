@@ -260,16 +260,16 @@ public class ChatTestCase implements LoadingEnv {
                                 .name("echo")
                                 .description("当用户输入echo:，回显后边的文字")
                                 .parameterType(EchoFunction.Echo.class, """
-                                {
-                                    "type":"object",
-                                    "properties":{
-                                        "words":{
-                                            "type":"string",
-                                            "description":"需要回显的文字"
+                                        {
+                                            "type":"object",
+                                            "properties":{
+                                                "words":{
+                                                    "type":"string",
+                                                    "description":"需要回显的文字"
+                                                }
+                                            }
                                         }
-                                    }
-                                }
-                                """
+                                        """
                                 )
                                 .function(echo -> echo)
                                 .build()

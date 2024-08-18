@@ -57,11 +57,11 @@ public class QwenLongChatTestCase implements LoadingEnv {
     public void test$chat$qwen_long$with_multi_doc$success() {
 
         final var meta1 = client.base().files()
-                .upload(new File("./document/pdf/P020210313315693279320.pdf"))
+                .upload(new File("./document/test-resources/pdf/P020210313315693279320.pdf"))
                 .join();
 
         final var meta2 = client.base().files()
-                .upload(new File("./document/docx/想当初知乎也是吹巨人的.docx"))
+                .upload(new File("./document/test-resources/docx/想当初知乎也是吹巨人的.docx"))
                 .join();
 
         final var request = ChatRequest.newBuilder()

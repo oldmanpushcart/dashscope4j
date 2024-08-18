@@ -24,7 +24,7 @@ public class InvokeCountInterceptor implements Interceptor {
     @Override
     public CompletableFuture<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response, Throwable ex) {
         responseCountRef.incrementAndGet();
-        if(null != ex) {
+        if (null != ex) {
             failureCountRef.incrementAndGet();
             return CompletableFuture.failedFuture(ex);
         } else {

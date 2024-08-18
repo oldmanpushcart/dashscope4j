@@ -24,7 +24,9 @@ open module dashscope4j {
 
     exports io.github.oldmanpushcart.dashscope4j.audio;
     exports io.github.oldmanpushcart.dashscope4j.audio.asr;
+    exports io.github.oldmanpushcart.dashscope4j.audio.asr.timespan;
     exports io.github.oldmanpushcart.dashscope4j.audio.tts;
+    exports io.github.oldmanpushcart.dashscope4j.audio.tts.timespan;
 
     exports io.github.oldmanpushcart.dashscope4j.chat;
     exports io.github.oldmanpushcart.dashscope4j.chat.message;

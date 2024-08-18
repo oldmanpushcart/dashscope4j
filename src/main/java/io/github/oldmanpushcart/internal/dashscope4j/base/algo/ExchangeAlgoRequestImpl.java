@@ -23,5 +23,4 @@ public abstract class ExchangeAlgoRequestImpl<M extends Model, R extends Exchang
     }
 
 
-
 }

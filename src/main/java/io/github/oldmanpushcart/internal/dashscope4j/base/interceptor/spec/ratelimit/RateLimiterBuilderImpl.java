@@ -106,7 +106,7 @@ public class RateLimiterBuilderImpl implements RateLimiter.Builder {
                 }
 
                 // 限制最大使用量
-                if(maxUsageCost != null) {
+                if (maxUsageCost != null) {
                     final var usageCost = maxUsageNameSet.isEmpty()
                             ? metric.usage().total()
                             : metric.usage().total(e -> maxUsageNameSet.contains(e.name()));

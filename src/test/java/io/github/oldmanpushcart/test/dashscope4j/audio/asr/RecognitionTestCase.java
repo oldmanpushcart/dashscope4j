@@ -17,7 +17,7 @@ import java.nio.channels.Channels;
 public class RecognitionTestCase implements LoadingEnv {
 
     @Test
-    public void test$asr$duplex() throws Exception {
+    public void test$asr$recognition$duplex() throws Exception {
 
         final var request = RecognitionRequest.newBuilder()
                 .model(RecognitionModel.PARAFORMER_REALTIME_V2)
@@ -25,7 +25,7 @@ public class RecognitionTestCase implements LoadingEnv {
                 .build();
 
         final var listener = new CheckExchangeListener<RecognitionRequest, RecognitionResponse>();
-        final var exchange = client.audio().asr(request).exchange(Exchange.Mode.DUPLEX, listener).join();
+        final var exchange = client.audio().recognition(request).exchange(Exchange.Mode.DUPLEX, listener).join();
 
         final var buffer = ByteBuffer.allocate(4 * 1024);
         final var url = new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/samples/audio/paraformer/hello_world_female2.wav");
@@ -45,7 +45,7 @@ public class RecognitionTestCase implements LoadingEnv {
         Assertions.assertTrue(listener.getDataCnt() > 0);
         Assertions.assertEquals(0, listener.getByteCnt());
         final var found = listener.getItems().stream()
-                .filter(v->v.output().sentence().isEnd())
+                .filter(v -> v.output().sentence().isEnd())
                 .findFirst()
                 .orElse(null);
         Assertions.assertNotNull(found);

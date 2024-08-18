@@ -25,7 +25,7 @@ public class SpeechSynthesisTestCase implements LoadingEnv {
                 .build();
 
         final var listener = new CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse>();
-        client.audio().tts(request).exchange(Exchange.Mode.NONE, listener);
+        client.audio().synthesis(request).exchange(Exchange.Mode.NONE, listener);
 
         listener.getCompleteFuture().join();
         Assertions.assertEquals(1, listener.getDataCnt());
@@ -40,7 +40,7 @@ public class SpeechSynthesisTestCase implements LoadingEnv {
                 .build();
 
         final var listener = new CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse>();
-        final var exchange = client.audio().tts(request).exchange(Exchange.Mode.IN, listener).join();
+        final var exchange = client.audio().synthesis(request).exchange(Exchange.Mode.IN, listener).join();
 
         final var texts = new String[]{
                 "白日依山尽",
@@ -77,7 +77,7 @@ public class SpeechSynthesisTestCase implements LoadingEnv {
                 .build();
 
         final var listener = new CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse>();
-        client.audio().tts(request).exchange(Exchange.Mode.OUT, listener).join();
+        client.audio().synthesis(request).exchange(Exchange.Mode.OUT, listener).join();
 
         listener.getCompleteFuture().join();
         Assertions.assertTrue(listener.getDataCnt() > 0);
@@ -93,7 +93,7 @@ public class SpeechSynthesisTestCase implements LoadingEnv {
                 .build();
 
         final var listener = new CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse>();
-        final var exchange = client.audio().tts(request).exchange(Exchange.Mode.DUPLEX, listener).join();
+        final var exchange = client.audio().synthesis(request).exchange(Exchange.Mode.DUPLEX, listener).join();
 
         final var texts = new String[]{
                 "白日依山尽",
