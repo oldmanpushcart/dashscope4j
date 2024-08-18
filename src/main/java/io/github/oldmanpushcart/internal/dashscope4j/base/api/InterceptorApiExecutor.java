@@ -15,10 +15,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Flow;
+import java.util.concurrent.*;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.cast;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.MapFlowProcessor.asyncOneToOne;
@@ -41,7 +38,7 @@ public class InterceptorApiExecutor implements ApiExecutor {
     }
 
     @Override
-    public <R extends HttpApiResponse<?>> CompletableFuture<R> async(HttpApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletionStage<R> async(HttpApiRequest<R> request) {
         final var context = new CtxImpl(client, executor);
         return CompletableFuture.completedFuture(null)
 
@@ -60,7 +57,7 @@ public class InterceptorApiExecutor implements ApiExecutor {
     }
 
     @Override
-    public <R extends HttpApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(HttpApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletionStage<Flow.Publisher<R>> flow(HttpApiRequest<R> request) {
         final var context = new CtxImpl(client, executor);
         return CompletableFuture.completedFuture(null)
 
@@ -77,7 +74,7 @@ public class InterceptorApiExecutor implements ApiExecutor {
     }
 
     @Override
-    public <R extends HttpApiResponse<?>> CompletableFuture<Task.Half<R>> task(HttpApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletionStage<Task.Half<R>> task(HttpApiRequest<R> request) {
         final var context = new CtxImpl(client, executor);
         return CompletableFuture.completedFuture(null)
 
@@ -117,15 +114,15 @@ public class InterceptorApiExecutor implements ApiExecutor {
     }
 
     @Override
-    public <T extends ExchangeApiRequest<R>, R extends ExchangeApiResponse<?>> CompletableFuture<Exchange<T, R>>
-    exchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
+    public <T extends ExchangeApiRequest<R>, R extends ExchangeApiResponse<?>>
+    CompletionStage<Exchange<T, R>> exchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
         final var context = new CtxImpl(client, executor);
         return CompletableFuture.completedFuture(null)
                 .thenCompose(unused -> interceptor.preHandle(context, request))
                 .thenCompose(req -> interceptor.handle(context, req, v -> target.exchange(cast(v), mode, new ProxyExchangeListener<>(listener) {
 
                     @Override
-                    public CompletableFuture<?> onData(Exchange<T, R> exchange, R data) {
+                    public CompletionStage<?> onData(Exchange<T, R> exchange, R data) {
                         return CompletableFuture.completedFuture(data)
                                 .handle((r, ex) -> interceptor.postHandle(context, r, ex))
                                 .thenCompose(r -> r)
@@ -139,12 +136,12 @@ public class InterceptorApiExecutor implements ApiExecutor {
                     }
 
                     @Override
-                    public CompletableFuture<?> onByteBuffer(Exchange<T, R> exchange, ByteBuffer buf, boolean last) {
+                    public CompletionStage<?> onByteBuffer(Exchange<T, R> exchange, ByteBuffer buf, boolean last) {
                         return super.onByteBuffer(new InterceptorExchange<>(context, exchange), buf, last);
                     }
 
                     @Override
-                    public CompletableFuture<?> onCompleted(Exchange<T, R> exchange, int status, String reason) {
+                    public CompletionStage<?> onCompleted(Exchange<T, R> exchange, int status, String reason) {
                         return super.onCompleted(new InterceptorExchange<>(context, exchange), status, reason);
                     }
 
@@ -167,7 +164,7 @@ public class InterceptorApiExecutor implements ApiExecutor {
         }
 
         @Override
-        public CompletableFuture<Exchange<T, R>> write(T data) {
+        public CompletionStage<Exchange<T, R>> write(T data) {
             return CompletableFuture.completedFuture(null)
                     .thenCompose(unused -> interceptor.preHandle(context, data))
                     .thenCompose(req -> interceptor.handle(context, req, v -> super.write(CommonUtils.<T>cast(v))))

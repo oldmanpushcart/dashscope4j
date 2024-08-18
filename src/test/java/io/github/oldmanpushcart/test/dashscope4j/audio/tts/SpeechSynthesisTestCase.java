@@ -27,7 +27,10 @@ public class SpeechSynthesisTestCase implements LoadingEnv {
         final var listener = new CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse>();
         client.audio().synthesis(request).exchange(Exchange.Mode.NONE, listener);
 
-        listener.getCompleteFuture().join();
+        listener.getCompleteFuture()
+                .toCompletableFuture()
+                .join();
+
         Assertions.assertEquals(1, listener.getDataCnt());
         Assertions.assertTrue(listener.getByteCnt() > 0);
     }
@@ -40,7 +43,10 @@ public class SpeechSynthesisTestCase implements LoadingEnv {
                 .build();
 
         final var listener = new CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse>();
-        final var exchange = client.audio().synthesis(request).exchange(Exchange.Mode.IN, listener).join();
+        final var exchange = client.audio().synthesis(request)
+                .exchange(Exchange.Mode.IN, listener)
+                .toCompletableFuture()
+                .join();
 
         final var texts = new String[]{
                 "白日依山尽",
@@ -50,14 +56,19 @@ public class SpeechSynthesisTestCase implements LoadingEnv {
         };
 
         for (final var text : texts) {
-            exchange.write(SpeechSynthesisRequest.newBuilder(request)
-                    .text(text)
-                    .build()).join();
+            exchange.write(SpeechSynthesisRequest.newBuilder(request).text(text).build())
+                    .toCompletableFuture()
+                    .join();
         }
 
-        exchange.finishing().join();
+        exchange.finishing()
+                .toCompletableFuture()
+                .join();
 
-        listener.getCompleteFuture().join();
+        listener.getCompleteFuture()
+                .toCompletableFuture()
+                .join();
+
         Assertions.assertEquals(1, listener.getDataCnt());
         Assertions.assertTrue(listener.getByteCnt() > 0);
 
@@ -77,9 +88,14 @@ public class SpeechSynthesisTestCase implements LoadingEnv {
                 .build();
 
         final var listener = new CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse>();
-        client.audio().synthesis(request).exchange(Exchange.Mode.OUT, listener).join();
+        client.audio().synthesis(request).exchange(Exchange.Mode.OUT, listener)
+                .toCompletableFuture()
+                .join();
 
-        listener.getCompleteFuture().join();
+        listener.getCompleteFuture()
+                .toCompletableFuture()
+                .join();
+
         Assertions.assertTrue(listener.getDataCnt() > 0);
         Assertions.assertTrue(listener.getByteCnt() > 0);
 
@@ -93,7 +109,9 @@ public class SpeechSynthesisTestCase implements LoadingEnv {
                 .build();
 
         final var listener = new CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse>();
-        final var exchange = client.audio().synthesis(request).exchange(Exchange.Mode.DUPLEX, listener).join();
+        final var exchange = client.audio().synthesis(request).exchange(Exchange.Mode.DUPLEX, listener)
+                .toCompletableFuture()
+                .join();
 
         final var texts = new String[]{
                 "白日依山尽",
@@ -103,14 +121,19 @@ public class SpeechSynthesisTestCase implements LoadingEnv {
         };
 
         for (final var text : texts) {
-            exchange.write(SpeechSynthesisRequest.newBuilder(request)
-                    .text(text)
-                    .build()).join();
+            exchange.write(SpeechSynthesisRequest.newBuilder(request).text(text).build())
+                    .toCompletableFuture()
+                    .join();
         }
 
-        exchange.finishing().join();
+        exchange.finishing()
+                .toCompletableFuture()
+                .join();
 
-        listener.getCompleteFuture().join();
+        listener.getCompleteFuture()
+                .toCompletableFuture()
+                .join();
+
         Assertions.assertTrue(listener.getDataCnt() > 0);
         Assertions.assertTrue(listener.getByteCnt() > 0);
 

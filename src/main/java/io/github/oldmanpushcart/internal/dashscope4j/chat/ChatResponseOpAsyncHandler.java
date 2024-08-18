@@ -7,9 +7,10 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.ToolCallMessageImpl;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-public class ChatResponseOpAsyncHandler implements Function<ChatResponse, CompletableFuture<ChatResponse>> {
+public class ChatResponseOpAsyncHandler implements Function<ChatResponse, CompletionStage<ChatResponse>> {
 
     private final DashScopeClient client;
     private final ChatRequest request;
@@ -20,7 +21,7 @@ public class ChatResponseOpAsyncHandler implements Function<ChatResponse, Comple
     }
 
     @Override
-    public CompletableFuture<ChatResponse> apply(ChatResponse response) {
+    public CompletionStage<ChatResponse> apply(ChatResponse response) {
 
         // 处理工具调用场景
         final var choice = response.output().best();

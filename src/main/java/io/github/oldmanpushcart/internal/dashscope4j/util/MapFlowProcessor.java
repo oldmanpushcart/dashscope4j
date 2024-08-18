@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.internal.dashscope4j.util;
 
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,7 +25,7 @@ public class MapFlowProcessor<T, R> implements Flow.Processor<T, R> {
     /*
      * 映射函数
      */
-    private final BiFunction<T, Throwable, CompletableFuture<List<R>>> mapper;
+    private final BiFunction<T, Throwable, CompletionStage<List<R>>> mapper;
 
     /*
      * 用于记录请求的元素数量
@@ -68,7 +68,7 @@ public class MapFlowProcessor<T, R> implements Flow.Processor<T, R> {
      *
      * @param mapper 映射函数
      */
-    private MapFlowProcessor(BiFunction<T, Throwable, CompletableFuture<List<R>>> mapper) {
+    private MapFlowProcessor(BiFunction<T, Throwable, CompletionStage<List<R>>> mapper) {
         this.mapper = mapper;
     }
 
@@ -237,7 +237,7 @@ public class MapFlowProcessor<T, R> implements Flow.Processor<T, R> {
      * @param <R>    目标类型
      * @return 映射处理后的数据流
      */
-    public static <T, R> Flow.Publisher<R> asyncOneToMany(Flow.Publisher<T> source, BiFunction<T, Throwable, CompletableFuture<List<R>>> mapper) {
+    public static <T, R> Flow.Publisher<R> asyncOneToMany(Flow.Publisher<T> source, BiFunction<T, Throwable, CompletionStage<List<R>>> mapper) {
         return new MapFlowProcessor<>(mapper)
                 .map(source);
     }
@@ -251,7 +251,7 @@ public class MapFlowProcessor<T, R> implements Flow.Processor<T, R> {
      * @param <R>    目标类型
      * @return 映射处理后的数据流
      */
-    public static <T, R> Flow.Publisher<R> asyncOneToMany(Flow.Publisher<T> source, Function<T, CompletableFuture<List<R>>> mapper) {
+    public static <T, R> Flow.Publisher<R> asyncOneToMany(Flow.Publisher<T> source, Function<T, CompletionStage<List<R>>> mapper) {
         return new MapFlowProcessor<T, R>((t, ex) -> null != ex ? failedFuture(ex) : mapper.apply(t))
                 .map(source);
     }
@@ -265,7 +265,7 @@ public class MapFlowProcessor<T, R> implements Flow.Processor<T, R> {
      * @param <R>    目标类型
      * @return 映射处理后的数据流
      */
-    public static <T, R> Flow.Publisher<R> asyncOneToOne(Flow.Publisher<T> source, BiFunction<T, Throwable, CompletableFuture<R>> mapper) {
+    public static <T, R> Flow.Publisher<R> asyncOneToOne(Flow.Publisher<T> source, BiFunction<T, Throwable, CompletionStage<R>> mapper) {
         return new MapFlowProcessor<T, R>((t, ex) -> mapper.apply(t, ex).thenApply(List::of))
                 .map(source);
     }
@@ -279,7 +279,7 @@ public class MapFlowProcessor<T, R> implements Flow.Processor<T, R> {
      * @param <R>    目标类型
      * @return 映射处理后的数据流
      */
-    public static <T, R> Flow.Publisher<R> asyncOneToOne(Flow.Publisher<T> source, Function<T, CompletableFuture<R>> mapper) {
+    public static <T, R> Flow.Publisher<R> asyncOneToOne(Flow.Publisher<T> source, Function<T, CompletionStage<R>> mapper) {
         return new MapFlowProcessor<T, R>((t, ex) -> null != ex ? failedFuture(ex) : mapper.apply(t).thenApply(List::of))
                 .map(source);
     }

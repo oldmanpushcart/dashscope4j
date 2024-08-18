@@ -13,6 +13,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -34,7 +35,7 @@ public class ProcessingMessageListForQwenLong implements ProcessMessageListInter
             .pattern();
 
     @Override
-    public CompletableFuture<? extends List<Message>> process(InvocationContext context, ApiRequest request, List<Message> messages) {
+    public CompletionStage<? extends List<Message>> process(InvocationContext context, ApiRequest request, List<Message> messages) {
 
         // 仅处理 QwenLong 模型的对话请求
         if (!(request instanceof ChatRequest chatRequest)

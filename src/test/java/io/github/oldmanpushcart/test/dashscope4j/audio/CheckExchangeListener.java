@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CheckExchangeListener<T, R> implements Exchange.Listener<T, R> {
@@ -16,20 +17,20 @@ public class CheckExchangeListener<T, R> implements Exchange.Listener<T, R> {
     private final List<R> items = new ArrayList<>();
 
     @Override
-    public CompletableFuture<?> onData(Exchange<T, R> exchange, R data) {
+    public CompletionStage<?> onData(Exchange<T, R> exchange, R data) {
         dataCntRef.incrementAndGet();
         items.add(data);
         return Exchange.Listener.super.onData(exchange, data);
     }
 
     @Override
-    public CompletableFuture<?> onByteBuffer(Exchange<T, R> exchange, ByteBuffer buf, boolean last) {
+    public CompletionStage<?> onByteBuffer(Exchange<T, R> exchange, ByteBuffer buf, boolean last) {
         byteCntRef.incrementAndGet();
         return Exchange.Listener.super.onByteBuffer(exchange, buf, last);
     }
 
     @Override
-    public CompletableFuture<?> onCompleted(Exchange<T, R> exchange, int status, String reason) {
+    public CompletionStage<?> onCompleted(Exchange<T, R> exchange, int status, String reason) {
         completeF.complete(null);
         return Exchange.Listener.super.onCompleted(exchange, status, reason);
     }
@@ -40,7 +41,7 @@ public class CheckExchangeListener<T, R> implements Exchange.Listener<T, R> {
         Exchange.Listener.super.onError(exchange, ex);
     }
 
-    public CompletableFuture<Void> getCompleteFuture() {
+    public CompletionStage<Void> getCompleteFuture() {
         return completeF;
     }
 

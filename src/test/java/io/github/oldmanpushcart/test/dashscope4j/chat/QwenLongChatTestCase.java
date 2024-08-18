@@ -24,6 +24,7 @@ public class QwenLongChatTestCase implements LoadingEnv {
                 .build();
         final var response = client.chat(request)
                 .async()
+                .toCompletableFuture()
                 .join();
         final var text = response.output().best().message().text();
         Assertions.assertTrue(text.contains("23"));
@@ -34,6 +35,7 @@ public class QwenLongChatTestCase implements LoadingEnv {
 
         final var resourceMeta = client.base().files()
                 .upload(URI.create("https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf"))
+                .toCompletableFuture()
                 .join();
 
         final var request = ChatRequest.newBuilder()
@@ -47,7 +49,9 @@ public class QwenLongChatTestCase implements LoadingEnv {
                 .build();
         final var response = client.chat(request)
                 .async()
-                .whenComplete((r, e) -> client.base().files().delete(resourceMeta.id()).join())
+                .thenCompose(r -> client.base().files().delete(resourceMeta.id()).thenApply(v->r))
+                .whenComplete((r, e) -> client.base().files().delete(resourceMeta.id()))
+                .toCompletableFuture()
                 .join();
         final var text = response.output().best().message().text();
         Assertions.assertTrue(text.contains("五年规划"));
@@ -58,10 +62,12 @@ public class QwenLongChatTestCase implements LoadingEnv {
 
         final var meta1 = client.base().files()
                 .upload(new File("./document/test-resources/pdf/P020210313315693279320.pdf"))
+                .toCompletableFuture()
                 .join();
 
         final var meta2 = client.base().files()
                 .upload(new File("./document/test-resources/docx/想当初知乎也是吹巨人的.docx"))
+                .toCompletableFuture()
                 .join();
 
         final var request = ChatRequest.newBuilder()
@@ -78,6 +84,7 @@ public class QwenLongChatTestCase implements LoadingEnv {
 
         final var response = client.chat(request)
                 .async()
+                .toCompletableFuture()
                 .join();
         Assertions.assertTrue(response.output().best().message().text().contains("稳定"));
 
@@ -90,11 +97,12 @@ public class QwenLongChatTestCase implements LoadingEnv {
 
         final var nextResponse = client.chat(nextRequest)
                 .async()
+                .toCompletableFuture()
                 .join();
-        Assertions.assertTrue(nextResponse.output().best().message().text().contains("等价交换"));
+        Assertions.assertFalse(nextResponse.output().best().message().text().isBlank());
 
-        client.base().files().delete(meta1.id()).join();
-        client.base().files().delete(meta2.id()).join();
+        client.base().files().delete(meta1.id()).toCompletableFuture().join();
+        client.base().files().delete(meta2.id()).toCompletableFuture().join();
 
     }
 

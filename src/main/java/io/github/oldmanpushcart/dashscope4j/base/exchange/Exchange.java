@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.base.exchange;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -35,7 +35,7 @@ public interface Exchange<T, R> {
      * @param data 数据
      * @return 写入操作
      */
-    CompletableFuture<Exchange<T, R>> write(T data);
+    CompletionStage<Exchange<T, R>> write(T data);
 
     /**
      * 写入ByteBuffer
@@ -44,7 +44,7 @@ public interface Exchange<T, R> {
      * @param last is the last ByteBuffer
      * @return 写入操作
      */
-    CompletableFuture<Exchange<T, R>> write(ByteBuffer buf, boolean last);
+    CompletionStage<Exchange<T, R>> write(ByteBuffer buf, boolean last);
 
     /**
      * 写入ByteBuffer
@@ -52,7 +52,7 @@ public interface Exchange<T, R> {
      * @param buf ByteBuffer
      * @return 写入操作
      */
-    CompletableFuture<Exchange<T, R>> write(ByteBuffer buf);
+    CompletionStage<Exchange<T, R>> write(ByteBuffer buf);
 
     /**
      * 结束交互
@@ -69,7 +69,7 @@ public interface Exchange<T, R> {
      *
      * @return 结束操作
      */
-    CompletableFuture<Exchange<T, R>> finishing();
+    CompletionStage<Exchange<T, R>> finishing();
 
     /**
      * 关闭
@@ -81,7 +81,7 @@ public interface Exchange<T, R> {
      * @param reason 关闭原因
      * @return 关闭操作
      */
-    CompletableFuture<Exchange<T, R>> close(int status, String reason);
+    CompletionStage<Exchange<T, R>> close(int status, String reason);
 
     /**
      * 终止
@@ -122,7 +122,7 @@ public interface Exchange<T, R> {
          * @param data     数据
          * @return 接收操作
          */
-        default CompletableFuture<?> onData(Exchange<T, R> exchange, R data) {
+        default CompletionStage<?> onData(Exchange<T, R> exchange, R data) {
             return completedFuture(null).thenAccept(v -> exchange.request(1L));
         }
 
@@ -134,7 +134,7 @@ public interface Exchange<T, R> {
          * @param last     is the last ByteBuffer
          * @return 接收操作
          */
-        default CompletableFuture<?> onByteBuffer(Exchange<T, R> exchange, ByteBuffer buf, boolean last) {
+        default CompletionStage<?> onByteBuffer(Exchange<T, R> exchange, ByteBuffer buf, boolean last) {
             return completedFuture(null).thenAccept(v -> exchange.request(1L));
         }
 
@@ -146,7 +146,7 @@ public interface Exchange<T, R> {
          * @param reason   结束原因
          * @return 交互完成
          */
-        default CompletableFuture<?> onCompleted(Exchange<T, R> exchange, int status, String reason) {
+        default CompletionStage<?> onCompleted(Exchange<T, R> exchange, int status, String reason) {
             return completedFuture(null);
         }
 

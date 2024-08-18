@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
@@ -29,7 +29,7 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
         this.encoder = encoder;
     }
 
-    private CompletableFuture<Exchange<T, R>> sendText(String text) {
+    private CompletionStage<Exchange<T, R>> sendText(String text) {
         return socket.sendText(text, true)
                 .thenApply(v -> {
                     logger.trace("WEBSOCKET: >>> TEXT;last={};text={};", true, text);
@@ -48,7 +48,7 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
     }
 
     @Override
-    public CompletableFuture<Exchange<T, R>> write(T data) {
+    public CompletionStage<Exchange<T, R>> write(T data) {
 
         final var type = isFirstRef.get() && isFirstRef.compareAndSet(true, false)
                 ? InFrame.Type.RUN
@@ -60,7 +60,7 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
     }
 
     @Override
-    public CompletableFuture<Exchange<T, R>> write(ByteBuffer buf, boolean last) {
+    public CompletionStage<Exchange<T, R>> write(ByteBuffer buf, boolean last) {
         final var remaining = buf.remaining();
         return socket.sendBinary(buf, last)
                 .thenApply(v -> {
@@ -70,7 +70,7 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
     }
 
     @Override
-    public CompletableFuture<Exchange<T, R>> write(ByteBuffer buf) {
+    public CompletionStage<Exchange<T, R>> write(ByteBuffer buf) {
         return write(buf, true);
     }
 
@@ -80,7 +80,7 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
     }
 
     @Override
-    public CompletableFuture<Exchange<T, R>> finishing() {
+    public CompletionStage<Exchange<T, R>> finishing() {
         final var frame = InFrame.of(uuid, InFrame.Type.FINISH, mode, "{\"input\": {}}");
         final var encoded = JacksonUtils.toJson(frame);
         return sendText(encoded);
@@ -88,7 +88,7 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
 
 
     @Override
-    public CompletableFuture<Exchange<T, R>> close(int status, String reason) {
+    public CompletionStage<Exchange<T, R>> close(int status, String reason) {
         return socket.sendClose(status, reason)
                 .thenApply(v -> {
                     logger.trace("WEBSOCKET: >>> CLOSE;status={};reason={};", status, reason);

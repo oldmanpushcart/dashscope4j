@@ -13,7 +13,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.util.LazyFetch;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 
 import static java.util.Collections.unmodifiableList;
@@ -61,7 +61,7 @@ record TranscriptionResponseImpl(String uuid, Ret ret, Usage usage, Output outpu
         private final Ret ret;
         private final URI originURI;
         private final URI transcriptionURI;
-        private final LazyFetch<CompletableFuture<Transcription>> transcriptionFutureLazyFetch = new LazyFetch<>();
+        private final LazyFetch<CompletionStage<Transcription>> transcriptionFutureLazyFetch = new LazyFetch<>();
 
         @JsonCreator
         public ItemImpl(
@@ -101,7 +101,7 @@ record TranscriptionResponseImpl(String uuid, Ret ret, Usage usage, Output outpu
         }
 
         @Override
-        public CompletableFuture<Transcription> lazyFetchTranscription(Executor executor, Duration connectTimeout, Duration timeout) {
+        public CompletionStage<Transcription> lazyFetchTranscription(Executor executor, Duration connectTimeout, Duration timeout) {
             return transcriptionFutureLazyFetch.fetch(() ->
                     HttpUtils.getAsString(transcriptionURI, executor, connectTimeout, timeout)
                             .thenApply(body -> JacksonUtils.toObject(body, TranscriptionImpl.class)));

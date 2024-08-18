@@ -5,12 +5,13 @@ import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFn;
 import io.github.oldmanpushcart.dashscope4j.chat.tool.function.ChatFunction;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 @ChatFn(name = "echo", description = "当用户输入echo:，回显后边的文字")
 public class EchoFunction implements ChatFunction<EchoFunction.Echo, EchoFunction.Echo> {
 
     @Override
-    public CompletableFuture<Echo> call(Echo echo) {
+    public CompletionStage<Echo> call(Echo echo) {
         return CompletableFuture.completedFuture(new Echo(echo.words()));
     }
 

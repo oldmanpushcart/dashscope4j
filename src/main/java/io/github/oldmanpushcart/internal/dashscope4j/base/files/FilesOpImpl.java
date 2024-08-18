@@ -11,6 +11,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.CACHE_NAMESPACE_FOR_FILES;
 import static io.github.oldmanpushcart.dashscope4j.Constants.CACHE_NAMESPACE_FOR_IDX_CACHE_FILES_FILEID_CACHE_KEY;
@@ -35,7 +36,7 @@ public class FilesOpImpl implements FilesOp {
     }
 
     @Override
-    public CompletableFuture<FileMeta> upload(URI resource, String filename) {
+    public CompletionStage<FileMeta> upload(URI resource, String filename) {
         final var key = toCacheKey(resource, filename);
         return CacheUtils
                 .asyncGetOrPut(cache, key, () -> {
@@ -62,7 +63,7 @@ public class FilesOpImpl implements FilesOp {
     }
 
     @Override
-    public CompletableFuture<FileMeta> detail(String id) {
+    public CompletionStage<FileMeta> detail(String id) {
         final var request = FileDetailRequest.newBuilder()
                 .id(id)
                 .build();
@@ -71,12 +72,12 @@ public class FilesOpImpl implements FilesOp {
     }
 
     @Override
-    public CompletableFuture<Boolean> delete(String id) {
+    public CompletionStage<Boolean> delete(String id) {
         return delete(id, false);
     }
 
     @Override
-    public CompletableFuture<Boolean> delete(String id, boolean isForce) {
+    public CompletionStage<Boolean> delete(String id, boolean isForce) {
         final var request = FileDeleteRequest.newBuilder()
                 .id(id)
                 .build();
@@ -101,7 +102,7 @@ public class FilesOpImpl implements FilesOp {
     }
 
     @Override
-    public CompletableFuture<Iterator<FileMeta>> iterator() {
+    public CompletionStage<Iterator<FileMeta>> iterator() {
         final var request = FileListRequest.newBuilder()
                 .build();
         return executor.async(request)

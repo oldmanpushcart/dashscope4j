@@ -25,7 +25,9 @@ public class RecognitionTestCase implements LoadingEnv {
                 .build();
 
         final var listener = new CheckExchangeListener<RecognitionRequest, RecognitionResponse>();
-        final var exchange = client.audio().recognition(request).exchange(Exchange.Mode.DUPLEX, listener).join();
+        final var exchange = client.audio().recognition(request).exchange(Exchange.Mode.DUPLEX, listener)
+                .toCompletableFuture()
+                .join();
 
         final var buffer = ByteBuffer.allocate(4 * 1024);
         final var url = new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/samples/audio/paraformer/hello_world_female2.wav");
@@ -34,14 +36,21 @@ public class RecognitionTestCase implements LoadingEnv {
         try (final var channel = Channels.newChannel(url.openStream())) {
             while (channel.read(buffer) != -1) {
                 buffer.flip();
-                exchange.write(buffer).join();
+                exchange.write(buffer)
+                        .toCompletableFuture()
+                        .join();
                 buffer.clear();
             }
         } finally {
-            exchange.finishing().join();
+            exchange.finishing()
+                    .toCompletableFuture()
+                    .join();
         }
 
-        listener.getCompleteFuture().join();
+        listener.getCompleteFuture()
+                .toCompletableFuture()
+                .join();
+
         Assertions.assertTrue(listener.getDataCnt() > 0);
         Assertions.assertEquals(0, listener.getByteCnt());
         final var found = listener.getItems().stream()

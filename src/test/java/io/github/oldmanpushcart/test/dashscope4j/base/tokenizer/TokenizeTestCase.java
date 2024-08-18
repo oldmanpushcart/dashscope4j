@@ -19,7 +19,7 @@ public class TokenizeTestCase implements LoadingEnv {
                 Message.ofUser("帮我安排一些行程")
         );
 
-        final var list = client.base().tokenize().remote(ChatModel.QWEN_PLUS).encode(messages).join();
+        final var list = client.base().tokenize().remote(ChatModel.QWEN_PLUS).encode(messages).toCompletableFuture().join();
         Assertions.assertEquals(26, list.size());
         list.forEach(v -> {
             Assertions.assertNotNull(v.getKey());
@@ -38,7 +38,7 @@ public class TokenizeTestCase implements LoadingEnv {
                 帮我安排一些行程
                 """;
 
-        final var list = client.base().tokenize().remote(ChatModel.QWEN_PLUS).encode(text).join();
+        final var list = client.base().tokenize().remote(ChatModel.QWEN_PLUS).encode(text).toCompletableFuture().join();
         Assertions.assertEquals(26, list.size());
         list.forEach(v -> {
             Assertions.assertNotNull(v.getKey());
@@ -57,7 +57,7 @@ public class TokenizeTestCase implements LoadingEnv {
                 Message.ofUser("帮我安排一些行程")
         );
 
-        final var list = client.base().tokenize().local().encode(messages).join();
+        final var list = client.base().tokenize().local().encode(messages).toCompletableFuture().join();
         Assertions.assertEquals(26, list.size());
         list.forEach(v -> {
             Assertions.assertNotNull(v.getKey());
@@ -76,7 +76,7 @@ public class TokenizeTestCase implements LoadingEnv {
                 帮我安排一些行程
                 """;
 
-        final var list = client.base().tokenize().local().encode(text).join();
+        final var list = client.base().tokenize().local().encode(text).toCompletableFuture().join();
         Assertions.assertEquals(26, list.size());
         list.forEach(v -> {
             Assertions.assertNotNull(v.getKey());

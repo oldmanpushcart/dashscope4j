@@ -7,13 +7,14 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class LocalTokenizer implements Tokenizer {
 
     private static final QwenTokenizer instance = new QwenTokenizer();
 
     @Override
-    public CompletableFuture<List<Map.Entry<Integer, String>>> encode(String text) {
+    public CompletionStage<List<Map.Entry<Integer, String>>> encode(String text) {
         final var list = instance.encodeOrdinary(text.trim()).stream()
                 .<Map.Entry<Integer, String>>map(token ->
                         new AbstractMap.SimpleEntry<>(
@@ -25,7 +26,7 @@ public class LocalTokenizer implements Tokenizer {
     }
 
     @Override
-    public CompletableFuture<List<Map.Entry<Integer, String>>> encode(List<Message> messages) {
+    public CompletionStage<List<Map.Entry<Integer, String>>> encode(List<Message> messages) {
         final var text = messages.stream()
                 .map(Message::text)
                 .reduce("", String::concat);
@@ -33,7 +34,7 @@ public class LocalTokenizer implements Tokenizer {
     }
 
     @Override
-    public CompletableFuture<String> decode(List<Integer> tokens) {
+    public CompletionStage<String> decode(List<Integer> tokens) {
         final var text = instance.decode(tokens);
         return CompletableFuture.completedFuture(text);
     }

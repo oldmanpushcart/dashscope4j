@@ -10,11 +10,12 @@ import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class ProcessTranscriptionForUpload implements Interceptor {
 
     @Override
-    public CompletableFuture<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
+    public CompletionStage<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
         if (!(request instanceof TranscriptionRequest transcriptionRequest)) {
             return Interceptor.super.preHandle(context, request);
         }
@@ -25,7 +26,7 @@ public class ProcessTranscriptionForUpload implements Interceptor {
                         .build());
     }
 
-    private CompletableFuture<List<URI>> processResources(InvocationContext context, TranscriptionRequest request, List<URI> resources) {
+    private CompletionStage<List<URI>> processResources(InvocationContext context, TranscriptionRequest request, List<URI> resources) {
         return CompletableFutureUtils.thenIterateCompose(resources, resource -> {
 
             if (Objects.equals("file", resource.getScheme())) {

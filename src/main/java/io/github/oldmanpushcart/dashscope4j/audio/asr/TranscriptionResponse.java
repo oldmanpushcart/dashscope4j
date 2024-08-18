@@ -7,7 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.base.algo.HttpAlgoResponse;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 
 /**
@@ -57,12 +57,12 @@ public interface TranscriptionResponse extends HttpAlgoResponse<TranscriptionRes
          * @param timeout        读取超时时间
          * @return 转录结果
          */
-        CompletableFuture<Transcription> lazyFetchTranscription(Executor executor, Duration connectTimeout, Duration timeout);
+        CompletionStage<Transcription> lazyFetchTranscription(Executor executor, Duration connectTimeout, Duration timeout);
 
         /**
          * @return 懒加载获取转录结果
          */
-        default CompletableFuture<Transcription> lazyFetchTranscription() {
+        default CompletionStage<Transcription> lazyFetchTranscription() {
             return lazyFetchTranscription(null, null, null);
         }
 

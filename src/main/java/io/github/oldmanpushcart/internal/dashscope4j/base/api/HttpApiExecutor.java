@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.function.Function;
@@ -86,7 +87,7 @@ public class HttpApiExecutor implements ApiExecutor {
      * @return 异步应答
      */
     @Override
-    public <R extends HttpApiResponse<?>> CompletableFuture<R> async(HttpApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletionStage<R> async(HttpApiRequest<R> request) {
 
         // 构建委派请求
         final var delegateHttpRequest = newDelegateHttpRequestBuilder(request)
@@ -135,7 +136,7 @@ public class HttpApiExecutor implements ApiExecutor {
      * @return 流式应答
      */
     @Override
-    public <R extends HttpApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(HttpApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletionStage<Flow.Publisher<R>> flow(HttpApiRequest<R> request) {
 
         final var delegateHttpRequest = newDelegateHttpRequestBuilder(request)
                 .header(HEADER_X_DASHSCOPE_SSE, ENABLE)
@@ -194,7 +195,7 @@ public class HttpApiExecutor implements ApiExecutor {
      * @return 任务应答
      */
     @Override
-    public <R extends HttpApiResponse<?>> CompletableFuture<Task.Half<R>> task(HttpApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletionStage<Task.Half<R>> task(HttpApiRequest<R> request) {
 
         final var delegateHttpRequest = newDelegateHttpRequestBuilder(request)
                 .header(HEADER_X_DASHSCOPE_SSE, DISABLE)
@@ -238,13 +239,13 @@ public class HttpApiExecutor implements ApiExecutor {
      * @param <R>      应答类型
      * @return 任务应答
      */
-    private <R> CompletableFuture<R> rollingTask(TaskGetRequest request, Task.WaitStrategy strategy, Function<String, R> finisher) {
+    private <R> CompletionStage<R> rollingTask(TaskGetRequest request, Task.WaitStrategy strategy, Function<String, R> finisher) {
         return _rollingTask(request, strategy)
                 .thenApply(response -> finisher.apply(response.raw()));
     }
 
     // 滚动任务执行，直至完结（成功、取消、失败）
-    private CompletableFuture<TaskGetResponse> _rollingTask(TaskGetRequest taskGetRequest, Task.WaitStrategy strategy) {
+    private CompletionStage<TaskGetResponse> _rollingTask(TaskGetRequest taskGetRequest, Task.WaitStrategy strategy) {
         return async(taskGetRequest)
                 .thenCompose(taskGetResponse -> {
 
@@ -295,7 +296,7 @@ public class HttpApiExecutor implements ApiExecutor {
 
     @Override
     public <T extends ExchangeApiRequest<R>, R extends ExchangeApiResponse<?>>
-    CompletableFuture<Exchange<T, R>> exchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
+    CompletionStage<Exchange<T, R>> exchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
 
         final URI remote = request instanceof AlgoRequest<?> algoRequest
                 ? algoRequest.model().remote()

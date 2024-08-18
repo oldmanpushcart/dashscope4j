@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.UpdateMode.REPLACE_ALL;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.updateList;
@@ -21,7 +22,7 @@ public class ProcessMessageListInterceptorImpl implements ProcessMessageListInte
     }
 
     @Override
-    public CompletableFuture<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
+    public CompletionStage<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
         if (request instanceof ChatRequest chatRequest) {
             return processor.process(context, chatRequest, chatRequest.messages())
                     .thenApply(messages -> {

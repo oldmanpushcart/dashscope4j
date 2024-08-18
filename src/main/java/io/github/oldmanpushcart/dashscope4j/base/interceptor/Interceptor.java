@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * 拦截器
@@ -17,7 +18,7 @@ public interface Interceptor {
      * @param request 请求
      * @return 请求
      */
-    default CompletableFuture<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
+    default CompletionStage<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
         return CompletableFuture.completedFuture(request);
     }
 
@@ -29,7 +30,7 @@ public interface Interceptor {
      * @param opHandler 操作处理器
      * @return 处理结果
      */
-    default CompletableFuture<?> handle(InvocationContext context, ApiRequest request, OpHandler opHandler) {
+    default CompletionStage<?> handle(InvocationContext context, ApiRequest request, OpHandler opHandler) {
         return opHandler.handle(request);
     }
 
@@ -44,7 +45,7 @@ public interface Interceptor {
          * @param request 请求
          * @return 结果
          */
-        CompletableFuture<?> handle(ApiRequest request);
+        CompletionStage<?> handle(ApiRequest request);
 
     }
 
@@ -56,7 +57,7 @@ public interface Interceptor {
      * @param ex       异常
      * @return 处理后的应答
      */
-    default CompletableFuture<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response, Throwable ex) {
+    default CompletionStage<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response, Throwable ex) {
         return null == ex
                 ? CompletableFuture.completedFuture(response)
                 : CompletableFuture.failedFuture(ex);

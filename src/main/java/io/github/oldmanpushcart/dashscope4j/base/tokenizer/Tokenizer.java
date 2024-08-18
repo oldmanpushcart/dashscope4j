@@ -4,7 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * 标记器
@@ -19,7 +19,7 @@ public interface Tokenizer {
      * @param text 文本
      * @return 标记对列表
      */
-    CompletableFuture<List<Map.Entry<Integer, String>>> encode(String text);
+    CompletionStage<List<Map.Entry<Integer, String>>> encode(String text);
 
     /**
      * 编码消息列表为标记对列表
@@ -27,7 +27,7 @@ public interface Tokenizer {
      * @param messages 消息列表
      * @return 标记对列表
      */
-    CompletableFuture<List<Map.Entry<Integer, String>>> encode(List<Message> messages);
+    CompletionStage<List<Map.Entry<Integer, String>>> encode(List<Message> messages);
 
     /**
      * 解码标记列表为文本
@@ -35,7 +35,7 @@ public interface Tokenizer {
      * @param tokens 标记列表
      * @return 文本
      */
-    CompletableFuture<String> decode(List<Integer> tokens);
+    CompletionStage<String> decode(List<Integer> tokens);
 
     /**
      * @return 是否支持解码

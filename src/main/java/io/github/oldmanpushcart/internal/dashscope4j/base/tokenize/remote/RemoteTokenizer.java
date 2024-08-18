@@ -8,7 +8,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.IntStream;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.check;
@@ -24,12 +24,12 @@ public class RemoteTokenizer implements Tokenizer {
     }
 
     @Override
-    public CompletableFuture<List<Map.Entry<Integer, String>>> encode(String text) {
+    public CompletionStage<List<Map.Entry<Integer, String>>> encode(String text) {
         return encode(List.of(Message.ofUser(text)));
     }
 
     @Override
-    public CompletableFuture<List<Map.Entry<Integer, String>>> encode(List<Message> messages) {
+    public CompletionStage<List<Map.Entry<Integer, String>>> encode(List<Message> messages) {
         final var request = TokenizeRequest.newBuilder()
                 .model(model)
                 .messages(messages)
@@ -50,7 +50,7 @@ public class RemoteTokenizer implements Tokenizer {
     }
 
     @Override
-    public CompletableFuture<String> decode(List<Integer> tokens) {
+    public CompletionStage<String> decode(List<Integer> tokens) {
         throw new UnsupportedOperationException("remote tokenizer does not support decode!");
     }
 

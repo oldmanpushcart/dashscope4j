@@ -14,6 +14,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.exchange.ProxyExchangeListener;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class AudioOpImpl implements AudioOp {
 
@@ -43,7 +44,7 @@ public class AudioOpImpl implements AudioOp {
             return apiExecutor.exchange(request, mode, new ProxyExchangeListener<>(listener) {
 
                 @Override
-                public CompletableFuture<?> onData(Exchange<RecognitionRequest, RecognitionResponse> exchange, RecognitionResponse data) {
+                public CompletionStage<?> onData(Exchange<RecognitionRequest, RecognitionResponse> exchange, RecognitionResponse data) {
 
                     /*
                      * 模型在返回的时候，FINISH其实是没有实际payload

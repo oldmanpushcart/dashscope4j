@@ -35,7 +35,7 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
         this.listener = listener;
     }
 
-    public CompletableFuture<Exchange<T, R>> getExchange() {
+    public CompletionStage<Exchange<T, R>> getExchange() {
         return exchangeF;
     }
 

@@ -38,7 +38,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 
@@ -119,13 +119,13 @@ public class DashScopeClientImpl implements DashScopeClient {
     public OpAsyncOpFlow<ChatResponse> chat(ChatRequest request) {
         return new OpAsyncOpFlow<>() {
             @Override
-            public CompletableFuture<ChatResponse> async() {
+            public CompletionStage<ChatResponse> async() {
                 return apiExecutor.async(request)
                         .thenCompose(new ChatResponseOpAsyncHandler(DashScopeClientImpl.this, request));
             }
 
             @Override
-            public CompletableFuture<Flow.Publisher<ChatResponse>> flow() {
+            public CompletionStage<Flow.Publisher<ChatResponse>> flow() {
                 return apiExecutor.flow(request)
                         .thenApply(new ChatResponseOpFlowHandler(DashScopeClientImpl.this, request));
             }
@@ -136,17 +136,17 @@ public class DashScopeClientImpl implements DashScopeClient {
     public <R extends HttpApiResponse<?>> OpAsyncOpFlowOpTask<R> http(HttpApiRequest<R> request) {
         return new OpAsyncOpFlowOpTask<>() {
             @Override
-            public CompletableFuture<R> async() {
+            public CompletionStage<R> async() {
                 return apiExecutor.async(request);
             }
 
             @Override
-            public CompletableFuture<Flow.Publisher<R>> flow() {
+            public CompletionStage<Flow.Publisher<R>> flow() {
                 return apiExecutor.flow(request);
             }
 
             @Override
-            public CompletableFuture<Task.Half<R>> task() {
+            public CompletionStage<Task.Half<R>> task() {
                 return apiExecutor.task(request);
             }
         };

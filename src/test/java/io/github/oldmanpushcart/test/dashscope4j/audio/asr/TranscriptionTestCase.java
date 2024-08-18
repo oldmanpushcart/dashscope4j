@@ -26,6 +26,7 @@ public class TranscriptionTestCase implements LoadingEnv {
 
         final var response = client.audio().transcription(request)
                 .task(Task.WaitStrategies.perpetual(Duration.ofMillis(1000L * 30)))
+                .toCompletableFuture()
                 .join();
 
         Assertions.assertTrue(response.ret().isSuccess());
@@ -34,7 +35,7 @@ public class TranscriptionTestCase implements LoadingEnv {
         // assert items
         response.output().results().forEach(item -> {
             Assertions.assertTrue(item.ret().isSuccess());
-            final var transcription = item.lazyFetchTranscription().join();
+            final var transcription = item.lazyFetchTranscription().toCompletableFuture().join();
             Assertions.assertNotNull(transcription.meta());
             Assertions.assertNotNull(transcription.originURI());
             Assertions.assertFalse(transcription.transcripts().isEmpty());

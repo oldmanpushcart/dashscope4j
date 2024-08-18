@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 /**
@@ -20,11 +21,11 @@ public class CompletableFutureUtils {
      * @param <R>      处理后类型
      * @return 迭代组合器
      */
-    public static <T, R> CompletableFuture<List<R>> thenIterateCompose(Iterable<T> source, Function<T, CompletableFuture<R>> function) {
+    public static <T, R> CompletionStage<List<R>> thenIterateCompose(Iterable<T> source, Function<T, CompletionStage<R>> function) {
         return thenIterateComposeByIterator(new ArrayList<>(), source.iterator(), function);
     }
 
-    private static <T, R> CompletableFuture<List<R>> thenIterateComposeByIterator(List<R> results, Iterator<T> iterator, Function<T, CompletableFuture<R>> function) {
+    private static <T, R> CompletionStage<List<R>> thenIterateComposeByIterator(List<R> results, Iterator<T> iterator, Function<T, CompletionStage<R>> function) {
         if (!iterator.hasNext()) {
             return CompletableFuture.completedFuture(results);
         }

@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.base.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.InvocationContext;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class InvokeCountInterceptor implements Interceptor {
@@ -16,13 +17,13 @@ public class InvokeCountInterceptor implements Interceptor {
     private final AtomicInteger failureCountRef = new AtomicInteger(0);
 
     @Override
-    public CompletableFuture<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
+    public CompletionStage<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
         requestCountRef.incrementAndGet();
         return CompletableFuture.completedFuture(request);
     }
 
     @Override
-    public CompletableFuture<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response, Throwable ex) {
+    public CompletionStage<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response, Throwable ex) {
         responseCountRef.incrementAndGet();
         if (null != ex) {
             failureCountRef.incrementAndGet();

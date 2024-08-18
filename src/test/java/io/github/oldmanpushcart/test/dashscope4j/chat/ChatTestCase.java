@@ -79,7 +79,7 @@ public class ChatTestCase implements LoadingEnv {
 
         // ASYNC
         {
-            final var response = client.chat(request).async().join();
+            final var response = client.chat(request).async().toCompletableFuture().join();
             Assertions.assertTrue(response.output().best().message().text().contains("23"));
             DashScopeAssertions.assertChatResponse(response);
         }
@@ -92,6 +92,7 @@ public class ChatTestCase implements LoadingEnv {
                         stringRef.set(r.output().best().message().text());
                         DashScopeAssertions.assertChatResponse(r);
                     }))
+                    .toCompletableFuture()
                     .join();
 
             Assertions.assertTrue(stringRef.get().contains("23"));
@@ -120,7 +121,7 @@ public class ChatTestCase implements LoadingEnv {
 
         // ASYNC
         {
-            final var response = client.chat(request).async().join();
+            final var response = client.chat(request).async().toCompletableFuture().join();
             final var text = response.output().best().message().text();
             Assertions.assertTrue(text.contains("2") || text.contains("两辆"));
             DashScopeAssertions.assertChatResponse(response);
@@ -135,6 +136,7 @@ public class ChatTestCase implements LoadingEnv {
                         stringRef.set(r.output().best().message().text());
                         DashScopeAssertions.assertChatResponse(r);
                     }))
+                    .toCompletableFuture()
                     .join();
 
             final var text = stringRef.get();
@@ -166,7 +168,7 @@ public class ChatTestCase implements LoadingEnv {
 
         // ASYNC
         {
-            final var response = client.chat(request).async().join();
+            final var response = client.chat(request).async().toCompletableFuture().join();
             DashScopeAssertions.assertChatResponse(response);
             Assertions.assertTrue(response.output().best().message().text().contains("男"));
         }
@@ -180,6 +182,7 @@ public class ChatTestCase implements LoadingEnv {
                         stringRef.set(r.output().best().message().text());
                         DashScopeAssertions.assertChatResponse(r);
                     }))
+                    .toCompletableFuture()
                     .join();
 
             final var text = stringRef.get();
@@ -198,7 +201,7 @@ public class ChatTestCase implements LoadingEnv {
                 ))
                 .build();
         DashScopeAssertions.assertChatRequest(request);
-        CommonAssertions.assertRootThrows(ApiException.class, () -> client.chat(request).async().join(), ex -> {
+        CommonAssertions.assertRootThrows(ApiException.class, () -> client.chat(request).async().toCompletableFuture().join(), ex -> {
             Assertions.assertTrue(200 != ex.status());
             Assertions.assertFalse(ex.ret().isSuccess());
             Assertions.assertFalse(ex.ret().code().isBlank());
@@ -223,6 +226,7 @@ public class ChatTestCase implements LoadingEnv {
         DashScopeAssertions.assertChatRequest(request);
         final var response = client.chat(request)
                 .async()
+                .toCompletableFuture()
                 .join();
         DashScopeAssertions.assertChatResponse(response);
         Assertions.assertTrue(response.output().best().message().text().contains("6.2"));
@@ -245,6 +249,7 @@ public class ChatTestCase implements LoadingEnv {
                 .build();
         final var response = client.chat(request)
                 .async()
+                .toCompletableFuture()
                 .join();
         final var text = response.output().best().message().text();
         Assertions.assertTrue(text.contains("五年规划"));
@@ -280,6 +285,7 @@ public class ChatTestCase implements LoadingEnv {
                 .build();
         final var response = client.chat(request)
                 .async()
+                .toCompletableFuture()
                 .join();
         Assertions.assertEquals("HELLO!", response.output().best().message().text());
     }
@@ -302,6 +308,7 @@ public class ChatTestCase implements LoadingEnv {
                         stringRef.set(r.output().best().message().text());
                         DashScopeAssertions.assertChatResponse(r);
                     }))
+                    .toCompletableFuture()
                     .join();
             Assertions.assertEquals("HELLO!", stringRef.get());
         }
@@ -310,6 +317,7 @@ public class ChatTestCase implements LoadingEnv {
         {
             final var response = client.chat(request)
                     .async()
+                    .toCompletableFuture()
                     .join();
             Assertions.assertEquals("HELLO!", response.output().best().message().text());
         }
@@ -327,6 +335,7 @@ public class ChatTestCase implements LoadingEnv {
                 .build();
         final var response = client.chat(request)
                 .async()
+                .toCompletableFuture()
                 .join();
         Assertions.assertTrue(response.output().best().message().text().contains("80"));
     }
@@ -345,6 +354,7 @@ public class ChatTestCase implements LoadingEnv {
                 .build();
         final var response = client.chat(request)
                 .async()
+                .toCompletableFuture()
                 .join();
         Assertions.assertTrue(response.output().best().message().text().contains("80"));
     }

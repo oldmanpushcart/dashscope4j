@@ -10,6 +10,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
@@ -19,7 +20,7 @@ public class HttpUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
-    public static CompletableFuture<String> getAsString(URI remote, Executor executor, Duration connectTimeout, Duration timeout) {
+    public static CompletionStage<String> getAsString(URI remote, Executor executor, Duration connectTimeout, Duration timeout) {
 
         final var http = Building.of(HttpClient.newBuilder())
                 .acceptIfNotNull(executor, HttpClient.Builder::executor)

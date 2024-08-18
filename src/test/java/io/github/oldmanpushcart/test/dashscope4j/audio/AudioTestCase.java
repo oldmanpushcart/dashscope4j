@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 
 public class AudioTestCase implements LoadingEnv {
@@ -63,7 +63,7 @@ public class AudioTestCase implements LoadingEnv {
                         }
 
                         @Override
-                        public CompletableFuture<?> onByteBuffer(Exchange<SpeechSynthesisRequest, SpeechSynthesisResponse> exchange, ByteBuffer buf, boolean last) {
+                        public CompletionStage<?> onByteBuffer(Exchange<SpeechSynthesisRequest, SpeechSynthesisResponse> exchange, ByteBuffer buf, boolean last) {
                             try {
                                 while (buf.hasRemaining()) {
                                     channel.write(buf);
@@ -75,7 +75,7 @@ public class AudioTestCase implements LoadingEnv {
                         }
 
                         @Override
-                        public CompletableFuture<?> onCompleted(Exchange<SpeechSynthesisRequest, SpeechSynthesisResponse> exchange, int status, String reason) {
+                        public CompletionStage<?> onCompleted(Exchange<SpeechSynthesisRequest, SpeechSynthesisResponse> exchange, int status, String reason) {
                             try {
                                 channel.force(true);
                                 channel.close();
@@ -99,15 +99,17 @@ public class AudioTestCase implements LoadingEnv {
                         }
 
                     })
+                    .toCompletableFuture()
                     .join();
 
             for (final var string : strings) {
                 exchange.write(SpeechSynthesisRequest.newBuilder(request)
                         .text(string)
-                        .build()
-                ).join();
+                        .build())
+                        .toCompletableFuture()
+                        .join();
             }
-            exchange.finishing().join();
+            exchange.finishing().toCompletableFuture().join();
             latch.await();
             System.out.println(file);
 
@@ -127,7 +129,7 @@ public class AudioTestCase implements LoadingEnv {
                     .exchange(Exchange.Mode.DUPLEX, new Exchange.Listener<>() {
 
                         @Override
-                        public CompletableFuture<?> onData(Exchange<RecognitionRequest, RecognitionResponse> exchange, RecognitionResponse data) {
+                        public CompletionStage<?> onData(Exchange<RecognitionRequest, RecognitionResponse> exchange, RecognitionResponse data) {
                             if (data.output().sentence().isEnd()) {
                                 final var sentence = data.output().sentence();
                                 stringBuilder.append(sentence.text());
@@ -136,7 +138,7 @@ public class AudioTestCase implements LoadingEnv {
                         }
 
                         @Override
-                        public CompletableFuture<?> onCompleted(Exchange<RecognitionRequest, RecognitionResponse> exchange, int status, String reason) {
+                        public CompletionStage<?> onCompleted(Exchange<RecognitionRequest, RecognitionResponse> exchange, int status, String reason) {
                             latch.countDown();
                             return Exchange.Listener.super.onCompleted(exchange, status, reason);
                         }
@@ -148,6 +150,7 @@ public class AudioTestCase implements LoadingEnv {
                         }
 
                     })
+                    .toCompletableFuture()
                     .join();
 
             final var buf = ByteBuffer.allocate(4 * 1024);
@@ -156,12 +159,12 @@ public class AudioTestCase implements LoadingEnv {
                     channel.read(buf);
                     buf.flip();
                     while (buf.hasRemaining()) {
-                        exchange.write(buf).join();
+                        exchange.write(buf).toCompletableFuture().join();
                     }
                     buf.clear();
                 }
             }
-            exchange.finishing().join();
+            exchange.finishing().toCompletableFuture().join();
             latch.await();
 
         }

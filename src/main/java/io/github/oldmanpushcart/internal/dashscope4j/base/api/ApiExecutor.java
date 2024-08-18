@@ -7,7 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
 /**
@@ -22,7 +22,7 @@ public interface ApiExecutor {
      * @return 异步应答
      */
     <R extends HttpApiResponse<?>>
-    CompletableFuture<R> async(HttpApiRequest<R> request);
+    CompletionStage<R> async(HttpApiRequest<R> request);
 
     /**
      * 处理API流式请求
@@ -31,7 +31,7 @@ public interface ApiExecutor {
      * @return 流式应答
      */
     <R extends HttpApiResponse<?>>
-    CompletableFuture<Flow.Publisher<R>> flow(HttpApiRequest<R> request);
+    CompletionStage<Flow.Publisher<R>> flow(HttpApiRequest<R> request);
 
     /**
      * 处理API任务请求
@@ -41,7 +41,7 @@ public interface ApiExecutor {
      * @return 任务应答
      */
     <R extends HttpApiResponse<?>>
-    CompletableFuture<Task.Half<R>> task(HttpApiRequest<R> request);
+    CompletionStage<Task.Half<R>> task(HttpApiRequest<R> request);
 
     /**
      * 处理API数据交互请求
@@ -54,6 +54,6 @@ public interface ApiExecutor {
      * @return 数据交互应答
      */
     <T extends ExchangeApiRequest<R>, R extends ExchangeApiResponse<?>>
-    CompletableFuture<Exchange<T, R>> exchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener);
+    CompletionStage<Exchange<T, R>> exchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener);
 
 }

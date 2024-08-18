@@ -25,7 +25,7 @@ public class InterceptorTestCase implements LoadingEnv {
                 .messages(List.of(Message.ofUser("HELLO!")))
                 .build();
 
-        client.chat(request).async().join();
+        client.chat(request).async().toCompletableFuture().join();
         Assertions.assertEquals(beforeRequestCount + 1, invokeCountInterceptor.getRequestCount());
         Assertions.assertEquals(beforeResponseCount + 1, invokeCountInterceptor.getResponseCount());
         Assertions.assertEquals(beforeSuccessCount + 1, invokeCountInterceptor.getSuccessCount());
@@ -46,7 +46,7 @@ public class InterceptorTestCase implements LoadingEnv {
                 .timeout(Duration.ofMillis(1))
                 .build();
 
-        Assertions.assertThrows(Exception.class, () -> client.chat(request).async().join());
+        Assertions.assertThrows(Exception.class, () -> client.chat(request).async().toCompletableFuture().join());
         Assertions.assertEquals(invokeCountInterceptor.getRequestCount(), beforeRequestCount + 1);
         Assertions.assertEquals(invokeCountInterceptor.getResponseCount(), beforeResponseCount + 1);
         Assertions.assertEquals(invokeCountInterceptor.getSuccessCount(), beforeSuccessCount);

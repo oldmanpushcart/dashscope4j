@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.internal.dashscope4j.base.exchange;
 import io.github.oldmanpushcart.dashscope4j.base.exchange.Exchange;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class ProxyExchange<T, R> implements Exchange<T, R> {
 
@@ -24,27 +24,27 @@ public class ProxyExchange<T, R> implements Exchange<T, R> {
     }
 
     @Override
-    public CompletableFuture<Exchange<T, R>> write(T data) {
+    public CompletionStage<Exchange<T, R>> write(T data) {
         return target.write(data);
     }
 
     @Override
-    public CompletableFuture<Exchange<T, R>> write(ByteBuffer buf, boolean last) {
+    public CompletionStage<Exchange<T, R>> write(ByteBuffer buf, boolean last) {
         return target.write(buf, last);
     }
 
     @Override
-    public CompletableFuture<Exchange<T, R>> write(ByteBuffer buf) {
+    public CompletionStage<Exchange<T, R>> write(ByteBuffer buf) {
         return target.write(buf);
     }
 
     @Override
-    public CompletableFuture<Exchange<T, R>> finishing() {
+    public CompletionStage<Exchange<T, R>> finishing() {
         return target.finishing();
     }
 
     @Override
-    public CompletableFuture<Exchange<T, R>> close(int status, String reason) {
+    public CompletionStage<Exchange<T, R>> close(int status, String reason) {
         return target.close(status, reason);
     }
 
