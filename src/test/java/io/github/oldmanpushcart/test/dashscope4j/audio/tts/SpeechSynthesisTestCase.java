@@ -56,7 +56,7 @@ public class SpeechSynthesisTestCase implements LoadingEnv {
         };
 
         for (final var text : texts) {
-            exchange.write(SpeechSynthesisRequest.newBuilder(request).text(text).build())
+            exchange.writeData(SpeechSynthesisRequest.newBuilder(request).text(text).build())
                     .toCompletableFuture()
                     .join();
         }
@@ -121,7 +121,7 @@ public class SpeechSynthesisTestCase implements LoadingEnv {
         };
 
         for (final var text : texts) {
-            exchange.write(SpeechSynthesisRequest.newBuilder(request).text(text).build())
+            exchange.writeData(SpeechSynthesisRequest.newBuilder(request).text(text).build())
                     .toCompletableFuture()
                     .join();
         }

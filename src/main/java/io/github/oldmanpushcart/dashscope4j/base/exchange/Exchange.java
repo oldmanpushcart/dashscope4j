@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Flow;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -18,6 +19,11 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
  * </p>
  */
 public interface Exchange<T, R> {
+
+    /**
+     * 正常关闭
+     */
+    int NORMAL_CLOSURE = 1000;
 
     /**
      * @return 通道唯一标识
@@ -35,7 +41,15 @@ public interface Exchange<T, R> {
      * @param data 数据
      * @return 写入操作
      */
-    CompletionStage<Exchange<T, R>> write(T data);
+    CompletionStage<Exchange<T, R>> writeData(T data);
+
+    /**
+     * 写入数据
+     *
+     * @param publisher 数据发布器
+     * @return 写入操作
+     */
+    CompletionStage<Exchange<T, R>> writeDataPublisher(Flow.Publisher<T> publisher);
 
     /**
      * 写入ByteBuffer
@@ -44,7 +58,7 @@ public interface Exchange<T, R> {
      * @param last is the last ByteBuffer
      * @return 写入操作
      */
-    CompletionStage<Exchange<T, R>> write(ByteBuffer buf, boolean last);
+    CompletionStage<Exchange<T, R>> writeByteBuffer(ByteBuffer buf, boolean last);
 
     /**
      * 写入ByteBuffer
@@ -52,10 +66,18 @@ public interface Exchange<T, R> {
      * @param buf ByteBuffer
      * @return 写入操作
      */
-    CompletionStage<Exchange<T, R>> write(ByteBuffer buf);
+    CompletionStage<Exchange<T, R>> writeByteBuffer(ByteBuffer buf);
 
     /**
-     * 结束交互
+     * 写入ByteBuffer
+     *
+     * @param publisher ByteBuffer发布器
+     * @return 写入操作
+     */
+    CompletionStage<Exchange<T, R>> writeByteBufferPublisher(Flow.Publisher<ByteBuffer> publisher);
+
+    /**
+     * 申请结束交互
      * <p>
      * 结束交互操作并不是直接发起通道关闭，而是当且仅当{@link Exchange.Mode#DUPLEX}和{@link Exchange.Mode#IN}时，
      * <ul>
@@ -72,7 +94,7 @@ public interface Exchange<T, R> {
     CompletionStage<Exchange<T, R>> finishing();
 
     /**
-     * 关闭
+     * 申请关闭交互
      * <p>
      * 客户端会向服务端发送一个关闭请求，服务端响应后才会关闭通道
      * </p>
@@ -81,7 +103,17 @@ public interface Exchange<T, R> {
      * @param reason 关闭原因
      * @return 关闭操作
      */
-    CompletionStage<Exchange<T, R>> close(int status, String reason);
+    CompletionStage<Exchange<T, R>> closing(int status, String reason);
+
+    /**
+     * @return 交互是否已关闭
+     */
+    boolean isClosed();
+
+    /**
+     * @return 关闭操作
+     */
+    CompletionStage<?> closeFuture();
 
     /**
      * 终止

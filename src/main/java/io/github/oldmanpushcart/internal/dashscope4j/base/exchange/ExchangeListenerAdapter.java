@@ -24,6 +24,7 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
     private final Function<String, R> decoder;
     private final Exchange.Listener<T, R> listener;
 
+    private final CompletableFuture<?> closeF = new CompletableFuture<>();
     private final CompletableFuture<Exchange<T, R>> exchangeF = new CompletableFuture<>();
     private final StringBuilder stringBuf = new StringBuilder();
 
@@ -50,14 +51,19 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
 
     @Override
     public void onOpen(WebSocket socket) {
-        final var exchange = new ExchangeImpl<T, R>(socket, uuid, mode, encoder);
+        final var exchange = new ExchangeImpl<T, R>(socket, uuid, mode, closeF, encoder);
         if (!exchangeF.complete(exchange)) {
             socket.abort();
             throw new IllegalStateException("already bind!");
         }
-        listener.onOpen(exchange);
-        logger.debug("dashscope://exchange/{}/{} opened!", uuid, mode);
+
         logger.trace("WEBSOCKET: <<< OPEN");
+
+        try {
+            listener.onOpen(exchange);
+        } catch (Throwable t) {
+            logger.warn("dashscope://exchange/{}/{} fire open occur error!", uuid, mode, t);
+        }
 
     }
 
@@ -110,7 +116,7 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
             case FINISHED -> {
                 logger.debug("dashscope://exchange/{}/{} finished!", uuid, mode);
                 return listener.onData(exchange, decoder.apply(frame.payload()))
-                        .thenCompose(v -> exchange.close(1000, "finished"))
+                        .thenCompose(v -> exchange.closing(1000, "finished"))
                         .whenComplete(propagateEx(socket));
             }
 
@@ -143,14 +149,24 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
     @Override
     public CompletionStage<?> onClose(WebSocket socket, int status, String reason) {
         logger.trace("WEBSOCKET: <<< CLOSE;status={};reason={};", status, reason);
-        return listener.onCompleted(exchangeF.join(), status, reason)
-                .whenComplete(propagateEx(socket));
+        closeF.complete(null);
+        try {
+            return listener.onCompleted(exchangeF.join(), status, reason);
+        } catch (Throwable t) {
+            logger.warn("dashscope://exchange/{}/{} fire close occur error!", uuid, mode, t);
+            return null;
+        }
     }
 
     @Override
     public void onError(WebSocket socket, Throwable ex) {
         logger.trace("WEBSOCKET: <<< ERROR;", ex);
-        listener.onError(exchangeF.join(), ex);
+        closeF.completeExceptionally(ex);
+        try {
+            listener.onError(exchangeF.join(), ex);
+        } catch (Throwable t) {
+            logger.warn("dashscope://exchange/{}/{} fire error occur error!", uuid, mode, t);
+        }
     }
 
 }

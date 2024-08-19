@@ -318,7 +318,7 @@ public class HttpApiExecutor implements ApiExecutor {
                 .apply()
                 .buildAsync(remote, exchangeListener)
                 .thenCompose(v -> exchangeListener.getExchange())
-                .thenCompose(exchange -> exchange.write(request));
+                .thenCompose(exchange -> exchange.writeData(request));
     }
 
 

@@ -164,10 +164,10 @@ public class InterceptorApiExecutor implements ApiExecutor {
         }
 
         @Override
-        public CompletionStage<Exchange<T, R>> write(T data) {
+        public CompletionStage<Exchange<T, R>> writeData(T data) {
             return CompletableFuture.completedFuture(null)
                     .thenCompose(unused -> interceptor.preHandle(context, data))
-                    .thenCompose(req -> interceptor.handle(context, req, v -> super.write(CommonUtils.<T>cast(v))))
+                    .thenCompose(req -> interceptor.handle(context, req, v -> super.writeData(CommonUtils.<T>cast(v))))
                     .thenApply(CommonUtils::cast);
         }
 
