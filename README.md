@@ -15,17 +15,21 @@
 <dependency>
     <groupId>io.github.oldmanpushcart</groupId>
     <artifactId>dashscope4j</artifactId>
-    <version>2.1.0</version>
+    <version>2.2.0</version>
 </dependency>
 ```
 
 ## 重要更新
 
 - **2.2.0：** 语音识别与合成支持
+  - 新增双工数据交互操作接口`Exchange`，用于支持语音、视频等多模态模型交互
   - 支持实时语音识别
   - 支持实时语音合成
   - 支持音视频转录
   - 支持远程、本地Tokenizer
+  - 优化部分API，存在不向下兼容可能
+    - 所有对外暴露的`CompletableFuture`变更为`CompletionStage`，解决暴露接口功能过于强大的问题
+    - 增加`HttpApiRequest / Response`和`ExchangeApiRequest / Response`的API分层，为了更好地支持多模态数据交互做准备
 
 - **2.1.0：** 不兼容API修复
     - 修复模块中错误的exports，该修复会将模块中不应该暴露的内部api重新收回。本次修复不向下兼容。
@@ -44,12 +48,239 @@
 
 ### 语音合成
 
+我们可以通过以下代码进行语音合成：
+
+```java
+// 文本集合
+final var strings = new String[]{
+    "白日依山尽，",
+    "黄河入海流。",
+    "欲穷千里目，",
+    "更上一层楼。"
+};
+
+/*
+ * 语音合成请求
+ * 采样率：16000
+ * 编码格式：WAV(PCM)
+ */
+final var request = SpeechSynthesisRequest.newBuilder()
+    .model(SpeechSynthesisModel.COSYVOICE_LONGXIAOCHUN_V1)
+    .option(SpeechSynthesisOptions.SAMPLE_RATE, 16000)
+    .option(SpeechSynthesisOptions.FORMAT, SpeechSynthesisRequest.Format.WAV)
+    .build();
+
+// 以语音合成请求为模板，对每个文本生成一个语音合成请求
+final var requests = Stream.of(strings)
+    .map(string -> SpeechSynthesisRequest.newBuilder(request)
+        .text(string)
+        .build()
+    )
+    .toList();
+
+// 聚合成请求发布器
+final var requestPublisher = FlowPublishers.fromIterator(requests);
+
+// 进行语音合成
+client.audio().synthesis(request)
+
+    // 打开语音合成数据交互通道：全双工模式，输出到audio.wav文件
+    .exchange(Exchange.Mode.DUPLEX, ExchangeListeners.ofPath(Path.of("./audio.wav")))
+    
+    // 发送语音合成请求序列
+    .thenCompose(exchange -> exchange.writeDataPublisher(requestPublisher))
+    
+    // 语音合成结束
+    .thenCompose(Exchange::finishing)
+    
+    // 等待通道关闭
+    .thenCompose(Exchange::closeFuture)
+    .toCompletableFuture()
+    .join();
+```
+这样我们就可以获取到生成的`audio.wav`文件，可以试着播放下，符不符合你的要求。
+
+当然你也可以通过`ExchangeListeners.ofByteChannel(...)`方法，将输出的字节流转入到你指定的`ByteChannel`中，比如音频播放设备。这样就可以实现语音播放。
+在语音合成结束后，为了避免对通道的占用，需要及时关闭`Exchange`
+
+发送语音合成结束请求：
+```java
+exchange.finishing()
+```
+
+服务端收到结束请求后会主动来关闭通道，你可以调用`Exchange.closeFuture()`方法来获取关闭通道的Future。
+```java
+exchange.closeFuture()
+```
+
 ### 语音识别
+
+基于上一节 "语音合成" 的示例，我们得到了`audio.wav`，接下来我们可以用语音识别来识别这个音频文件。
+
+```java
+// 构建音频文件的ByteBuffer发布器
+final var byteBufPublisher = FlowPublishers.fromURI(Path.of("./audio.wav").toUri());
+
+/*
+ * 构建语音识别请求
+ * 采样率：16000
+ * 音频格式：WAV(PCM)
+ */
+final var request = RecognitionRequest.newBuilder()
+    .model(RecognitionModel.PARAFORMER_REALTIME_V2)
+    .option(RecognitionOptions.SAMPLE_RATE, 16000)
+    .option(RecognitionOptions.FORMAT, RecognitionRequest.Format.WAV)
+    .build();
+
+// 识别文本缓存
+final var stringBuf = new StringBuilder();
+
+// 进行语音识别
+client.audio().recognition(request)
+
+    // 打开语音识别数据交互通道：全双工模式，输出到文本缓存
+    .exchange(Exchange.Mode.DUPLEX, ExchangeListeners.ofConsume(response -> {
+        if (response.output().sentence().isEnd()) {
+            stringBuf.append(response.output().sentence().text()).append("\n");
+        }
+    }))
+    
+    // 发送音频文件字节流数据
+    .thenCompose(exchange -> exchange.writeByteBufferPublisher(byteBufPublisher))
+    
+    // 语音识别结束
+    .thenCompose(Exchange::finishing)
+    
+    // 等待通道关闭
+    .thenCompose(Exchange::closeFuture)
+    .toCompletableFuture()
+    .join();
+
+// 输出识别文本
+System.out.println(stringBuf);
+```
+
+文本识别结果为
+
+```text
+白日依山尽，黄河入海流。
+欲穷千里目，更上一层楼。
+```
 
 ### 音视频转录
 
+音视频转录不仅能转录音频文件，而且还可以将视频文件中的音频转录为文本。这就省得我们用ffmpeg剥离视频中的音轨这样繁琐的操作了。
+在这个例子中，我用我最喜欢的一个动漫《钢之炼金术士》来演示如何从通过音视频转录功能识别视频音轨的文本信息。
+
+> 这对用AI做字幕多少有点启发，毕竟谁没有几个没有字幕的动作片呢？
+
+```java
+/*
+ * 构建音视频转录请求
+ * 语言：日文
+ * 选项：过滤语气词（日片中很多以库以库的语气词，各位懂的都懂）
+ */
+final var request = TranscriptionRequest.newBuilder()
+    .model(TranscriptionModel.PARAFORMER_V2)
+    .resources(List.of(new File("./document/test-resources/video/[ktxp][Fullmetal Alchemist][jap_chn]01.rmvb").toURI()))
+    .option(TranscriptionOptions.ENABLE_DISFLUENCY_REMOVAL, true)
+    .option(TranscriptionOptions.LANGUAGE_HINTS, new LanguageHint[]{LanguageHint.JA})
+    .build();
+
+// 进行音视频转录
+final var response = client.audio().transcription(request)
+
+    // 等待任务完成，每隔30s进行检查任务状态
+    .task(Task.WaitStrategies.perpetual(Duration.ofMillis(1000L * 30)))
+    .toCompletableFuture()
+    .join();
+
+// 合并音视频转录文本（当前只有一个视频）
+final var text = response.output().results().stream()
+    .map(result-> {
+    
+        // 下载转录结果
+        final var transcription = result.lazyFetchTranscription()
+            .toCompletableFuture()
+            .join();
+    
+        // 合并转录句子（每行一个句子）
+        return transcription.transcripts().stream()
+            .flatMap(transcript->transcript.sentences().stream())
+            .map(sentence-> "%s - %s: %s".formatted(
+                sentence.begin(),
+                sentence.end(),
+                sentence.text()
+            ))
+            .reduce((a, b) -> a + "\n" + b)
+            .orElse("");
+    
+    })
+    
+    // 合并多个音视频转录文本，当前只有一个视频
+    .reduce((a, b) -> a + b)
+    .orElse("");
+
+// 输出音视频转录文本
+System.out.println(text);
+```
+
+输出摘录
+```text
+13920 - 19960: で き た あ る 大 丈 夫. 
+20060 - 24620: 完 璧 だ. 
+28380 - 32940: や る ぞ. 
+49480 - 58200: 錬 金 術 と は 物 質 の 構 造 を 理 解 し 分 解 し 再 構 築 す る 科 学 技 術 で あ る. 
+58820 - 64900: そ れ は う ま く す れ ば 鉛 り か ら 黄 金 を 生 み 出 す こ と も 可 能 に な る. 
+65500 - 71760: し か し 科 学 で あ る 以 上 そ こ に は 大 自 然 の 計 測 が 存 在 し た. 
+75300 - 79860: 質 量 が 一 の も の か ら は 一 の も の し か 生 み 出 せ な い. 
+80200 - 84760: 強 化 交 換 に 計 測. 
+```
+
 ### Tokenizer
 
+在实际开发过程中，为了让AI记住上下文，你需要把之前的聊天记录作为对话上下文输入。但模型的输入长度有限，所以需要将上下文进行分段，然后进行分段输入。
+有一种分割方案就是根据模型能支撑的最大token进行切分，这个时候你就需要一个工具来计算一段文本的token数到底是多少，以达到最大化保留记忆的分割目的。
+
+Tokenizer工具能很好的帮助你实现这一点，他分远程和本地两种调用方式，远程性能较差但计算的token会更精准，本地性能最佳，但会存在一定的版本滞后性。
+不同的模型，同样的文字，计算的token可能不一样。但大差不差。
+
+在实际生产环境中，推荐使用本地计算的方案。
+
+#### 远程计算
+
+```java
+final var messages = List.of(
+    Message.ofUser("北京有哪些好玩地方？"),
+    Message.ofAi("故宫、颐和园、天坛等都是可以去游玩的景点哦。"),
+    Message.ofUser("帮我安排一些行程")
+);
+
+// 远程调用需要明确算法模型
+final var list = client.base().tokenize().remote(ChatModel.QWEN_PLUS)
+    .encode(messages)
+    .toCompletableFuture()
+    .join();
+
+System.out.println("total tokens: " + list.size());
+```
+
+#### 本地计算
+
+```java
+final var messages = List.of(
+    Message.ofUser("北京有哪些好玩地方？"),
+    Message.ofAi("故宫、颐和园、天坛等都是可以去游玩的景点哦。"),
+    Message.ofUser("帮我安排一些行程")
+);
+
+final var list = client.base().tokenize().local()
+    .encode(messages)
+    .toCompletableFuture()
+    .join();
+
+System.out.println("total tokens: " + list.size());
+```
 
 ## 一、主要功能
 

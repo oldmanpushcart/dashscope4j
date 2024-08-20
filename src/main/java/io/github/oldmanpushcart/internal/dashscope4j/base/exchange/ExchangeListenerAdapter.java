@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.exchange;
 
 import io.github.oldmanpushcart.dashscope4j.base.exchange.Exchange;
+import io.github.oldmanpushcart.dashscope4j.base.exchange.ExchangeException;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +63,7 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
         try {
             listener.onOpen(exchange);
         } catch (Throwable t) {
-            logger.warn("dashscope://exchange/{}/{} fire open occur error!", uuid, mode, t);
+            logger.warn("dashscope://exchange/{}/{} fire open occur error!", mode, uuid, t);
         }
 
     }
@@ -89,6 +90,7 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
         switch (header.type()) {
 
             case STARTED -> {
+                logger.debug("dashscope://exchange/{}/{} started!", mode, uuid);
                 socket.request(1);
                 return null;
             }
@@ -114,7 +116,7 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
              * 任务结束数据帧呆着最后一个可被序列化的信息
              */
             case FINISHED -> {
-                logger.debug("dashscope://exchange/{}/{} finished!", uuid, mode);
+                logger.debug("dashscope://exchange/{}/{} finished!", mode, uuid);
                 return listener.onData(exchange, decoder.apply(frame.payload()))
                         .thenCompose(v -> exchange.closing(1000, "finished"))
                         .whenComplete(propagateEx(socket));
@@ -132,7 +134,7 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
             /*
              * 其他情况不应该存在，直接抛出异常
              */
-            default -> throw new UnsupportedOperationException("Unsupported Type: %s".formatted(
+            default -> throw new ExchangeException(uuid, mode, "Unsupported Type: %s".formatted(
                     header.type()
             ));
         }
@@ -146,14 +148,53 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
                 .whenComplete(propagateEx(socket));
     }
 
+    /**
+     * 是否正常关闭
+     *
+     * @param status 关闭状态码
+     * @return TRUE | FALSE
+     */
+    private static boolean isNormalClosure(int status) {
+
+        /*
+         * [1000-2999]为标准状态码
+         * 当前判断策略在标准状态码上采用白名单策略
+         */
+        if (status >= 1000 && status <= 2999) {
+            return switch (status) {
+                case 1000, // normal closure
+                     1001, // going away
+                     1005, // no status received
+                     1006  // abnormal closure
+                        -> true;
+                default -> false;
+            };
+        }
+
+        /*
+         * 其他状态范围判断策略采用黑名单策略，
+         * 默认为正常状态
+         */
+        return true;
+    }
+
     @Override
     public CompletionStage<?> onClose(WebSocket socket, int status, String reason) {
         logger.trace("WEBSOCKET: <<< CLOSE;status={};reason={};", status, reason);
+
+        /*
+         * 检查是否正常关闭，如果不是则抛出异常并通知
+         */
+        if (!isNormalClosure(status)) {
+            onError(socket, new ExchangeException.AbnormalClosedException(uuid, mode, status, reason));
+            return null;
+        }
+
         closeF.complete(null);
         try {
             return listener.onCompleted(exchangeF.join(), status, reason);
         } catch (Throwable t) {
-            logger.warn("dashscope://exchange/{}/{} fire close occur error!", uuid, mode, t);
+            logger.warn("dashscope://exchange/{}/{} fire close occur error!", mode, uuid, t);
             return null;
         }
     }
@@ -165,7 +206,7 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
         try {
             listener.onError(exchangeF.join(), ex);
         } catch (Throwable t) {
-            logger.warn("dashscope://exchange/{}/{} fire error occur error!", uuid, mode, t);
+            logger.warn("dashscope://exchange/{}/{} fire error occur error!", mode, uuid, t);
         }
     }
 
