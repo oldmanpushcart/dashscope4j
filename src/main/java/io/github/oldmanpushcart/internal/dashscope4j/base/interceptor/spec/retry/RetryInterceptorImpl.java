@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -30,7 +31,7 @@ public class RetryInterceptorImpl implements RetryInterceptor {
     }
 
     @Override
-    public CompletableFuture<?> handle(InvocationContext context, ApiRequest<?> request, OpHandler opHandler) {
+    public CompletionStage<?> handle(InvocationContext context, ApiRequest request, OpHandler opHandler) {
         return opHandler.handle(request)
                 .exceptionallyCompose(ex -> retryInEx(0, ex, context, request, opHandler)
                         .thenApply(CommonUtils::cast));
@@ -47,7 +48,7 @@ public class RetryInterceptorImpl implements RetryInterceptor {
      * @param opHandler 操作处理器
      * @return 异步结果
      */
-    private CompletableFuture<?> retryInEx(int retries, Throwable ex, InvocationContext context, ApiRequest<?> request, OpHandler opHandler) {
+    private CompletionStage<?> retryInEx(int retries, Throwable ex, InvocationContext context, ApiRequest request, OpHandler opHandler) {
 
         // 不匹配或达到最大重试次数
         if (!matcher.matches(context, request, ex) || (!isNull(maxRetries) && retries >= maxRetries)) {

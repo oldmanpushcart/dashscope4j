@@ -34,7 +34,7 @@ public interface LoadingEnv {
                                     RetryInterceptor.Matcher.byProtocol(protocol -> protocol.startsWith("dashscope://base/files/"))
                                             .andThen(RetryInterceptor.Matcher.byApiException(apiEx ->
                                                     apiEx.status() == 429
-                                                       && Objects.equals("rate_limit_error", apiEx.ret().code())))
+                                                    && Objects.equals("rate_limit_error", apiEx.ret().code())))
                             )
                             .maxRetries(3)
                             .retryInterval(Duration.ofSeconds(1))

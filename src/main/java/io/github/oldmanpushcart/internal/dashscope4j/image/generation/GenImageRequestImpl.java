@@ -4,12 +4,12 @@ import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageModel;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageResponse;
-import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.algo.HttpAlgoRequestImpl;
 
 import java.time.Duration;
 import java.util.HashMap;
 
-final class GenImageRequestImpl extends AlgoRequestImpl<GenImageModel, GenImageResponse>
+final class GenImageRequestImpl extends HttpAlgoRequestImpl<GenImageModel, GenImageResponse>
         implements GenImageRequest {
 
     private final String prompt;

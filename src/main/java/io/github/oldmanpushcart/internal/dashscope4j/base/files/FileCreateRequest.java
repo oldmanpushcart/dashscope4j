@@ -50,7 +50,7 @@ public record FileCreateRequest(URI uri, String name, String purpose, Duration t
     }
 
     @Override
-    public Function<String, FileCreateResponse> responseDeserializer() {
+    public Function<String, FileCreateResponse> newResponseDecoder() {
         return body -> {
             logger.debug("{}/{} <= {}", protocol(), name, body);
             return JacksonUtils.toObject(body, FileCreateResponse.class);

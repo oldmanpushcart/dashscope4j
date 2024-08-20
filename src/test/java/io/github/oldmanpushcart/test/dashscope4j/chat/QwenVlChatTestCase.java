@@ -21,13 +21,13 @@ public class QwenVlChatTestCase implements LoadingEnv {
                 .model(ChatModel.QWEN_VL_MAX)
                 .messages(List.of(
                         Message.ofUser(List.of(
-                                Content.ofImage(new File("./document/image/IMG_0942.JPG").toURI()),
+                                Content.ofImage(new File("./document/test-resources/image/IMG_0942.JPG").toURI()),
                                 Content.ofText("图片中一共多少个男孩?")
                         ))
                 ))
                 .build();
 
-        final var response = client.chat(request).async().join();
+        final var response = client.chat(request).async().toCompletableFuture().join();
         final var text = response.output().best().message().text();
         Assertions.assertTrue(text.contains("5") || text.contains("五"));
 
@@ -46,7 +46,7 @@ public class QwenVlChatTestCase implements LoadingEnv {
                 ))
                 .build();
 
-        final var response = client.chat(request).async().join();
+        final var response = client.chat(request).async().toCompletableFuture().join();
         final var text = response.output().best().message().text();
         Assertions.assertTrue(text.contains("2") || text.contains("两"));
 

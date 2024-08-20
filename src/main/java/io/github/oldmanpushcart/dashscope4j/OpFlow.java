@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
 /**
@@ -13,7 +13,7 @@ public interface OpFlow<R> {
     /**
      * @return 流式操作
      */
-    CompletableFuture<Flow.Publisher<R>> flow();
+    CompletionStage<Flow.Publisher<R>> flow();
 
     /**
      * 流式操作
@@ -21,7 +21,7 @@ public interface OpFlow<R> {
      * @param subscriber 订阅者
      * @return 操作结果
      */
-    default CompletableFuture<Void> flow(Flow.Subscriber<R> subscriber) {
+    default CompletionStage<Void> flow(Flow.Subscriber<R> subscriber) {
         return flow().thenAccept(publisher -> publisher.subscribe(subscriber));
     }
 

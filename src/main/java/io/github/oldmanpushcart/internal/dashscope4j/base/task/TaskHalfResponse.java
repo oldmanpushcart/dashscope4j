@@ -4,16 +4,16 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 
 /**
  * 任务半应答
  */
 public record TaskHalfResponse(String uuid, Ret ret, Usage usage, Output output)
-        implements ApiResponse<TaskHalfResponse.Output> {
+        implements HttpApiResponse<TaskHalfResponse.Output> {
 
-    public record Output(String taskId, Task.Status status) implements ApiResponse.Output {
+    public record Output(String taskId, Task.Status status) {
 
         @JsonCreator
         static Output of(

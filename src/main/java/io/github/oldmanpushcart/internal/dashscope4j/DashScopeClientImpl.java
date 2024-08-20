@@ -4,9 +4,10 @@ import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
 import io.github.oldmanpushcart.dashscope4j.OpAsync;
 import io.github.oldmanpushcart.dashscope4j.OpAsyncOpFlow;
 import io.github.oldmanpushcart.dashscope4j.OpAsyncOpFlowOpTask;
+import io.github.oldmanpushcart.dashscope4j.audio.AudioOp;
 import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process.ProcessContentInterceptor;
@@ -20,11 +21,13 @@ import io.github.oldmanpushcart.dashscope4j.embedding.mm.MmEmbeddingResponse;
 import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingRequest;
 import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingResponse;
 import io.github.oldmanpushcart.dashscope4j.image.ImageOp;
+import io.github.oldmanpushcart.internal.dashscope4j.audio.AudioOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.BaseOpImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.HttpApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.InterceptorApiExecutor;
 import io.github.oldmanpushcart.internal.dashscope4j.base.cache.LruCacheFactoryImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.ProcessTranscriptionForUpload;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.ProcessingContentForUpload;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.ProcessingMessageListForQwenLong;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.ChatResponseOpAsyncHandler;
@@ -35,7 +38,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 
@@ -97,6 +100,9 @@ public class DashScopeClientImpl implements DashScopeClient {
                     .processor(new ProcessingMessageListForQwenLong())
                     .build());
 
+            // 语音转录文件上传
+            interceptors.add(new ProcessTranscriptionForUpload());
+
             for (final var interceptor : interceptors) {
                 target = new InterceptorApiExecutor(
                         this,
@@ -113,13 +119,13 @@ public class DashScopeClientImpl implements DashScopeClient {
     public OpAsyncOpFlow<ChatResponse> chat(ChatRequest request) {
         return new OpAsyncOpFlow<>() {
             @Override
-            public CompletableFuture<ChatResponse> async() {
+            public CompletionStage<ChatResponse> async() {
                 return apiExecutor.async(request)
                         .thenCompose(new ChatResponseOpAsyncHandler(DashScopeClientImpl.this, request));
             }
 
             @Override
-            public CompletableFuture<Flow.Publisher<ChatResponse>> flow() {
+            public CompletionStage<Flow.Publisher<ChatResponse>> flow() {
                 return apiExecutor.flow(request)
                         .thenApply(new ChatResponseOpFlowHandler(DashScopeClientImpl.this, request));
             }
@@ -127,20 +133,20 @@ public class DashScopeClientImpl implements DashScopeClient {
     }
 
     @Override
-    public <R extends ApiResponse<?>> OpAsyncOpFlowOpTask<R> api(ApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> OpAsyncOpFlowOpTask<R> http(HttpApiRequest<R> request) {
         return new OpAsyncOpFlowOpTask<>() {
             @Override
-            public CompletableFuture<R> async() {
+            public CompletionStage<R> async() {
                 return apiExecutor.async(request);
             }
 
             @Override
-            public CompletableFuture<Flow.Publisher<R>> flow() {
+            public CompletionStage<Flow.Publisher<R>> flow() {
                 return apiExecutor.flow(request);
             }
 
             @Override
-            public CompletableFuture<Task.Half<R>> task() {
+            public CompletionStage<Task.Half<R>> task() {
                 return apiExecutor.task(request);
             }
         };
@@ -169,6 +175,11 @@ public class DashScopeClientImpl implements DashScopeClient {
     @Override
     public ImageOp image() {
         return request -> () -> apiExecutor.task(request);
+    }
+
+    @Override
+    public AudioOp audio() {
+        return new AudioOpImpl(apiExecutor);
     }
 
 

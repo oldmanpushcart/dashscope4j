@@ -1,38 +1,44 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.api;
 
 import io.github.oldmanpushcart.dashscope4j.Constants;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiException;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.*;
+import io.github.oldmanpushcart.dashscope4j.base.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
 import io.github.oldmanpushcart.dashscope4j.base.task.TaskException;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpSsEvent;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpSsEventFlowPublisher;
+import io.github.oldmanpushcart.internal.dashscope4j.base.exchange.ExchangeListenerAdapter;
 import io.github.oldmanpushcart.internal.dashscope4j.base.task.TaskCancelRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.task.TaskGetRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.task.TaskGetResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.base.task.TaskHalfResponse;
+import io.github.oldmanpushcart.internal.dashscope4j.util.Building;
+import io.github.oldmanpushcart.internal.dashscope4j.util.HttpUtils;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import io.github.oldmanpushcart.internal.dashscope4j.util.MapFlowProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.WebSocket;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.*;
 import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHeader.*;
+import static io.github.oldmanpushcart.internal.dashscope4j.util.HttpUtils.loggingHttpRequest;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.function.Function.identity;
 
@@ -64,21 +70,14 @@ public class HttpApiExecutor implements ApiExecutor {
         this.timeout = timeout;
     }
 
-    // 委派API请求
-    private HttpRequest delegateHttpRequest(HttpRequest request, Consumer<HttpRequest.Builder> consumer) {
-        final var builder = HttpRequest.newBuilder(request, (k, v) -> true)
+    // 创建委派HTTP请求构建器
+    private HttpRequest.Builder newDelegateHttpRequestBuilder(HttpApiRequest<?> request) {
+        return Building.of(HttpRequest.newBuilder(request.newHttpRequest(), (k, v) -> true))
+                .acceptIfNotNull(timeout, HttpRequest.Builder::timeout)
+                .acceptIfNotNull(request.timeout(), HttpRequest.Builder::timeout)
+                .apply()
                 .header(HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
-                .header(HEADER_X_DASHSCOPE_CLIENT, CLIENT_INFO)
-                .header(HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE);
-        consumer.accept(builder);
-        return builder.build();
-    }
-
-    // 设置超时时间
-    private void setupTimeout(HttpRequest.Builder builder, ApiRequest<?> request) {
-        Optional.ofNullable(request.timeout())
-                .or(() -> Optional.ofNullable(timeout))
-                .ifPresent(builder::timeout);
+                .header(HEADER_X_DASHSCOPE_CLIENT, CLIENT_INFO);
     }
 
     /**
@@ -88,13 +87,12 @@ public class HttpApiExecutor implements ApiExecutor {
      * @return 异步应答
      */
     @Override
-    public <R extends ApiResponse<?>> CompletableFuture<R> async(ApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletionStage<R> async(HttpApiRequest<R> request) {
 
         // 构建委派请求
-        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
-            builder.header(HEADER_X_DASHSCOPE_SSE, DISABLE);
-            setupTimeout(builder, request);
-        });
+        final var delegateHttpRequest = newDelegateHttpRequestBuilder(request)
+                .header(HEADER_X_DASHSCOPE_SSE, DISABLE)
+                .build();
 
         // 记录请求日志
         loggingHttpRequest(delegateHttpRequest);
@@ -102,10 +100,10 @@ public class HttpApiExecutor implements ApiExecutor {
         // 发送请求
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
-                .whenComplete(HttpApiExecutor::loggingHttpResponse)
-                .thenApply(request.httpResponseHandler())
+                .whenComplete(HttpUtils::loggingHttpResponse)
+                .thenApply(request.newHttpResponseHandler())
                 .thenApply(httpResponse -> {
-                    final var response = request.responseDeserializer().apply(httpResponse.body());
+                    final var response = request.newResponseDecoder().apply(httpResponse.body());
                     if (!response.ret().isSuccess()) {
                         throw new ApiException(httpResponse.statusCode(), response);
                     }
@@ -113,50 +111,6 @@ public class HttpApiExecutor implements ApiExecutor {
                 });
     }
 
-    // 记录HTTP请求日志
-    private static void loggingHttpRequest(HttpRequest request) {
-
-        if (!logger.isTraceEnabled()) {
-            return;
-        }
-
-        logger.trace("HTTP-REQUEST: >> {} {} {}",
-                request.method(),
-                request.uri(),
-                request.headers().map().entrySet().stream()
-                        .filter(entry -> !Objects.equals(entry.getKey(), HEADER_AUTHORIZATION))
-                        .map(entry -> "%s: %s".formatted(entry.getKey(), String.join(", ", entry.getValue())))
-                        .reduce("%s, %s"::formatted)
-                        .orElse("")
-        );
-
-    }
-
-    // 记录HTTP响应日志
-    private static void loggingHttpResponse(HttpResponse<?> response, Throwable ex) {
-
-        if (!logger.isTraceEnabled()) {
-            return;
-        }
-
-        // HTTP错误
-        if (null != ex) {
-            logger.trace("HTTP-RESPONSE: << {}", ex.getLocalizedMessage());
-        }
-
-        // HTTP应答
-        else {
-            logger.trace("HTTP-RESPONSE: << {} {} {}",
-                    response.statusCode(),
-                    response.uri(),
-                    response.headers().map().entrySet().stream()
-                            .map(entry -> "%s: %s".formatted(entry.getKey(), String.join(", ", entry.getValue())))
-                            .reduce("%s, %s"::formatted)
-                            .orElse("")
-            );
-        }
-
-    }
 
     // 在SSE事件的meta属性中提取HTTP状态提取匹配器
     private static final Pattern httpStatusPattern = Pattern.compile("HTTP_STATUS/(\\d+)");
@@ -182,19 +136,18 @@ public class HttpApiExecutor implements ApiExecutor {
      * @return 流式应答
      */
     @Override
-    public <R extends ApiResponse<?>> CompletableFuture<Flow.Publisher<R>> flow(ApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletionStage<Flow.Publisher<R>> flow(HttpApiRequest<R> request) {
 
-        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
-            builder.header(HEADER_X_DASHSCOPE_SSE, ENABLE);
-            setupTimeout(builder, request);
-        });
+        final var delegateHttpRequest = newDelegateHttpRequestBuilder(request)
+                .header(HEADER_X_DASHSCOPE_SSE, ENABLE)
+                .build();
 
         loggingHttpRequest(delegateHttpRequest);
 
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApplyAsync(identity(), executor)
-                .whenComplete(HttpApiExecutor::loggingHttpResponse)
-                .thenApply(request.httpResponseHandler())
+                .whenComplete(HttpUtils::loggingHttpResponse)
+                .thenApply(request.newHttpResponseHandler())
 
                 // 从HTTP响应数据流转换为SSE事件流
                 .thenApply(httpResponse -> {
@@ -225,9 +178,9 @@ public class HttpApiExecutor implements ApiExecutor {
                 .thenApply(ssePublisher -> MapFlowProcessor.syncOneToOne(ssePublisher, event -> switch (event.type()) {
                             case "error" -> throw new ApiException(
                                     parseHttpStatus(event),
-                                    request.responseDeserializer().apply(event.data())
+                                    request.newResponseDecoder().apply(event.data())
                             );
-                            case "result" -> request.responseDeserializer().apply(event.data());
+                            case "result" -> request.newResponseDecoder().apply(event.data());
                             default -> throw new RuntimeException("Unsupported event type: %s".formatted(event.type()));
                         })
                 );
@@ -242,21 +195,20 @@ public class HttpApiExecutor implements ApiExecutor {
      * @return 任务应答
      */
     @Override
-    public <R extends ApiResponse<?>> CompletableFuture<Task.Half<R>> task(ApiRequest<R> request) {
+    public <R extends HttpApiResponse<?>> CompletionStage<Task.Half<R>> task(HttpApiRequest<R> request) {
 
-        final var delegateHttpRequest = delegateHttpRequest(request.newHttpRequest(), builder -> {
-            builder
-                    .header(HEADER_X_DASHSCOPE_SSE, DISABLE)
-                    .header(HEADER_X_DASHSCOPE_ASYNC, ENABLE);
-            setupTimeout(builder, request);
-        });
+        final var delegateHttpRequest = newDelegateHttpRequestBuilder(request)
+                .header(HEADER_X_DASHSCOPE_SSE, DISABLE)
+                .header(HEADER_X_DASHSCOPE_ASYNC, ENABLE)
+                .header(HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
+                .build();
 
         loggingHttpRequest(delegateHttpRequest);
 
         return http.sendAsync(delegateHttpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(identity(), executor)
-                .whenComplete(HttpApiExecutor::loggingHttpResponse)
-                .thenApply(request.httpResponseHandler())
+                .whenComplete(HttpUtils::loggingHttpResponse)
+                .thenApply(request.newHttpResponseHandler())
 
                 // 解析HTTP响应为任务半应答
                 .thenApply(httpResponse -> {
@@ -274,7 +226,7 @@ public class HttpApiExecutor implements ApiExecutor {
                                 .building(builder -> Optional.ofNullable(request.timeout()).ifPresent(builder::timeout))
                                 .build(),
                         strategy,
-                        request.responseDeserializer()
+                        request.newResponseDecoder()
                 ));
     }
 
@@ -287,13 +239,13 @@ public class HttpApiExecutor implements ApiExecutor {
      * @param <R>      应答类型
      * @return 任务应答
      */
-    private <R> CompletableFuture<R> rollingTask(TaskGetRequest request, Task.WaitStrategy strategy, Function<String, R> finisher) {
+    private <R> CompletionStage<R> rollingTask(TaskGetRequest request, Task.WaitStrategy strategy, Function<String, R> finisher) {
         return _rollingTask(request, strategy)
                 .thenApply(response -> finisher.apply(response.raw()));
     }
 
     // 滚动任务执行，直至完结（成功、取消、失败）
-    private CompletableFuture<TaskGetResponse> _rollingTask(TaskGetRequest taskGetRequest, Task.WaitStrategy strategy) {
+    private CompletionStage<TaskGetResponse> _rollingTask(TaskGetRequest taskGetRequest, Task.WaitStrategy strategy) {
         return async(taskGetRequest)
                 .thenCompose(taskGetResponse -> {
 
@@ -341,5 +293,33 @@ public class HttpApiExecutor implements ApiExecutor {
                             .thenCompose(unused -> _rollingTask(taskGetRequest, strategy));
                 });
     }
+
+    @Override
+    public <T extends ExchangeApiRequest<R>, R extends ExchangeApiResponse<?>>
+    CompletionStage<Exchange<T, R>> exchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
+
+        final URI remote = request instanceof AlgoRequest<?> algoRequest
+                ? algoRequest.model().remote()
+                : WSS_REMOTE;
+
+        final var uuid = UUID.randomUUID().toString();
+        final var exchangeListener = new ExchangeListenerAdapter<>(
+                uuid,
+                mode,
+                r -> request.newExchangeRequestEncoder(uuid).apply(r),
+                s -> request.newExchangeResponseDecoder(uuid).apply(s),
+                listener
+        );
+
+        return Building.of(http.newWebSocketBuilder())
+                .accept(builder -> builder.header(HEADER_AUTHORIZATION, ak))
+                .acceptIfNotNull(timeout, WebSocket.Builder::connectTimeout)
+                .acceptIfNotNull(request.timeout(), WebSocket.Builder::connectTimeout)
+                .apply()
+                .buildAsync(remote, exchangeListener)
+                .thenCompose(v -> exchangeListener.getExchange())
+                .thenCompose(exchange -> exchange.writeData(request));
+    }
+
 
 }

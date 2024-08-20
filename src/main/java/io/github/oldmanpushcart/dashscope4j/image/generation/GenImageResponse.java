@@ -1,8 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.image.generation;
 
 import io.github.oldmanpushcart.dashscope4j.Ret;
-import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoResponse;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.algo.HttpAlgoResponse;
 
 import java.net.URI;
 import java.util.List;
@@ -10,12 +9,12 @@ import java.util.List;
 /**
  * 文生图应答
  */
-public interface GenImageResponse extends AlgoResponse<GenImageResponse.Output> {
+public interface GenImageResponse extends HttpAlgoResponse<GenImageResponse.Output> {
 
     /**
      * 文生图应答数据
      */
-    interface Output extends ApiResponse.Output {
+    interface Output {
 
         /**
          * @return 结果

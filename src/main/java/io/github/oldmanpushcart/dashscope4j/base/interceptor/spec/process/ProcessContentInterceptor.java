@@ -7,7 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.ProcessContentInterceptorImpl;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * 处理内容拦截器
@@ -50,7 +50,7 @@ public interface ProcessContentInterceptor extends Interceptor {
          * @param content 内容
          * @return 处理后的内容
          */
-        CompletableFuture<Content<?>> process(InvocationContext context, ApiRequest<?> request, Content<?> content);
+        CompletionStage<Content<?>> process(InvocationContext context, ApiRequest request, Content<?> content);
 
     }
 }

@@ -8,7 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import io.github.oldmanpushcart.internal.dashscope4j.base.interceptor.spec.process.ProcessMessageListInterceptorImpl;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * 处理消息列表拦截器
@@ -51,7 +51,7 @@ public interface ProcessMessageListInterceptor extends Interceptor {
          * @param messages 消息列表
          * @return 处理后的消息列表
          */
-        CompletableFuture<? extends List<Message>> process(InvocationContext context, ApiRequest<?> request, List<Message> messages);
+        CompletionStage<? extends List<Message>> process(InvocationContext context, ApiRequest request, List<Message> messages);
 
     }
 

@@ -22,6 +22,7 @@ public class EmbeddingTestCase implements LoadingEnv {
 
         final var response = client.embedding().text(request)
                 .async()
+                .toCompletableFuture()
                 .join();
 
         DashScopeAssertions.assertEmbeddingResponse(response);

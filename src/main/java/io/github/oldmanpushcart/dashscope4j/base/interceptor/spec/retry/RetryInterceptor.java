@@ -30,7 +30,7 @@ public interface RetryInterceptor extends Interceptor {
          * @param ex      异常
          * @return 是否匹配
          */
-        boolean matches(InvocationContext context, ApiRequest<?> request, Throwable ex);
+        boolean matches(InvocationContext context, ApiRequest request, Throwable ex);
 
         /**
          * 与
@@ -40,6 +40,16 @@ public interface RetryInterceptor extends Interceptor {
          */
         default Matcher andThen(Matcher after) {
             return (c, r, ex) -> matches(c, r, ex) && after.matches(c, r, ex);
+        }
+
+        /**
+         * 总是匹配
+         *
+         * @return 匹配器
+         * @since 2.1.1
+         */
+        static Matcher alwaysTrue() {
+            return (c, r, ex) -> true;
         }
 
         /**
@@ -58,7 +68,7 @@ public interface RetryInterceptor extends Interceptor {
          * @param filter 过滤器
          * @return 匹配器
          */
-        static Matcher byRequest(Predicate<? super ApiRequest<?>> filter) {
+        static Matcher byRequest(Predicate<? super ApiRequest> filter) {
             return (c, r, ex) -> filter.test(r);
         }
 
@@ -68,7 +78,7 @@ public interface RetryInterceptor extends Interceptor {
          * @param type 请求类型
          * @return 匹配器
          */
-        static Matcher byRequest(Class<? extends ApiRequest<?>> type) {
+        static Matcher byRequest(Class<? extends ApiRequest> type) {
             return (c, r, ex) -> type.isInstance(r);
         }
 

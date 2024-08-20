@@ -37,7 +37,7 @@ public record FileListRequest(Duration timeout) implements OpenAiRequest<FileLis
     }
 
     @Override
-    public Function<String, FileListResponse> responseDeserializer() {
+    public Function<String, FileListResponse> newResponseDecoder() {
         return body -> {
             logger.debug("{} <= {}", protocol(), body);
             return JacksonUtils.toObject(body, FileListResponse.class);

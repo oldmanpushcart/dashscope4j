@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * 异步操作
@@ -12,6 +12,6 @@ public interface OpAsync<R> {
     /**
      * @return 异步操作
      */
-    CompletableFuture<R> async();
+    CompletionStage<R> async();
 
 }

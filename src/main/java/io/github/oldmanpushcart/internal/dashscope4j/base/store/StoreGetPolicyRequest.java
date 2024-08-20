@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.store;
 
 import io.github.oldmanpushcart.dashscope4j.Model;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +16,7 @@ import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
 /**
  * 获取凭证请求
  */
-public record StoreGetPolicyRequest(Model model, Duration timeout) implements ApiRequest<StoreGetPolicyResponse> {
+public record StoreGetPolicyRequest(Model model, Duration timeout) implements HttpApiRequest<StoreGetPolicyResponse> {
 
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
@@ -44,7 +44,7 @@ public record StoreGetPolicyRequest(Model model, Duration timeout) implements Ap
     }
 
     @Override
-    public Function<String, StoreGetPolicyResponse> responseDeserializer() {
+    public Function<String, StoreGetPolicyResponse> newResponseDecoder() {
         return body -> {
             logger.debug("{} <= {}", protocol(), body);
             return JacksonUtils.toObject(body, StoreGetPolicyResponse.class);

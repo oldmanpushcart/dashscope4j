@@ -1,142 +1,193 @@
 package io.github.oldmanpushcart.test.dashscope4j;
 
+import io.github.oldmanpushcart.dashscope4j.audio.asr.*;
+import io.github.oldmanpushcart.dashscope4j.audio.asr.TranscriptionRequest.LanguageHint;
+import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisModel;
+import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisOptions;
+import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisRequest;
+import io.github.oldmanpushcart.dashscope4j.base.exchange.Exchange;
+import io.github.oldmanpushcart.dashscope4j.base.exchange.ExchangeListeners;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
-import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.chat.ChatOptions;
-import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingModel;
-import io.github.oldmanpushcart.dashscope4j.embedding.text.EmbeddingRequest;
-import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageModel;
-import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageOptions;
-import io.github.oldmanpushcart.dashscope4j.image.generation.GenImageRequest;
-import io.github.oldmanpushcart.dashscope4j.util.ConsumeFlowSubscriber;
-import io.github.oldmanpushcart.dashscope4j.util.ExceptionUtils;
-import org.junit.jupiter.api.Assertions;
+import io.github.oldmanpushcart.dashscope4j.util.FlowPublishers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 @Disabled
 public class DebugTestCase implements LoadingEnv {
 
     @Test
-    public void test$debug$text() {
+    public void test$debug$synthesis() throws IOException {
 
-        final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_VL_MAX)
-                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                .messages(List.of(
-                        Message.ofUser(List.of(
-                                Content.ofImage(new File("./document/image/image-002.jpeg").toURI()),
-                                Content.ofText("图片中一共多少辆自行车?")
-                        ))
-                ))
+        // 文本集合
+        final var strings = new String[]{
+                "白日依山尽，",
+                "黄河入海流。",
+                "欲穷千里目，",
+                "更上一层楼。"
+        };
+
+        // 语音合成请求
+        final var request = SpeechSynthesisRequest.newBuilder()
+                .model(SpeechSynthesisModel.COSYVOICE_LONGXIAOCHUN_V1)
+                .option(SpeechSynthesisOptions.SAMPLE_RATE, 16000)
+                .option(SpeechSynthesisOptions.FORMAT, SpeechSynthesisRequest.Format.WAV)
                 .build();
 
-//        {
-//            final var response = client.chat(request).async()
-//                    .join();
-//            System.out.println(response.output().best().message().text());
-//        }
+        // 以语音合成请求为模板，对每个文本生成一个语音合成请求
+        final var requests = Stream.of(strings)
+                .map(string -> SpeechSynthesisRequest.newBuilder(request)
+                        .text(string)
+                        .build()
+                )
+                .toList();
 
-        {
-            client.chat(request).flow()
-                    .thenCompose(publisher -> ConsumeFlowSubscriber.consumeCompose(publisher, r -> {
-                        System.out.println(r);
-                        DashScopeAssertions.assertChatResponse(r);
-                    }))
-                    .join();
-        }
+        // 聚合成请求发布器
+        final var requestPublisher = FlowPublishers.fromIterator(requests);
 
+        // 进行语音合成
+        client.audio().synthesis(request)
 
-    }
+                // 打开语音合成数据交互通道：全双工模式，输出到audio.wav文件
+                .exchange(Exchange.Mode.DUPLEX, ExchangeListeners.ofPath(Path.of("./audio.wav")))
 
-    @Test
-    public void test$debug$image$gen() {
-        final var request = GenImageRequest.newBuilder()
-                .model(GenImageModel.WANX_V1)
-                .option(GenImageOptions.NUMBER, 1)
-                .prompt("画一只猫")
-                .build();
-        final var response = client.image().generation(request)
-                .task(Task.WaitStrategies.perpetual(Duration.ofMillis(1000L)))
-                .join();
-        System.out.println(response);
-    }
+                // 发送语音合成请求序列
+                .thenCompose(exchange -> exchange.writeDataPublisher(requestPublisher))
 
-    @Test
-    public void test$debug$embedding$request() {
+                // 语音合成结束
+                .thenCompose(Exchange::finishing)
 
-        final var request = EmbeddingRequest.newBuilder()
-                .model(EmbeddingModel.TEXT_EMBEDDING_V2)
-                .documents(List.of("我爱北京天安门", "天安门上太阳升"))
-                .build();
-
-        final var response = client.embedding().text(request)
-                .async()
+                // 等待通道关闭
+                .thenCompose(Exchange::closeFuture)
+                .toCompletableFuture()
                 .join();
 
-        System.out.println(response);
-
     }
 
     @Test
-    public void test$debug$ratelimit() throws Exception {
-        final var total = 201;
-        final var successRef = new AtomicInteger();
-        final var failureRef = new AtomicInteger();
-        final var launch = new CountDownLatch(total);
-        for (int i = 0; i < total; i++) {
-            final var request = ChatRequest.newBuilder()
-                    .model(ChatModel.QWEN_PLUS)
-                    .messages(List.of(
-                            Message.ofUser("我有100块钱存银行，利率3个点，请告诉我%s年后，我连本带利有多少钱?".formatted(i+1))
-                    ))
-                    .build();
-            client.chat(request).async().whenComplete((r, ex) -> {
-                if (null != ex) {
-                    failureRef.incrementAndGet();
-                } else {
-                    successRef.incrementAndGet();
-                }
-                launch.countDown();
-            });
-        }
+    public void test$debug$recognition() throws IOException {
 
-        launch.await();
-        System.out.println("success: " + successRef.get());
-        System.out.println("failure: " + failureRef.get());
-        Assertions.assertEquals(total, successRef.get() + failureRef.get());
-    }
+        // 构建音频文件的ByteBuffer发布器
+        final var byteBufPublisher = FlowPublishers.fromURI(Path.of("./audio.wav").toUri());
 
-    @Test
-    public void test$debug() throws InterruptedException {
+        /*
+         * 构建语音识别请求
+         * 采样率：16000
+         * 音频格式：WAV(PCM)
+         */
+        final var request = RecognitionRequest.newBuilder()
+                .model(RecognitionModel.PARAFORMER_REALTIME_V2)
+                .option(RecognitionOptions.SAMPLE_RATE, 16000)
+                .option(RecognitionOptions.FORMAT, RecognitionRequest.Format.WAV)
+                .build();
 
-        final var latch = new CountDownLatch(1);
-        CompletableFuture.completedFuture("hello")
-                .thenApplyAsync(it -> it + " world")
-                .thenApply(it -> it + "!")
-                .thenAccept(s-> {
-                    throw new IllegalArgumentException("test error!");
-                })
-                .whenComplete((r,ex)-> {
+        // 识别文本缓存
+        final var stringBuf = new StringBuilder();
 
-                    if(null != ex) {
-                        final var cause = ExceptionUtils.causeBy(ex, UnsupportedOperationException.class);
-                        System.out.println(null == cause);
+        // 进行语音识别
+        client.audio().recognition(request)
+
+                // 打开语音识别数据交互通道：全双工模式，输出到文本缓存
+                .exchange(Exchange.Mode.DUPLEX, ExchangeListeners.ofConsume(response -> {
+                    if (response.output().sentence().isEnd()) {
+                        stringBuf.append(response.output().sentence().text()).append("\n");
                     }
-                    latch.countDown();
-                });
+                }))
 
-        latch.await();
+                // 发送音频文件字节流数据
+                .thenCompose(exchange -> exchange.writeByteBufferPublisher(byteBufPublisher))
+
+                // 语音识别结束
+                .thenCompose(Exchange::finishing)
+
+                // 等待通道关闭
+                .thenCompose(Exchange::closeFuture)
+                .toCompletableFuture()
+                .join();
+
+        // 输出识别文本
+        System.out.println(stringBuf);
+
+    }
+
+    @Test
+    public void test$debug$transcription() {
+
+        /*
+         * 构建音视频转录请求
+         * 语言：日文
+         * 选项：过滤语气词（日片中很多以库以库的语气词，各位懂的都懂）
+         */
+        final var request = TranscriptionRequest.newBuilder()
+                .model(TranscriptionModel.PARAFORMER_V2)
+                .resources(List.of(URI.create("https://ompc-storage.oss-cn-hangzhou.aliyuncs.com/dashscope4j/video/%5Bktxp%5D%5BFullmetal%20Alchemist%5D%5Bjap_chn%5D01.rmvb")))
+                .option(TranscriptionOptions.ENABLE_DISFLUENCY_REMOVAL, true)
+                .option(TranscriptionOptions.LANGUAGE_HINTS, new LanguageHint[]{LanguageHint.JA})
+                .build();
+
+        // 进行音视频转录
+        final var response = client.audio().transcription(request)
+
+                // 等待任务完成，每隔30s进行检查任务状态
+                .task(Task.WaitStrategies.perpetual(Duration.ofMillis(1000L * 30)))
+                .toCompletableFuture()
+                .join();
+
+        // 合并音视频转录文本（当前只有一个视频）
+        final var text = response.output().results().stream()
+                .map(result-> {
+
+                    // 下载转录结果
+                    final var transcription = result.lazyFetchTranscription()
+                            .toCompletableFuture()
+                            .join();
+
+                    // 合并转录句子（每行一个句子）
+                    return transcription.transcripts().stream()
+                            .flatMap(transcript->transcript.sentences().stream())
+                            .map(sentence-> "%s - %s: %s".formatted(
+                                    sentence.begin(),
+                                    sentence.end(),
+                                    sentence.text()
+                            ))
+                            .reduce((a, b) -> a + "\n" + b)
+                            .orElse("");
+
+                })
+
+                // 合并多个音视频转录文本，当前只有一个视频
+                .reduce((a, b) -> a + b)
+                .orElse("");
+
+        // 输出音视频转录文本
+        System.out.println(text);
+
+    }
+
+    @Test
+    public void test$debug() {
+
+        final var messages = List.of(
+                Message.ofUser("北京有哪些好玩地方？"),
+                Message.ofAi("故宫、颐和园、天坛等都是可以去游玩的景点哦。"),
+                Message.ofUser("帮我安排一些行程")
+        );
+
+        final var list = client.base().tokenize().local()
+                .encode(messages)
+                .toCompletableFuture()
+                .join();
+
+        System.out.println("total tokens: " + list.size());
+
 
     }
 

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -148,7 +149,7 @@ public record Task(String id, Status status, Metrics metrics, Timing timing) {
          * @param task 任务
          * @return 任务等待应答
          */
-        CompletableFuture<?> performWait(Task task);
+        CompletionStage<?> performWait(Task task);
 
     }
 
@@ -231,7 +232,7 @@ public record Task(String id, Status status, Metrics metrics, Timing timing) {
          * @param strategy 等待策略
          * @return 任务应答
          */
-        CompletableFuture<V> waitingFor(WaitStrategy strategy);
+        CompletionStage<V> waitingFor(WaitStrategy strategy);
 
     }
 

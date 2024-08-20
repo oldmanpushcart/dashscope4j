@@ -44,7 +44,8 @@ public class ChatTestCase implements LoadingEnv {
 
             // AUDIO
             ChatModel.QWEN_AUDIO_CHAT,
-            ChatModel.QWEN_AUDIO_TURBO
+            ChatModel.QWEN_AUDIO_TURBO,
+            ChatModel.QWEN2_AUDIO_INSTRUCT
     );
 
     private static ChatModel getModel(String name) {
@@ -78,7 +79,7 @@ public class ChatTestCase implements LoadingEnv {
 
         // ASYNC
         {
-            final var response = client.chat(request).async().join();
+            final var response = client.chat(request).async().toCompletableFuture().join();
             Assertions.assertTrue(response.output().best().message().text().contains("23"));
             DashScopeAssertions.assertChatResponse(response);
         }
@@ -91,6 +92,7 @@ public class ChatTestCase implements LoadingEnv {
                         stringRef.set(r.output().best().message().text());
                         DashScopeAssertions.assertChatResponse(r);
                     }))
+                    .toCompletableFuture()
                     .join();
 
             Assertions.assertTrue(stringRef.get().contains("23"));
@@ -119,7 +121,7 @@ public class ChatTestCase implements LoadingEnv {
 
         // ASYNC
         {
-            final var response = client.chat(request).async().join();
+            final var response = client.chat(request).async().toCompletableFuture().join();
             final var text = response.output().best().message().text();
             Assertions.assertTrue(text.contains("2") || text.contains("两辆"));
             DashScopeAssertions.assertChatResponse(response);
@@ -134,6 +136,7 @@ public class ChatTestCase implements LoadingEnv {
                         stringRef.set(r.output().best().message().text());
                         DashScopeAssertions.assertChatResponse(r);
                     }))
+                    .toCompletableFuture()
                     .join();
 
             final var text = stringRef.get();
@@ -146,7 +149,8 @@ public class ChatTestCase implements LoadingEnv {
     @ParameterizedTest
     @ValueSource(strings = {
             "qwen-audio-turbo",
-            "qwen-audio-chat"
+            "qwen-audio-chat",
+            "qwen2-audio-instruct"
     })
     public void test$chat$audio(String name) {
 
@@ -164,7 +168,7 @@ public class ChatTestCase implements LoadingEnv {
 
         // ASYNC
         {
-            final var response = client.chat(request).async().join();
+            final var response = client.chat(request).async().toCompletableFuture().join();
             DashScopeAssertions.assertChatResponse(response);
             Assertions.assertTrue(response.output().best().message().text().contains("男"));
         }
@@ -178,6 +182,7 @@ public class ChatTestCase implements LoadingEnv {
                         stringRef.set(r.output().best().message().text());
                         DashScopeAssertions.assertChatResponse(r);
                     }))
+                    .toCompletableFuture()
                     .join();
 
             final var text = stringRef.get();
@@ -196,7 +201,7 @@ public class ChatTestCase implements LoadingEnv {
                 ))
                 .build();
         DashScopeAssertions.assertChatRequest(request);
-        CommonAssertions.assertRootThrows(ApiException.class, () -> client.chat(request).async().join(), ex -> {
+        CommonAssertions.assertRootThrows(ApiException.class, () -> client.chat(request).async().toCompletableFuture().join(), ex -> {
             Assertions.assertTrue(200 != ex.status());
             Assertions.assertFalse(ex.ret().isSuccess());
             Assertions.assertFalse(ex.ret().code().isBlank());
@@ -221,6 +226,7 @@ public class ChatTestCase implements LoadingEnv {
         DashScopeAssertions.assertChatRequest(request);
         final var response = client.chat(request)
                 .async()
+                .toCompletableFuture()
                 .join();
         DashScopeAssertions.assertChatResponse(response);
         Assertions.assertTrue(response.output().best().message().text().contains("6.2"));
@@ -243,6 +249,7 @@ public class ChatTestCase implements LoadingEnv {
                 .build();
         final var response = client.chat(request)
                 .async()
+                .toCompletableFuture()
                 .join();
         final var text = response.output().best().message().text();
         Assertions.assertTrue(text.contains("五年规划"));
@@ -258,16 +265,16 @@ public class ChatTestCase implements LoadingEnv {
                                 .name("echo")
                                 .description("当用户输入echo:，回显后边的文字")
                                 .parameterType(EchoFunction.Echo.class, """
-                                {
-                                    "type":"object",
-                                    "properties":{
-                                        "words":{
-                                            "type":"string",
-                                            "description":"需要回显的文字"
+                                        {
+                                            "type":"object",
+                                            "properties":{
+                                                "words":{
+                                                    "type":"string",
+                                                    "description":"需要回显的文字"
+                                                }
+                                            }
                                         }
-                                    }
-                                }
-                                """
+                                        """
                                 )
                                 .function(echo -> echo)
                                 .build()
@@ -278,6 +285,7 @@ public class ChatTestCase implements LoadingEnv {
                 .build();
         final var response = client.chat(request)
                 .async()
+                .toCompletableFuture()
                 .join();
         Assertions.assertEquals("HELLO!", response.output().best().message().text());
     }
@@ -300,6 +308,7 @@ public class ChatTestCase implements LoadingEnv {
                         stringRef.set(r.output().best().message().text());
                         DashScopeAssertions.assertChatResponse(r);
                     }))
+                    .toCompletableFuture()
                     .join();
             Assertions.assertEquals("HELLO!", stringRef.get());
         }
@@ -308,6 +317,7 @@ public class ChatTestCase implements LoadingEnv {
         {
             final var response = client.chat(request)
                     .async()
+                    .toCompletableFuture()
                     .join();
             Assertions.assertEquals("HELLO!", response.output().best().message().text());
         }
@@ -325,6 +335,7 @@ public class ChatTestCase implements LoadingEnv {
                 .build();
         final var response = client.chat(request)
                 .async()
+                .toCompletableFuture()
                 .join();
         Assertions.assertTrue(response.output().best().message().text().contains("80"));
     }
@@ -343,6 +354,7 @@ public class ChatTestCase implements LoadingEnv {
                 .build();
         final var response = client.chat(request)
                 .async()
+                .toCompletableFuture()
                 .join();
         Assertions.assertTrue(response.output().best().message().text().contains("80"));
     }

@@ -136,4 +136,11 @@ public record ChatModel(Mode mode, String name, URI remote) implements Model {
      */
     public static final ChatModel QWEN_AUDIO_CHAT = ofMultimodal("qwen-audio-chat");
 
+    /**
+     * QWEN2_AUDIO_INSTRUCT
+     * <p>通义千问Audio更新增强版。</p>
+     * <p>拓展音频多模态理解和生成能力，额外提供语音聊天与音频分析能力，能够实现自由灵活的音频交互。</p>
+     */
+    public static final ChatModel QWEN2_AUDIO_INSTRUCT = ofMultimodal("qwen2-audio-instruct");
+
 }

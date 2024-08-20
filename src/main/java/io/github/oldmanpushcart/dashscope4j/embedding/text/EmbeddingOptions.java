@@ -9,7 +9,7 @@ public interface EmbeddingOptions extends AlgoOptions {
     /**
      * EMBEDDING_TYPE
      * <p>
-     *     文本转换为向量后可以应用于检索、聚类、分类等下游任务，对检索这类非对称任务为了达到更好的检索效果建议区分：
+     * 文本转换为向量后可以应用于检索、聚类、分类等下游任务，对检索这类非对称任务为了达到更好的检索效果建议区分：
      *     <ul>
      *         <li>查询文本：{@link EmbeddingType#QUERY}</li>
      *         <li>底库文本：{@link EmbeddingType#DOCUMENT}</li>

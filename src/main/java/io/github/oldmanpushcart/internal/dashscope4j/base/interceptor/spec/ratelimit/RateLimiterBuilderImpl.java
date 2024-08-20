@@ -76,7 +76,7 @@ public class RateLimiterBuilderImpl implements RateLimiter.Builder {
             }
 
             @Override
-            public Strategy limit(InvocationContext context, ApiRequest<?> request, Metric metric) {
+            public Strategy limit(InvocationContext context, ApiRequest request, Metric metric) {
 
                 // 不匹配流控规则，跳过流控限制
                 if (!matcher.matches(context, request)) {
@@ -106,7 +106,7 @@ public class RateLimiterBuilderImpl implements RateLimiter.Builder {
                 }
 
                 // 限制最大使用量
-                if(maxUsageCost != null) {
+                if (maxUsageCost != null) {
                     final var usageCost = maxUsageNameSet.isEmpty()
                             ? metric.usage().total()
                             : metric.usage().total(e -> maxUsageNameSet.contains(e.name()));

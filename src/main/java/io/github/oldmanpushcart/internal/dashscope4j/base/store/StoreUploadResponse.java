@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.internal.dashscope4j.base.store;
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 
 import java.net.URI;
 
@@ -15,13 +15,9 @@ public record StoreUploadResponse(
         Ret ret,
         Usage usage,
         Output output
-) implements ApiResponse<StoreUploadResponse.Output> {
+) implements HttpApiResponse<StoreUploadResponse.Output> {
 
-    public record Output(
-            URI resource,
-            Model model,
-            URI uploaded
-    ) implements ApiResponse.Output {
+    public record Output(URI resource, Model model, URI uploaded) {
     }
 
 }

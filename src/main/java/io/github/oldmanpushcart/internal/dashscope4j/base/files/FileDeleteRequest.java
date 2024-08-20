@@ -39,7 +39,7 @@ public record FileDeleteRequest(String id, Duration timeout)
     }
 
     @Override
-    public Function<String, FileDeleteResponse> responseDeserializer() {
+    public Function<String, FileDeleteResponse> newResponseDecoder() {
         return body -> {
             logger.debug("{}/{} <= {}", protocol(), id, body);
             return JacksonUtils.toObject(body, FileDeleteResponse.class);

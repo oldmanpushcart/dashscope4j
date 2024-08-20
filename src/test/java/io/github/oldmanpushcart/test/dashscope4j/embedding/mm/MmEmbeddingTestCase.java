@@ -36,6 +36,7 @@ public class MmEmbeddingTestCase implements LoadingEnv {
 
         final var response = client.embedding().mm(request)
                 .async()
+                .toCompletableFuture()
                 .join();
 
         DashScopeAssertions.assertApiResponse(response);

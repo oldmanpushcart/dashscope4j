@@ -6,7 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.process.Proces
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.embedding.mm.MmEmbeddingRequest;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.UpdateMode.REPLACE_ALL;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.CollectionUtils.updateList;
@@ -21,7 +21,7 @@ public class ProcessContentInterceptorImpl implements ProcessContentInterceptor 
     }
 
     @Override
-    public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
+    public CompletionStage<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
 
         if (request instanceof ChatRequest chatRequest) {
             return preHandleByChatRequest(context, chatRequest);
@@ -34,7 +34,7 @@ public class ProcessContentInterceptorImpl implements ProcessContentInterceptor 
         return ProcessContentInterceptor.super.preHandle(context, request);
     }
 
-    private CompletableFuture<ApiRequest<?>> preHandleByChatRequest(InvocationContext context, ChatRequest request) {
+    private CompletionStage<ApiRequest> preHandleByChatRequest(InvocationContext context, ChatRequest request) {
         return thenIterateCompose(request.messages(), message ->
                 thenIterateCompose(message.contents(), content -> processor.process(context, request, content))
                         .thenApply(newContents -> {
@@ -47,7 +47,7 @@ public class ProcessContentInterceptorImpl implements ProcessContentInterceptor 
                 });
     }
 
-    private CompletableFuture<ApiRequest<?>> preHandleByMmEmbeddingRequest(InvocationContext context, MmEmbeddingRequest request) {
+    private CompletionStage<ApiRequest> preHandleByMmEmbeddingRequest(InvocationContext context, MmEmbeddingRequest request) {
         return thenIterateCompose(request.contents(), content -> processor.process(context, request, content))
                 .thenApply(newContents -> {
                     updateList(REPLACE_ALL, request.contents(), newContents);

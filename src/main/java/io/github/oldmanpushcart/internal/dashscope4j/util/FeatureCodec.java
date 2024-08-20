@@ -43,7 +43,7 @@ public class FeatureCodec {
 
         // 分隔符禁止与转义前缀符相等
         if (ESCAPE_PREFIX_CHAR == kvSegmentSeparator
-                || ESCAPE_PREFIX_CHAR == kvSeparator) {
+            || ESCAPE_PREFIX_CHAR == kvSeparator) {
             throw new IllegalArgumentException("separator can not equals '" + ESCAPE_PREFIX_CHAR + "'.");
         }
 
@@ -61,7 +61,7 @@ public class FeatureCodec {
     public String toString(final Collection<String> collection) {
         final StringBuilder featureSB = new StringBuilder().append(kvSegmentSeparator);
         if (null == collection
-                || collection.isEmpty()) {
+            || collection.isEmpty()) {
             return featureSB.toString();
         }
 
@@ -115,7 +115,7 @@ public class FeatureCodec {
 
         final StringBuilder featureSB = new StringBuilder().append(kvSegmentSeparator);
         if (null == map
-                || map.isEmpty()) {
+            || map.isEmpty()) {
             return featureSB.toString();
         }
 
@@ -183,8 +183,8 @@ public class FeatureCodec {
      */
     private boolean isSpecialChar(final char c) {
         return c == kvSegmentSeparator
-                || c == kvSeparator
-                || c == ESCAPE_PREFIX_CHAR;
+               || c == kvSeparator
+               || c == ESCAPE_PREFIX_CHAR;
     }
 
     /**

@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.chat.ChatResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.ToolCallMessageImpl;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,7 +54,7 @@ public class ChatResponseOpFlowHandler implements Function<Flow.Publisher<ChatRe
      * @param <T>         元素类型
      * @return 连接后的流
      */
-    private static <T> Flow.Publisher<T> concat(Flow.Publisher<T> source, BinaryOperator<T> accumulator, Function<T, CompletableFuture<Flow.Publisher<T>>> finisher) {
+    private static <T> Flow.Publisher<T> concat(Flow.Publisher<T> source, BinaryOperator<T> accumulator, Function<T, CompletionStage<Flow.Publisher<T>>> finisher) {
 
         final var processor = new Flow.Processor<T, T>() {
 

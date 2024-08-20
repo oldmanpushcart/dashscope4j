@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.task;
 
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.ApiRequestBuilderImpl;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import org.slf4j.Logger;
@@ -17,7 +17,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * 任务取消请求
  */
-public record TaskCancelRequest(String taskId, Duration timeout) implements ApiRequest<TaskCancelResponse> {
+public record TaskCancelRequest(String taskId, Duration timeout) implements HttpApiRequest<TaskCancelResponse> {
 
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
@@ -41,7 +41,7 @@ public record TaskCancelRequest(String taskId, Duration timeout) implements ApiR
     }
 
     @Override
-    public Function<String, TaskCancelResponse> responseDeserializer() {
+    public Function<String, TaskCancelResponse> newResponseDecoder() {
         return body -> {
             logger.debug("{} <= {}", protocol(), body);
             return JacksonUtils.toObject(body, TaskCancelResponse.class);

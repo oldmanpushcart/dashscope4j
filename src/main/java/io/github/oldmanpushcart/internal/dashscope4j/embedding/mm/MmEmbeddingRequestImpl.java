@@ -5,13 +5,13 @@ import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.embedding.mm.MmEmbeddingModel;
 import io.github.oldmanpushcart.dashscope4j.embedding.mm.MmEmbeddingRequest;
 import io.github.oldmanpushcart.dashscope4j.embedding.mm.MmEmbeddingResponse;
-import io.github.oldmanpushcart.internal.dashscope4j.base.algo.AlgoRequestImpl;
+import io.github.oldmanpushcart.internal.dashscope4j.base.algo.HttpAlgoRequestImpl;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 
-class MmEmbeddingRequestImpl extends AlgoRequestImpl<MmEmbeddingModel, MmEmbeddingResponse>
+class MmEmbeddingRequestImpl extends HttpAlgoRequestImpl<MmEmbeddingModel, MmEmbeddingResponse>
         implements MmEmbeddingRequest {
 
     private final List<Content<?>> contents;

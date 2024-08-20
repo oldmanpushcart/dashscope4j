@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.chat.tool.function;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * 对话函数
@@ -17,6 +17,6 @@ public interface ChatFunction<T, R> {
      * @param t 参数
      * @return 返回值
      */
-    CompletableFuture<R> call(T t);
+    CompletionStage<R> call(T t);
 
 }

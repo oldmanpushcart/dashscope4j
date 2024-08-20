@@ -13,6 +13,7 @@ public class StoreTestCase implements LoadingEnv {
     public void test$upload$op() {
         final var uri = client.base().store()
                 .upload(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg"), ChatModel.QWEN_PLUS)
+                .toCompletableFuture()
                 .join();
 
         Assertions.assertNotNull(uri);
@@ -21,8 +22,8 @@ public class StoreTestCase implements LoadingEnv {
     @Test
     public void test$upload$op$hit_cache() {
         final var uri = URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg");
-        final var first = client.base().store().upload(uri, ChatModel.QWEN_PLUS).join();
-        final var second = client.base().store().upload(uri, ChatModel.QWEN_PLUS).join();
+        final var first = client.base().store().upload(uri, ChatModel.QWEN_PLUS).toCompletableFuture().join();
+        final var second = client.base().store().upload(uri, ChatModel.QWEN_PLUS).toCompletableFuture().join();
         Assertions.assertEquals(first, second);
     }
 

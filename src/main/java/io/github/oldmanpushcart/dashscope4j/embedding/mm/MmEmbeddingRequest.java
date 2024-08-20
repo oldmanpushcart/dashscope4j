@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.embedding.mm;
 
 import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.base.algo.HttpAlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.internal.dashscope4j.embedding.mm.MmEmbeddingRequestBuilderImpl;
 
@@ -9,7 +10,7 @@ import java.util.List;
 /**
  * 多模态向量计算请求
  */
-public interface MmEmbeddingRequest extends AlgoRequest<MmEmbeddingModel, MmEmbeddingResponse> {
+public interface MmEmbeddingRequest extends HttpAlgoRequest<MmEmbeddingModel, MmEmbeddingResponse> {
 
     /**
      * @return 内容列表

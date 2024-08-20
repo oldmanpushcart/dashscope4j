@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.util;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -58,7 +59,7 @@ public class ConsumeFlowSubscriber<T> implements Flow.Subscriber<T> {
     /**
      * @return 完成通知
      */
-    public CompletableFuture<Void> completed() {
+    public CompletionStage<Void> completed() {
         return completed;
     }
 
@@ -81,7 +82,7 @@ public class ConsumeFlowSubscriber<T> implements Flow.Subscriber<T> {
      * @param <T>       元素类型
      * @return 消费流订阅者
      */
-    public static <T> CompletableFuture<Void> consumeCompose(Flow.Publisher<T> publisher, Consumer<T> consumer) {
+    public static <T> CompletionStage<Void> consumeCompose(Flow.Publisher<T> publisher, Consumer<T> consumer) {
         final var subscriber = new ConsumeFlowSubscriber<>(consumer);
         publisher.subscribe(subscriber);
         return subscriber.completed();

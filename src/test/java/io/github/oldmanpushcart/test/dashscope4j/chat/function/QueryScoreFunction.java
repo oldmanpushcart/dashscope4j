@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 @ChatFn(name = "query_score", description = "query student's scores")
@@ -33,7 +34,7 @@ public class QueryScoreFunction implements ChatFunction<QueryScoreFunction.Reque
     }};
 
     @Override
-    public CompletableFuture<Result<List<Score>>> call(Request request) {
+    public CompletionStage<Result<List<Score>>> call(Request request) {
 
         if (!studentScoreMap.containsKey(request.name())) {
             return CompletableFuture.completedFuture(new Result<>(

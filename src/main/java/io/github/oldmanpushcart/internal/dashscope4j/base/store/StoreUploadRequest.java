@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.internal.dashscope4j.base.store;
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.base.api.http.MultipartBodyPublisherBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +23,7 @@ import static io.github.oldmanpushcart.internal.dashscope4j.base.api.http.HttpHe
 /**
  * 上传数据请求
  */
-public final class StoreUploadRequest implements ApiRequest<StoreUploadResponse> {
+public final class StoreUploadRequest implements HttpApiRequest<StoreUploadResponse> {
 
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
     private static final int SUCCESS_CODE = 200;
@@ -101,7 +101,7 @@ public final class StoreUploadRequest implements ApiRequest<StoreUploadResponse>
     }
 
     @Override
-    public <T> Function<HttpResponse<T>, HttpResponse<T>> httpResponseHandler() {
+    public <T> Function<HttpResponse<T>, HttpResponse<T>> newHttpResponseHandler() {
         return response -> {
             final var code = response.statusCode();
             logger.debug("{}/{} <= {}", protocol(), ossKey, code);
@@ -116,7 +116,7 @@ public final class StoreUploadRequest implements ApiRequest<StoreUploadResponse>
     }
 
     @Override
-    public Function<String, StoreUploadResponse> responseDeserializer() {
+    public Function<String, StoreUploadResponse> newResponseDecoder() {
         return unused ->
                 new StoreUploadResponse(
                         ApiResponse.EMPTY_UUID,

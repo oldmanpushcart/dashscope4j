@@ -2,12 +2,13 @@ package io.github.oldmanpushcart.dashscope4j.image.generation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.base.algo.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.base.algo.HttpAlgoRequest;
 import io.github.oldmanpushcart.internal.dashscope4j.image.generation.GenImageRequestBuilderImpl;
 
 /**
  * 文生图请求
  */
-public interface GenImageRequest extends AlgoRequest<GenImageModel, GenImageResponse> {
+public interface GenImageRequest extends HttpAlgoRequest<GenImageModel, GenImageResponse> {
 
     /**
      * @return 正向提示

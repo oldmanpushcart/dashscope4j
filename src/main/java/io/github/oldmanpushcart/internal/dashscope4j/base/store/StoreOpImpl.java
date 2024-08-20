@@ -10,6 +10,7 @@ import io.github.oldmanpushcart.internal.dashscope4j.util.CacheUtils;
 import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.CACHE_NAMESPACE_FOR_STORE;
 
@@ -31,14 +32,14 @@ public class StoreOpImpl implements StoreOp {
     }
 
     @Override
-    public CompletableFuture<URI> upload(URI resource, Model model) {
+    public CompletionStage<URI> upload(URI resource, Model model) {
         final var key = toCacheKey(resource, model);
         return CacheUtils
                 .asyncGetOrPut(cache, key, () -> _upload(resource, model).thenApply(Objects::toString))
                 .thenApply(URI::create);
     }
 
-    private CompletableFuture<URI> _upload(URI resource, Model model) {
+    private CompletionStage<URI> _upload(URI resource, Model model) {
         return CompletableFuture.completedFuture(null)
 
                 // 获取存储凭证

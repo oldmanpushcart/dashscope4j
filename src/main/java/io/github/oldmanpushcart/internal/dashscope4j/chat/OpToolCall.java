@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
@@ -43,7 +43,7 @@ class OpToolCall {
      * @param client DashScope客户端
      * @return 异步操作
      */
-    public CompletableFuture<OpAsyncOpFlow<ChatResponse>> op(DashScopeClient client) {
+    public CompletionStage<OpAsyncOpFlow<ChatResponse>> op(DashScopeClient client) {
 
         // 检查工具调用中是否只有函数调用，当前只支持函数调用
         if (!message.calls().stream().allMatch(call -> call instanceof ChatFunctionTool.Call)) {
@@ -106,7 +106,7 @@ class OpToolCall {
     }
 
     // 函数调用
-    private CompletableFuture<String> callingFunction(ChatFunctionTool tool, ChatFunctionTool.Call call) {
+    private CompletionStage<String> callingFunction(ChatFunctionTool tool, ChatFunctionTool.Call call) {
         try {
             return tool.function().call(JacksonUtils.toObject(call.arguments(), tool.meta().parameterTs().type()))
                     .thenApply(JacksonUtils::toJson);
@@ -135,12 +135,12 @@ class OpToolCall {
             }
 
             @Override
-            public CompletableFuture<ChatResponse> async() {
+            public CompletionStage<ChatResponse> async() {
                 return op.async().thenApply(this::onResponse);
             }
 
             @Override
-            public CompletableFuture<Flow.Publisher<ChatResponse>> flow() {
+            public CompletionStage<Flow.Publisher<ChatResponse>> flow() {
                 return op.flow().thenApply(source -> MapFlowProcessor.syncOneToOne(source, this::onResponse));
             }
 

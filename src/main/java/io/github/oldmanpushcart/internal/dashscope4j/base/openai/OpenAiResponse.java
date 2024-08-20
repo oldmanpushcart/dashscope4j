@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.internal.dashscope4j.base.openai;
 
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.util.StringUtils;
 
 import java.util.Optional;
@@ -12,7 +12,7 @@ import java.util.Optional;
  *
  * @param <D> 输出
  */
-public interface OpenAiResponse<D extends OpenAiResponse.Output> extends ApiResponse<D> {
+public interface OpenAiResponse<D> extends HttpApiResponse<D> {
 
     @Override
     default String uuid() {
@@ -39,9 +39,5 @@ public interface OpenAiResponse<D extends OpenAiResponse.Output> extends ApiResp
     }
 
     Error error();
-
-    interface Output extends ApiResponse.Output {
-
-    }
 
 }

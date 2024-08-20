@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -35,7 +36,7 @@ public class RateLimitInterceptorImpl implements RateLimitInterceptor {
     }
 
     @Override
-    public CompletableFuture<ApiRequest<?>> preHandle(InvocationContext context, ApiRequest<?> request) {
+    public CompletionStage<ApiRequest> preHandle(InvocationContext context, ApiRequest request) {
 
         final var token = executor.tryAcquire(context, request);
         final var strategy = token.strategy();
@@ -65,7 +66,7 @@ public class RateLimitInterceptorImpl implements RateLimitInterceptor {
                 final var protocol = request.protocol();
                 final var delayMs = token.delay().toMillis();
                 logger.warn("{}/rate-limit/delay={}ms!", protocol, delayMs);
-                final var future = new CompletableFuture<ApiRequest<?>>();
+                final var future = new CompletableFuture<ApiRequest>();
                 scheduler.schedule(
                         () -> {
                             preHandle(context, request).thenAccept(future::complete);
@@ -76,14 +77,14 @@ public class RateLimitInterceptorImpl implements RateLimitInterceptor {
                 return future.thenApply(CommonUtils::cast);
             }
 
-            // 不支持的状态
+            // 不支持的策略
             default -> throw new UnsupportedOperationException("Unsupported strategy: " + strategy);
         }
 
     }
 
     @Override
-    public CompletableFuture<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response, Throwable ex) {
+    public CompletionStage<ApiResponse<?>> postHandle(InvocationContext context, ApiResponse<?> response, Throwable ex) {
 
         // 拿到请求时候放入的token，注意，只有PASS的策略才会有值
         final var token = (RateLimitExecutor.Token) context.attachmentMap().remove(KEY_TOKEN);

@@ -1,8 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j;
 
+import io.github.oldmanpushcart.dashscope4j.audio.AudioOp;
 import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.base.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.base.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiRequest;
+import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 import io.github.oldmanpushcart.dashscope4j.base.cache.CacheFactory;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
@@ -36,7 +38,7 @@ public interface DashScopeClient {
      * @param <R>     结果类型
      * @return 操作
      */
-    <R extends ApiResponse<?>> OpAsyncOpFlowOpTask<R> api(ApiRequest<R> request);
+    <R extends HttpApiResponse<?>> OpAsyncOpFlowOpTask<R> http(HttpApiRequest<R> request);
 
     /**
      * @return 辅助操作
@@ -52,6 +54,12 @@ public interface DashScopeClient {
      * @return 图片操作
      */
     ImageOp image();
+
+    /**
+     * @return 音频操作
+     * @since 2.2.0
+     */
+    AudioOp audio();
 
     /**
      * @return 构建器
@@ -108,6 +116,7 @@ public interface DashScopeClient {
 
         /**
          * 添加拦截器
+         *
          * @param interceptors 拦截器集合
          * @return this
          */
