@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -127,7 +128,7 @@ public class DebugTestCase implements LoadingEnv {
          */
         final var request = TranscriptionRequest.newBuilder()
                 .model(TranscriptionModel.PARAFORMER_V2)
-                .resources(List.of(new File("./document/test-resources/video/[ktxp][Fullmetal Alchemist][jap_chn]01.rmvb").toURI()))
+                .resources(List.of(URI.create("https://ompc-storage.oss-cn-hangzhou.aliyuncs.com/dashscope4j/video/%5Bktxp%5D%5BFullmetal%20Alchemist%5D%5Bjap_chn%5D01.rmvb")))
                 .option(TranscriptionOptions.ENABLE_DISFLUENCY_REMOVAL, true)
                 .option(TranscriptionOptions.LANGUAGE_HINTS, new LanguageHint[]{LanguageHint.JA})
                 .build();

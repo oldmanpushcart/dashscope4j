@@ -182,7 +182,8 @@ System.out.println(stringBuf);
  */
 final var request = TranscriptionRequest.newBuilder()
     .model(TranscriptionModel.PARAFORMER_V2)
-    .resources(List.of(new File("./document/test-resources/video/[ktxp][Fullmetal Alchemist][jap_chn]01.rmvb").toURI()))
+    // 也可以使用本地文件，本地文件会自动上传到DashScope的临时空间
+    .resources(List.of(URI.create("https://ompc-storage.oss-cn-hangzhou.aliyuncs.com/dashscope4j/video/%5Bktxp%5D%5BFullmetal%20Alchemist%5D%5Bjap_chn%5D01.rmvb")))
     .option(TranscriptionOptions.ENABLE_DISFLUENCY_REMOVAL, true)
     .option(TranscriptionOptions.LANGUAGE_HINTS, new LanguageHint[]{LanguageHint.JA})
     .build();
@@ -237,6 +238,8 @@ System.out.println(text);
 80200 - 84760: 強 化 交 換 に 計 測. 
 ```
 
+例子中采用的是一个远程文件，但实际上你也可以使用一个本地文件，例如`Path.of("./video.mp4").toUri()`，dashscope4j会将视频文件上传到DashScope的临时空间。
+
 ### Tokenizer
 
 在实际开发过程中，为了让AI记住上下文，你需要把之前的聊天记录作为对话上下文输入。但模型的输入长度有限，所以需要将上下文进行分段，然后进行分段输入。
@@ -290,15 +293,23 @@ System.out.println("total tokens: " + list.size());
     - 提供用户与灵积进行多模态(图、文)对话
     - 提供用户与灵积进行多模态(图、音)对话
     - 提供用户与灵积进行函数对话
-    - 支持灵积提供的临时空间
 
 - **向量（Embeddings）**
     - 将文本转换为向量表示，用于文本相似度比较、聚类等任务
     - 将图音文本转换为向量表示，用于图音文相似度比较、聚类等任务
-    - 支持灵积提供的临时空间
 
 - **图像（Images）**
     - **文生图：** 将文本描述转换为相应的图像
+
+- **语音识别与合成**
+  - 支持实时语音识别
+  - 支持实时语音合成
+  - 支持音视频转录
+
+- **基础功能**
+  - 支持Tokenizer计算（远程、本地）
+  - 支持灵积提供的临时空间
+  - 请求、应答拦截器
 
 - **插件应用（Plugin）**
     - **OCR插件：** 图像理解识别，并对图像内容进行总结概述，输出用户可理解的句子或段落
