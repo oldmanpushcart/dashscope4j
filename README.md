@@ -361,6 +361,7 @@ final var request = ChatRequest.newBuilder()
 // 异步应答
 final var response = client.chat(request)
     .async()
+    .toCompletableFuture()
     .join();
 
 // 输出结果（异步）
@@ -393,6 +394,7 @@ final var request = ChatRequest.newBuilder()
 // 流式应答
 final var publisher = client.chat(request)
     .flow()
+    .toCompletableFuture()
     .join();
 
 // 应答输出（流式）
@@ -450,17 +452,17 @@ System.out.println(stringSB);
 @ChatFn(name = "echo", description = "当用户输入echo:，回显后边的文字")
 public class EchoFunction implements ChatFunction<EchoFunction.Echo, EchoFunction.Echo> {
 
-    @Override
-    public CompletableFuture<Echo> call(Echo echo) {
-        return CompletableFuture.completedFuture(new Echo(echo.words()));
-    }
+  @Override
+  public CompletionStage<Echo> call(Echo echo) {
+    return CompletableFuture.completedFuture(new Echo(echo.words()));
+  }
 
-    public record Echo(
-        @JsonPropertyDescription("需要回显的文字")
-        String words
-    ) {
+  public record Echo(
+          @JsonPropertyDescription("需要回显的文字")
+          String words
+  ) {
 
-    }
+  }
 
 }
 ```
@@ -477,6 +479,7 @@ final var request = ChatRequest.newBuilder()
     .build();
 final var response = client.chat(request)
     .async()
+    .toCompletableFuture()
     .join();
 ```
 
@@ -496,10 +499,8 @@ HELLO!
 
 我们有两个函数
 
--
-查询成绩函数：[query_score](https://github.com/oldmanpushcart/dashscope4j/blob/main/src/test/java/io/github/oldmanpushcart/test/dashscope4j/chat/function/QueryScoreFunction.java)
--
-计算平均分函数：[compute_avg_score](https://github.com/oldmanpushcart/dashscope4j/blob/main/src/test/java/io/github/oldmanpushcart/test/dashscope4j/chat/function/ComputeAvgScoreFunction.java)
+- 查询成绩函数：[query_score](https://github.com/oldmanpushcart/dashscope4j/blob/main/src/test/java/io/github/oldmanpushcart/test/dashscope4j/chat/function/QueryScoreFunction.java)
+- 计算平均分函数：[compute_avg_score](https://github.com/oldmanpushcart/dashscope4j/blob/main/src/test/java/io/github/oldmanpushcart/test/dashscope4j/chat/function/ComputeAvgScoreFunction.java)
 
 现在需要查询某个同学的所有成绩，并计算其平均分。LLM需要先调用 `query_score` 函数查询成绩，然后再调用 `compute_avg_score`
 函数计算平均分。
@@ -517,6 +518,7 @@ final var request = ChatRequest.newBuilder()
     .build();
 final var response = client.chat(request)
     .async()
+    .toCompletableFuture()
     .join();
 ```
 
@@ -550,6 +552,7 @@ final var request = GenImageRequest.newBuilder()
 // 任务应答
 final var response = client.image().generation(request)
     .task(Task.WaitStrategies.perpetual(Duration.ofSeconds(1L)))
+    .toCompletableFuture()
     .join();
 ```
 
@@ -605,6 +608,7 @@ final var request = ChatRequest.newBuilder()
     .build();
 final var response = client.chat(request)
     .async()
+    .toCompletableFuture()
     .join();
 ```
 
@@ -627,6 +631,7 @@ final var request = ChatRequest.newBuilder()
     .build();
 final var response = client.chat(request)
     .async()
+    .toCompletableFuture()
     .join();
 ```
 
@@ -654,6 +659,7 @@ final var request = EmbeddingRequest.newBuilder()
 // 应答
 final var response = client.embedding(request)
     .async()
+    .toCompletableFuture()
     .join();
 ```
 
@@ -682,6 +688,7 @@ final var request = MmEmbeddingRequest.newBuilder()
 // 应答
 final var response = client.mmEmbedding(request)
     .async()
+    .toCompletableFuture()
     .join();
 ```
 
