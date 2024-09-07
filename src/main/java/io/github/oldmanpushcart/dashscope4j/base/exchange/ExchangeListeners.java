@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.IOUtils.closeQuietly;
@@ -46,6 +47,34 @@ public final class ExchangeListeners {
                 consumer.accept(data);
                 exchange.request(1);
                 return DONE;
+            }
+
+        };
+    }
+
+    /**
+     * 消费数据流
+     *
+     * @param consumer 消费者
+     * @param <T>      流入数据类型
+     * @param <R>      流出数据类型
+     * @return 监听器
+     * @since 2.2.1
+     */
+    public static <T, R> Exchange.Listener<T, R> ofConsume(BiConsumer<R, Throwable> consumer) {
+        Objects.requireNonNull(consumer);
+        return new Exchange.Listener<>() {
+
+            @Override
+            public CompletionStage<?> onData(Exchange<T, R> exchange, R data) {
+                consumer.accept(data, null);
+                exchange.request(1);
+                return DONE;
+            }
+
+            @Override
+            public void onError(Exchange<T, R> exchange, Throwable ex) {
+                consumer.accept(null, ex);
             }
 
         };
