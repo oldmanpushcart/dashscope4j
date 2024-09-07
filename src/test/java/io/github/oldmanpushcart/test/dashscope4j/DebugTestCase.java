@@ -13,7 +13,6 @@ import io.github.oldmanpushcart.dashscope4j.util.FlowPublishers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;

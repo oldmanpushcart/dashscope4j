@@ -8,7 +8,6 @@ import io.github.oldmanpushcart.test.dashscope4j.LoadingEnv;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
