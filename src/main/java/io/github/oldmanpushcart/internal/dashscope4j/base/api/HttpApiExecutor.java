@@ -304,6 +304,7 @@ public class HttpApiExecutor implements ApiExecutor {
 
         final var uuid = UUID.randomUUID().toString();
         final var exchangeListener = new ExchangeListenerAdapter<>(
+                executor,
                 uuid,
                 mode,
                 r -> request.newExchangeRequestEncoder(uuid).apply(r),

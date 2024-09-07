@@ -9,15 +9,18 @@ import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
+import static java.util.function.Function.identity;
 
 class ExchangeImpl<T, R> implements Exchange<T, R> {
 
     private final static Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
+    private final Executor executor;
     private final WebSocket socket;
     private final String uuid;
     private final Exchange.Mode mode;
@@ -26,7 +29,8 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
     private final AtomicBoolean isFirstRef = new AtomicBoolean(true);
 
 
-    public ExchangeImpl(WebSocket socket, String uuid, Mode mode, CompletableFuture<?> closeF, Function<T, String> encoder) {
+    public ExchangeImpl(Executor executor, WebSocket socket, String uuid, Mode mode, CompletableFuture<?> closeF, Function<T, String> encoder) {
+        this.executor = executor;
         this.socket = socket;
         this.uuid = uuid;
         this.mode = mode;
@@ -36,6 +40,7 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
 
     private CompletionStage<Exchange<T, R>> sendText(String text) {
         return socket.sendText(text, true)
+                .thenApplyAsync(identity(), executor)
                 .thenApply(v -> {
                     logger.trace("WEBSOCKET: >>> TEXT;last={};text={};", true, text);
                     return this;
@@ -79,13 +84,14 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
 
             @Override
             public void onNext(T item) {
-                writeData(item).whenComplete((v, ex) -> {
-                    if (ex != null) {
-                        future.completeExceptionally(ex);
-                    } else {
-                        subscription.request(1);
-                    }
-                });
+                writeData(item)
+                        .whenComplete((v, ex) -> {
+                            if (ex != null) {
+                                future.completeExceptionally(ex);
+                            } else {
+                                subscription.request(1);
+                            }
+                        });
             }
 
             @Override
@@ -97,6 +103,7 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
             public void onComplete() {
                 future.complete(ExchangeImpl.this);
             }
+
         });
         return future;
     }
@@ -105,6 +112,7 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
     public CompletionStage<Exchange<T, R>> writeByteBuffer(ByteBuffer buf, boolean last) {
         final var remaining = buf.remaining();
         return socket.sendBinary(buf, last)
+                .thenApplyAsync(identity(), executor)
                 .thenApply(v -> {
                     logger.trace("WEBSOCKET: >>> BINARY;last={};bytes={};", last, remaining);
                     return this;
@@ -131,13 +139,14 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
 
             @Override
             public void onNext(ByteBuffer buf) {
-                writeByteBuffer(buf).whenComplete((v, ex) -> {
-                    if (ex != null) {
-                        future.completeExceptionally(ex);
-                    } else {
-                        subscription.request(1);
-                    }
-                });
+                writeByteBuffer(buf)
+                        .whenComplete((v, ex) -> {
+                            if (ex != null) {
+                                future.completeExceptionally(ex);
+                            } else {
+                                subscription.request(1);
+                            }
+                        });
             }
 
             @Override
@@ -149,6 +158,7 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
             public void onComplete() {
                 future.complete(ExchangeImpl.this);
             }
+
         });
         return future;
     }
@@ -169,6 +179,7 @@ class ExchangeImpl<T, R> implements Exchange<T, R> {
     @Override
     public CompletionStage<Exchange<T, R>> closing(int status, String reason) {
         return socket.sendClose(status, reason)
+                .thenApplyAsync(identity(), executor)
                 .thenApply(v -> {
                     logger.trace("WEBSOCKET: >>> CLOSE;status={};reason={};", status, reason);
                     return this;
