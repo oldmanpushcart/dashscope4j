@@ -22,6 +22,8 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
  * 交互通道监听器集合
+ *
+ * @since 2.2.0
  */
 public final class ExchangeListeners {
 
