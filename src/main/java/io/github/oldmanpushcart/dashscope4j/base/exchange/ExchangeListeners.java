@@ -2,8 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.base.exchange;
 
 import io.github.oldmanpushcart.internal.dashscope4j.util.IOUtils;
 
-import javax.sound.sampled.SourceDataLine;
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -170,86 +168,6 @@ public final class ExchangeListeners {
     public static <T, R> Exchange.Listener<T, R> ofPath(Path path) throws IOException {
         Objects.requireNonNull(path);
         return ofPath(path, CREATE, WRITE);
-    }
-
-    /**
-     * 消费字节流到音频数据输出通道
-     *
-     * @param line 音频数据输出通道
-     * @param <T>  流入数据类型
-     * @param <R>  流出数据类型
-     * @return 监听器
-     * @since 2.2.1
-     */
-    public static <T, R> Exchange.Listener<T, R> ofSourceDataLine(SourceDataLine line) {
-        Objects.requireNonNull(line);
-        return ofSourceDataLine(line, false);
-    }
-
-    /**
-     * 消费字节流到音频数据输出通道
-     *
-     * @param line      音频数据输出通道
-     * @param autoClose 是否自动关闭
-     * @param <T>       流入数据类型
-     * @param <R>       流出数据类型
-     * @return 监听器
-     * @since 2.2.1
-     */
-    public static <T, R> Exchange.Listener<T, R> ofSourceDataLine(SourceDataLine line, boolean autoClose) {
-        Objects.requireNonNull(line);
-        return ofByteChannel(new WritableByteChannel() {
-
-            private final int frameSize = line.getFormat().getFrameSize();
-            private final ByteBuffer buffer = ByteBuffer.allocate(line.getBufferSize());
-
-            @Override
-            public synchronized int write(ByteBuffer src) throws IOException {
-                final var total = buffer.remaining();
-
-                /*
-                 * 音频数据存在粘包问题，写入音频数据通道的数据必须为音频帧的整数倍，否则会报错
-                 * 这里使用一个大小和音频缓冲大小相同的缓冲区来解决这个问题
-                 */
-                while (src.hasRemaining()) {
-
-                    /*
-                     * 先写入音频输出缓冲区，
-                     * 利用缓冲区来抵消粘包问题
-                     */
-                    buffer.put(src);
-
-                    /*
-                     * 如果缓冲区已满或者缓冲区当前大小为帧大小的整数倍，则写入音频数据
-                     * 否则你会听到“咔哒、咔哒”的异常声音
-                     */
-                    if (buffer.remaining() == 0 || buffer.remaining() % frameSize == 0) {
-                        buffer.flip();
-                        while (buffer.hasRemaining()) {
-                            final var written = line.write(buffer.array(), buffer.position(), buffer.remaining());
-                            if (written == -1) {
-                                throw new EOFException("Unexpected end of data reached during write to speaker");
-                            }
-                            buffer.position(buffer.position() + written);
-                        }
-                        buffer.clear();
-                    }
-
-                }
-                return total;
-            }
-
-            @Override
-            public boolean isOpen() {
-                return line.isOpen();
-            }
-
-            @Override
-            public void close() {
-                line.close();
-            }
-
-        }, autoClose);
     }
 
 }
