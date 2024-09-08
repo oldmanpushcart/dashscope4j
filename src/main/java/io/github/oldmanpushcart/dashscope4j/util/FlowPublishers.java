@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.util;
 
 import io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils;
 
+import javax.sound.sampled.TargetDataLine;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -168,7 +169,39 @@ public class FlowPublishers {
      * @return 发布器
      */
     public static Flow.Publisher<ByteBuffer> fromByteChannel(ReadableByteChannel channel) {
+        Objects.requireNonNull(channel);
         return fromByteChannel(channel, 4 * 1024);
+    }
+
+    /**
+     * {@code TargetDataLine -> Flow.Publisher<ByteBuffer>}
+     *
+     * @param line 音频输入通道
+     * @return 发布器
+     * @since 2.2.1
+     */
+    public static Flow.Publisher<ByteBuffer> fromTargetDataLine(TargetDataLine line) {
+        Objects.requireNonNull(line);
+        return fromByteChannel(new ReadableByteChannel() {
+
+            @Override
+            public synchronized int read(ByteBuffer dst) {
+                final var read = line.read(dst.array(), dst.position(), dst.remaining());
+                dst.position(read);
+                return read;
+            }
+
+            @Override
+            public boolean isOpen() {
+                return line.isOpen();
+            }
+
+            @Override
+            public void close() {
+                line.close();
+            }
+
+        }, line.getBufferSize());
     }
 
     /**

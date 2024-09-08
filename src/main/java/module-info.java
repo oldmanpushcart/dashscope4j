@@ -6,6 +6,7 @@ open module dashscope4j {
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.module.jsonSchema;
+    requires java.desktop;
 
     exports io.github.oldmanpushcart.dashscope4j;
     exports io.github.oldmanpushcart.dashscope4j.base;

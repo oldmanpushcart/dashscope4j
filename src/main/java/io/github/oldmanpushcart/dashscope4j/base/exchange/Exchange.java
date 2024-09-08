@@ -9,13 +9,13 @@ import java.util.concurrent.Flow;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
- * 数据交互通道
+ * 数据交换
  *
  * @param <T> 流入数据类型
  * @param <R> 流出数据类型
  * @since 2.2.0
  * <p>
- * 该通道可以帮助客户端和服务端完成{@code <T,R>}和{@link ByteBuffer}两类数据的双向异步交互，
+ * 可以帮助客户端和服务端完成{@code <T,R>}和{@link ByteBuffer}两类数据的双向异步交换
  * </p>
  */
 public interface Exchange<T, R> {
@@ -26,12 +26,12 @@ public interface Exchange<T, R> {
     int NORMAL_CLOSURE = 1000;
 
     /**
-     * @return 通道唯一标识
+     * @return 唯一标识
      */
     String uuid();
 
     /**
-     * @return 通道模式
+     * @return 交换模式
      */
     Exchange.Mode mode();
 
@@ -77,14 +77,14 @@ public interface Exchange<T, R> {
     CompletionStage<Exchange<T, R>> writeByteBufferPublisher(Flow.Publisher<ByteBuffer> publisher);
 
     /**
-     * 申请结束交互
+     * 申请结束
      * <p>
-     * 结束交互操作并不是直接发起通道关闭，而是当且仅当{@link Exchange.Mode#DUPLEX}和{@link Exchange.Mode#IN}时，
+     * 结束操作并不是直接发起数据交换连接关闭，而是当且仅当{@link Exchange.Mode#DUPLEX}和{@link Exchange.Mode#IN}时，
      * <ul>
-     *     <li>STEP-1: 客户端向服务端发起交互结束请求，</li>
+     *     <li>STEP-1: 客户端向服务端发起结束请求，</li>
      *     <li>STEP-2: 服务端收到后会停止接收后续数据并发送结束确认</li>
-     *     <li>STEP-3: 客户端收到服务端结束交互的确认后发起优雅关闭</li>
-     *     <li>STEP-4: 通道关闭</li>
+     *     <li>STEP-3: 客户端收到服务端结束的确认后发起优雅关闭</li>
+     *     <li>STEP-4: 交换关闭</li>
      * </ul>
      *
      * </p>
@@ -94,9 +94,9 @@ public interface Exchange<T, R> {
     CompletionStage<Exchange<T, R>> finishing();
 
     /**
-     * 申请关闭交互
+     * 申请关闭
      * <p>
-     * 客户端会向服务端发送一个关闭请求，服务端响应后才会关闭通道
+     * 客户端会向服务端发送一个关闭请求，服务端响应后才会关闭交换连接
      * </p>
      *
      * @param status 关闭状态
@@ -106,7 +106,7 @@ public interface Exchange<T, R> {
     CompletionStage<Exchange<T, R>> closing(int status, String reason);
 
     /**
-     * @return 交互是否已关闭
+     * @return 是否已关闭
      */
     boolean isClosed();
 
@@ -131,7 +131,7 @@ public interface Exchange<T, R> {
     void request(long n);
 
     /**
-     * 交互监听器
+     * 交换监听器
      *
      * @param <T> 流入数据类型
      * @param <R> 流出数据类型
@@ -139,7 +139,7 @@ public interface Exchange<T, R> {
     interface Listener<T, R> {
 
         /**
-         * 通道打开
+         * 交换打开
          *
          * @param exchange 数据交互通道
          */
@@ -171,7 +171,7 @@ public interface Exchange<T, R> {
         }
 
         /**
-         * 交互完成
+         * 交换完成
          *
          * @param exchange 数据交互通道
          * @param status   结束状态
@@ -183,7 +183,7 @@ public interface Exchange<T, R> {
         }
 
         /**
-         * 交互失败
+         * 交换失败
          *
          * @param exchange 数据交互通道
          * @param ex       失败异常
@@ -195,7 +195,7 @@ public interface Exchange<T, R> {
     }
 
     /**
-     * 数据交互模式
+     * 数据交换模式
      */
     enum Mode {
 
