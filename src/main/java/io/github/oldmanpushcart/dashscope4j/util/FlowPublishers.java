@@ -168,6 +168,7 @@ public class FlowPublishers {
      * @return 发布器
      */
     public static Flow.Publisher<ByteBuffer> fromByteChannel(ReadableByteChannel channel) {
+        Objects.requireNonNull(channel);
         return fromByteChannel(channel, 4 * 1024);
     }
 

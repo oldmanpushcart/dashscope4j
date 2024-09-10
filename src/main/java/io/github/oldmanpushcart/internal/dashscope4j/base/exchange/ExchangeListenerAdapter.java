@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -24,12 +25,14 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
     private final Function<T, String> encoder;
     private final Function<String, R> decoder;
     private final Exchange.Listener<T, R> listener;
+    private final Executor executor;
 
     private final CompletableFuture<?> closeF = new CompletableFuture<>();
     private final CompletableFuture<Exchange<T, R>> exchangeF = new CompletableFuture<>();
     private final StringBuilder stringBuf = new StringBuilder();
 
-    public ExchangeListenerAdapter(String uuid, Exchange.Mode mode, Function<T, String> encoder, Function<String, R> decoder, Exchange.Listener<T, R> listener) {
+    public ExchangeListenerAdapter(Executor executor, String uuid, Exchange.Mode mode, Function<T, String> encoder, Function<String, R> decoder, Exchange.Listener<T, R> listener) {
+        this.executor = executor;
         this.uuid = uuid;
         this.mode = mode;
         this.encoder = encoder;
@@ -52,7 +55,7 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
 
     @Override
     public void onOpen(WebSocket socket) {
-        final var exchange = new ExchangeImpl<T, R>(socket, uuid, mode, closeF, encoder);
+        final var exchange = new ExchangeImpl<T, R>(executor, socket, uuid, mode, closeF, encoder);
         if (!exchangeF.complete(exchange)) {
             socket.abort();
             throw new IllegalStateException("already bind!");
@@ -197,6 +200,7 @@ public class ExchangeListenerAdapter<T, R> implements WebSocket.Listener {
             logger.warn("dashscope://exchange/{}/{} fire close occur error!", mode, uuid, t);
             return null;
         }
+
     }
 
     @Override

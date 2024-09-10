@@ -15,11 +15,13 @@
 <dependency>
     <groupId>io.github.oldmanpushcart</groupId>
     <artifactId>dashscope4j</artifactId>
-    <version>2.2.0</version>
+    <version>2.2.1</version>
 </dependency>
 ```
 
 ## 重要更新
+
+- **2.2.1：** 问题修复版本，修复问题 #19 #18
 
 - **2.2.0：** 语音识别与合成支持
   - 新增双工数据交互操作接口`Exchange`，用于支持语音、视频等多模态模型交互
