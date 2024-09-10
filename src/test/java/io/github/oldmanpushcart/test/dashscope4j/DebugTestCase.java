@@ -15,9 +15,11 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 @Disabled
@@ -174,18 +176,22 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void test$debug() {
 
-        final var messages = List.of(
-                Message.ofUser("北京有哪些好玩地方？"),
-                Message.ofAi("故宫、颐和园、天坛等都是可以去游玩的景点哦。"),
-                Message.ofUser("帮我安排一些行程")
-        );
+        final RecognitionRequest request = RecognitionRequest.newBuilder()
+                .model(RecognitionModel.PARAFORMER_REALTIME_V2)
+                .option(RecognitionOptions.SAMPLE_RATE, 16000)
+                .option(RecognitionOptions.FORMAT, RecognitionRequest.Format.WAV)
+                .build();
 
-        final var list = client.base().tokenize().local()
-                .encode(messages)
+        client.audio().recognition(request)
+                .exchange(Exchange.Mode.DUPLEX, ExchangeListeners.ofConsume(response -> {
+                    if (response.output().sentence().isEnd()) {
+                        System.out.println(response.output().sentence().text());
+                    }
+                }))
+                .thenCompose(exchange -> exchange.writeByteBuffer(ByteBuffer.wrap(new byte[]{0x01, 0x02, 0x03})))
+               .thenCompose(Exchange::finishing)
                 .toCompletableFuture()
                 .join();
-
-        System.out.println("total tokens: " + list.size());
 
 
     }

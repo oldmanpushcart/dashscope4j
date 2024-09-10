@@ -8,7 +8,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -17,6 +16,7 @@ import java.util.function.Consumer;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
@@ -40,7 +40,7 @@ public final class ExchangeListeners {
      * @return 监听器
      */
     public static <T, R> Exchange.Listener<T, R> ofConsume(Consumer<R> consumer) {
-        Objects.requireNonNull(consumer);
+        requireNonNull(consumer);
         return new Exchange.Listener<>() {
 
             @Override
@@ -63,7 +63,7 @@ public final class ExchangeListeners {
      * @since 2.2.1
      */
     public static <T, R> Exchange.Listener<T, R> ofConsume(BiConsumer<R, Throwable> consumer) {
-        Objects.requireNonNull(consumer);
+        requireNonNull(consumer);
         return new Exchange.Listener<>() {
 
             @Override
@@ -104,7 +104,7 @@ public final class ExchangeListeners {
      * @since 2.2.1
      */
     public static <T, R> Exchange.Listener<T, R> ofByteChannel(WritableByteChannel channel, boolean autoClose) {
-        Objects.requireNonNull(channel);
+        requireNonNull(channel);
         return new Exchange.Listener<>() {
 
             @Override
@@ -152,7 +152,7 @@ public final class ExchangeListeners {
      * @throws IOException 打开{@link Path}失败
      */
     public static <T, R> Exchange.Listener<T, R> ofPath(Path path, OpenOption... options) throws IOException {
-        Objects.requireNonNull(path);
+        requireNonNull(path);
         return ofByteChannel(FileChannel.open(path, options), true);
     }
 
@@ -166,7 +166,7 @@ public final class ExchangeListeners {
      * @throws IOException 打开{@link Path}失败
      */
     public static <T, R> Exchange.Listener<T, R> ofPath(Path path) throws IOException {
-        Objects.requireNonNull(path);
+        requireNonNull(path);
         return ofPath(path, CREATE, WRITE);
     }
 

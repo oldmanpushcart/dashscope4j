@@ -25,15 +25,29 @@ public class ExceptionUtils {
     /**
      * 判断异常是否由指定类型引起
      *
-     * @param cause 根异常
-     * @param type  类型
-     * @param <X>   异常类型
+     * @param cause     根异常
+     * @param type      类型
+     * @param <X>       异常类型
+     * @param predicate 过滤器
      * @return 是否由指定类型引起
      */
     public static <X extends Throwable> boolean isCauseBy(Throwable cause, Class<? extends X> type, Predicate<? super X> predicate) {
         return Optional.ofNullable(causeBy(cause, type))
                 .filter(predicate)
                 .isPresent();
+    }
+
+    /**
+     * 判断异常是否由指定类型引起
+     *
+     * @param cause 根异常
+     * @param type  类型
+     * @param <X>   异常类型
+     * @return 是否由指定类型引起
+     * @since 2.2.1
+     */
+    public static <X extends Throwable> boolean isCauseBy(Throwable cause, Class<? extends X> type) {
+        return isCauseBy(cause, type, x -> true);
     }
 
 }
