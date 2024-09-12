@@ -24,6 +24,7 @@
 - **2.2.1：** 问题修复版本，修复问题 #19 #18
 
 - **2.2.0：** 语音识别与合成支持
+  > [例子：如何用通义千问做一个同声传译](https://github.com/oldmanpushcart/dashscope4j/wiki/Example-SimulaTrans)
   - 新增双工数据交互操作接口`Exchange`，用于支持语音、视频等多模态模型交互
   - 支持实时语音识别
   - 支持实时语音合成
