@@ -11,7 +11,7 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.UUID;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
@@ -21,7 +21,6 @@ public record FileCreateRequest(URI uri, String name, String purpose, Duration t
         implements OpenAiRequest<FileCreateResponse> {
 
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
-    private static final AtomicInteger sequencer = new AtomicInteger(1000);
 
     @Override
     public String suite() {
@@ -36,7 +35,7 @@ public record FileCreateRequest(URI uri, String name, String purpose, Duration t
     @Override
     public HttpRequest newHttpRequest() {
         logger.debug("{}/{} => uri={};purpose={};", protocol(), name, uri, purpose);
-        final var boundary = "boundary%s".formatted(sequencer.incrementAndGet());
+        final var boundary = "boundary$%s".formatted(UUID.randomUUID());
         return HttpRequest.newBuilder()
                 .uri(URI.create("https://dashscope.aliyuncs.com/compatible-mode/v1/files"))
                 .header(HEADER_CONTENT_TYPE, "multipart/form-data; boundary=%s".formatted(boundary))

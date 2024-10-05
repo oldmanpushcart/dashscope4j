@@ -14,7 +14,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.Constants.LOGGER_NAME;
@@ -27,7 +26,6 @@ public final class StoreUploadRequest implements HttpApiRequest<StoreUploadRespo
 
     private static final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
     private static final int SUCCESS_CODE = 200;
-    private static final AtomicInteger sequencer = new AtomicInteger(1000);
     private final URI resource;
     private final Model model;
     private final StorePolicy policy;
@@ -80,7 +78,7 @@ public final class StoreUploadRequest implements HttpApiRequest<StoreUploadRespo
     @Override
     public HttpRequest newHttpRequest() {
         logger.debug("{}/{} => {}", protocol(), ossKey, resource);
-        final var boundary = "boundary%s".formatted(sequencer.incrementAndGet());
+        final var boundary = "boundary$%s".formatted(UUID.randomUUID());
         return HttpRequest.newBuilder()
                 .uri(URI.create(policy.oss().host()))
                 .header(HEADER_CONTENT_TYPE, "multipart/form-data; boundary=%s".formatted(boundary))
