@@ -8,6 +8,9 @@ import io.github.oldmanpushcart.dashscope4j.audio.tts.SpeechSynthesisRequest;
 import io.github.oldmanpushcart.dashscope4j.base.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.base.exchange.ExchangeListeners;
 import io.github.oldmanpushcart.dashscope4j.base.task.Task;
+import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.util.FlowPublishers;
 import org.junit.jupiter.api.Disabled;
@@ -15,11 +18,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 @Disabled
@@ -176,23 +177,23 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void test$debug() {
 
-        final RecognitionRequest request = RecognitionRequest.newBuilder()
-                .model(RecognitionModel.PARAFORMER_REALTIME_V2)
-                .option(RecognitionOptions.SAMPLE_RATE, 16000)
-                .option(RecognitionOptions.FORMAT, RecognitionRequest.Format.WAV)
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_VL_MAX)
+                .messages(List.of(
+                        Message.ofUser(List.of(
+                                Content.of(Content.Type.VIDEO, URI.create("https://ompc-storage.oss-cn-hangzhou.aliyuncs.com/dashscope4j/video/%5Bktxp%5D%5BFullmetal%20Alchemist%5D%5Bjap_chn%5D01.rmvb")),
+                                Content.ofText("视频在说什么？")
+                        ))
+                ))
                 .build();
 
-        client.audio().recognition(request)
-                .exchange(Exchange.Mode.DUPLEX, ExchangeListeners.ofConsume(response -> {
-                    if (response.output().sentence().isEnd()) {
-                        System.out.println(response.output().sentence().text());
-                    }
-                }))
-                .thenCompose(exchange -> exchange.writeByteBuffer(ByteBuffer.wrap(new byte[]{0x01, 0x02, 0x03})))
-               .thenCompose(Exchange::finishing)
+        client.chat(request).async()
+                .thenAccept(response -> {
+                    final var text = response.output().best().message().text();
+                    System.out.println(text);
+                })
                 .toCompletableFuture()
                 .join();
-
 
     }
 

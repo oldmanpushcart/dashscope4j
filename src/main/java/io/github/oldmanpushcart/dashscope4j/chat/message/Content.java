@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.internal.dashscope4j.chat.message.ContentImpl;
 
 import java.net.URI;
+import java.util.Collection;
 
 /**
  * 内容
@@ -109,6 +110,21 @@ public sealed interface Content<T> permits ContentImpl {
      */
     static Content<URI> ofVideo(URI resource) {
         return new ContentImpl<>(Type.VIDEO, resource);
+    }
+
+    /**
+     * 视频
+     * <p>
+     * 通义千问可以将多个图片资源标识合并为一个视频内容,
+     * 最少传入4张图片，最多可传入768张图片。
+     * </p>
+     *
+     * @param resources 图片资源标识集合
+     * @return 视频内容
+     * @since 2.2.2
+     */
+    static Content<Collection<URI>> ofVideo(Collection<URI> resources) {
+        return new ContentImpl<>(Type.VIDEO, resources);
     }
 
     /**

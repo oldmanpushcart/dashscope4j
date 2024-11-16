@@ -4,12 +4,10 @@ import io.github.oldmanpushcart.dashscope4j.DashScopeClient;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.RateLimitInterceptor;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.ratelimit.RateLimiter;
 import io.github.oldmanpushcart.dashscope4j.base.interceptor.spec.retry.RetryInterceptor;
-import io.github.oldmanpushcart.dashscope4j.chat.ChatModel;
 import io.github.oldmanpushcart.test.dashscope4j.base.interceptor.InvokeCountInterceptor;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,10 +29,8 @@ public interface LoadingEnv {
                     invokeCountInterceptor,
                     RetryInterceptor.newBuilder()
                             .matches(
-                                    RetryInterceptor.Matcher.byProtocol(protocol -> protocol.startsWith("dashscope://base/files/"))
-                                            .andThen(RetryInterceptor.Matcher.byApiException(apiEx ->
-                                                    apiEx.status() == 429
-                                                    && Objects.equals("rate_limit_error", apiEx.ret().code())))
+                                    RetryInterceptor.Matcher.byProtocol(protocol -> protocol.startsWith("dashscope://base/store/"))
+                                            .andThen(RetryInterceptor.Matcher.byApiException(apiEx -> apiEx.status() == 429))
                             )
                             .maxRetries(3)
                             .retryInterval(Duration.ofSeconds(1))
@@ -44,10 +40,10 @@ public interface LoadingEnv {
                             .scheduler(scheduler)
                             .limiters(List.of(
                                     RateLimiter.newBuilder()
-                                            .matches(RateLimiter.Matcher.byModel(ChatModel.QWEN_PLUS))
-                                            .period(RateLimiter.Periods.QPS)
+                                            .matches(RateLimiter.Matcher.byProtocol(protocol -> protocol.startsWith("dashscope://base/store/upload")))
+                                            .period(RateLimiter.Periods.QPM)
                                             .strategy(RateLimiter.Strategy.DELAY)
-                                            .maxAcquired(20)
+                                            .maxAcquired(100)
                                             .build()
                             ))
                             .build()

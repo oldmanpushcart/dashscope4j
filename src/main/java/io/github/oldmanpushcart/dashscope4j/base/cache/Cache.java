@@ -70,6 +70,11 @@ public interface Cache extends Iterable<Cache.Entry> {
         String value();
 
         /**
+         * @return 过期时间戳(毫秒)
+         */
+        Long expireAt();
+
+        /**
          * @return 是否过期
          */
         boolean isExpired();

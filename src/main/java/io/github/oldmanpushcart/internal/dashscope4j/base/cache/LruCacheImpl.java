@@ -44,6 +44,7 @@ public class LruCacheImpl implements Cache {
     public String get(String key) {
         final var cacheKey = new CacheKey(namespace, key);
         return Optional.ofNullable(map.get(cacheKey))
+                .filter(CacheVal::isNotExpired)
                 .map(CacheVal::val)
                 .orElse(null);
     }
@@ -122,6 +123,16 @@ public class LruCacheImpl implements Cache {
      * @param expireAt 过期时间
      */
     private record CacheVal(String val, Long expireAt) {
+
+        boolean isExpired() {
+            return Optional.ofNullable(expireAt)
+                    .map(v -> System.currentTimeMillis() > v)
+                    .orElse(false);
+        }
+
+        boolean isNotExpired() {
+            return !isExpired();
+        }
 
     }
 

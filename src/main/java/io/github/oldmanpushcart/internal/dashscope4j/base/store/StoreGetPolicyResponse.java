@@ -6,8 +6,6 @@ import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.base.api.HttpApiResponse;
 
-import java.time.Duration;
-
 /**
  * 获取凭证响应
  */
@@ -61,7 +59,7 @@ public record StoreGetPolicyResponse(
                     new StorePolicy(
                             value,
                             signature,
-                            Duration.ofSeconds(expireInSeconds),
+                            expireInSeconds,
                             maxFileSizeMb * MB_TO_BYTE,
                             capacityLimitMb * MB_TO_BYTE,
                             new StorePolicy.Oss(

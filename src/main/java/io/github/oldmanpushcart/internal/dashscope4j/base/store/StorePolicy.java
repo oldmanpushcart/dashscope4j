@@ -1,21 +1,19 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.store;
 
-import java.time.Duration;
-
 /**
  * 存储凭证
  *
- * @param value     凭证值
- * @param signature 凭证签名
- * @param expire    过期时间
- * @param max       本次最大允许上传的文件大小(单位：字节)
- * @param capacity  同一个用户每天的上传容量限制(单位：字节)
- * @param oss       OSS配置
+ * @param value           凭证值
+ * @param signature       凭证签名
+ * @param expireInSeconds 过期时间(单位：秒)
+ * @param max             本次最大允许上传的文件大小(单位：字节)
+ * @param capacity        同一个用户每天的上传容量限制(单位：字节)
+ * @param oss             OSS配置
  */
 public record StorePolicy(
         String value,
         String signature,
-        Duration expire,
+        int expireInSeconds,
         long max,
         long capacity,
         Oss oss

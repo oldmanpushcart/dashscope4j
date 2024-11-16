@@ -47,7 +47,8 @@ public class FilesOpImpl implements FilesOp {
                             .build();
                     return executor.async(request)
                             .thenApply(response -> response.output().meta())
-                            .thenApply(JacksonUtils::toJson);
+                            .thenApply(JacksonUtils::toJson)
+                            .thenApply(CacheUtils.ExpiringValue::new);
                 })
                 .<FileMeta>thenApply(json -> JacksonUtils.toObject(json, FileMetaImpl.class))
 

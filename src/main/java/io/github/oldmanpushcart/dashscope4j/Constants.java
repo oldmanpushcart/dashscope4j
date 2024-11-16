@@ -42,6 +42,13 @@ public class Constants {
     public static final String CACHE_NAMESPACE_FOR_STORE = "store";
 
     /**
+     * 缓存命名空间：存储策略
+     *
+     * @since 2.2.2
+     */
+    public static final String CACHE_NAMESPACE_FOR_STORE_POLICY = "store-policy";
+
+    /**
      * 缓存命名空间：文件操作
      */
     public static final String CACHE_NAMESPACE_FOR_FILES = "files";
