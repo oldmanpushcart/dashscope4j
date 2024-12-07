@@ -1,17 +1,13 @@
 package io.github.oldmanpushcart.dashscope4j;
 
+import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
+
 import java.util.concurrent.CompletionStage;
 
-/**
- * 异步操作
- *
- * @param <R> 结果类型
- */
-public interface OpAsync<R> {
+@FunctionalInterface
+public interface OpAsync<R extends ApiResponse<?>> {
 
-    /**
-     * @return 异步操作
-     */
-    CompletionStage<R> async();
+     CompletionStage<R> async(ApiRequest<?, R> request);
 
 }

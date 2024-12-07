@@ -1,35 +1,24 @@
 package io.github.oldmanpushcart.dashscope4j;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 
 /**
  * 选项
  */
+@EqualsAndHashCode
+@ToString
 public final class Option {
 
     @JsonValue
     private final Map<String, Object> map;
-
-    /**
-     * 构造选项
-     */
-    public Option() {
-        this.map = new HashMap<>();
-    }
-
-    @SuppressWarnings("MethodDoesntCallSuperMethod")
-    @Override
-    public Option clone() {
-        Option option = new Option();
-        option.map.putAll(this.map);
-        return option;
-    }
 
     /**
      * 构造选项
@@ -38,6 +27,13 @@ public final class Option {
      */
     public Option(Map<String, Object> map) {
         this.map = map;
+    }
+
+    /**
+     * 构造选项
+     */
+    public Option() {
+        this.map = new HashMap<>();
     }
 
     /**
@@ -67,116 +63,16 @@ public final class Option {
     }
 
     /**
-     * 删除选项
-     *
-     * @param opt 选项
-     * @param <T> 值类型
-     * @param <R> 转换后的值类型
-     * @return this
-     */
-    public <T, R> Option remove(Opt<T, R> opt) {
-        map.remove(opt.name());
-        return this;
-    }
-
-    /**
-     * 删除选项
-     *
-     * @param name 选项名称
-     * @return 选项值
-     */
-    public Object remove(String name) {
-        return map.remove(name);
-    }
-
-    /**
-     * 判断是否有指定选项
-     *
-     * @param opt 选项
-     * @return TRUE | FALSE
-     */
-    public <T, R> boolean has(Opt<T, R> opt) {
-        return map.containsKey(opt.name());
-    }
-
-    /**
-     * 判断是否有指定选项
-     *
-     * @param name 选项名称
-     * @return TRUE | FALSE
-     */
-    public boolean has(String name) {
-        return map.containsKey(name);
-    }
-
-    /**
-     * 判断是否有指定选项
-     *
-     * @param opt    选项
-     * @param expect 期望值
-     * @param <T>    值类型
-     * @param <R>    转换后的值类型
-     * @return TRUE | FALSE
-     */
-    public <T, R> boolean has(Opt<T, R> opt, Object expect) {
-        return map.containsKey(opt.name()) && Objects.equals(expect, map.get(opt.name()));
-    }
-
-    /**
-     * 判断是否有指定选项
-     *
-     * @param name   选项名称
-     * @param expect 期望值
-     * @return TRUE | FALSE
-     */
-    public boolean has(String name, Object expect) {
-        return map.containsKey(name) && Objects.equals(expect, map.get(name));
-    }
-
-    /**
-     * 获取选项
-     *
-     * @param opt 选项
-     * @return 选项值
-     */
-    public <T, R> Object get(Opt<T, R> opt) {
-        return map.get(opt.name());
-    }
-
-    /**
-     * 获取选项
-     *
-     * @param name 选项名称
-     * @return 选项值
-     */
-    public Object get(String name) {
-        return map.get(name);
-    }
-
-    /**
-     * 导出选项为KV集合
-     *
-     * @return 选项KV集合
-     */
-    public Map<String, Object> export() {
-        return Collections.unmodifiableMap(map);
-    }
-
-    /**
-     * 选项是否为空
-     *
-     * @return TRUE | FALSE
-     */
-    public boolean isEmpty() {
-        return map.isEmpty();
-    }
-
-    /**
-     * @return 索性选项
-     * @since 2.2.0
+     * @return 不可变选项
      */
     public Option unmodifiable() {
         return new Option(Collections.unmodifiableMap(map));
+    }
+
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    @Override
+    public Option clone() {
+        return new Option(map);
     }
 
     /**
@@ -212,15 +108,18 @@ public final class Option {
     }
 
     /**
-     * 标准项目
+     * 标准选项
      *
-     * @param name    选项名称
-     * @param type    选项类型
-     * @param convert 转换函数
-     * @param <T>     值类型
-     * @param <R>     转换后的值类型
+     * @param <T> 类型
+     * @param <R> 转换后的类型
      */
-    public record StdOpt<T, R>(String name, Class<R> type, Function<T, R> convert) implements Opt<T, R> {
+    @lombok.Value
+    @Accessors(fluent = true)
+    public static class StdOpt<T, R> implements Opt<T, R> {
+
+        String name;
+        Class<R> type;
+        Function<T, R> convert;
 
         @Override
         public R convert(T value) {
@@ -230,14 +129,30 @@ public final class Option {
     }
 
     /**
-     * 简单项目
+     * 简单选项
      *
-     * @param name    选项名称
-     * @param type    选项类型
-     * @param convert 转换函数
-     * @param <T>     值类型
+     * @param <T> 选项类型
      */
-    public record SimpleOpt<T>(String name, Class<T> type, Function<T, T> convert) implements Opt<T, T> {
+    @lombok.Value
+    @Accessors(fluent = true)
+    public static class SimpleOpt<T> implements Opt<T, T> {
+
+        String name;
+        Class<T> type;
+        Function<T, T> convert;
+
+        /**
+         * 简单项目
+         *
+         * @param name    选项名称
+         * @param type    选项类型
+         * @param convert 转换函数
+         */
+        public SimpleOpt(String name, Class<T> type, Function<T, T> convert) {
+            this.name = name;
+            this.type = type;
+            this.convert = convert;
+        }
 
         /**
          * 简单项目
