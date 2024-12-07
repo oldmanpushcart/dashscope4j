@@ -134,6 +134,16 @@ public class Content<T> {
     }
 
     /**
+     * 文件
+     *
+     * @param resource 文件资源标识
+     * @return 文件内容
+     */
+    public static Content<URI> ofFile(URI resource) {
+        return new Content<>(Type.FILE, resource);
+    }
+
+    /**
      * 视频
      * <p>
      * 通义千问可以将多个图片资源标识合并为一个视频内容,

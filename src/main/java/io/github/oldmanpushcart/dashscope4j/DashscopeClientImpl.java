@@ -23,6 +23,9 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import static io.github.oldmanpushcart.dashscope4j.util.HttpUtils.loggingHttpRequest;
+import static io.github.oldmanpushcart.dashscope4j.util.HttpUtils.loggingHttpResponse;
+
 class DashscopeClientImpl implements DashscopeClient {
 
     private static final MediaType APPLICATION_JSON = MediaType.get("application/json");
@@ -50,11 +53,13 @@ class DashscopeClientImpl implements DashscopeClient {
 
         @Override
         public void onFailure(@NotNull Call call, @NotNull IOException ex) {
+            loggingHttpResponse(null, ex);
             future.completeExceptionally(ex);
         }
 
         @Override
         public void onResponse(@NotNull Call call, @NotNull Response httpResponse) throws IOException {
+            loggingHttpResponse(httpResponse, null);
             if (httpResponse.isSuccessful()) {
                 final ResponseBody responseBody = httpResponse.body();
                 if (Objects.nonNull(responseBody)) {
@@ -71,15 +76,26 @@ class DashscopeClientImpl implements DashscopeClient {
 
     }
 
+    private Headers newHeaders(ApiRequest<?, ?> request) {
+        final Headers.Builder builder = new Headers.Builder();
+        builder.add("Content-Type", "application/json");
+        builder.add("Authorization", String.format("Bearer %s", this.builder.ak));
+        builder.add("X-DashScope-Client", Constants.VERSION);
+        request.headers().forEach(builder::add);
+        return builder.build();
+    }
+
     private <R extends ApiResponse<?>> CompletionStage<R> executeAsync(ApiRequest<?, R> request) {
         final String requestJson = JacksonUtils.toJson(request);
-        logger.debug("dashscope://async/{} >>> {}", request.model().name(), requestJson);
         final Request httpRequest = new Request.Builder()
                 .url(request.model().remote().toString())
-                .addHeader("Authorization", String.format("Bearer %s", builder.ak))
-                .addHeader("X-DashScope-Client", Constants.VERSION)
+                .headers(newHeaders(request))
                 .post(RequestBody.create(requestJson, APPLICATION_JSON))
                 .build();
+
+        loggingHttpRequest(httpRequest);
+        logger.debug("dashscope://async/{} >>> {}", request.model().name(), requestJson);
+
         final CompletableFuture<String> future = new CompletableFuture<>();
         http.newCall(httpRequest).enqueue(new FutureCallback(future));
         return future
@@ -98,8 +114,7 @@ class DashscopeClientImpl implements DashscopeClient {
         logger.debug("dashscope://flow/{} >>> {}", request.model().name(), requestJson);
         final Request httpRequest = new Request.Builder()
                 .url(request.model().remote().toString())
-                .addHeader("Authorization", String.format("Bearer %s", builder.ak))
-                .addHeader("X-DashScope-Client", Constants.VERSION)
+                .headers(newHeaders(request))
                 .addHeader("X-DashScope-SSE", "enable")
                 .post(RequestBody.create(requestJson, APPLICATION_JSON))
                 .build();

@@ -2,11 +2,13 @@ package io.github.oldmanpushcart.dashscope4j.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponseAssertions;
+import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
-import org.junit.jupiter.api.Test;
+import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.ChatPlugin;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -53,7 +55,7 @@ public class ChatTestCase extends ClientSupport {
     public void test$chat$async(String mName) {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(getModel(mName))
-                .appendMessage(Message.ofUser("hello!"))
+                .addMessage(Message.ofUser("hello!"))
                 .build();
         client.chat().async(request)
                 .whenComplete(assertApiResponseSuccessHandler())
@@ -73,10 +75,49 @@ public class ChatTestCase extends ClientSupport {
     public void test$chat$flow(String mName) {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(getModel(mName))
-                .appendMessage(Message.ofUser("hello!"))
+                .addMessage(Message.ofUser("hello!"))
                 .build();
         client.chat().flow(request)
                 .thenAccept(flow -> flow.blockingForEach(ApiResponseAssertions::assertApiResponseSuccess))
+                .toCompletableFuture()
+                .join();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "qwen-plus",
+            "qwen-turbo",
+            "qwen-max"
+    })
+    public void test$chat$plugin$calculator(String mName) {
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(getModel(mName))
+                .addPlugin(ChatPlugin.CALCULATOR)
+                .addMessage(Message.ofUser("1+2*3-4/5=?"))
+                .build();
+        client.chat().async(request)
+                .whenComplete(assertApiResponseSuccessHandler())
+                .toCompletableFuture()
+                .join();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "qwen-plus",
+            "qwen-turbo",
+            "qwen-max"
+    })
+    public void test$chat$plugin$pdf_extracter(String mName) {
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(getModel(mName))
+                .addPlugin(ChatPlugin.PDF_EXTRACTER)
+                .addMessage(Message.ofUser(Arrays.asList(
+                        Content.ofText("请总结这篇文档"),
+                        Content.ofFile(URI.create("https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf"))
+                )))
+                .build();
+        client.chat().async(request)
+                .whenComplete(assertApiResponseSuccessHandler())
                 .toCompletableFuture()
                 .join();
     }

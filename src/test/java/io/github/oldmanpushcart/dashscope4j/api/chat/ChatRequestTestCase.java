@@ -13,12 +13,12 @@ public class ChatRequestTestCase {
                 ChatRequest.newBuilder()
                         .model(ChatModel.QWEN_VL_PLUS)
                         .option(ChatOptions.ENABLE_WEB_SEARCH, true)
-                        .appendMessage(Message.ofUser("Hello!"))
+                        .addMessage(Message.ofUser("Hello!"))
                         .build(),
                 ChatRequest.newBuilder()
                         .model(ChatModel.QWEN_VL_PLUS)
                         .option(ChatOptions.ENABLE_WEB_SEARCH, true)
-                        .appendMessage(Message.ofUser("Hello!"))
+                        .addMessage(Message.ofUser("Hello!"))
                         .build()
         );
 
@@ -26,12 +26,12 @@ public class ChatRequestTestCase {
                 ChatRequest.newBuilder()
                         .model(ChatModel.QWEN_VL_PLUS)
                         .option(ChatOptions.ENABLE_WEB_SEARCH, true)
-                        .appendMessage(Message.ofUser("Hello!"))
+                        .addMessage(Message.ofUser("Hello!"))
                         .build(),
                 ChatRequest.newBuilder()
                         .model(ChatModel.QWEN_VL_PLUS)
                         .option(ChatOptions.ENABLE_WEB_SEARCH, true)
-                        .appendMessage(Message.ofUser("WORLD!"))
+                        .addMessage(Message.ofUser("WORLD!"))
                         .build()
         );
 
@@ -39,12 +39,12 @@ public class ChatRequestTestCase {
                 ChatRequest.newBuilder()
                         .model(ChatModel.QWEN_VL_PLUS)
                         .option(ChatOptions.ENABLE_WEB_SEARCH, true)
-                        .appendMessage(Message.ofUser("Hello!"))
+                        .addMessage(Message.ofUser("Hello!"))
                         .build(),
                 ChatRequest.newBuilder()
                         .model(ChatModel.QWEN_VL_PLUS)
                         .option(ChatOptions.ENABLE_WEB_SEARCH, false)
-                        .appendMessage(Message.ofUser("Hello!"))
+                        .addMessage(Message.ofUser("Hello!"))
                         .build()
         );
 
@@ -52,12 +52,12 @@ public class ChatRequestTestCase {
                 ChatRequest.newBuilder()
                         .model(ChatModel.QWEN_VL_PLUS)
                         .option(ChatOptions.ENABLE_WEB_SEARCH, true)
-                        .appendMessage(Message.ofUser("Hello!"))
+                        .addMessage(Message.ofUser("Hello!"))
                         .build(),
                 ChatRequest.newBuilder()
                         .model(ChatModel.QWEN_TURBO)
                         .option(ChatOptions.ENABLE_WEB_SEARCH, true)
-                        .appendMessage(Message.ofUser("Hello!"))
+                        .addMessage(Message.ofUser("Hello!"))
                         .build()
         );
     }
