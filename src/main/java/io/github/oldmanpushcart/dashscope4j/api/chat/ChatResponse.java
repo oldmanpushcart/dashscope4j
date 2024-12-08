@@ -10,7 +10,9 @@ import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import lombok.*;
 import lombok.experimental.Accessors;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;

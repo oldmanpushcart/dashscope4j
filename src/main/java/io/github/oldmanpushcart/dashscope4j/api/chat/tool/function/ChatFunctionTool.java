@@ -13,8 +13,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 对话函数工具

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils.hasNonNull;
+import static java.util.Collections.unmodifiableList;
 
 public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.Output> {
 
@@ -65,13 +66,14 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
             for (final JsonNode choiceNode : choicesNode) {
 
                 // 结束原因
-                final ChatResponse.Finish finish = context.readTreeAsValue(choiceNode.get("finish_reason"), ChatResponse.Finish.class);
+                final JsonNode finishNode = choiceNode.required("finish_reason");
+                final ChatResponse.Finish finish = context.readTreeAsValue(finishNode, ChatResponse.Finish.class);
 
                 // 单消息
                 if (choiceNode.has("message")) {
 
-                    final JsonNode messageNode = choiceNode.get("message");
-                    final JsonNode contentNode = messageNode.get("content");
+                    final JsonNode messageNode = choiceNode.required("message");
+                    final JsonNode contentNode = messageNode.required("content");
 
                     // 处理多模态内容
                     if (contentNode.isArray()) {
@@ -98,13 +100,13 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
                         final Message message = deserializeMessage(context, messageNode, inTextMessage);
                         messages.add(message);
                     }
-                    choices.add(new Choice(finish, messages));
+                    choices.add(new Choice(finish, unmodifiableList(messages)));
                 }
 
             }
 
             // 返回应答数据
-            return new ChatResponse.Output(choices);
+            return new ChatResponse.Output(unmodifiableList(choices));
         }
 
         private Message deserializeMessage(DeserializationContext context, JsonNode messageNode, InnerTextMessage inTextMessage) throws IOException {
@@ -140,7 +142,7 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
                         toolCalls.add(call);
                     }
                 }
-                return new ToolCallMessage(text, toolCalls);
+                return new ToolCallMessage(text, unmodifiableList(toolCalls));
             }
 
             // 处理普通消息
