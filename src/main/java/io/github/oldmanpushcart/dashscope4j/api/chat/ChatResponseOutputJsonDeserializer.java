@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils.hasNonNull;
+
 public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.Output> {
 
     private static final OutputDeserializer[] deserializers = new OutputDeserializer[]{
@@ -107,37 +109,34 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
 
         private Message deserializeMessage(DeserializationContext context, JsonNode messageNode, InnerTextMessage inTextMessage) throws IOException {
 
+            final String text = inTextMessage.text();
+
             // 处理插件应答消息
             if (inTextMessage.role() == Message.Role.PLUGIN) {
-                final String text = inTextMessage.text();
-                final String name = messageNode.get("name").asText();
-                final Plugin.Status status = context.readTreeAsValue(messageNode.get("status"), Plugin.Status.class);
+                final String name = messageNode.required("name").asText();
+                final Plugin.Status status = context.readTreeAsValue(messageNode.required("status"), Plugin.Status.class);
                 return new PluginMessage(text, name, status);
             }
 
             // 处理插件请求消息
-            else if (inTextMessage.role() == Message.Role.AI && messageNode.has("plugin_call")) {
-                final String text = inTextMessage.text();
-                final Plugin.Call call = context.readTreeAsValue(messageNode.get("plugin_call"), Plugin.Call.class);
+            else if (inTextMessage.role() == Message.Role.AI && messageNode.hasNonNull("plugin_call")) {
+                final Plugin.Call call = context.readTreeAsValue(messageNode.required("plugin_call"), Plugin.Call.class);
                 return new PluginCallMessage(text, call);
             }
 
             // 处理工具应答消息
             else if (inTextMessage.role() == Message.Role.TOOL) {
-                final String text = inTextMessage.text();
-                final String name = messageNode.get("name").asText();
+                final String name = messageNode.required("name").asText();
                 return new ToolMessage(text, name);
             }
 
             // 处理工具请求消息
             else if (inTextMessage.role() == Message.Role.AI && messageNode.has("tool_calls")) {
-                final String text = inTextMessage.text();
-                final JsonNode toolCallsNode = messageNode.get("tool_calls");
+                final JsonNode toolCallsNode = messageNode.required("tool_calls");
                 final List<Tool.Call> toolCalls = new ArrayList<>();
                 for (final JsonNode toolCallNode : toolCallsNode) {
-                    final Tool.Classify type = context.readTreeAsValue(toolCallNode.get("type"), Tool.Classify.class);
-                    if (type == Tool.Classify.FUNCTION) {
-                        final ChatFunctionTool.Call call = context.readTreeAsValue(toolCallNode.get("function"), ChatFunctionTool.Call.class);
+                    if (hasNonNull(toolCallNode, "type", n -> "function".equals(n.asText()))) {
+                        final ChatFunctionTool.Call call = context.readTreeAsValue(toolCallNode, ChatFunctionTool.Call.class);
                         toolCalls.add(call);
                     }
                 }
@@ -147,7 +146,6 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
             // 处理普通消息
             else {
                 final Message.Role role = inTextMessage.role();
-                final String text = inTextMessage.text();
                 return new Message(role, Content.ofText(text));
             }
 

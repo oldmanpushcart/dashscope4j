@@ -43,33 +43,8 @@ public class ChatFunctionTool implements Tool {
     @Jacksonized
     public static class Call implements Tool.Call {
 
-        /**
-         * 函数名称
-         */
-        @JsonProperty(
-
-                /*
-                 * 这里使用WRITE_ONLY，表示只在序列化时输出，反序列化时忽略、
-                 * 原因是在 #extract() 方法中已经包含了参数的提取逻辑，
-                 */
-                access = JsonProperty.Access.WRITE_ONLY
-
-        )
-        String name;
-
-        /**
-         * 函数入参（JSON格式）
-         */
-        @JsonProperty(
-
-                /*
-                 * 这里使用WRITE_ONLY，表示只在序列化时输出，反序列化时忽略、
-                 * 原因是在 #extract() 方法中已经包含了参数的提取逻辑，
-                 */
-                access = JsonProperty.Access.WRITE_ONLY
-
-        )
-        String arguments;
+        @JsonProperty("function")
+        Stub stub;
 
         /**
          * @return 工具调用存根类型（函数存根）
@@ -80,12 +55,18 @@ public class ChatFunctionTool implements Tool {
             return Classify.FUNCTION;
         }
 
-        @JsonProperty("function")
-        Map<?, ?> extract() {
-            return new HashMap<Object, Object>() {{
-                put("name", name);
-                put("arguments", arguments);
-            }};
+        @Value
+        @Accessors(fluent = true)
+        @Builder(access = AccessLevel.PRIVATE)
+        @Jacksonized
+        public static class Stub {
+
+            @JsonProperty
+            String name;
+
+            @JsonProperty
+            String arguments;
+
         }
 
     }

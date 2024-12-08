@@ -54,8 +54,8 @@ public class ChatResponseTestCase {
         Assertions.assertEquals(Message.Role.AI, response.output().best().message().role());
         final ToolCallMessage message = (ToolCallMessage) response.output().best().message();
         final ChatFunctionTool.Call call = (ChatFunctionTool.Call)message.calls().get(0);
-        Assertions.assertEquals("get_current_weather", call.name());
-        Assertions.assertEquals("{\"location\":\"杭州市\"}", call.arguments());
+        Assertions.assertEquals("get_current_weather", call.stub().name());
+        Assertions.assertEquals("{\"location\":\"杭州市\"}", call.stub().arguments());
     }
 
     @Test

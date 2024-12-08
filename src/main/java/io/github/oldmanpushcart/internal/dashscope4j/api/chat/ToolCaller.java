@@ -71,7 +71,7 @@ public class ToolCaller {
     private List<Message> newHistory(ChatFunctionTool.Call call, String resultJson) {
         final List<Message> history = new ArrayList<>();
         history.add(message);
-        history.add(new ToolMessage(resultJson, call.name()));
+        history.add(new ToolMessage(resultJson, call.stub().name()));
         return history;
     }
 
@@ -109,14 +109,14 @@ public class ToolCaller {
     // 函数调用
     private CompletionStage<String> callFunction(ChatFunctionTool tool, ChatFunctionTool.Call call) {
         final Type parameterType = tool.meta().parameterTs().type();
-        final String parameterJson = call.arguments();
+        final String parameterJson = call.stub().arguments();
         try {
             return tool.function().call(JacksonUtils.toObject(parameterJson, parameterType))
                     .thenApply(JacksonUtils::toJson);
         } catch (Throwable cause) {
             throw new RuntimeException(
                     String.format("Function call error! fn=%s;parameters=%s;parameter-type=%s",
-                            call.name(),
+                            call.stub().name(),
                             parameterJson,
                             parameterType.getTypeName()
                     ),
@@ -135,10 +135,10 @@ public class ToolCaller {
         return request.tools().stream()
                 .filter(ChatFunctionTool.class::isInstance)
                 .map(ChatFunctionTool.class::cast)
-                .filter(tool -> Objects.equals(tool.meta().name(), functionCall.name()))
+                .filter(tool -> Objects.equals(tool.meta().name(), functionCall.stub().name()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(String.format("Function Not found! fn=%s",
-                        functionCall.name()
+                        functionCall.stub().name()
                 )));
     }
 

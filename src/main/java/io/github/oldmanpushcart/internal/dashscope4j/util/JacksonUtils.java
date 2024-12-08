@@ -11,6 +11,7 @@ import java.lang.reflect.Type;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.function.Predicate;
 
 public class JacksonUtils {
 
@@ -18,6 +19,10 @@ public class JacksonUtils {
             .setPropertyNamingStrategy(new PropertyNamingStrategies.SnakeCaseStrategy())
             .setTimeZone(TimeZone.getTimeZone("GMT+8"))
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    public static boolean hasNonNull(JsonNode node, String fieldName, Predicate<JsonNode> predicate) {
+        return node.hasNonNull(fieldName) && predicate.test(node.get(fieldName));
+    }
 
     /**
      * 压缩Json字符串
