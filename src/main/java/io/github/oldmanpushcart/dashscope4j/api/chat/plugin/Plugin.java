@@ -9,6 +9,9 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Map;
 
+/**
+ * 插件
+ */
 public interface Plugin {
 
     /**
@@ -17,36 +20,57 @@ public interface Plugin {
     String name();
 
     /**
-     * @return 插件参数
+     * @return 插件元数据
      */
-    Map<String, Object> arguments();
+    Map<String, Object> meta();
 
+    /**
+     * 插件调用存根
+     */
     @Value
     @Accessors(fluent = true)
     @Builder(access = AccessLevel.PRIVATE)
     @Jacksonized
     class Call {
 
+        /**
+         * 插件名称
+         */
         @JsonProperty
         String name;
 
+        /**
+         * 调用参数
+         */
         @JsonProperty
         String arguments;
 
     }
 
+    /**
+     * 插件应答状态
+     */
     @Value
     @Accessors(fluent = true)
     @Builder(access = AccessLevel.PRIVATE)
     @Jacksonized
     class Status {
 
+        /**
+         * 状态代码
+         */
         @JsonProperty
         int code;
 
+        /**
+         * 状态名称
+         */
         @JsonProperty
         String name;
 
+        /**
+         * 状态描述
+         */
         @JsonProperty("message")
         String desc;
 

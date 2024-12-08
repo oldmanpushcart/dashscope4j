@@ -1,7 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.api.chat.OpChat;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
+import io.github.oldmanpushcart.internal.dashscope4j.DashscopeClientBuilderImpl;
 
 import java.time.Duration;
 
@@ -11,12 +12,8 @@ public interface DashscopeClient {
 
     void shutdown();
 
-    interface OpChat extends OpAsync<ChatResponse>, OpFlow<ChatResponse> {
-
-    }
-
     static Builder newBuilder() {
-        return new DashscopeClientImpl.BuilderImpl();
+        return new DashscopeClientBuilderImpl();
     }
 
     interface Builder extends Buildable<DashscopeClient, Builder> {

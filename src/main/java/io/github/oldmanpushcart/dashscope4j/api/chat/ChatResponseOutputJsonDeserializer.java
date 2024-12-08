@@ -74,7 +74,7 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
                     // 处理多模态内容
                     if (contentNode.isArray()) {
                         final InnerMultiMessage inMultiMessage = context.readTreeAsValue(messageNode, InnerMultiMessage.class);
-                        final Message message = new Message(inMultiMessage.role, new ArrayList<>(inMultiMessage.contents()));
+                        final Message message = new Message(inMultiMessage.role, inMultiMessage.contents());
                         choices.add(new Choice(finish, message));
                     }
 

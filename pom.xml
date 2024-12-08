@@ -35,7 +35,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jackson.version>2.16.1</jackson.version>
+        <jackson.version>2.18.2</jackson.version>
         <lombok.version>1.18.36</lombok.version>
         <okhttp.version>4.12.0</okhttp.version>
         <junit.version>5.8.0</junit.version>
@@ -167,7 +167,7 @@
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-jsonSchema</artifactId>
+            <artifactId>jackson-module-jsonSchema-jakarta</artifactId>
             <version>${jackson.version}</version>
         </dependency>
         <dependency>

@@ -1,10 +1,10 @@
-package io.github.oldmanpushcart.dashscope4j;
+package io.github.oldmanpushcart.internal.dashscope4j;
 
+import io.github.oldmanpushcart.dashscope4j.Constants;
 import io.github.oldmanpushcart.dashscope4j.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.util.JacksonUtils;
+import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.AllArgsConstructor;
@@ -18,32 +18,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import static io.github.oldmanpushcart.dashscope4j.util.HttpUtils.loggingHttpRequest;
-import static io.github.oldmanpushcart.dashscope4j.util.HttpUtils.loggingHttpResponse;
+import static io.github.oldmanpushcart.internal.dashscope4j.util.HttpUtils.loggingHttpRequest;
+import static io.github.oldmanpushcart.internal.dashscope4j.util.HttpUtils.loggingHttpResponse;
 
-class DashscopeClientImpl implements DashscopeClient {
+public class OpExecutor {
 
     private static final MediaType APPLICATION_JSON = MediaType.get("application/json");
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final String ak;
     private final OkHttpClient http;
-    private final BuilderImpl builder;
 
-    private DashscopeClientImpl(BuilderImpl builder) {
-        this.builder = builder;
-        this.http = newOkHttpClient(builder);
-    }
-
-    private static OkHttpClient newOkHttpClient(BuilderImpl builder) {
-        return new OkHttpClient.Builder()
-                .connectTimeout(builder.connectTimeout)
-                .readTimeout(builder.readTimeout)
-                .writeTimeout(builder.writeTimeout)
-                .build();
+    public OpExecutor(String ak, OkHttpClient http) {
+        this.ak = ak;
+        this.http = http;
     }
 
     @AllArgsConstructor
@@ -79,13 +71,13 @@ class DashscopeClientImpl implements DashscopeClient {
     private Headers newHeaders(ApiRequest<?, ?> request) {
         final Headers.Builder builder = new Headers.Builder();
         builder.add("Content-Type", "application/json");
-        builder.add("Authorization", String.format("Bearer %s", this.builder.ak));
+        builder.add("Authorization", String.format("Bearer %s", ak));
         builder.add("X-DashScope-Client", Constants.VERSION);
         request.headers().forEach(builder::add);
         return builder.build();
     }
 
-    private <R extends ApiResponse<?>> CompletionStage<R> executeAsync(ApiRequest<?, R> request) {
+    public <R extends ApiResponse<?>> CompletionStage<R> executeAsync(ApiRequest<?, R> request) {
         final String requestJson = JacksonUtils.toJson(request);
         final Request httpRequest = new Request.Builder()
                 .url(request.model().remote().toString())
@@ -109,7 +101,7 @@ class DashscopeClientImpl implements DashscopeClient {
                 });
     }
 
-    private <R extends ApiResponse<?>> CompletionStage<Flowable<R>> executeFlow(ApiRequest<?, R> request) {
+    public <R extends ApiResponse<?>> CompletionStage<Flowable<R>> executeFlow(ApiRequest<?, R> request) {
         final String requestJson = JacksonUtils.toJson(request);
         logger.debug("dashscope://flow/{} >>> {}", request.model().name(), requestJson);
         final Request httpRequest = new Request.Builder()
@@ -158,66 +150,6 @@ class DashscopeClientImpl implements DashscopeClient {
 
         }, BackpressureStrategy.BUFFER);
         return CompletableFuture.completedFuture(flow);
-    }
-
-    @Override
-    public OpChat chat() {
-        return new OpChat() {
-
-            @Override
-            public CompletionStage<ChatResponse> async(ApiRequest<?, ChatResponse> request) {
-                return executeAsync(request);
-            }
-
-            @Override
-            public CompletionStage<Flowable<ChatResponse>> flow(ApiRequest<?, ChatResponse> request) {
-                return executeFlow(request);
-            }
-
-        };
-    }
-
-    @Override
-    public void shutdown() {
-        http.dispatcher().executorService().shutdown();
-    }
-
-    static class BuilderImpl implements Builder {
-
-        private String ak;
-        private Duration connectTimeout = Duration.ofSeconds(10);
-        private Duration readTimeout = Duration.ofSeconds(10);
-        private Duration writeTimeout = Duration.ofSeconds(10);
-
-        @Override
-        public Builder ak(String ak) {
-            this.ak = ak;
-            return this;
-        }
-
-        @Override
-        public Builder connectTimeout(Duration duration) {
-            this.connectTimeout = Objects.requireNonNull(duration);
-            return this;
-        }
-
-        @Override
-        public Builder readTimeout(Duration duration) {
-            this.readTimeout = Objects.requireNonNull(duration);
-            return this;
-        }
-
-        @Override
-        public Builder writeTimeout(Duration duration) {
-            this.writeTimeout = Objects.requireNonNull(duration);
-            return this;
-        }
-
-        @Override
-        public DashscopeClient build() {
-            return new DashscopeClientImpl(this);
-        }
-
     }
 
 }

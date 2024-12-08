@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
+import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -60,6 +62,17 @@ public class ChatRequestTestCase {
                         .addMessage(Message.ofUser("Hello!"))
                         .build()
         );
+    }
+
+    @Test
+    public void test$chat$request$tool() {
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_TURBO)
+                .addFunction(new EchoFunction())
+                .addMessage(Message.ofUser("Hello!"))
+                .build();
+        final String requestJson = JacksonUtils.toJson(request);
+        System.out.println(requestJson);
     }
 
 }

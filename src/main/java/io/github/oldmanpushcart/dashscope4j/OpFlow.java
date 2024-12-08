@@ -7,8 +7,8 @@ import io.reactivex.rxjava3.core.Flowable;
 import java.util.concurrent.CompletionStage;
 
 @FunctionalInterface
-public interface OpFlow<R extends ApiResponse<?>> {
+public interface OpFlow<T extends ApiRequest<?, R>, R extends ApiResponse<?>> {
 
-    CompletionStage<Flowable<R>> flow(ApiRequest<?, R> request);
+    CompletionStage<Flowable<R>> flow(T request);
 
 }

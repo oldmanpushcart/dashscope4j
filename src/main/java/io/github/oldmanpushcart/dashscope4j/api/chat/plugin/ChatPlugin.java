@@ -7,12 +7,15 @@ import java.util.Map;
 
 import static java.util.Collections.emptyMap;
 
+/**
+ * 对话插件
+ */
 @Value
 @Accessors(fluent = true)
 public class ChatPlugin implements Plugin {
 
     String name;
-    Map<String, Object> arguments;
+    Map<String, Object> meta;
 
     /**
      * OCR 插件

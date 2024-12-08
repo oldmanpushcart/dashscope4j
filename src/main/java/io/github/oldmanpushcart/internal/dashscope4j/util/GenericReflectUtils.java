@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.util;
+package io.github.oldmanpushcart.internal.dashscope4j.util;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

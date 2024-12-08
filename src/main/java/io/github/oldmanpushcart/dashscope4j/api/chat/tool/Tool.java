@@ -2,6 +2,9 @@ package io.github.oldmanpushcart.dashscope4j.api.chat.tool;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * 工具
+ */
 public interface Tool {
 
     /**
@@ -20,7 +23,7 @@ public interface Tool {
     }
 
     /**
-     * 工具调用
+     * 工具调用存根
      */
     interface Call {
 

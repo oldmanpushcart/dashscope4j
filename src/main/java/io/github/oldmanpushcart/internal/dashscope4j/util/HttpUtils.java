@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.util;
+package io.github.oldmanpushcart.internal.dashscope4j.util;
 
 import okhttp3.Headers;
 import okhttp3.Request;

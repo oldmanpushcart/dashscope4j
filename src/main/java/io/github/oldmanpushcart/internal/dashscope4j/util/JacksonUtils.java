@@ -1,11 +1,11 @@
-package io.github.oldmanpushcart.dashscope4j.util;
+package io.github.oldmanpushcart.internal.dashscope4j.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
-import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
+import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchema;
+import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchemaGenerator;
 
 import java.lang.reflect.Type;
 import java.util.LinkedHashSet;
@@ -18,6 +18,16 @@ public class JacksonUtils {
             .setPropertyNamingStrategy(new PropertyNamingStrategies.SnakeCaseStrategy())
             .setTimeZone(TimeZone.getTimeZone("GMT+8"))
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    /**
+     * 压缩Json字符串
+     *
+     * @param json json
+     * @return json
+     */
+    public static String compact(String json) {
+        return toJson(toNode(json));
+    }
 
     /**
      * {@code object -> node}
@@ -68,6 +78,23 @@ public class JacksonUtils {
     public static <T> T toObject(String json, Class<T> type) {
         try {
             return mapper.readValue(json, type);
+        } catch (JsonProcessingException cause) {
+            throw new IllegalArgumentException("parse json to object failed!", cause);
+        }
+    }
+
+    /**
+     * {@code json -> T}
+     *
+     * @param json json
+     * @param type 对象类型
+     * @param <T>  对象类型
+     * @return 目标对象
+     */
+    public static <T> T toObject(String json, Type type) {
+        try {
+            final JavaType jType = mapper.constructType(type);
+            return mapper.readValue(json, jType);
         } catch (JsonProcessingException cause) {
             throw new IllegalArgumentException("parse json to object failed!", cause);
         }

@@ -7,9 +7,10 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static java.util.Collections.singletonList;
 
 /**
  * 对话消息
@@ -32,16 +33,22 @@ public class Message {
      */
     private final List<Content<?>> contents;
 
+    /**
+     * 构造消息
+     *
+     * @param role    角色
+     * @param content 内容
+     */
     public Message(Role role, Content<?> content) {
-        this(role, new LinkedList<Content<?>>() {{
-            add(content);
-        }});
+        this(role, singletonList(content));
     }
 
     /**
      * 获取文本内容
-     * <p>如果有多个文本内容则会合并为一个文本返回。</p>
-     * <p>如果没有文本内容则返回{@code null}</p>
+     * <p>
+     * 如果有多个文本内容则会合并为一个文本返回。
+     * 如果没有文本内容则返回{@code null}
+     * </p>
      *
      * @return 文本内容
      */

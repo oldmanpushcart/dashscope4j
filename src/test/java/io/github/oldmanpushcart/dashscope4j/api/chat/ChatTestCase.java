@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponseAssertions;
+import io.github.oldmanpushcart.dashscope4j.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.ChatPlugin;
@@ -89,7 +90,7 @@ public class ChatTestCase extends ClientSupport {
             "qwen-turbo",
             "qwen-max"
     })
-    public void test$chat$plugin$calculator(String mName) {
+    public void test$chat$async$plugin$calculator(String mName) {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(getModel(mName))
                 .addPlugin(ChatPlugin.CALCULATOR)
@@ -107,7 +108,7 @@ public class ChatTestCase extends ClientSupport {
             "qwen-turbo",
             "qwen-max"
     })
-    public void test$chat$plugin$pdf_extracter(String mName) {
+    public void test$chat$async$plugin$pdf_extracter(String mName) {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(getModel(mName))
                 .addPlugin(ChatPlugin.PDF_EXTRACTER)
@@ -115,6 +116,24 @@ public class ChatTestCase extends ClientSupport {
                         Content.ofText("请总结这篇文档"),
                         Content.ofFile(URI.create("https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf"))
                 )))
+                .build();
+        client.chat().async(request)
+                .whenComplete(assertApiResponseSuccessHandler())
+                .toCompletableFuture()
+                .join();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "qwen-plus",
+            "qwen-turbo",
+            "qwen-max"
+    })
+    public void test$chat$async$tool$function$echo(String mName) {
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(getModel(mName))
+                .addFunction(new EchoFunction())
+                .addMessage(Message.ofUser("echo: HELLO!"))
                 .build();
         client.chat().async(request)
                 .whenComplete(assertApiResponseSuccessHandler())

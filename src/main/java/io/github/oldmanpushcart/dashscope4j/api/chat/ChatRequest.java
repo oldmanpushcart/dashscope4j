@@ -11,7 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
-import io.github.oldmanpushcart.dashscope4j.util.JacksonUtils;
+import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -20,6 +20,7 @@ import lombok.experimental.Accessors;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toMap;
 
 @Getter
@@ -34,9 +35,9 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
 
     private ChatRequest(Builder builder) {
         super(ChatResponse.class, builder);
-        this.messages = builder.messages;
-        this.plugins = builder.plugins;
-        this.tools = builder.tools;
+        this.messages = unmodifiableList(builder.messages);
+        this.plugins = unmodifiableList(builder.plugins);
+        this.tools = unmodifiableList(builder.tools);
     }
 
     @Override
@@ -108,7 +109,7 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
             final Map<?,?> pluginArgMap = plugins.stream()
                     .collect(toMap(
                             Plugin::name,
-                            Plugin::arguments,
+                            Plugin::meta,
                             (a, b) -> b
                     ));
             final String pluginArgJson = JacksonUtils.toJson(pluginArgMap);

@@ -10,11 +10,10 @@ import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import lombok.*;
 import lombok.experimental.Accessors;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static java.util.Collections.singletonList;
 
 
 @Getter
@@ -25,7 +24,7 @@ public class ChatResponse extends ApiResponse<ChatResponse.Output> {
 
     private final Output output;
 
-    private ChatResponse(String uuid, Ret ret, Usage usage, Output output) {
+    public ChatResponse(String uuid, Ret ret, Usage usage, Output output) {
         super(uuid, ret, usage);
         this.output = output;
     }
@@ -68,7 +67,7 @@ public class ChatResponse extends ApiResponse<ChatResponse.Output> {
         List<Choice> choices;
 
         public Output(Choice choice) {
-            this(Collections.singletonList(choice));
+            this(singletonList(choice));
         }
 
         public ChatResponse.Choice best() {
@@ -91,7 +90,7 @@ public class ChatResponse extends ApiResponse<ChatResponse.Output> {
         private final List<Message> history;
 
         public Choice(Finish finish, Message message) {
-            this(finish, Collections.singletonList(message));
+            this(finish, singletonList(message));
         }
 
         public Message message() {

@@ -12,7 +12,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 内容
+ * 消息内容
+ * <p>
+ * 这个类的数据和类型必须严格控制，所以不想让任何人可以自定义构造，减少后续处理成本。
+ * </p>
  *
  * @param <T> 数据类型
  */
