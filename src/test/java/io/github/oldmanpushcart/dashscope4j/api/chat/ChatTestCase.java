@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.ClientSupport;
-import io.github.oldmanpushcart.dashscope4j.api.ApiResponseAssertions;
 import io.github.oldmanpushcart.dashscope4j.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
@@ -14,7 +13,10 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.api.ApiResponseAssertions.assertApiResponseSuccessHandler;
+import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.thenAcceptAssertByFlowForApiResponseSuccessful;
+import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.whenCompleteAssertByAsyncForApiResponseSuccessful;
+import static io.github.oldmanpushcart.dashscope4j.api.chat.ChatAssertions.thenApplyAssertByFlowForChatResponseMessageTextContains;
+import static io.github.oldmanpushcart.dashscope4j.api.chat.ChatAssertions.whenCompleteAssertByAsyncForChatResponseMessageTextContains;
 
 public class ChatTestCase extends ClientSupport {
 
@@ -41,7 +43,7 @@ public class ChatTestCase extends ClientSupport {
         return models.stream()
                 .filter(m -> m.name().equals(mName))
                 .findFirst()
-                .orElseThrow(()-> new IllegalArgumentException("model not found: " + mName));
+                .orElseThrow(() -> new IllegalArgumentException("model not found: " + mName));
     }
 
     @ParameterizedTest
@@ -59,7 +61,7 @@ public class ChatTestCase extends ClientSupport {
                 .addMessage(Message.ofUser("hello!"))
                 .build();
         client.chat().async(request)
-                .whenComplete(assertApiResponseSuccessHandler())
+                .whenComplete(whenCompleteAssertByAsyncForApiResponseSuccessful())
                 .toCompletableFuture()
                 .join();
     }
@@ -79,7 +81,7 @@ public class ChatTestCase extends ClientSupport {
                 .addMessage(Message.ofUser("hello!"))
                 .build();
         client.chat().flow(request)
-                .thenAccept(flow -> flow.blockingForEach(ApiResponseAssertions::assertApiResponseSuccess))
+                .thenAccept(thenAcceptAssertByFlowForApiResponseSuccessful())
                 .toCompletableFuture()
                 .join();
     }
@@ -97,7 +99,7 @@ public class ChatTestCase extends ClientSupport {
                 .addMessage(Message.ofUser("1+2*3-4/5=?"))
                 .build();
         client.chat().async(request)
-                .whenComplete(assertApiResponseSuccessHandler())
+                .whenComplete(whenCompleteAssertByAsyncForApiResponseSuccessful())
                 .toCompletableFuture()
                 .join();
     }
@@ -118,7 +120,7 @@ public class ChatTestCase extends ClientSupport {
                 )))
                 .build();
         client.chat().async(request)
-                .whenComplete(assertApiResponseSuccessHandler())
+                .whenComplete(whenCompleteAssertByAsyncForApiResponseSuccessful())
                 .toCompletableFuture()
                 .join();
     }
@@ -136,7 +138,27 @@ public class ChatTestCase extends ClientSupport {
                 .addMessage(Message.ofUser("echo: HELLO!"))
                 .build();
         client.chat().async(request)
-                .whenComplete(assertApiResponseSuccessHandler())
+                .whenComplete(whenCompleteAssertByAsyncForApiResponseSuccessful())
+                .whenComplete(whenCompleteAssertByAsyncForChatResponseMessageTextContains("HELLO!"))
+                .toCompletableFuture()
+                .join();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "qwen-plus",
+            "qwen-turbo",
+            "qwen-max"
+    })
+    public void test$chat$flow$tool$function$echo(String mName) {
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(getModel(mName))
+                .addFunction(new EchoFunction())
+                .addMessage(Message.ofUser("echo: HELLO!"))
+                .build();
+        client.chat().flow(request)
+                .thenApply(thenApplyAssertByFlowForChatResponseMessageTextContains(false, "HELLO!"))
+                .thenAccept(thenAcceptAssertByFlowForApiResponseSuccessful())
                 .toCompletableFuture()
                 .join();
     }

@@ -20,12 +20,13 @@ public class OpChatImpl implements OpChat {
     public CompletionStage<ChatResponse> async(ChatRequest request) {
         return opExecutor
                 .executeAsync(request)
-                .thenCompose(new ChatResponseOpAsyncHandler(this, request));
+                .thenCompose(new ToolCallOpAsyncHandler(this, request));
     }
 
     @Override
     public CompletionStage<Flowable<ChatResponse>> flow(ChatRequest request) {
-        return opExecutor.executeFlow(request);
+        return opExecutor.executeFlow(request)
+                .thenApply(new ToolCallOpFlowHandler(this, request));
     }
 
 }

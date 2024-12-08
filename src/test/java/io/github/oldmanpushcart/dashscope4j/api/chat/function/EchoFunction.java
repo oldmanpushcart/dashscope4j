@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.api.chat.function;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFnDescription;
-import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunction;
 import lombok.AccessLevel;
 import lombok.Builder;

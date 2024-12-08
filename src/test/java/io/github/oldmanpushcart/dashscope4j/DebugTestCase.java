@@ -1,17 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchemaGenerator;
 import io.github.oldmanpushcart.dashscope4j.api.chat.function.EchoFunction;
-import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunction;
 import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.concurrent.CompletionStage;
 
 public class DebugTestCase {
 

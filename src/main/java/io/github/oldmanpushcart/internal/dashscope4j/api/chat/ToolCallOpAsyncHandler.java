@@ -11,7 +11,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 @AllArgsConstructor
-public class ChatResponseOpAsyncHandler implements Function<ChatResponse, CompletionStage<ChatResponse>> {
+public class ToolCallOpAsyncHandler implements Function<ChatResponse, CompletionStage<ChatResponse>> {
 
     private final OpChat opChat;
     private final ChatRequest request;

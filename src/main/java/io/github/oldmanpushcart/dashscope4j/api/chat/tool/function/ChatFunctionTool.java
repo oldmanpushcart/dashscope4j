@@ -4,15 +4,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.lang.reflect.Type;
+
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.requireNonBlankString;
+import static java.util.Objects.requireNonNull;
 
 /**
  * 对话函数工具
@@ -37,7 +40,7 @@ public class ChatFunctionTool implements Tool {
      */
     @Value
     @Accessors(fluent = true)
-    @Builder(access = AccessLevel.PRIVATE)
+    @lombok.Builder(access = AccessLevel.PRIVATE)
     @Jacksonized
     public static class Call implements Tool.Call {
 
@@ -55,7 +58,7 @@ public class ChatFunctionTool implements Tool {
 
         @Value
         @Accessors(fluent = true)
-        @Builder(access = AccessLevel.PRIVATE)
+        @lombok.Builder(access = AccessLevel.PRIVATE)
         @Jacksonized
         public static class Stub {
 
@@ -138,5 +141,68 @@ public class ChatFunctionTool implements Tool {
         return ChatFunctionToolHelper.parse(function);
     }
 
+
+    /**
+     * @return 函数工具构建器
+     */
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    /**
+     * 函数工具构建器
+     */
+    public static class Builder implements Buildable<ChatFunctionTool, Builder> {
+
+        private String name;
+        private String description;
+        private Meta.TypeSchema parameterTs;
+        private ChatFunction<?, ?> function;
+
+        public Builder name(String name) {
+            this.name = requireNonBlankString(name, "Function name must not be blank");
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder parameterType(Type type) {
+            requireNonNull(type, "Parameter type must not be null");
+            this.parameterTs = new Meta.TypeSchema(type);
+            return this;
+        }
+
+        public Builder parameterType(Type type, String schema) {
+            requireNonNull(type, "Parameter type must not be null");
+            requireNonBlankString(schema, "Parameter schema must not be blank");
+            this.parameterTs = new Meta.TypeSchema(type, schema);
+            return this;
+        }
+
+        public Builder function(ChatFunction<?, ?> function) {
+            requireNonNull(function, "Function must not be null");
+            this.function = function;
+            return this;
+        }
+
+        @Override
+        public ChatFunctionTool build() {
+            requireNonNull(name, "Function name must not be null");
+            requireNonNull(parameterTs, "Parameter type must not be null");
+            requireNonNull(function, "Function must not be null");
+            return new ChatFunctionTool(
+                    new Meta(
+                            name,
+                            description,
+                            parameterTs
+                    ),
+                    function
+            );
+        }
+
+    }
 
 }

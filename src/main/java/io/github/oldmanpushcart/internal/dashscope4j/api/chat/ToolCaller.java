@@ -65,7 +65,15 @@ public class ToolCaller {
     }
 
     public CompletionStage<Flowable<ChatResponse>> flowCall() {
-        return null;
+        final ChatFunctionTool.Call call = parseFunctionCall();
+        final ChatFunctionTool tool = switchFunctionTool(call);
+        return callFunction(tool, call)
+                .thenCompose(resultJson -> {
+                    final List<Message> history = newHistory(call, resultJson);
+                    final ChatRequest newRequest = newHistoryRequest(history);
+                    return opChat.flow(newRequest)
+                            .thenApply(flow -> flow.map(r -> newHistoryResponse(history, r)));
+                });
     }
 
     private List<Message> newHistory(ChatFunctionTool.Call call, String resultJson) {
@@ -110,9 +118,27 @@ public class ToolCaller {
     private CompletionStage<String> callFunction(ChatFunctionTool tool, ChatFunctionTool.Call call) {
         final Type parameterType = tool.meta().parameterTs().type();
         final String parameterJson = call.stub().arguments();
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("dashscope://chat/function/{} <<< {}",
+                    call.stub().name(),
+                    JacksonUtils.compact(parameterJson)
+            );
+        }
+
+
         try {
             return tool.function().call(JacksonUtils.toObject(parameterJson, parameterType))
-                    .thenApply(JacksonUtils::toJson);
+                    .thenApply(JacksonUtils::toJson)
+                    .whenComplete((resultJson, ex) -> {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("dashscope://chat/function/{} >>> {}",
+                                    call.stub().name(),
+                                    JacksonUtils.compact(resultJson),
+                                    ex
+                            );
+                        }
+                    });
         } catch (Throwable cause) {
             throw new RuntimeException(
                     String.format("Function call error! fn=%s;parameters=%s;parameter-type=%s",

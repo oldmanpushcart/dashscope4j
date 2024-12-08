@@ -1,13 +1,13 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat.tool.function;
 
 import io.github.oldmanpushcart.internal.dashscope4j.util.GenericReflectUtils;
-import io.github.oldmanpushcart.internal.dashscope4j.util.StringUtils;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Objects;
 import java.util.Optional;
 
+import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.requireNonBlankString;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.StringUtils.toSnakeCase;
 
 /**
@@ -50,11 +50,7 @@ class ChatFunctionToolHelper {
         final String fnName = Objects.nonNull(anChatFnName)
                 ? anChatFnName.value()
                 : toSnakeCase(functionClass.getSimpleName());
-        if (StringUtils.isBlank(fnName)) {
-            throw new IllegalArgumentException(String.format("ChatFunction name is blank in class: %s",
-                    functionClass.getName()
-            ));
-        }
+        requireNonBlankString(fnName, () -> String.format("ChatFunction name is blank in class: %s", functionClass.getName()));
         return fnName;
     }
 
