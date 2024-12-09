@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.api;
 
-import io.github.oldmanpushcart.dashscope4j.Ret;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
@@ -9,16 +8,18 @@ import lombok.experimental.Accessors;
 public class ApiException extends RuntimeException {
 
     private final String uuid;
-    private final Ret ret;
+    private final String code;
+    private final String desc;
 
-    public ApiException(String uuid, Ret ret) {
-        super(String.format("api response failed! uuid=%s;code=%s;message=%s", uuid, ret.code(), ret.message()));
+    public ApiException(String uuid, String code, String desc) {
+        super(String.format("api response failed! uuid=%s;code=%s;desc=%s", uuid, code, desc));
         this.uuid = uuid;
-        this.ret = ret;
+        this.code = code;
+        this.desc = desc;
     }
 
     public ApiException(ApiResponse<?> response) {
-        this(response.uuid(), response.ret());
+        this(response.uuid(), response.code(), response.desc());
     }
 
 }

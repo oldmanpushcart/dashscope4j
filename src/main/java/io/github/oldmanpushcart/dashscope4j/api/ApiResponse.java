@@ -1,21 +1,40 @@
 package io.github.oldmanpushcart.dashscope4j.api;
 
-import io.github.oldmanpushcart.dashscope4j.Ret;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Usage;
-import lombok.*;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Accessors(fluent = true)
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString
 @EqualsAndHashCode
+@SuperBuilder
 public abstract class ApiResponse<D> {
 
+    public static final String CODE_SUCCESS = "SUCCESS";
+
+    @JsonProperty("request_id")
     private final String uuid;
-    private final Ret ret;
+
+    @Builder.Default
+    @JsonProperty
+    private final String code = CODE_SUCCESS;
+
+    @JsonProperty("message")
+    private final String desc;
+
+    @JsonProperty
     private final Usage usage;
 
     abstract public D output();
+
+    public boolean isSuccess() {
+        return CODE_SUCCESS.equals(code);
+    }
 
 }

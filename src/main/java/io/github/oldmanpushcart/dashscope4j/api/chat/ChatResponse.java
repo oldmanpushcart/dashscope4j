@@ -1,19 +1,17 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.github.oldmanpushcart.dashscope4j.Ret;
-import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 
@@ -22,41 +20,12 @@ import static java.util.Collections.singletonList;
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
+@SuperBuilder(builderMethodName = "newBuilder")
+@Jacksonized
 public class ChatResponse extends ApiResponse<ChatResponse.Output> {
 
+    @JsonProperty("output")
     private final Output output;
-
-    public ChatResponse(String uuid, Ret ret, Usage usage, Output output) {
-        super(uuid, ret, usage);
-        this.output = output;
-    }
-
-    @JsonCreator
-    static ChatResponse of(
-
-            @JsonProperty("request_id")
-            String uuid,
-
-            @JsonProperty("code")
-            String code,
-
-            @JsonProperty("message")
-            String message,
-
-            @JsonProperty("usage")
-            Usage usage,
-
-            @JsonProperty("output")
-            Output output
-
-    ) {
-        final Ret ret = Ret.of(code, message);
-        final List<Usage.Item> items = usage.items().stream()
-                .filter(v -> !"total_tokens".equals(v.name()))
-                .collect(Collectors.toList());
-        final Usage clearUsage = new Usage(items);
-        return new ChatResponse(uuid, ret, clearUsage, output);
-    }
 
     @Value
     @Accessors(fluent = true)

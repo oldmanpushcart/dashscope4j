@@ -106,12 +106,13 @@ public class ToolCaller {
             }
         });
         final ChatResponse.Output output = new ChatResponse.Output(unmodifiableList(choices));
-        return new ChatResponse(
-                response.uuid(),
-                response.ret(),
-                response.usage(),
-                output
-        );
+        return ChatResponse.newBuilder()
+                .uuid(response.uuid())
+                .code(response.code())
+                .desc(response.desc())
+                .usage(response.usage())
+                .output(output)
+                .build();
     }
 
     // 函数调用

@@ -94,7 +94,7 @@ public class OpExecutor {
                 .whenComplete((r, ex) -> logger.debug("dashscope://async/{} <<< {}", request.model().name(), r, ex))
                 .thenApply(responseJson -> JacksonUtils.toObject(responseJson, request.responseType()))
                 .thenApply(response -> {
-                    if (!response.ret().isSuccess()) {
+                    if (!response.isSuccess()) {
                         throw new ApiException(response);
                     }
                     return response;
@@ -121,7 +121,7 @@ public class OpExecutor {
                     try {
                         if ("result".equals(type) || "error".equals(type)) {
                             final R response = JacksonUtils.toObject(data, request.responseType());
-                            if (response.ret().isSuccess()) {
+                            if (response.isSuccess()) {
                                 emitter.onNext(response);
                             } else {
                                 throw new ApiException(response);

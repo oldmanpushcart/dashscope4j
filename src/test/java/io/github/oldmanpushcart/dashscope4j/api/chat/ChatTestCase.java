@@ -1,10 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.ClientSupport;
+import io.github.oldmanpushcart.dashscope4j.api.ApiAssertions;
 import io.github.oldmanpushcart.dashscope4j.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.ChatPlugin;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -13,10 +15,9 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.thenAcceptAssertByFlowForApiResponseSuccessful;
-import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.whenCompleteAssertByAsyncForApiResponseSuccessful;
-import static io.github.oldmanpushcart.dashscope4j.api.chat.ChatAssertions.thenApplyAssertByFlowForChatResponseMessageTextContains;
-import static io.github.oldmanpushcart.dashscope4j.api.chat.ChatAssertions.whenCompleteAssertByAsyncForChatResponseMessageTextContains;
+import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.assertApiResponseSuccessful;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ChatTestCase extends ClientSupport {
 
@@ -61,7 +62,7 @@ public class ChatTestCase extends ClientSupport {
                 .addMessage(Message.ofUser("hello!"))
                 .build();
         client.chat().async(request)
-                .whenComplete(whenCompleteAssertByAsyncForApiResponseSuccessful())
+                .thenAccept(ApiAssertions::assertApiResponseSuccessful)
                 .toCompletableFuture()
                 .join();
     }
@@ -81,7 +82,11 @@ public class ChatTestCase extends ClientSupport {
                 .addMessage(Message.ofUser("hello!"))
                 .build();
         client.chat().flow(request)
-                .thenAccept(thenAcceptAssertByFlowForApiResponseSuccessful())
+                .thenAccept(flow -> flow
+                        .doOnNext(ApiAssertions::assertApiResponseSuccessful)
+                        .doOnError(Assertions::fail)
+                        .blockingSubscribe()
+                )
                 .toCompletableFuture()
                 .join();
     }
@@ -99,7 +104,12 @@ public class ChatTestCase extends ClientSupport {
                 .addMessage(Message.ofUser("1+2*3-4/5=?"))
                 .build();
         client.chat().async(request)
-                .whenComplete(whenCompleteAssertByAsyncForApiResponseSuccessful())
+                .thenAccept(response -> {
+                    assertApiResponseSuccessful(response);
+                    final String text = response.output().best().message().text();
+                    assertNotNull(text);
+                    assertTrue(text.contains("6.2"));
+                })
                 .toCompletableFuture()
                 .join();
     }
@@ -120,7 +130,12 @@ public class ChatTestCase extends ClientSupport {
                 )))
                 .build();
         client.chat().async(request)
-                .whenComplete(whenCompleteAssertByAsyncForApiResponseSuccessful())
+                .thenAccept(response -> {
+                    assertApiResponseSuccessful(response);
+                    final String text = response.output().best().message().text();
+                    assertNotNull(text);
+                    assertTrue(text.contains("五年规划"));
+                })
                 .toCompletableFuture()
                 .join();
     }
@@ -138,8 +153,12 @@ public class ChatTestCase extends ClientSupport {
                 .addMessage(Message.ofUser("echo: HELLO!"))
                 .build();
         client.chat().async(request)
-                .whenComplete(whenCompleteAssertByAsyncForApiResponseSuccessful())
-                .whenComplete(whenCompleteAssertByAsyncForChatResponseMessageTextContains("HELLO!"))
+                .thenAccept(response -> {
+                    assertApiResponseSuccessful(response);
+                    final String text = response.output().best().message().text();
+                    assertNotNull(text);
+                    assertTrue(text.contains("HELLO!"));
+                })
                 .toCompletableFuture()
                 .join();
     }
@@ -157,8 +176,15 @@ public class ChatTestCase extends ClientSupport {
                 .addMessage(Message.ofUser("echo: HELLO!"))
                 .build();
         client.chat().flow(request)
-                .thenApply(thenApplyAssertByFlowForChatResponseMessageTextContains(false, "HELLO!"))
-                .thenAccept(thenAcceptAssertByFlowForApiResponseSuccessful())
+                .thenAccept(flow -> flow
+                        .doOnNext(ApiAssertions::assertApiResponseSuccessful)
+                        .doOnError(Assertions::fail)
+                        .reduce((a, b) -> b)
+                        .blockingSubscribe(response -> {
+                            final String text = response.output().best().message().text();
+                            assertNotNull(text);
+                            assertTrue(text.contains("HELLO!"));
+                        }))
                 .toCompletableFuture()
                 .join();
     }

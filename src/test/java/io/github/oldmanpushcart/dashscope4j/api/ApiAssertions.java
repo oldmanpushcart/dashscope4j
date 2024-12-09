@@ -1,63 +1,43 @@
 package io.github.oldmanpushcart.dashscope4j.api;
 
-import io.reactivex.rxjava3.core.Flowable;
-import org.junit.jupiter.api.Assertions;
-
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ApiAssertions {
 
+    /**
+     * ApiResponse的基础校验
+     * <p>
+     * 任何一个ApiResponse以及其子类都必须满足的基础校验
+     * </p>
+     *
+     * @param response apiResponse
+     */
+    public static void assertApiResponseBase(ApiResponse<?> response) {
+        assertNotNull(response, "Response is null");
+        assertNotNull(response.uuid(), "Response uuid is null");
+        assertNotNull(response.code(), "Response code is null");
+        assertNotNull(response.usage(), "Response usage is null");
+    }
+
+    /**
+     * 校验ApiResponse是否成功
+     * <ul>
+     * <li>校验ApiResponse的基础信息</li>
+     * <li>校验ApiResponse是否成功</li>
+     * <li>校验成功ApiResponse所必须携带的数据</li>
+     * </ul>
+     *
+     * @param response apiResponse
+     */
     public static void assertApiResponseSuccessful(ApiResponse<?> response) {
-        Assertions.assertNotNull(response.uuid(), "Response UUID is null");
-        Assertions.assertNotNull(response.ret(), "Response ret is null");
-        Assertions.assertNotNull(response.usage(), "Response usage is null");
-        Assertions.assertTrue(response.ret().isSuccess(), "Response is not success");
+        assertApiResponseBase(response);
+        assertTrue(response.isSuccess(), "Response is not successful");
         response.usage().items().forEach(item -> {
-            final int cost = item.cost();
-            Assertions.assertTrue(cost >= 0, String.format("Usage.%s cost is not >= 0", item.name()));
+            assertNotNull(item, "Usage item is null");
+            assertNotNull(item.name(), "Usage item name is null");
+            assertTrue(item.cost() >= 0, "Usage item cost is negative");
         });
-    }
-
-    public static void assertApiResponseFailed(ApiResponse<?> response) {
-        Assertions.assertNotNull(response.uuid(), "Response UUID is null");
-        Assertions.assertNotNull(response.ret(), "Response ret is null");
-        Assertions.assertFalse(response.ret().isSuccess(), "Response is not failure");
-    }
-
-    public static <R extends ApiResponse<?>> BiConsumer<R, Throwable> whenCompleteAssertByAsyncForApiResponseSuccessful() {
-        return (r, ex) -> {
-            if (ex != null) {
-                Assertions.fail("Unexpected exception", ex);
-            }
-            assertApiResponseSuccessful(r);
-        };
-    }
-
-    public static <R extends ApiResponse<?>> BiConsumer<R, Throwable> whenCompleteAssertByAsyncForApiResponseFailed() {
-        return (r, ex) -> {
-            if (ex != null) {
-                Assertions.fail("Unexpected exception", ex);
-            }
-            assertApiResponseFailed(r);
-        };
-    }
-
-    public static <R extends ApiResponse<?>, T extends Throwable> BiConsumer<R, Throwable> whenCompleteAssertByAsyncForApiResponseThrows(Class<T> exType) {
-        return (r, ex) -> {
-            Assertions.assertNotNull(ex, "Exception is null");
-            Assertions.assertThrows(exType, () -> {
-                throw ex;
-            });
-        };
-    }
-
-    public static Consumer<Flowable<? extends ApiResponse<?>>> thenAcceptAssertByFlowForApiResponseSuccessful() {
-        return flow -> flow
-                .doOnNext(ApiAssertions::assertApiResponseSuccessful)
-                .doOnError(ex -> Assertions.fail("Unexpected exception", ex))
-                .blockingForEach(r -> {
-                });
     }
 
 }

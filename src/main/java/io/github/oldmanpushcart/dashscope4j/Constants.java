@@ -15,6 +15,10 @@ public class Constants {
         }
     }
 
+    private Constants() {
+
+    }
+
     /**
      * 版本
      */
