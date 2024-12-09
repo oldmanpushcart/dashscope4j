@@ -11,7 +11,6 @@ import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -155,7 +154,6 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
 
         @Value
         @Accessors(fluent = true)
-        @AllArgsConstructor
         @Builder(access = AccessLevel.PRIVATE)
         @Jacksonized
         private static class InnerMultiMessage {
@@ -170,7 +168,6 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
 
         @Value
         @Accessors(fluent = true)
-        @AllArgsConstructor
         @Builder(access = AccessLevel.PRIVATE)
         @Jacksonized
         private static class InnerTextMessage {
@@ -203,7 +200,6 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
 
         @Value
         @Accessors(fluent = true)
-        @AllArgsConstructor
         @Builder(access = AccessLevel.PRIVATE)
         @Jacksonized
         private static class InnerOutput {

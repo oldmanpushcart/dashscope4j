@@ -1,31 +1,72 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import lombok.*;
 import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
+import static java.util.Collections.unmodifiableList;
 
 
 @Getter
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newBuilder")
-@Jacksonized
 public class ChatResponse extends ApiResponse<ChatResponse.Output> {
 
     @JsonProperty("output")
     private final Output output;
+
+    @JsonCreator
+    public ChatResponse(
+
+            @JsonProperty("request_id")
+            String uuid,
+
+            @JsonProperty("code")
+            String code,
+
+            @JsonProperty("message")
+            String desc,
+
+            @JsonProperty("usage")
+            Usage usage,
+
+            @JsonProperty("output")
+            Output output
+
+    ) {
+        super(uuid, code, desc, cleanUsage(usage));
+        this.output = output;
+    }
+
+    /*
+     * 清除无用的使用情况
+     */
+    private static Usage cleanUsage(Usage usage) {
+        final List<Usage.Item> items = usage.items()
+                .stream()
+
+                /*
+                 * Chat的系列会将tokens的使用总量以及所有子项的使用量都放在一起返回，导致使用过程中无法准确统计。
+                 * 所以这里对总量进行过滤。如果想计算总量，则可直接对所有子项进行相加
+                 */
+                .filter(item -> !"total_tokens".equals(item.name()))
+
+                .collect(Collectors.toList());
+        return new Usage(unmodifiableList(items));
+    }
+
 
     @Value
     @Accessors(fluent = true)
