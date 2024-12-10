@@ -23,6 +23,12 @@ import java.util.stream.Collectors;
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toMap;
 
+/**
+ * 对话请求
+ * <p>
+ * 对话请求被设计为一个不可变类，调用方无法修改其内容，只能通过{@link Builder}来构建新请求。
+ * </p>
+ */
 @Getter
 @Accessors(fluent = true)
 @ToString(callSuper = true)
@@ -47,6 +53,9 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
         }};
     }
 
+    /**
+     * @return 切换对话模型模式
+     */
     private ChatModel.Mode switchMode() {
 
         // 是否有PDFExtract插件
@@ -66,10 +75,20 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
             return ChatModel.Mode.MULTIMODAL;
         }
 
+        // 否则返回模型的默认模式
         return model().mode();
 
     }
 
+    /**
+     * 根据模式编码消息列表
+     * <p>
+     * 对话模型模式有文本和多模态两种，不同模态对messages有不同的要求且无法兼容。
+     * 更糟糕的是有些Plugin会根据传的内容类型来决定是否启用哪一种模式，所以这里需要根据messages的内容来切换模式。
+     * </p>
+     *
+     * @return 编码后的消息列表
+     */
     private List<JsonNode> encodeMessages() {
         final ChatModel.Mode mode = switchMode();
         final List<JsonNode> nodes = new LinkedList<>();
@@ -93,6 +112,13 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
         return nodes;
     }
 
+    /**
+     * @return HTTP请求头
+     * <p>
+     * 在部分对话场景中，需要配合模型和对话内容给HTTP设置一些参数，以便于云端大模型能正确处理请求。
+     * 比如插件列表、OSS路径解析等。
+     * </p>
+     */
     @Override
     public Map<String, String> headers() {
         final Map<String, String> headers = super.headers();
@@ -106,7 +132,7 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
          * 如果有插件，则告知插件列表
          */
         if (!plugins.isEmpty()) {
-            final Map<?,?> pluginArgMap = plugins.stream()
+            final Map<?, ?> pluginArgMap = plugins.stream()
                     .collect(toMap(
                             Plugin::name,
                             Plugin::meta,
@@ -119,6 +145,12 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
         return headers;
     }
 
+    /**
+     * @return 请求选项
+     * <p>
+     * 一些对话场景强制要求设置一些选项，比如工具列表等。
+     * </p>
+     */
     @Override
     public Option option() {
         final Option option = super.option();
@@ -137,14 +169,26 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
         return option;
     }
 
+    /**
+     * @return 新建对话请求构建器
+     */
     public static Builder newBuilder() {
         return new Builder();
     }
 
+    /**
+     * 克隆一个对话请求并基于此新建一个对话请求构建器
+     *
+     * @param request 原始对话请求
+     * @return 对话请求构造器
+     */
     public static Builder newBuilder(ChatRequest request) {
         return new Builder(request);
     }
 
+    /**
+     * 对话请求构建器
+     */
     public static class Builder extends ApiRequest.Builder<ChatModel, ChatRequest, Builder> {
 
         private final List<Message> messages;
@@ -164,40 +208,88 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
             this.tools = new LinkedList<>(request.tools);
         }
 
+        /**
+         * 添加消息
+         *
+         * @param message 消息
+         * @return this
+         */
         public Builder addMessage(Message message) {
             this.messages.add(message);
             return this;
         }
 
+        /**
+         * 添加消息列表
+         *
+         * @param messages 消息列表
+         * @return this
+         */
         public Builder addMessages(Collection<Message> messages) {
             this.messages.addAll(messages);
             return this;
         }
 
+        /**
+         * 添加插件
+         *
+         * @param plugin 插件
+         * @return this
+         */
         public Builder addPlugin(Plugin plugin) {
             this.plugins.add(plugin);
             return this;
         }
 
+        /**
+         * 添加插件列表
+         *
+         * @param plugins 插件列表
+         * @return this
+         */
         public Builder addPlugins(Collection<Plugin> plugins) {
             this.plugins.addAll(plugins);
             return this;
         }
 
+        /**
+         * 添加工具
+         *
+         * @param tool 工具
+         * @return this
+         */
         public Builder addTool(Tool tool) {
             this.tools.add(tool);
             return this;
         }
 
+        /**
+         * 添加工具列表
+         *
+         * @param tools 工具列表
+         * @return this
+         */
         public Builder addTools(Collection<Tool> tools) {
             this.tools.addAll(tools);
             return this;
         }
 
+        /**
+         * 添加函数
+         *
+         * @param function 函数
+         * @return this
+         */
         public Builder addFunction(ChatFunction<?, ?> function) {
             return addFunctions(Collections.singleton(function));
         }
 
+        /**
+         * 添加函数列表
+         *
+         * @param functions 函数列表
+         * @return this
+         */
         public Builder addFunctions(Collection<ChatFunction<?, ?>> functions) {
             final List<Tool> tools = functions.stream()
                     .map(ChatFunctionTool::of)

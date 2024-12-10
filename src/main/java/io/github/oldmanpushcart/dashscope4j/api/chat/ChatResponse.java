@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
-import lombok.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import java.util.List;
@@ -17,7 +19,9 @@ import java.util.stream.Collectors;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 
-
+/**
+ * 对话响应
+ */
 @Getter
 @Accessors(fluent = true)
 @ToString(callSuper = true)
@@ -68,18 +72,37 @@ public class ChatResponse extends ApiResponse<ChatResponse.Output> {
     }
 
 
-    @Value
+    /**
+     * 输出
+     */
+    @Getter
     @Accessors(fluent = true)
-    @AllArgsConstructor
     @ToString
     @EqualsAndHashCode
     @JsonDeserialize(using = ChatResponseOutputJsonDeserializer.class)
     public static class Output {
 
-        List<Choice> choices;
+        /**
+         * 候选结果集
+         */
+        private final List<Choice> choices;
 
+        /**
+         * 构造输出
+         *
+         * @param choice 候选结果
+         */
         public Output(Choice choice) {
             this(singletonList(choice));
+        }
+
+        /**
+         * 构造输出
+         *
+         * @param choices 候选结果集
+         */
+        public Output(List<Choice> choices) {
+            this.choices = unmodifiableList(choices);
         }
 
         public ChatResponse.Choice best() {
@@ -91,9 +114,11 @@ public class ChatResponse extends ApiResponse<ChatResponse.Output> {
     }
 
 
+    /**
+     * 候选结果
+     */
     @Getter
     @Accessors(fluent = true)
-    @AllArgsConstructor
     @ToString
     @EqualsAndHashCode
     public static class Choice implements Comparable<Choice> {
@@ -101,16 +126,54 @@ public class ChatResponse extends ApiResponse<ChatResponse.Output> {
         private final Finish finish;
         private final List<Message> history;
 
+        /**
+         * 构造候选结果
+         *
+         * @param finish  结束类型
+         * @param message 结果消息
+         */
         public Choice(Finish finish, Message message) {
             this(finish, singletonList(message));
         }
 
+        /**
+         * 构造候选结果
+         *
+         * @param finish  结束类型
+         * @param history 历史消息列表
+         *                <p>
+         *                部分场景中候选结果会带多个消息出现，其主要记录了本次请求历史上曾经出现过的消息。<br/>
+         *                比如Plugin、Tool的调用中会将PlugCallMessage/PlugMessage、ToolCallMessage/ToolMessage带入
+         *                </p>
+         */
+        public Choice(Finish finish, List<Message> history) {
+            this.finish = finish;
+            this.history = unmodifiableList(history);
+        }
+
+        /**
+         * @return 最新消息
+         * <p>
+         * 在部分对话场景中会将历史上出现过的消息也一并传入，但只有最后一个消息（最新消息）才是调用方关心的。
+         * 所以这里提供了一个方法，方便调用方获取到最新的消息。
+         * </p>
+         */
         public Message message() {
             return Objects.nonNull(history) && !history.isEmpty()
                     ? history.get(history.size() - 1)
                     : null;
         }
 
+        /**
+         * 候选结果排序
+         * <p>
+         * 为了方便调用方从众多候选结果中获取到最优的结果，这里提供了一个默认排序方法。
+         * 参与到排序的权重因子有：index、logProbs、finish，但其中通义千问只返回了finish，所以这里只对finish状态不同值的权重进行排序。
+         * </p>
+         *
+         * @param o another
+         * @return compare result
+         */
         @Override
         public int compareTo(Choice o) {
             return Integer.compare(finish().weight, o.finish().weight);
@@ -119,7 +182,7 @@ public class ChatResponse extends ApiResponse<ChatResponse.Output> {
     }
 
     /**
-     * 结束标识
+     * 结束类型
      */
     public enum Finish {
 

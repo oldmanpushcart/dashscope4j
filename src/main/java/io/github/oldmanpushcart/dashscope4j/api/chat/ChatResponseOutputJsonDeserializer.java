@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils.hasNonNull;
 import static java.util.Collections.unmodifiableList;
 
 public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.Output> {
@@ -92,7 +91,7 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
 
                 // 多消息：见于plugin场景
                 else if (choiceNode.has("messages")) {
-                    final JsonNode messagesNode = choiceNode.get("messages");
+                    final JsonNode messagesNode = choiceNode.required("messages");
                     final List<Message> messages = new ArrayList<>();
                     for (final JsonNode messageNode : messagesNode) {
                         final InnerTextMessage inTextMessage = context.readTreeAsValue(messageNode, InnerTextMessage.class);
@@ -136,7 +135,7 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
                 final JsonNode toolCallsNode = messageNode.required("tool_calls");
                 final List<Tool.Call> toolCalls = new ArrayList<>();
                 for (final JsonNode toolCallNode : toolCallsNode) {
-                    if (hasNonNull(toolCallNode, "type", n -> "function".equals(n.asText()))) {
+                    if ("function".equals(toolCallNode.required("type").asText())) {
                         final ChatFunctionTool.Call call = context.readTreeAsValue(toolCallNode, ChatFunctionTool.Call.class);
                         toolCalls.add(call);
                     }
@@ -163,7 +162,7 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
 
             @JsonProperty("content")
             List<Content<?>> contents;
-
+            
         }
 
         @Value
