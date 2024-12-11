@@ -3,18 +3,17 @@ package io.github.oldmanpushcart.internal.dashscope4j;
 import io.github.oldmanpushcart.dashscope4j.DashscopeClient;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import okhttp3.OkHttpClient;
 
-import java.time.Duration;
-import java.util.Objects;
+import java.util.function.Consumer;
 
 @Getter
 @Accessors(fluent = true)
 public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
 
     private String ak;
-    private Duration connectTimeout = Duration.ofSeconds(10);
-    private Duration readTimeout = Duration.ofSeconds(10);
-    private Duration writeTimeout = Duration.ofSeconds(10);
+    private final OkHttpClient.Builder okHttpClientBuilder
+            = new OkHttpClient.Builder();
 
     @Override
     public DashscopeClient.Builder ak(String ak) {
@@ -23,26 +22,14 @@ public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
     }
 
     @Override
-    public DashscopeClient.Builder connectTimeout(Duration duration) {
-        this.connectTimeout = Objects.requireNonNull(duration);
-        return this;
-    }
-
-    @Override
-    public DashscopeClient.Builder readTimeout(Duration duration) {
-        this.readTimeout = Objects.requireNonNull(duration);
-        return this;
-    }
-
-    @Override
-    public DashscopeClient.Builder writeTimeout(Duration duration) {
-        this.writeTimeout = Objects.requireNonNull(duration);
+    public DashscopeClient.Builder customizeOkHttpClient(Consumer<OkHttpClient.Builder> consumer) {
+        consumer.accept(okHttpClientBuilder);
         return this;
     }
 
     @Override
     public DashscopeClient build() {
-        return new DashscopeClientImpl(this);
+        return new DashscopeClientImpl(this, okHttpClientBuilder.build());
     }
 
 }

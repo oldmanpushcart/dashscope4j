@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.internal.dashscope4j.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.api.chat.OpChat;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.ToolCallMessage;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.ToolMessage;
@@ -20,16 +19,16 @@ import java.util.concurrent.CompletionStage;
 
 import static java.util.Collections.unmodifiableList;
 
-public class ToolCaller {
+class ToolCaller {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final OpChat opChat;
+    private final ChatOp chatOp;
     private final ChatRequest request;
     private final ToolCallMessage message;
 
-    public ToolCaller(OpChat opChat, ChatRequest request, ToolCallMessage message) {
+    public ToolCaller(ChatOp chatOp, ChatRequest request, ToolCallMessage message) {
         preCheck(message);
-        this.opChat = opChat;
+        this.chatOp = chatOp;
         this.request = request;
         this.message = message;
     }
@@ -59,7 +58,7 @@ public class ToolCaller {
                 .thenCompose(resultJson -> {
                     final List<Message> history = newHistory(call, resultJson);
                     final ChatRequest newRequest = newHistoryRequest(history);
-                    return opChat.async(newRequest)
+                    return chatOp.async(newRequest)
                             .thenApply(response -> newHistoryResponse(history, response));
                 });
     }
@@ -71,7 +70,7 @@ public class ToolCaller {
                 .thenCompose(resultJson -> {
                     final List<Message> history = newHistory(call, resultJson);
                     final ChatRequest newRequest = newHistoryRequest(history);
-                    return opChat.flow(newRequest)
+                    return chatOp.flow(newRequest)
                             .thenApply(flow -> flow.map(r -> newHistoryResponse(history, r)));
                 });
     }

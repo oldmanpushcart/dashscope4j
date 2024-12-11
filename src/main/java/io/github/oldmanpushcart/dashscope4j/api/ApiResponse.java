@@ -23,7 +23,7 @@ public abstract class ApiResponse<D> {
         this.uuid = uuid;
         this.code = null != code ? code : CODE_SUCCESS;
         this.desc = desc;
-        this.usage = usage;
+        this.usage = null != usage ? usage : Usage.empty();
     }
 
     abstract public D output();

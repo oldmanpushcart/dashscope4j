@@ -1,6 +1,9 @@
 package io.github.oldmanpushcart.internal.dashscope4j;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.oldmanpushcart.dashscope4j.Constants;
+import io.github.oldmanpushcart.dashscope4j.Exchange;
 import io.github.oldmanpushcart.dashscope4j.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
@@ -19,13 +22,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.HttpUtils.loggingHttpRequest;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.HttpUtils.loggingHttpResponse;
 
-public class OpExecutor {
+public class ExecutorOp {
 
     private static final MediaType APPLICATION_JSON = MediaType.get("application/json");
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -33,7 +38,7 @@ public class OpExecutor {
     private final String ak;
     private final OkHttpClient http;
 
-    public OpExecutor(String ak, OkHttpClient http) {
+    public ExecutorOp(String ak, OkHttpClient http) {
         this.ak = ak;
         this.http = http;
     }
@@ -77,7 +82,8 @@ public class OpExecutor {
         return builder.build();
     }
 
-    public <R extends ApiResponse<?>> CompletionStage<R> executeAsync(ApiRequest<?, R> request) {
+    public <T extends ApiRequest<?, R>, R extends ApiResponse<?>>
+    CompletionStage<R> executeAsync(T request) {
         final String requestJson = JacksonUtils.toJson(request);
         final Request httpRequest = new Request.Builder()
                 .url(request.model().remote().toString())
@@ -101,7 +107,8 @@ public class OpExecutor {
                 });
     }
 
-    public <R extends ApiResponse<?>> CompletionStage<Flowable<R>> executeFlow(ApiRequest<?, R> request) {
+    public <T extends ApiRequest<?, R>, R extends ApiResponse<?>>
+    CompletionStage<Flowable<R>> executeFlow(T request) {
         final String requestJson = JacksonUtils.toJson(request);
         logger.debug("dashscope://flow/{} >>> {}", request.model().name(), requestJson);
         final Request httpRequest = new Request.Builder()
@@ -150,6 +157,37 @@ public class OpExecutor {
 
         }, BackpressureStrategy.BUFFER);
         return CompletableFuture.completedFuture(flow);
+    }
+
+    public <T extends ApiRequest<?, R>, R extends ApiResponse<?>>
+    CompletionStage<Exchange<T, R>> executeExchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
+        final CompletableFuture<Exchange<T, R>> exchangeF = new CompletableFuture<>();
+        final String uuid = UUID.randomUUID().toString();
+        final Function<T, String> encoder = JacksonUtils::toJson;
+        final Function<String, R> decoder = s -> {
+            final JsonNode node = JacksonUtils.toNode(s);
+            final ObjectNode object = JacksonUtils.newObjectNode();
+            object.put("request_id", uuid);
+            object.setAll((ObjectNode) node);
+            return JacksonUtils.toObject(object, request.responseType());
+        };
+        final WebSocketListener wsListener = new ExchangeWebSocketListenerImpl<>(
+                exchangeF,
+                uuid,
+                mode,
+                listener,
+                encoder,
+                decoder
+        );
+        final Request httpRequest = new Request.Builder()
+                .url(request.model().remote().toString())
+                .headers(newHeaders(request))
+                .build();
+        http.newWebSocket(httpRequest, wsListener);
+        return exchangeF.thenApply(exchange -> {
+            exchange.write(request);
+            return exchange;
+        });
     }
 
 }

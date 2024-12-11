@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -16,7 +17,7 @@ import java.util.Map;
 @Accessors(fluent = true)
 @ToString
 @EqualsAndHashCode
-public abstract class ApiRequest<M extends Model, R extends ApiResponse<?>> {
+public class ApiRequest<M extends Model, R extends ApiResponse<?>> {
 
     @JsonProperty
     private final M model;
@@ -33,7 +34,9 @@ public abstract class ApiRequest<M extends Model, R extends ApiResponse<?>> {
     }
 
     @JsonProperty
-    abstract protected Object input();
+    protected Object input() {
+        return new HashMap<>();
+    }
 
     @JsonProperty("parameters")
     public Option option() {

@@ -101,6 +101,25 @@ public class JacksonUtils {
     }
 
     /**
+     * {@code node -> T}
+     * @param node json node
+     * @param type 对象类型
+     * @return 目标对象
+     * @param <T> 对象类型
+     */
+    public static <T> T toObject(JsonNode node, Class<T> type) {
+        try {
+            return mapper.treeToValue(node, type);
+        } catch (JsonProcessingException cause) {
+            throw new IllegalArgumentException("parse json to object failed!", cause);
+        }
+    }
+
+    public static ObjectNode newObjectNode() {
+        return mapper.createObjectNode();
+    }
+
+    /**
      * 生成json-schema描述对象
      *
      * @param type 类型

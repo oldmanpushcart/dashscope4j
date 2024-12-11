@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Properties;
 
 public class Constants {
@@ -23,5 +24,10 @@ public class Constants {
      * 版本
      */
     public static final String VERSION = properties.getProperty("version");
+
+    /**
+     * WEBSOCKET服务器地址
+     */
+    public static final URI WSS_REMOTE = URI.create("wss://dashscope.aliyuncs.com/api-ws/v1/inference/");
 
 }

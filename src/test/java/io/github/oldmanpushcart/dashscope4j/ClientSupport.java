@@ -3,8 +3,9 @@ package io.github.oldmanpushcart.dashscope4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
-import java.time.Duration;
 import java.util.Objects;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ClientSupport implements LoadingEnv {
 
@@ -14,9 +15,9 @@ public class ClientSupport implements LoadingEnv {
     static void setup() {
         client = DashscopeClient.newBuilder()
                 .ak(AK)
-                .connectTimeout(Duration.ZERO)
-                .readTimeout(Duration.ZERO)
-                .writeTimeout(Duration.ZERO)
+                .customizeOkHttpClient(builder -> {
+                    builder.pingInterval(30, SECONDS);
+                })
                 .build();
     }
 

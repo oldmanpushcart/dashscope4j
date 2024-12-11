@@ -1,14 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
 import io.reactivex.rxjava3.core.Flowable;
 
 import java.util.concurrent.CompletionStage;
 
 @FunctionalInterface
-public interface OpFlow<T extends ApiRequest<?, R>, R extends ApiResponse<?>> {
+public interface OpFlow<T, R> {
 
-    CompletionStage<Flowable<R>> flow(T request);
+    CompletionStage<Flowable<R>> flow(T t);
 
 }

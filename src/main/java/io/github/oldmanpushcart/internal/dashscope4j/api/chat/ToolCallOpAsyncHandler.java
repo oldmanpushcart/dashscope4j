@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.internal.dashscope4j.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.api.chat.OpChat;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.ToolCallMessage;
 import lombok.AllArgsConstructor;
 
@@ -11,9 +10,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 @AllArgsConstructor
-public class ToolCallOpAsyncHandler implements Function<ChatResponse, CompletionStage<ChatResponse>> {
+class ToolCallOpAsyncHandler implements Function<ChatResponse, CompletionStage<ChatResponse>> {
 
-    private final OpChat opChat;
+    private final ChatOp chatOp;
     private final ChatRequest request;
 
     @Override
@@ -25,7 +24,7 @@ public class ToolCallOpAsyncHandler implements Function<ChatResponse, Completion
         }
 
         final ToolCallMessage message = (ToolCallMessage) choice.message();
-        return new ToolCaller(opChat, request, message)
+        return new ToolCaller(chatOp, request, message)
                 .asyncCall();
     }
 
