@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.internal.dashscope4j.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.ToolCallMessage;

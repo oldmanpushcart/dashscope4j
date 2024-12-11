@@ -26,7 +26,7 @@ import static java.util.Collections.unmodifiableList;
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class ChatResponse extends ApiResponse<ChatResponse.Output> {
+public final class ChatResponse extends ApiResponse<ChatResponse.Output> {
 
     @JsonProperty("output")
     private final Output output;

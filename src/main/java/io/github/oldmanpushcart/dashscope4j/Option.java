@@ -62,6 +62,11 @@ public final class Option {
         return this;
     }
 
+    public Option merge(Option option) {
+        map.putAll(option.map);
+        return this;
+    }
+
     /**
      * @return 不可变选项
      */

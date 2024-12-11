@@ -40,7 +40,10 @@ public class ApiRequest<M extends Model, R extends ApiResponse<?>> {
 
     @JsonProperty("parameters")
     public Option option() {
-        return option;
+        return new Option()
+                .merge(model.option())
+                .merge(option)
+                .unmodifiable();
     }
 
     public static abstract class Builder<M extends Model, T extends ApiRequest<M, ?>, B extends Builder<M, T, B>> implements Buildable<T, B> {

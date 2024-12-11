@@ -19,7 +19,7 @@ import java.util.function.Function;
 
 @Accessors(fluent = true)
 @AllArgsConstructor
-class ExchangeImpl<T, R> implements Exchange<T, R> {
+class ExchangeImpl<T> implements Exchange<T> {
 
     @Getter
     private final String uuid;

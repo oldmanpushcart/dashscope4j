@@ -8,18 +8,21 @@ import java.nio.ByteBuffer;
  * 数据交换
  *
  * @param <T> 流入数据类型
- * @param <R> 流出数据类型
- * @since 2.2.0
- * <p>
- * 可以帮助客户端和服务端完成{@code <T,R>}和{@link ByteBuffer}两类数据的双向异步交换
- * </p>
+ *            <p>
+ *            可以帮助客户端和服务端完成{@code <T,R>}和{@link ByteBuffer}两类数据的双向异步交换
+ *            </p>
  */
-public interface Exchange<T, R> {
+public interface Exchange<T> {
 
     /**
      * 正常关闭
      */
     int NORMAL_CLOSURE = 1000;
+
+    /**
+     * 异常关闭
+     */
+    int ABNORMAL_CLOSURE = 1006;
 
     /**
      * @return 唯一标识
@@ -96,7 +99,7 @@ public interface Exchange<T, R> {
          *
          * @param exchange 数据交互通道
          */
-        default void onOpen(Exchange<T, R> exchange) {
+        default void onOpen(Exchange<T> exchange) {
 
         }
 

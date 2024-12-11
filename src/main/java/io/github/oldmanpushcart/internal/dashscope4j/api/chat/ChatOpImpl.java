@@ -1,18 +1,18 @@
 package io.github.oldmanpushcart.internal.dashscope4j.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.api.chat.OpChat;
 import io.github.oldmanpushcart.internal.dashscope4j.ExecutorOp;
 import io.reactivex.rxjava3.core.Flowable;
 
 import java.util.concurrent.CompletionStage;
 
-public class ChatOp implements OpChat {
+public class ChatOpImpl implements ChatOp {
 
     private final ExecutorOp executorOp;
 
-    public ChatOp(ExecutorOp executorOp) {
+    public ChatOpImpl(ExecutorOp executorOp) {
         this.executorOp = executorOp;
     }
 

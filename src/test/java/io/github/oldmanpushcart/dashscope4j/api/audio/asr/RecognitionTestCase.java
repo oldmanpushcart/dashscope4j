@@ -3,18 +3,25 @@ package io.github.oldmanpushcart.dashscope4j.api.audio.asr;
 import io.github.oldmanpushcart.dashscope4j.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.Exchange;
 import io.github.oldmanpushcart.dashscope4j.api.audio.asr.timespan.SentenceTimeSpan;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.CountDownLatch;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import static java.util.Collections.unmodifiableList;
 
 public class RecognitionTestCase extends ClientSupport {
 
     @Test
-    public void test$recognition$player_wav() throws InterruptedException {
+    public void test$recognition$success() throws InterruptedException, IOException {
 
         final RecognitionRequest request = RecognitionRequest.newBuilder()
                 .model(RecognitionModel.PARAFORMER_REALTIME_V2)
@@ -22,53 +29,47 @@ public class RecognitionTestCase extends ClientSupport {
                 .option(RecognitionOptions.FORMAT, RecognitionOptions.Format.WAV)
                 .build();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        client.audio().recognition()
+        final CompletableFuture<List<String>> completed = new CompletableFuture<>();
+        final Exchange<?> exchange = client.audio().recognition()
                 .exchange(request, Exchange.Mode.DUPLEX, new Exchange.Listener<RecognitionRequest, RecognitionResponse>() {
+
+                    private final List<String> sentences = new ArrayList<>();
 
                     @Override
                     public void onData(RecognitionResponse data) {
                         final SentenceTimeSpan sentence = data.output().sentence();
                         if (sentence.isEnd()) {
-                            System.out.println(sentence.text());
+                            sentences.add(sentence.text());
                         }
                     }
 
                     @Override
                     public void onCompleted() {
-                        latch.countDown();
+                        completed.complete(unmodifiableList(sentences));
                     }
 
                     @Override
                     public void onError(Throwable ex) {
-                        ex.printStackTrace(System.err);
-                        latch.countDown();
+                        completed.completeExceptionally(ex);
                     }
-
-                })
-                .thenAccept(exchange -> {
-
-                    final File file = new File("./test-data/poetry-DengHuangHeLou.wav");
-                    final ByteBuffer buffer = ByteBuffer.allocate(20480);
-
-                    try (final FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ)) {
-                        while (channel.read(buffer) != -1) {
-                            buffer.flip();
-                            exchange.write(buffer);
-                            buffer.clear();
-                        }
-                    } catch (Exception ex) {
-                        ex.printStackTrace(System.err);
-                        exchange.closing(1006, ex.getMessage());
-                    }
-
-                    exchange.finishing();
 
                 })
                 .toCompletableFuture()
                 .join();
 
-        latch.await();
+        final File file = new File("./test-data/poetry-DengHuangHeLou.wav");
+        final ByteBuffer buffer = ByteBuffer.allocate(20480);
+
+        try (final FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ)) {
+            while (channel.read(buffer) != -1) {
+                buffer.flip();
+                exchange.write(buffer);
+                buffer.clear();
+            }
+            exchange.finishing();
+        }
+
+        Assertions.assertEquals(Arrays.asList("白日依山尽，黄河入海流。", "欲穷千里目，更上一层楼。"), completed.join());
 
     }
 

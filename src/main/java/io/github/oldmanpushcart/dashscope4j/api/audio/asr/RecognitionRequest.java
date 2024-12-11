@@ -7,7 +7,7 @@ import lombok.experimental.Accessors;
 
 @Getter
 @Accessors(fluent = true)
-public class RecognitionRequest extends ApiRequest<RecognitionModel, RecognitionResponse> {
+public final class RecognitionRequest extends ApiRequest<RecognitionModel, RecognitionResponse> {
 
     @JsonProperty("task_group")
     private final String group = "audio";

@@ -160,8 +160,8 @@ public class ExecutorOp {
     }
 
     public <T extends ApiRequest<?, R>, R extends ApiResponse<?>>
-    CompletionStage<Exchange<T, R>> executeExchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
-        final CompletableFuture<Exchange<T, R>> exchangeF = new CompletableFuture<>();
+    CompletionStage<Exchange<T>> executeExchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
+        final CompletableFuture<Exchange<T>> exchangeF = new CompletableFuture<>();
         final String uuid = UUID.randomUUID().toString();
         final Function<T, String> encoder = JacksonUtils::toJson;
         final Function<String, R> decoder = s -> {

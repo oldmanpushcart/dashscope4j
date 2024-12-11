@@ -153,7 +153,7 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
      */
     @Override
     public Option option() {
-        final Option option = super.option();
+        final Option option = new Option();
 
         // 插件必选参数
         if (!plugins.isEmpty()) {
@@ -166,7 +166,10 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
             option.option("tools", tools);
         }
 
-        return option;
+        return new Option()
+                .merge(super.option())
+                .merge(option)
+                .unmodifiable();
     }
 
     /**

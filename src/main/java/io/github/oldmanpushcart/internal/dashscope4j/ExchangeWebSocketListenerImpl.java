@@ -35,7 +35,7 @@ class ExchangeWebSocketListenerImpl<T, R> extends WebSocketListener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final CompletableFuture<Exchange<T, R>> exchangeF;
+    private final CompletableFuture<Exchange<T>> exchangeF;
     private final String uuid;
     private final Exchange.Mode mode;
     private final Exchange.Listener<T, R> listener;
@@ -45,7 +45,7 @@ class ExchangeWebSocketListenerImpl<T, R> extends WebSocketListener {
     @Override
     public void onOpen(@NotNull WebSocket socket, @NotNull Response response) {
         logger.trace("WEBSOCKET://{} <<< OPEN;", uuid);
-        final Exchange<T, R> exchange = new ExchangeImpl<>(uuid, mode, socket, encoder);
+        final Exchange<T> exchange = new ExchangeImpl<>(uuid, mode, socket, encoder);
         if (!exchangeF.complete(exchange)) {
             socket.cancel();
             throw new IllegalStateException("Exchange already completed!");
@@ -88,7 +88,7 @@ class ExchangeWebSocketListenerImpl<T, R> extends WebSocketListener {
     @Override
     public void onMessage(@NotNull WebSocket socket, @NotNull String text) {
         logger.trace("WEBSOCKET://{} <<< TEXT;text={};", uuid, text);
-        final Exchange<T, R> exchange = exchangeF.join();
+        final Exchange<T> exchange = exchangeF.join();
         final InFrame frame = JacksonUtils.toObject(text, InFrame.class);
         assert Objects.equals(uuid, frame.header().uuid());
 

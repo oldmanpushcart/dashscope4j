@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import io.github.oldmanpushcart.dashscope4j.api.audio.OpAudio;
-import io.github.oldmanpushcart.dashscope4j.api.chat.OpChat;
+import io.github.oldmanpushcart.dashscope4j.api.audio.AudioOp;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import io.github.oldmanpushcart.internal.dashscope4j.DashscopeClientBuilderImpl;
 import okhttp3.OkHttpClient;
@@ -10,9 +10,9 @@ import java.util.function.Consumer;
 
 public interface DashscopeClient {
 
-    OpChat chat();
+    ChatOp chat();
 
-    OpAudio audio();
+    AudioOp audio();
 
     void shutdown();
 
