@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.internal.dashscope4j;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.oldmanpushcart.dashscope4j.Constants;
 import io.github.oldmanpushcart.dashscope4j.Exchange;
@@ -164,13 +163,23 @@ public class ExecutorOp {
         final CompletableFuture<Exchange<T>> exchangeF = new CompletableFuture<>();
         final String uuid = UUID.randomUUID().toString();
         final Function<T, String> encoder = JacksonUtils::toJson;
+
+        /*
+         * Exchange的Response反序列化
+         */
         final Function<String, R> decoder = s -> {
-            final JsonNode node = JacksonUtils.toNode(s);
-            final ObjectNode object = JacksonUtils.newObjectNode();
-            object.put("request_id", uuid);
-            object.setAll((ObjectNode) node);
-            return JacksonUtils.toObject(object, request.responseType());
+            final ObjectNode payloadNode = (ObjectNode) JacksonUtils.toNode(s);
+
+            /*
+             * 特殊处理应答报文：{"output":{}} -> {"request_id":"...","output":{}}
+             * Exchange返回的数据格式其中是不包含Response所需的request_id的，而Response又被设计为不可变类。
+             * 所以需要手动在应答报文中添加上request_id属性，让Response反序列化得以正确进行。
+             */
+            payloadNode.put("request_id", uuid);
+
+            return JacksonUtils.toObject(payloadNode, request.responseType());
         };
+
         final WebSocketListener wsListener = new ExchangeWebSocketListenerImpl<>(
                 exchangeF,
                 uuid,
@@ -184,10 +193,7 @@ public class ExecutorOp {
                 .headers(newHeaders(request))
                 .build();
         http.newWebSocket(httpRequest, wsListener);
-        return exchangeF.thenApply(exchange -> {
-            exchange.write(request);
-            return exchange;
-        });
+        return exchangeF;
     }
 
 }

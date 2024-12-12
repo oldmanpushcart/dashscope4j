@@ -7,7 +7,6 @@ import lombok.experimental.Accessors;
 
 import java.util.HashMap;
 
-import static io.github.oldmanpushcart.internal.dashscope4j.util.StringUtils.isNotBlank;
 import static java.util.Objects.requireNonNull;
 
 @Getter
@@ -33,11 +32,7 @@ public final class SpeechSynthesisRequest extends ApiRequest<SpeechSynthesisMode
     @Override
     protected Object input() {
         return new HashMap<Object, Object>() {{
-
-            if (isNotBlank(text)) {
-                put("text", text);
-            }
-
+            put("text", text);
         }};
     }
 

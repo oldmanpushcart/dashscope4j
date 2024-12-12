@@ -2,22 +2,57 @@ package io.github.oldmanpushcart.dashscope4j.api.audio.tts;
 
 import io.github.oldmanpushcart.dashscope4j.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.Exchange;
+import io.github.oldmanpushcart.dashscope4j.api.audio.CheckExchangeListener;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import java.io.EOFException;
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.concurrent.CompletableFuture;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.WRITE;
 
 public class SpeechSynthesisTestCase extends ClientSupport {
 
+
     @Test
-    public void test$synthesis$success() {
+    public void test$synthesis$none() {
+        final SpeechSynthesisRequest request = SpeechSynthesisRequest.newBuilder()
+                .model(SpeechSynthesisModel.SAMBERT_ZHICHU_V1)
+                .option(SpeechSynthesisOptions.FORMAT, SpeechSynthesisOptions.Format.WAV)
+                .option(SpeechSynthesisOptions.ENABLE_PHONEME_TIMESTAMP, true)
+                .option(SpeechSynthesisOptions.ENABLE_WORDS_TIMESTAMP, true)
+                .text("白日依山尽，黄河入海流。欲穷千里目，更上一层楼。")
+                .build();
+        final CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse> listener =
+                new CheckExchangeListener<>();
+        client.audio().synthesis()
+                .exchange(request, Exchange.Mode.NONE, listener)
+                .thenCompose(v -> listener.completeF())
+                .toCompletableFuture()
+                .join();
+        Assertions.assertEquals(1, listener.dataCnt());
+        Assertions.assertTrue(listener.byteCnt() > 0);
+        Assertions.assertTrue(listener.bytes() > 0L);
+    }
+
+    @Test
+    public void test$synthesis$out() {
+        final SpeechSynthesisRequest request = SpeechSynthesisRequest.newBuilder()
+                .model(SpeechSynthesisModel.SAMBERT_ZHICHU_V1)
+                .option(SpeechSynthesisOptions.FORMAT, SpeechSynthesisOptions.Format.WAV)
+                .option(SpeechSynthesisOptions.ENABLE_PHONEME_TIMESTAMP, true)
+                .option(SpeechSynthesisOptions.ENABLE_WORDS_TIMESTAMP, true)
+                .text("白日依山尽，黄河入海流。欲穷千里目，更上一层楼。")
+                .build();
+        final CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse> listener =
+                new CheckExchangeListener<>();
+        client.audio().synthesis()
+                .exchange(request, Exchange.Mode.OUT, listener)
+                .thenCompose(v -> listener.completeF())
+                .toCompletableFuture()
+                .join();
+        Assertions.assertTrue(listener.dataCnt() > 0);
+        Assertions.assertTrue(listener.byteCnt() > 0);
+        Assertions.assertTrue(listener.bytes() > 0L);
+    }
+
+    @Test
+    public void test$synthesis$duplex() {
 
         final String[] strings = new String[]{
                 "白日依山尽",
@@ -27,75 +62,32 @@ public class SpeechSynthesisTestCase extends ClientSupport {
         };
 
         final SpeechSynthesisRequest request = SpeechSynthesisRequest.newBuilder()
-                .model(SpeechSynthesisModel.COSYVOICE_LONGXIAOCHUN_V1)
+                .model(SpeechSynthesisModel.SAMBERT_ZHICHU_V1)
+                .option(SpeechSynthesisOptions.FORMAT, SpeechSynthesisOptions.Format.WAV)
+                .option(SpeechSynthesisOptions.ENABLE_PHONEME_TIMESTAMP, true)
+                .option(SpeechSynthesisOptions.ENABLE_WORDS_TIMESTAMP, true)
                 .build();
 
-        final CompletableFuture<File> completed = new CompletableFuture<>();
-        final Exchange<SpeechSynthesisRequest> exchange = client.audio().synthesis()
-                .exchange(request, Exchange.Mode.DUPLEX, new Exchange.Listener<SpeechSynthesisRequest, SpeechSynthesisResponse>() {
+        final CheckExchangeListener<SpeechSynthesisRequest, SpeechSynthesisResponse> listener =
+                new CheckExchangeListener<>();
 
-                    private final File file = new File("./output.mp3");
-                    private volatile Exchange<?> exchange;
-                    private volatile FileChannel channel;
-
-                    @Override
-                    public void onOpen(Exchange<SpeechSynthesisRequest> exchange) {
-                        try {
-                            this.exchange = exchange;
-                            this.channel = FileChannel.open(file.toPath(), CREATE, WRITE);
-                        } catch (IOException ex) {
-                            exchange.abort();
-                            onError(ex);
-                        }
+        client.audio().synthesis()
+                .exchange(request, Exchange.Mode.DUPLEX, listener)
+                .thenAccept(exchange -> {
+                    for (final String string : strings) {
+                        exchange.write(SpeechSynthesisRequest.newBuilder(request)
+                                .text(string)
+                                .build());
                     }
-
-                    @Override
-                    public void onByteBuffer(ByteBuffer buf) {
-                        try {
-                            while (buf.hasRemaining()) {
-                                if (channel.write(buf) == -1) {
-                                    throw new EOFException();
-                                }
-                            }
-                        } catch (IOException ex) {
-                            exchange.closing(1006, ex.getMessage());
-                            onError(ex);
-                        }
-                    }
-
-                    @Override
-                    public void onCompleted() {
-                        try {
-                            channel.close();
-                            completed.complete(file);
-                        } catch (IOException ex) {
-                            onError(ex);
-                        }
-                    }
-
-                    @Override
-                    public void onError(Throwable ex) {
-                        try {
-                            if (null != channel) {
-                                channel.close();
-                            }
-                        } catch (IOException e) {
-                            // ignore...
-                        }
-                        completed.completeExceptionally(ex);
-                    }
-
+                    exchange.finishing();
                 })
+                .thenCompose(v -> listener.completeF())
                 .toCompletableFuture()
                 .join();
 
-        for (final String string : strings) {
-            exchange.write(SpeechSynthesisRequest.newBuilder(request)
-                    .text(string)
-                    .build());
-        }
-        exchange.finishing();
-        completed.join();
+        Assertions.assertTrue(listener.dataCnt() > 0);
+        Assertions.assertTrue(listener.byteCnt() > 0);
+        Assertions.assertTrue(listener.bytes() > 0L);
 
     }
 

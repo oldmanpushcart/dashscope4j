@@ -9,6 +9,8 @@ import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisRespons
 import io.github.oldmanpushcart.internal.dashscope4j.ExecutorOp;
 import lombok.AllArgsConstructor;
 
+import static io.github.oldmanpushcart.internal.dashscope4j.util.StringUtils.isNotBlank;
+
 @AllArgsConstructor
 public class AudioOpImpl implements AudioOp {
 
@@ -16,12 +18,22 @@ public class AudioOpImpl implements AudioOp {
 
     @Override
     public OpExchange<RecognitionRequest, RecognitionResponse> recognition() {
-        return executorOp::executeExchange;
+        return (request, mode, listener) -> executorOp.executeExchange(request, mode, listener)
+                .thenApply(exchange -> {
+                    exchange.write(request);
+                    return exchange;
+                });
     }
 
     @Override
     public OpExchange<SpeechSynthesisRequest, SpeechSynthesisResponse> synthesis() {
-        return executorOp::executeExchange;
+        return (request, mode, listener) -> executorOp.executeExchange(request, mode, listener)
+                .thenApply(exchange -> {
+                    if (isNotBlank(request.text())) {
+                        exchange.write(request);
+                    }
+                    return exchange;
+                });
     }
 
 }

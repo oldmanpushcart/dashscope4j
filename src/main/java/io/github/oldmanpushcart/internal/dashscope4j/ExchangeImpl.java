@@ -45,7 +45,7 @@ class ExchangeImpl<T> implements Exchange<T> {
 
     private boolean send(String text) {
         final boolean ret = socket.send(text);
-        logger.trace("WEBSOCKET: >>> TEXT;ret={};text={};", ret, text);
+        logger.trace("WEBSOCKET://{} >>> TEXT;ret={};text={};", uuid, ret, text);
         return ret;
     }
 
@@ -62,7 +62,7 @@ class ExchangeImpl<T> implements Exchange<T> {
         final int remaining = buf.remaining();
         final ByteString byteString = ByteString.of(buf);
         final boolean ret = socket.send(byteString);
-        logger.trace("WEBSOCKET: >>> BYTES;ret={};size={};", ret, remaining);
+        logger.trace("WEBSOCKET://{} >>> BYTES;ret={};size={};", uuid, ret, remaining);
         return ret;
     }
 
@@ -76,14 +76,14 @@ class ExchangeImpl<T> implements Exchange<T> {
     @Override
     public boolean closing(int status, String reason) {
         final boolean ret = socket.close(status, reason);
-        logger.trace("WEBSOCKET: >>> CLOSING;ret={};code={};reason={};", ret, status, reason);
+        logger.trace("WEBSOCKET://{} >>> CLOSING;ret={};code={};reason={};", uuid, ret, status, reason);
         return ret;
     }
 
     @Override
     public void abort() {
         socket.cancel();
-        logger.trace("WEBSOCKET: >>> ABORT;");
+        logger.trace("WEBSOCKET://{} >>> ABORT;", uuid);
     }
 
 

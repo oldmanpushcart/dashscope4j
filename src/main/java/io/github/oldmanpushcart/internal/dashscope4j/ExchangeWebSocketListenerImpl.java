@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.Exchange;
+import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -31,7 +33,7 @@ import java.util.function.Function;
 import static io.github.oldmanpushcart.dashscope4j.Exchange.NORMAL_CLOSURE;
 
 @AllArgsConstructor
-class ExchangeWebSocketListenerImpl<T, R> extends WebSocketListener {
+class ExchangeWebSocketListenerImpl<T extends ApiRequest<?, R>, R extends ApiResponse<?>> extends WebSocketListener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -56,6 +58,7 @@ class ExchangeWebSocketListenerImpl<T, R> extends WebSocketListener {
     @Override
     public void onClosing(@NotNull WebSocket socket, int code, @NotNull String reason) {
         logger.trace("WEBSOCKET://{} <<< CLOSING;code={};reason={};", uuid, code, reason);
+        socket.close(code, reason);
     }
 
     @Override
@@ -76,12 +79,13 @@ class ExchangeWebSocketListenerImpl<T, R> extends WebSocketListener {
         logger.error("WEBSOCKET://{} <<< FAILURE;", uuid, t);
 
         /*
-         * 如果交换对象还未完成，说明连接还未建立，
-         * 需要立即返回。确保listener不会在连接未建立时就被通知。
+         * 如果交换对象还没有创建，说明连接还没有建立成功。
+         * 此时需要通知交换对象建立失败，告知外部连接失败。
          */
-        if (exchangeF.completeExceptionally(t)) {
-            return;
+        if (!exchangeF.isDone()) {
+            exchangeF.completeExceptionally(t);
         }
+
         listener.onError(t);
     }
 
@@ -115,6 +119,7 @@ class ExchangeWebSocketListenerImpl<T, R> extends WebSocketListener {
                         frame.header().desc(),
                         frame.payload()
                 );
+                // TODO:
                 return;
             }
 
@@ -128,6 +133,12 @@ class ExchangeWebSocketListenerImpl<T, R> extends WebSocketListener {
                         mode,
                         frame.payload()
                 );
+
+                /*
+                 * FINISHED 数据帧中有些场景会包含了最终的数据结果
+                 */
+                final R data = decoder.apply(frame.payload());
+                listener.onData(data);
                 exchange.closing(NORMAL_CLOSURE, "finished!");
                 return;
             }

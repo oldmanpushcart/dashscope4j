@@ -38,7 +38,7 @@ public class RecognitionTestCase extends ClientSupport {
                     @Override
                     public void onData(RecognitionResponse data) {
                         final SentenceTimeSpan sentence = data.output().sentence();
-                        if (sentence.isEnd()) {
+                        if (null != sentence && sentence.isEnd()) {
                             sentences.add(sentence.text());
                         }
                     }
