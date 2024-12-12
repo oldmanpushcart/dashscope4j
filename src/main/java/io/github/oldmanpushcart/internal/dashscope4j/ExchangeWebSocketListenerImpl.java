@@ -125,7 +125,6 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<?, R>, R extends ApiRes
                         frame.header().desc(),
                         frame.payload()
                 );
-                // TODO:
                 return;
             }
 
