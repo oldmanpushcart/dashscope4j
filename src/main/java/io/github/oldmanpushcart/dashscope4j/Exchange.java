@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletionStage;
 
 /**
  * 数据交换
@@ -85,6 +86,16 @@ public interface Exchange<T> {
      * </p>
      */
     void abort();
+
+    /**
+     * @return 是否已关闭
+     */
+    boolean isClosed();
+
+    /**
+     * @return 关闭通知
+     */
+    CompletionStage<?> closeStage();
 
     /**
      * 交换监听器

@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
@@ -29,6 +31,7 @@ class ExchangeImpl<T> implements Exchange<T> {
 
     private final WebSocket socket;
     private final Function<T, String> encoder;
+    private final CompletableFuture<?> closeF;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final AtomicBoolean isFirstRef = new AtomicBoolean(true);
@@ -84,6 +87,16 @@ class ExchangeImpl<T> implements Exchange<T> {
     public void abort() {
         socket.cancel();
         logger.trace("WEBSOCKET://{} >>> ABORT;", uuid);
+    }
+
+    @Override
+    public boolean isClosed() {
+        return closeF.isDone();
+    }
+
+    @Override
+    public CompletionStage<?> closeStage() {
+        return closeF;
     }
 
 

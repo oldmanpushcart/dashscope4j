@@ -44,10 +44,12 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<?, R>, R extends ApiRes
     private final Function<T, String> encoder;
     private final Function<String, R> decoder;
 
+    private final CompletableFuture<?> closeF = new CompletableFuture<>();
+
     @Override
     public void onOpen(@NotNull WebSocket socket, @NotNull Response response) {
         logger.trace("WEBSOCKET://{} <<< OPEN;", uuid);
-        final Exchange<T> exchange = new ExchangeImpl<>(uuid, mode, socket, encoder);
+        final Exchange<T> exchange = new ExchangeImpl<>(uuid, mode, socket, encoder, closeF);
         if (!exchangeF.complete(exchange)) {
             socket.cancel();
             throw new IllegalStateException("Exchange already completed!");
@@ -66,11 +68,14 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<?, R>, R extends ApiRes
         logger.trace("WEBSOCKET://{} <<< CLOSE;code={};reason={};", uuid, code, reason);
         if (NORMAL_CLOSURE == code) {
             listener.onCompleted();
+            closeF.complete(null);
         } else {
-            listener.onError(new IOException(String.format("Abnormal closed! code=%s;reason=%s;",
+            final Exception ex = new IOException(String.format("Abnormal closed! code=%s;reason=%s;",
                     code,
                     reason
-            )));
+            ));
+            listener.onError(ex);
+            closeF.completeExceptionally(ex);
         }
     }
 
@@ -87,6 +92,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<?, R>, R extends ApiRes
         }
 
         listener.onError(t);
+        closeF.completeExceptionally(t);
     }
 
     @Override
