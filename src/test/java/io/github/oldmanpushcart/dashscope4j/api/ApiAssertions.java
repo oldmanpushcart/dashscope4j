@@ -13,7 +13,7 @@ public class ApiAssertions {
      *
      * @param response apiResponse
      */
-    public static void assertApiResponseBase(ApiResponse<?> response) {
+    public static void assertApiResponseBase(AlgoResponse<?> response) {
         assertNotNull(response, "Response is null");
         assertNotNull(response.uuid(), "Response uuid is null");
         assertNotNull(response.code(), "Response code is null");
@@ -30,7 +30,7 @@ public class ApiAssertions {
      *
      * @param response apiResponse
      */
-    public static void assertApiResponseSuccessful(ApiResponse<?> response) {
+    public static void assertApiResponseSuccessful(AlgoResponse<?> response) {
         assertApiResponseBase(response);
         assertTrue(response.isSuccess(), "Response is not successful");
         response.usage().items().forEach(item -> {

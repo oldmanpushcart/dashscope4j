@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.Usage;
-import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.api.AlgoResponse;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -20,13 +20,16 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 
 /**
- * 对话响应
+ * 对话应答
+ * <pre><code>
+ *
+ * </code></pre>
  */
 @Getter
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public final class ChatResponse extends ApiResponse<ChatResponse.Output> {
+public final class ChatResponse extends AlgoResponse<ChatResponse.Output> {
 
     @JsonProperty("output")
     private final Output output;

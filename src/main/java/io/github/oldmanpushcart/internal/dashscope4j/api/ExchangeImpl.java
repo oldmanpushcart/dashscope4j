@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.internal.dashscope4j;
+package io.github.oldmanpushcart.internal.dashscope4j.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRawValue;

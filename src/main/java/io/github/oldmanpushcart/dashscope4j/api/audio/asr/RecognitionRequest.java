@@ -1,13 +1,14 @@
 package io.github.oldmanpushcart.dashscope4j.api.audio.asr;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import okhttp3.Request;
 
 @Getter
 @Accessors(fluent = true)
-public final class RecognitionRequest extends ApiRequest<RecognitionModel, RecognitionResponse> {
+public final class RecognitionRequest extends AlgoRequest<RecognitionModel, RecognitionResponse> {
 
     @JsonProperty("task_group")
     private final String group = "audio";
@@ -22,6 +23,14 @@ public final class RecognitionRequest extends ApiRequest<RecognitionModel, Recog
         super(RecognitionResponse.class, builder);
     }
 
+    @Override
+    public Request newHttpRequest() {
+        return new Request.Builder()
+                .url(model().remote().toString())
+                .get()
+                .build();
+    }
+
     public static Builder newBuilder() {
         return new Builder();
     }
@@ -30,7 +39,7 @@ public final class RecognitionRequest extends ApiRequest<RecognitionModel, Recog
         return new Builder(request);
     }
 
-    public static class Builder extends ApiRequest.Builder<RecognitionModel, RecognitionRequest, Builder> {
+    public static class Builder extends AlgoRequest.Builder<RecognitionModel, RecognitionRequest, Builder> {
 
         public Builder() {
 

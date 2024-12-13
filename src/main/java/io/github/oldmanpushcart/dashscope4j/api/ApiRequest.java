@@ -1,86 +1,98 @@
 package io.github.oldmanpushcart.dashscope4j.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.Model;
-import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.Collections;
+import java.util.function.Function;
 
+import static lombok.AccessLevel.PROTECTED;
+
+/**
+ * API请求
+ *
+ * @param <R> 应答类型
+ */
 @Getter
 @Accessors(fluent = true)
-@ToString
+@ToString(callSuper = true)
 @EqualsAndHashCode
-public class ApiRequest<M extends Model, R extends ApiResponse<?>> {
+public abstract class ApiRequest<R extends ApiResponse<?>> {
 
-    @JsonProperty
-    private final M model;
-
-    private final Option option;
+    @Getter(PROTECTED)
     private final Class<R> responseType;
-    private final Map<String, String> headers;
 
-    protected ApiRequest(Class<R> responseType, Builder<M, ?, ?> builder) {
+    /**
+     * 构建Api请求
+     *
+     * @param responseType 应答类型
+     * @param builder      构建器
+     */
+    protected ApiRequest(Class<R> responseType, Builder<?, ?> builder) {
         this.responseType = responseType;
-        this.model = builder.model;
-        this.option = builder.option;
-        this.headers = builder.headers;
     }
 
+    /**
+     * 生成Api请求中的数据
+     * <pre><code>
+     *     {
+     *         "input":{}
+     *     }
+     * </code></pre>
+     *
+     * @return Input
+     */
     @JsonProperty
     protected Object input() {
-        return new HashMap<>();
+        return Collections.emptyMap();
     }
 
-    @JsonProperty("parameters")
-    public Option option() {
-        return new Option()
-                .merge(model.option())
-                .merge(option)
-                .unmodifiable();
-    }
+    /**
+     * 构建 HttpRequest
+     * <p>
+     * 允许实现者自定义实现HTTP请求，DashScope协议要求了多种方式（GET、POST）。
+     * 不同的协议下采用的方式不一样，所以这里直接将HTTP请求的构造开放出来，确保足够的灵活性。
+     * </p>
+     * <p>{@code T -> JSON}</p>
+     *
+     * @return 构建HTTP请求
+     */
+    abstract public okhttp3.Request newHttpRequest();
 
-    public static abstract class Builder<M extends Model, T extends ApiRequest<M, ?>, B extends Builder<M, T, B>> implements Buildable<T, B> {
+    /**
+     * 构建 Request 解码器
+     * <p>{@code T -> JSON}</p>
+     *
+     * @return Request 解码器
+     */
+    abstract public Function<? super ApiRequest<R>, String> newRequestEncoder();
 
-        private M model;
-        private final Option option;
-        private final Map<String, String> headers;
+    /**
+     * 构建 Response 解码器
+     * <p>{@code JSON -> R}</p>
+     *
+     * @return Response 解码器
+     */
+    abstract public Function<String, R> newResponseDecoder();
+
+    /**
+     * API请求构造器
+     *
+     * @param <T> 请求类型
+     * @param <B> 构造器类型
+     */
+    public static abstract class Builder<T extends ApiRequest<?>, B extends ApiRequest.Builder<T, B>> implements Buildable<T, B> {
 
         protected Builder() {
-            this.option = new Option();
-            this.headers = new LinkedHashMap<>();
+
         }
 
         protected Builder(T request) {
-            this.model = request.model();
-            this.option = request.option().clone();
-            this.headers = new LinkedHashMap<>(request.headers());
-        }
 
-        public B model(M model) {
-            this.model = model;
-            return self();
-        }
-
-        public <OT, OR> B option(Option.Opt<OT, OR> opt, OT value) {
-            this.option.option(opt, value);
-            return self();
-        }
-
-        public B option(String name, Object value) {
-            this.option.option(name, value);
-            return self();
-        }
-
-        public B header(String name, String value) {
-            this.headers.put(name, value);
-            return self();
         }
 
     }

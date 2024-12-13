@@ -1,9 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.api.audio.tts;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import okhttp3.Request;
 
 import java.util.HashMap;
 
@@ -11,7 +12,7 @@ import static java.util.Objects.requireNonNull;
 
 @Getter
 @Accessors(fluent = true)
-public final class SpeechSynthesisRequest extends ApiRequest<SpeechSynthesisModel, SpeechSynthesisResponse> {
+public final class SpeechSynthesisRequest extends AlgoRequest<SpeechSynthesisModel, SpeechSynthesisResponse> {
 
     @JsonProperty("task_group")
     private final String group = "audio";
@@ -36,6 +37,14 @@ public final class SpeechSynthesisRequest extends ApiRequest<SpeechSynthesisMode
         }};
     }
 
+    @Override
+    public Request newHttpRequest() {
+        return new Request.Builder()
+                .url(model().remote().toString())
+                .get()
+                .build();
+    }
+
     public static Builder newBuilder() {
         return new Builder();
     }
@@ -44,7 +53,7 @@ public final class SpeechSynthesisRequest extends ApiRequest<SpeechSynthesisMode
         return new Builder(request);
     }
 
-    public static class Builder extends ApiRequest.Builder<SpeechSynthesisModel, SpeechSynthesisRequest, Builder> {
+    public static class Builder extends AlgoRequest.Builder<SpeechSynthesisModel, SpeechSynthesisRequest, Builder> {
 
         private String text;
 

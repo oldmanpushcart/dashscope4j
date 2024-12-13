@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.internal.dashscope4j;
+package io.github.oldmanpushcart.internal.dashscope4j.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
@@ -33,7 +33,7 @@ import java.util.function.Function;
 import static io.github.oldmanpushcart.dashscope4j.Exchange.NORMAL_CLOSURE;
 
 @AllArgsConstructor
-class ExchangeWebSocketListenerImpl<T extends ApiRequest<?, R>, R extends ApiResponse<?>> extends WebSocketListener {
+class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiResponse<?>> extends WebSocketListener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -119,8 +119,8 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<?, R>, R extends ApiRes
              */
             case FAILED: {
                 logger.warn("dashscope://exchange/{}/{} running failed! code={};desc={};payload={};",
-                        uuid,
                         mode,
+                        uuid,
                         frame.header().code(),
                         frame.header().desc(),
                         frame.payload()
@@ -134,8 +134,8 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<?, R>, R extends ApiRes
              */
             case FINISHED: {
                 logger.warn("dashscope://exchange/{}/{} finished! payload={};",
-                        uuid,
                         mode,
+                        uuid,
                         frame.payload()
                 );
 
@@ -154,8 +154,8 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<?, R>, R extends ApiRes
              */
             case GENERATED: {
                 logger.warn("dashscope://exchange/{}/{} generated! payload={};",
-                        uuid,
                         mode,
+                        uuid,
                         frame.payload()
                 );
                 final R data = decoder.apply(frame.payload());

@@ -1,9 +1,10 @@
-package io.github.oldmanpushcart.internal.dashscope4j;
+package io.github.oldmanpushcart.internal.dashscope4j.api;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.oldmanpushcart.dashscope4j.Constants;
 import io.github.oldmanpushcart.dashscope4j.Exchange;
 import io.github.oldmanpushcart.dashscope4j.api.ApiException;
+import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
@@ -16,28 +17,24 @@ import okhttp3.sse.EventSourceListener;
 import okhttp3.sse.EventSources;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.internal.dashscope4j.util.HttpUtils.loggingHttpRequest;
 import static io.github.oldmanpushcart.internal.dashscope4j.util.HttpUtils.loggingHttpResponse;
 
-public class ExecutorOp {
-
-    private static final MediaType APPLICATION_JSON = MediaType.get("application/json");
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+public class ApiOpImpl implements ApiOp {
 
     private final String ak;
     private final OkHttpClient http;
 
-    public ExecutorOp(String ak, OkHttpClient http) {
+    public ApiOpImpl(String ak, OkHttpClient http) {
         this.ak = ak;
         this.http = http;
     }
@@ -72,32 +69,32 @@ public class ExecutorOp {
 
     }
 
-    private Headers newHeaders(ApiRequest<?, ?> request) {
-        final Headers.Builder builder = new Headers.Builder();
-        builder.add("Content-Type", "application/json");
-        builder.add("Authorization", String.format("Bearer %s", ak));
-        builder.add("X-DashScope-Client", Constants.VERSION);
-        request.headers().forEach(builder::add);
+    private Request newDelegateHttpRequest(Request httpRequest, Consumer<Request.Builder> consumer) {
+        final Request.Builder builder = new Request.Builder(httpRequest)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Authorization", String.format("Bearer %s", ak))
+                .addHeader("X-DashScope-Client", Constants.VERSION);
+        consumer.accept(builder);
         return builder.build();
     }
 
-    public <T extends ApiRequest<?, R>, R extends ApiResponse<?>>
-    CompletionStage<R> executeAsync(T request) {
-        final String requestJson = JacksonUtils.toJson(request);
-        final Request httpRequest = new Request.Builder()
-                .url(request.model().remote().toString())
-                .headers(newHeaders(request))
-                .post(RequestBody.create(requestJson, APPLICATION_JSON))
-                .build();
+    private Request newDelegateHttpRequest(Request httpRequest) {
+        return newDelegateHttpRequest(httpRequest, b -> {
 
+        });
+    }
+
+    @Override
+    public <T extends ApiRequest<R>, R extends ApiResponse<?>>
+    CompletionStage<R> executeAsync(T request) {
+
+        final Request httpRequest = newDelegateHttpRequest(request.newHttpRequest());
         loggingHttpRequest(httpRequest);
-        logger.debug("dashscope://async/{} >>> {}", request.model().name(), requestJson);
 
         final CompletableFuture<String> future = new CompletableFuture<>();
         http.newCall(httpRequest).enqueue(new FutureCallback(future));
         return future
-                .whenComplete((r, ex) -> logger.debug("dashscope://async/{} <<< {}", request.model().name(), r, ex))
-                .thenApply(responseJson -> JacksonUtils.toObject(responseJson, request.responseType()))
+                .thenApply(request.newResponseDecoder())
                 .thenApply(response -> {
                     if (!response.isSuccess()) {
                         throw new ApiException(response);
@@ -106,16 +103,13 @@ public class ExecutorOp {
                 });
     }
 
-    public <T extends ApiRequest<?, R>, R extends ApiResponse<?>>
+    @Override
+    public <T extends ApiRequest<R>, R extends ApiResponse<?>>
     CompletionStage<Flowable<R>> executeFlow(T request) {
-        final String requestJson = JacksonUtils.toJson(request);
-        logger.debug("dashscope://flow/{} >>> {}", request.model().name(), requestJson);
-        final Request httpRequest = new Request.Builder()
-                .url(request.model().remote().toString())
-                .headers(newHeaders(request))
-                .addHeader("X-DashScope-SSE", "enable")
-                .post(RequestBody.create(requestJson, APPLICATION_JSON))
-                .build();
+
+        final Request httpRequest = newDelegateHttpRequest(request.newHttpRequest(), builder ->
+                builder.addHeader("X-DashScope-SSE", "enable"));
+        loggingHttpRequest(httpRequest);
 
         final Flowable<R> flow = Flowable.create(emitter -> {
 
@@ -123,10 +117,9 @@ public class ExecutorOp {
 
                 @Override
                 public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
-                    logger.debug("dashscope://flow/{} <<< {}|{}|{}", request.model().name(), id, type, data);
                     try {
                         if ("result".equals(type) || "error".equals(type)) {
-                            final R response = JacksonUtils.toObject(data, request.responseType());
+                            final R response = request.newResponseDecoder().apply(data);
                             if (response.isSuccess()) {
                                 emitter.onNext(response);
                             } else {
@@ -158,7 +151,8 @@ public class ExecutorOp {
         return CompletableFuture.completedFuture(flow);
     }
 
-    public <T extends ApiRequest<?, R>, R extends ApiResponse<?>>
+    @Override
+    public <T extends ApiRequest<R>, R extends ApiResponse<?>>
     CompletionStage<Exchange<T>> executeExchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
         final CompletableFuture<Exchange<T>> exchangeF = new CompletableFuture<>();
         final String uuid = UUID.randomUUID().toString();
@@ -168,6 +162,7 @@ public class ExecutorOp {
          * Exchange的Response反序列化
          */
         final Function<String, R> decoder = s -> {
+
             final ObjectNode payloadNode = (ObjectNode) JacksonUtils.toNode(s);
 
             /*
@@ -177,7 +172,8 @@ public class ExecutorOp {
              */
             payloadNode.put("request_id", uuid);
 
-            return JacksonUtils.toObject(payloadNode, request.responseType());
+            final String payloadJson = payloadNode.toString();
+            return request.newResponseDecoder().apply(payloadJson);
         };
 
         final WebSocketListener wsListener = new ExchangeWebSocketListenerImpl<>(
@@ -188,10 +184,10 @@ public class ExecutorOp {
                 encoder,
                 decoder
         );
-        final Request httpRequest = new Request.Builder()
-                .url(request.model().remote().toString())
-                .headers(newHeaders(request))
-                .build();
+
+        final Request httpRequest = newDelegateHttpRequest(request.newHttpRequest());
+        loggingHttpRequest(httpRequest);
+
         http.newWebSocket(httpRequest, wsListener);
         return exchangeF;
     }

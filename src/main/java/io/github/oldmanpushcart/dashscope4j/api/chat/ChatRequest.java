@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.api.chat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.oldmanpushcart.dashscope4j.Option;
-import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.ChatPlugin;
@@ -16,6 +16,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import okhttp3.Request;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,15 +26,26 @@ import static java.util.stream.Collectors.toMap;
 
 /**
  * 对话请求
- * <p>
- * 对话请求被设计为一个不可变类，调用方无法修改其内容，只能通过{@link Builder}来构建新请求。
- * </p>
+ * <pre><code>
+ * {
+ *   "model": "qwen-turbo",
+ *   "input": {
+ *     "messages": [
+ *       {
+ *         "role": "user",
+ *         "content": "hello!"
+ *       }
+ *     ]
+ *   },
+ *   "parameters": {}
+ * }
+ * </code></pre>
  */
 @Getter
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
+public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     private final List<Message> messages;
     private final List<Plugin> plugins;
@@ -84,7 +96,7 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
      * 根据模式编码消息列表
      * <p>
      * 对话模型模式有文本和多模态两种，不同模态对messages有不同的要求且无法兼容。
-     * 更糟糕的是有些Plugin会根据传的内容类型来决定是否启用哪一种模式，所以这里需要根据messages的内容来切换模式。
+     * 更有些Plugin会根据传的内容类型来决定是否启用哪一种模式，所以这里需要根据messages的内容来切换模式。
      * </p>
      *
      * @return 编码后的消息列表
@@ -112,21 +124,14 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
         return nodes;
     }
 
-    /**
-     * @return HTTP请求头
-     * <p>
-     * 在部分对话场景中，需要配合模型和对话内容给HTTP设置一些参数，以便于云端大模型能正确处理请求。
-     * 比如插件列表、OSS路径解析等。
-     * </p>
-     */
     @Override
-    public Map<String, String> headers() {
-        final Map<String, String> headers = super.headers();
+    public Request newHttpRequest() {
+        final Request.Builder builder = new Request.Builder(super.newHttpRequest());
 
         /*
          * 启用OSS路径解析
          */
-        headers.put("X-DashScope-OssResourceResolve", "enable");
+        builder.addHeader("X-DashScope-OssResourceResolve", "enable");
 
         /*
          * 如果有插件，则告知插件列表
@@ -138,11 +143,10 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
                             Plugin::meta,
                             (a, b) -> b
                     ));
-            final String pluginArgJson = JacksonUtils.toJson(pluginArgMap);
-            headers.put("X-DashScope-Plugin", pluginArgJson);
+            builder.addHeader("X-DashScope-Plugin", JacksonUtils.toJson(pluginArgMap));
         }
 
-        return headers;
+        return builder.build();
     }
 
     /**
@@ -192,7 +196,7 @@ public final class ChatRequest extends ApiRequest<ChatModel, ChatResponse> {
     /**
      * 对话请求构建器
      */
-    public static class Builder extends ApiRequest.Builder<ChatModel, ChatRequest, Builder> {
+    public static class Builder extends AlgoRequest.Builder<ChatModel, ChatRequest, Builder> {
 
         private final List<Message> messages;
         private final List<Plugin> plugins;

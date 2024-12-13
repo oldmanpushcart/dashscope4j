@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.api.audio.asr;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Usage;
-import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.api.AlgoResponse;
 import io.github.oldmanpushcart.dashscope4j.api.audio.asr.timespan.SentenceTimeSpan;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -14,7 +14,7 @@ import lombok.extern.jackson.Jacksonized;
 
 @Getter
 @Accessors(fluent = true)
-public final class RecognitionResponse extends ApiResponse<RecognitionResponse.Output> {
+public final class RecognitionResponse extends AlgoResponse<RecognitionResponse.Output> {
 
     private final Output output;
 

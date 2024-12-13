@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.internal.dashscope4j.base.tokenizer.local;
 
-import java.io.InputStream;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

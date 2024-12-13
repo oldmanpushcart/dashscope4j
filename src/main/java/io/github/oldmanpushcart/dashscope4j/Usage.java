@@ -11,6 +11,9 @@ import java.util.function.Predicate;
 
 import static java.util.Collections.emptyList;
 
+/**
+ * 用量
+ */
 @Value
 @Accessors(fluent = true)
 public class Usage {
