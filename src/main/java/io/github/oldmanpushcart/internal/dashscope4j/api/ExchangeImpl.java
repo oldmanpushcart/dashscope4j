@@ -84,6 +84,11 @@ class ExchangeImpl<T> implements Exchange<T> {
     }
 
     @Override
+    public boolean closing(Throwable ex) {
+        return closing(ABNORMAL_CLOSURE, "close by: " + ex.getMessage());
+    }
+
+    @Override
     public void abort() {
         socket.cancel();
         logger.trace("WEBSOCKET://{} >>> ABORT;", uuid);

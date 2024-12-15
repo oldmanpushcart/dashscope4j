@@ -1,24 +1,53 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchema;
-import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchemaGenerator;
-import io.github.oldmanpushcart.dashscope4j.api.chat.function.EchoFunction;
+import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisModel;
+import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisRequest;
+import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisResponse;
 import org.junit.jupiter.api.Test;
 
-public class DebugTestCase {
+import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
+
+public class DebugTestCase extends ClientSupport {
 
     @Test
-    public void test$debug() throws JsonProcessingException {
+    public void test$debug() throws InterruptedException {
 
-        final ObjectMapper mapper = new ObjectMapper();
-        final JsonSchemaGenerator schemaGen = new JsonSchemaGenerator(mapper);
-        final JsonSchema schema = schemaGen.generateSchema(EchoFunction.Echo.class);
-        final String schemaJson = mapper.writer().writeValueAsString(schema);
-        final JsonNode schemaNode = mapper.reader().readTree(schemaJson);
-        System.out.println(schemaJson);
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Thread worker = new Thread(() -> {
+
+            final SpeechSynthesisRequest request = SpeechSynthesisRequest.newBuilder()
+                    .model(SpeechSynthesisModel.COSYVOICE_LONGXIAOCHUN_V1)
+                    .build();
+
+            client.audio().synthesis()
+                    .exchange(request, Exchange.Mode.DUPLEX, new Exchange.Listener<SpeechSynthesisRequest, SpeechSynthesisResponse>() {
+
+                        @Override
+                        public void onByteBuffer(ByteBuffer buf) {
+                            Exchange.Listener.super.onByteBuffer(buf);
+                        }
+
+                        @Override
+                        public void onCompleted() {
+                            latch.countDown();
+                        }
+                    })
+                    .thenApply(exchange -> {
+                        for (int i = 0; i < 1000; i++) {
+                            final SpeechSynthesisRequest subRequest = SpeechSynthesisRequest.newBuilder(request)
+                                    .text("请念数字：" + i)
+                                    .build();
+                            exchange.write(subRequest);
+                        }
+                        exchange.finishing();
+                        return exchange;
+                    });
+
+        });
+
+        worker.start();
+        latch.await();
 
     }
 

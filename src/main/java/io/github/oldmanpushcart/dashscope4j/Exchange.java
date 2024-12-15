@@ -80,6 +80,14 @@ public interface Exchange<T> {
     boolean closing(int status, String reason);
 
     /**
+     * 申请异常关闭
+     *
+     * @param ex 导致关闭的异常
+     * @return 是否成功
+     */
+    boolean closing(Throwable ex);
+
+    /**
      * 终止
      * <p>
      * 立刻断开和服务端的数据交换连接，不向服务端发送任何请求

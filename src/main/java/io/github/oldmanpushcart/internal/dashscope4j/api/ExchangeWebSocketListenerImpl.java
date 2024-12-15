@@ -133,7 +133,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
              * 可以优雅地关闭连接。
              */
             case FINISHED: {
-                logger.warn("dashscope://exchange/{}/{} finished! payload={};",
+                logger.debug("dashscope://exchange/{}/{} finished! payload={};",
                         mode,
                         uuid,
                         frame.payload()
@@ -153,7 +153,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
              * 转换为数据交换应答对象
              */
             case GENERATED: {
-                logger.warn("dashscope://exchange/{}/{} generated! payload={};",
+                logger.debug("dashscope://exchange/{}/{} generated! payload={};",
                         mode,
                         uuid,
                         frame.payload()

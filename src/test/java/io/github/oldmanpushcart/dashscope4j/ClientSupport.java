@@ -17,7 +17,7 @@ public class ClientSupport implements LoadingEnv {
         client = DashscopeClient.newBuilder()
                 .ak(AK)
                 .customizeOkHttpClient(builder -> {
-                    builder.pingInterval(30, SECONDS);
+                    builder.pingInterval(5, SECONDS);
                     builder.connectTimeout(Duration.ofSeconds(10));
                     builder.readTimeout(Duration.ofMinutes(3));
                     builder.writeTimeout(Duration.ofMinutes(3));
