@@ -65,7 +65,7 @@ public class AudioTestCase extends ClientSupport {
                                     }
                                 }
                             } catch (IOException ex) {
-                                exchange.closing(Exchange.ABNORMAL_CLOSURE, ex.getMessage());
+                                exchange.closing(Exchange.INTERNAL_ERROR_CLOSURE, ex.getMessage());
                                 onError(ex);
                             }
                         }
@@ -143,7 +143,7 @@ public class AudioTestCase extends ClientSupport {
                             }
                             exchange.finishing();
                         } catch (IOException ex) {
-                            exchange.closing(Exchange.ABNORMAL_CLOSURE, ex.getMessage());
+                            exchange.closing(Exchange.INTERNAL_ERROR_CLOSURE, ex.getMessage());
                         }
                         return exchange;
                     })

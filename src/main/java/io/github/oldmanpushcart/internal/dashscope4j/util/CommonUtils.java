@@ -8,7 +8,7 @@ public class CommonUtils {
 
     public static String requireNonBlankString(String str, Supplier<String> messageSupplier) {
         Objects.requireNonNull(messageSupplier);
-        if (!StringUtils.isBlank(str)) {
+        if (StringUtils.isNotBlank(str)) {
             return str;
         }
         throw new IllegalArgumentException(messageSupplier.get());

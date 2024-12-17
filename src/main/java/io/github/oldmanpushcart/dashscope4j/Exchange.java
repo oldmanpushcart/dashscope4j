@@ -21,9 +21,10 @@ public interface Exchange<T> {
     int NORMAL_CLOSURE = 1000;
 
     /**
-     * 异常关闭
+     * 内部错误
+     * <p>遇到未预期的状态或错误</p>
      */
-    int ABNORMAL_CLOSURE = 1006;
+    int INTERNAL_ERROR_CLOSURE = 1011;
 
     /**
      * @return 唯一标识

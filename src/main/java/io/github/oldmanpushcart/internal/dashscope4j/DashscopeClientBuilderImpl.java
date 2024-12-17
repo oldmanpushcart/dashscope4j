@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import okhttp3.OkHttpClient;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 
 @Getter
@@ -29,6 +30,7 @@ public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
 
     @Override
     public DashscopeClient build() {
+        Objects.requireNonNull(ak, "require ak");
         return new DashscopeClientImpl(this, okHttpClientBuilder.build());
     }
 

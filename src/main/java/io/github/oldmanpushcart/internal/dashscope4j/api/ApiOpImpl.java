@@ -10,6 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
 import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.AllArgsConstructor;
 import okhttp3.*;
 import okhttp3.sse.EventSource;
@@ -129,13 +130,17 @@ public class ApiOpImpl implements ApiOp {
                             throw new IllegalStateException(String.format("Unexpected event type: %s", type));
                         }
                     } catch (Throwable cause) {
-                        emitter.onError(cause);
+                        if (!emitter.isCancelled()) {
+                            emitter.onError(cause);
+                        }
                     }
                 }
 
                 @Override
                 public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
-                    emitter.onError(t);
+                    if(!emitter.isCancelled()) {
+                        emitter.onError(t);
+                    }
                 }
 
                 @Override
@@ -145,7 +150,7 @@ public class ApiOpImpl implements ApiOp {
 
             });
 
-            emitter.setCancellable(source::cancel);
+            emitter.setDisposable(Disposable.fromAction(source::cancel));
 
         }, BackpressureStrategy.BUFFER);
         return CompletableFuture.completedFuture(flow);

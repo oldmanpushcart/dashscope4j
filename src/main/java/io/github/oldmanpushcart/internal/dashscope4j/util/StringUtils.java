@@ -6,12 +6,8 @@ public class StringUtils {
         return camelCase.replaceAll("([a-z])([A-Z]+)", "$1_$2").toLowerCase();
     }
 
-    public static boolean isBlank(String str) {
-        return str == null || str.trim().isEmpty();
-    }
-
     public static boolean isNotBlank(String str) {
-        return !isBlank(str);
+        return str != null && !str.trim().isEmpty();
     }
 
 }
