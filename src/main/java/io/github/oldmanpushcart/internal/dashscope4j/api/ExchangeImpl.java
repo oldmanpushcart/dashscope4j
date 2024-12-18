@@ -85,7 +85,12 @@ class ExchangeImpl<T> implements Exchange<T> {
 
     @Override
     public boolean closing(Throwable ex) {
-        return closing(INTERNAL_ERROR_CLOSURE, "close by: " + ex.getMessage());
+        return closing(INTERNAL_ERROR_CLOSURE, "close by error: " + ex.getMessage());
+    }
+
+    @Override
+    public boolean closing() {
+        return closing(NORMAL_CLOSURE, "close by normal");
     }
 
     @Override

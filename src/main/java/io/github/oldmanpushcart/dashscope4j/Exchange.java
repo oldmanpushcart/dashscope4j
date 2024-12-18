@@ -89,6 +89,13 @@ public interface Exchange<T> {
     boolean closing(Throwable ex);
 
     /**
+     * 申请关闭
+     *
+     * @return 是否成功
+     */
+    boolean closing();
+
+    /**
      * 终止
      * <p>
      * 立刻断开和服务端的数据交换连接，不向服务端发送任何请求
