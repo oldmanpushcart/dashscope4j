@@ -61,6 +61,15 @@ public final class ChatResponse extends AlgoResponse<ChatResponse.Output> {
      * 清除无用的使用情况
      */
     private static Usage cleanUsage(Usage usage) {
+
+        /*
+         * 当chat调用出错（限流、命中敏感词等原因）时，usage为null
+         * 此时需要进行特殊处理
+         */
+        if (null == usage) {
+            return null;
+        }
+        
         final List<Usage.Item> items = usage.items()
                 .stream()
 
