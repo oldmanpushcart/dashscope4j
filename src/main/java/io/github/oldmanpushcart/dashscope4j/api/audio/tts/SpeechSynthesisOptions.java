@@ -7,8 +7,6 @@ import static io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils.che
 
 /**
  * 语音合成参数
- *
- * @since 2.2.0
  */
 public interface SpeechSynthesisOptions {
 

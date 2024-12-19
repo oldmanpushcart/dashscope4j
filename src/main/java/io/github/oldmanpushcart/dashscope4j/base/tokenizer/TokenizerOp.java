@@ -15,6 +15,9 @@ public interface TokenizerOp {
 
     /**
      * @return 本地标记
+     * <p>
+     * 本地标记不需要指定对话模型，默认采用兼容{@link ChatModel#QWEN_PLUS}的模型进行标记
+     * </p>
      */
     Tokenizer local();
 

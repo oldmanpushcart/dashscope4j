@@ -12,6 +12,9 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * 语音识别应答
+ */
 @Getter
 @Accessors(fluent = true)
 public final class RecognitionResponse extends AlgoResponse<RecognitionResponse.Output> {

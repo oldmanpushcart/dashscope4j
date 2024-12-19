@@ -10,6 +10,9 @@ import java.util.HashMap;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 语音合成请求
+ */
 @Getter
 @Accessors(fluent = true)
 public final class SpeechSynthesisRequest extends AlgoRequest<SpeechSynthesisModel, SpeechSynthesisResponse> {
@@ -23,6 +26,9 @@ public final class SpeechSynthesisRequest extends AlgoRequest<SpeechSynthesisMod
     @JsonProperty("function")
     private final String fn = "SpeechSynthesizer";
 
+    /**
+     * 合成文本
+     */
     private final String text;
 
     private SpeechSynthesisRequest(Builder builder) {

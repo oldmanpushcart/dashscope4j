@@ -2,6 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.api.ApiAssertions;
+import io.github.oldmanpushcart.dashscope4j.api.ApiException;
+import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
@@ -13,9 +15,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.assertApiResponseSuccessful;
+import static io.github.oldmanpushcart.dashscope4j.util.CompletableFutureUtils.unwrapEx;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -200,8 +204,53 @@ public class ChatTestCase extends ClientSupport {
                 .model(ChatModel.QWEN_TURBO)
                 .addMessage(Message.ofUser("你怎么看法沦功的政治主张?"))
                 .build();
+        final AtomicReference<Throwable> exRef = new AtomicReference<>();
         client.chat().async(request)
-                .toCompletableFuture();
+                .exceptionally(ex-> {
+                    exRef.set(unwrapEx(ex));
+                    return null;
+                })
+                .toCompletableFuture()
+                .join();
+
+        final Throwable ex = exRef.get();
+        Assertions.assertNotNull(ex);
+        Assertions.assertInstanceOf(ApiException.class, ex);
+        final ApiException apiEx = (ApiException) ex;
+        Assertions.assertNotSame(ApiResponse.CODE_SUCCESS, apiEx.code());
+
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "qwen-plus",
+            "qwen-turbo",
+            "qwen-max"
+    })
+    public void test$chat$flow$exception() {
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_TURBO)
+                .addMessage(Message.ofUser("你怎么看法沦功的政治主张?"))
+                .build();
+
+        final AtomicReference<Throwable> exRef = new AtomicReference<>();
+        client.chat().flow(request)
+                .thenAccept(flow -> flow
+                        .blockingSubscribe(
+                                r -> {
+                                },
+                                exRef::set
+                        ))
+                .toCompletableFuture()
+                .join();
+
+        final Throwable ex = exRef.get();
+        Assertions.assertNotNull(ex);
+        Assertions.assertInstanceOf(ApiException.class, ex);
+        final ApiException apiEx = (ApiException) ex;
+        Assertions.assertNotSame(ApiResponse.CODE_SUCCESS, apiEx.code());
+
     }
 
 }

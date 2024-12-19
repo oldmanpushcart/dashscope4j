@@ -8,8 +8,6 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * 标记器
- *
- * @since 2.1.1
  */
 public interface Tokenizer {
 

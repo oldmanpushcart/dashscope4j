@@ -11,7 +11,6 @@ import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.disposables.Disposable;
-import lombok.AllArgsConstructor;
 import okhttp3.*;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
@@ -23,7 +22,6 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -39,26 +37,6 @@ public class ApiOpImpl implements ApiOp {
     public ApiOpImpl(String ak, OkHttpClient http) {
         this.ak = ak;
         this.http = http;
-    }
-
-    @AllArgsConstructor
-    private static class FutureCallback implements Callback {
-
-        private final CompletableFuture<String> future;
-
-        @Override
-        public void onFailure(@NotNull Call call, @NotNull IOException ex) {
-            loggingHttpResponse(null, ex);
-            future.completeExceptionally(ex);
-        }
-
-        @Override
-        public void onResponse(@NotNull Call call, @NotNull Response httpResponse) throws IOException {
-            loggingHttpResponse(httpResponse, null);
-            final String bodyString = Objects.requireNonNull(httpResponse.body()).string();
-            future.complete(bodyString);
-        }
-
     }
 
     private Request newDelegateHttpRequest(Request httpRequest, Consumer<Request.Builder> consumer) {
@@ -83,17 +61,30 @@ public class ApiOpImpl implements ApiOp {
         final Request httpRequest = newDelegateHttpRequest(request.newHttpRequest());
         loggingHttpRequest(httpRequest);
 
-        final CompletableFuture<String> future = new CompletableFuture<>();
-        http.newCall(httpRequest).enqueue(new FutureCallback(future));
-        return future
-                .thenApply(request.newResponseDecoder())
-                .thenApply(response -> {
-                    if (!response.isSuccess()) {
-                        throw new ApiException(response);
-                    } else {
-                        return response;
-                    }
-                });
+        final CompletableFuture<R> completed = new CompletableFuture<>();
+        http.newCall(httpRequest).enqueue(new Callback() {
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException ex) {
+                loggingHttpResponse(null, ex);
+                completed.completeExceptionally(ex);
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response httpResponse) throws IOException {
+                loggingHttpResponse(httpResponse, null);
+                final String bodyString = Objects.requireNonNull(httpResponse.body()).string();
+                final R response = request.newResponseDecoder().apply(bodyString);
+                if (response.isSuccess()) {
+                    completed.complete(response);
+                } else {
+                    completed.completeExceptionally(new ApiException(response));
+                }
+            }
+
+        });
+        return completed;
+
     }
 
     @Override
@@ -107,6 +98,14 @@ public class ApiOpImpl implements ApiOp {
         final Flowable<R> flow = Flowable.create(emitter -> {
 
             final EventSource source = EventSources.createFactory(http).newEventSource(httpRequest, new EventSourceListener() {
+
+                private volatile boolean opened = false;
+
+                @Override
+                public void onOpen(@NotNull EventSource eventSource, @NotNull Response response) {
+                    loggingHttpResponse(response, null);
+                    this.opened = true;
+                }
 
                 @Override
                 public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
@@ -130,6 +129,15 @@ public class ApiOpImpl implements ApiOp {
 
                 @Override
                 public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
+
+                    /*
+                     * 如果opened=false，说明本次异常是建联异常。
+                     * 需要记录HTTP日志
+                     */
+                    if (!opened) {
+                        loggingHttpResponse(response, t);
+                    }
+
                     if (!emitter.isCancelled()) {
                         emitter.onError(t);
                     }
@@ -137,7 +145,9 @@ public class ApiOpImpl implements ApiOp {
 
                 @Override
                 public void onClosed(@NotNull EventSource eventSource) {
-                    emitter.onComplete();
+                    if (!emitter.isCancelled()) {
+                        emitter.onComplete();
+                    }
                 }
 
             });

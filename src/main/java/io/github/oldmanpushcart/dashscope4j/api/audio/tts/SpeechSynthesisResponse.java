@@ -7,6 +7,9 @@ import io.github.oldmanpushcart.dashscope4j.api.AlgoResponse;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
+/**
+ * 语音合成应答
+ */
 @Getter
 @Accessors(fluent = true)
 public final class SpeechSynthesisResponse extends AlgoResponse<SpeechSynthesisResponse.Output> {

@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import okhttp3.Request;
 
+/**
+ * 语音识别请求
+ */
 @Getter
 @Accessors(fluent = true)
 public final class RecognitionRequest extends AlgoRequest<RecognitionModel, RecognitionResponse> {
