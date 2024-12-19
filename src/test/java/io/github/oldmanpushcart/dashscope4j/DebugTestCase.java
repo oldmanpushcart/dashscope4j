@@ -1,54 +1,68 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisModel;
-import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisRequest;
-import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisResponse;
+import io.github.oldmanpushcart.dashscope4j.api.ApiException;
+import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.CountDownLatch;
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class DebugTestCase extends ClientSupport {
 
     @Test
     public void test$debug() throws InterruptedException {
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        final Thread worker = new Thread(() -> {
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_TURBO)
+                .addMessage(Message.ofUser("你怎么看法沦功的政治主张?"))
+                .build();
 
-            final SpeechSynthesisRequest request = SpeechSynthesisRequest.newBuilder()
-                    .model(SpeechSynthesisModel.COSYVOICE_LONGXIAOCHUN_V1)
-                    .build();
+        final AtomicReference<Throwable> exRef = new AtomicReference<>();
+        client.chat().async(request)
+                .exceptionally(ex -> {
+                    ex.printStackTrace();
+                    exRef.set(ex);
+                    return null;
+                })
+                .toCompletableFuture()
+                .join();
 
-            client.audio().synthesis()
-                    .exchange(request, Exchange.Mode.DUPLEX, new Exchange.Listener<SpeechSynthesisRequest, SpeechSynthesisResponse>() {
+        final Throwable ex = exRef.get();
+        Assertions.assertNotNull(ex);
+        Assertions.assertInstanceOf(ApiException.class, ex);
+        final ApiException apiEx = (ApiException) ex;
+        Assertions.assertNotSame(ApiResponse.CODE_SUCCESS, apiEx.code());
 
-                        @Override
-                        public void onByteBuffer(ByteBuffer buf) {
-                            Exchange.Listener.super.onByteBuffer(buf);
-                        }
+//        client.chat().flow(request)
+//                .thenAccept(flow -> flow
+//                        .doOnError(Throwable::printStackTrace)
+//                        .blockingSubscribe(r -> {
+//                            System.out.println(r.output().best().message().text());
+//                        }))
+//                .toCompletableFuture()
+//                .join();
 
-                        @Override
-                        public void onCompleted() {
-                            latch.countDown();
-                        }
-                    })
-                    .thenApply(exchange -> {
-                        for (int i = 0; i < 1000; i++) {
-                            final SpeechSynthesisRequest subRequest = SpeechSynthesisRequest.newBuilder(request)
-                                    .text("请念数字：" + i)
-                                    .build();
-                            exchange.write(subRequest);
-                        }
-                        exchange.finishing();
-                        return exchange;
-                    });
+    }
 
-        });
 
-        worker.start();
-        latch.await();
-
+    @Test
+    public void test() {
+        final CompletableFuture<String> future1 = new CompletableFuture<>();
+        future1.complete(null);
+        future1.thenApply(v-> {
+            throw new RuntimeException("test");
+        })
+                .exceptionally(ex-> {
+                    ex.printStackTrace();
+                    return null;
+                })
+                .toCompletableFuture()
+                .join();
     }
 
 }

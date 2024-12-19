@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
-import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Value;
@@ -14,7 +14,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.lang.reflect.Type;
 
-import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.requireNonBlankString;
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
 
 /**

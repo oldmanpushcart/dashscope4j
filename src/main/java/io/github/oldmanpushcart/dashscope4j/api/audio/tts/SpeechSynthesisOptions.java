@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.api.audio.tts;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Option;
 
-import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.check;
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils.check;
 
 /**
  * 语音合成参数

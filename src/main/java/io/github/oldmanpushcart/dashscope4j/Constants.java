@@ -1,7 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import okhttp3.MediaType;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.Properties;
@@ -31,7 +29,5 @@ public class Constants {
      * WEBSOCKET服务器地址
      */
     public static final URI WSS_REMOTE = URI.create("wss://dashscope.aliyuncs.com/api-ws/v1/inference/");
-
-    public static final MediaType MT_APPLICATION_JSON = MediaType.get("application/json");
 
 }

@@ -11,7 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
-import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;

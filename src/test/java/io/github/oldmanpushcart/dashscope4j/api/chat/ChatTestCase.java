@@ -189,4 +189,19 @@ public class ChatTestCase extends ClientSupport {
                 .join();
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "qwen-plus",
+            "qwen-turbo",
+            "qwen-max"
+    })
+    public void test$chat$async$exception() {
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_TURBO)
+                .addMessage(Message.ofUser("你怎么看法沦功的政治主张?"))
+                .build();
+        client.chat().async(request)
+                .toCompletableFuture();
+    }
+
 }

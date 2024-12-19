@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
-import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

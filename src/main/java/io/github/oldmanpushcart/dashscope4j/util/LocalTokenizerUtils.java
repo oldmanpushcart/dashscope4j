@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.util;
 
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.base.tokenizer.Tokenizer;
-import io.github.oldmanpushcart.internal.dashscope4j.base.tokenizer.local.LocalTokenizer;
+import io.github.oldmanpushcart.dashscope4j.internal.base.tokenizer.local.LocalTokenizer;
 
 import java.util.List;
 import java.util.Map;

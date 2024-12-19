@@ -1,14 +1,14 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat.tool.function;
 
-import io.github.oldmanpushcart.internal.dashscope4j.util.GenericReflectUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.GenericReflectUtils;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Objects;
 import java.util.Optional;
 
-import static io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils.requireNonBlankString;
-import static io.github.oldmanpushcart.internal.dashscope4j.util.StringUtils.toSnakeCase;
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils.requireNonBlankString;
+import static io.github.oldmanpushcart.dashscope4j.internal.util.StringUtils.toSnakeCase;
 
 /**
  * ChatFunction助手类

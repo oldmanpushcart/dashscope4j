@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.api;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Option;
-import io.github.oldmanpushcart.internal.dashscope4j.util.JacksonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
-import static io.github.oldmanpushcart.dashscope4j.Constants.MT_APPLICATION_JSON;
+import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.MT_APPLICATION_JSON;
 
 /**
  * 算法请求

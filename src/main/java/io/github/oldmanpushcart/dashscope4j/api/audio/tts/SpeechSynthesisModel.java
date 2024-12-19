@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.api.audio.tts;
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
-import io.github.oldmanpushcart.internal.dashscope4j.util.CommonUtils;
-import io.github.oldmanpushcart.internal.dashscope4j.util.StringUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.StringUtils;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
