@@ -24,6 +24,20 @@ public interface RecognitionOptions {
     Option.SimpleOpt<Boolean> ENABLE_DISFLUENCY_REMOVAL = new Option.SimpleOpt<>("disfluency_removal_enabled", Boolean.class);
 
     /**
+     * 指定识别语音中的语言代码列表
+     * <p>
+     *     <ul>
+     *         <li>zh: 中文</li>
+     *         <li>en: 英文</li>
+     *         <li>ja: 日文</li>
+     *         <li>ko: 韩语</li>
+     *         <li>yue: 粤语</li>
+     *     </ul>
+     * </p>
+     */
+    Option.SimpleOpt<String[]> LANGUAGE_HINTS = new Option.SimpleOpt<>("language_hints", String[].class);
+
+    /**
      * 格式
      */
     enum Format {
