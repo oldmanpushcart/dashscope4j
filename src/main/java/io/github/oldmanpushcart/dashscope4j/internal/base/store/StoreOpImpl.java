@@ -1,8 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.internal.base.store;
 
+import io.github.oldmanpushcart.dashscope4j.Cache;
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.base.store.StoreOp;
+import lombok.AllArgsConstructor;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,27 +16,42 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
+@AllArgsConstructor
 public class StoreOpImpl implements StoreOp {
 
+    private static final String CACHE_NAMESPACE_FOR_STORE = "store";
+    private final Cache cache;
     private final OkHttpClient http;
     private final ApiOp apiOp;
     private final Map<String, Policy> policiesCache = new ConcurrentHashMap<>();
 
-    public StoreOpImpl(final OkHttpClient http,
-                       final ApiOp apiOp) {
-        this.http = http;
-        this.apiOp = apiOp;
-    }
-
     @Override
     public CompletionStage<URI> upload(URI resource, Model model) {
+
+        final String cacheKey = String.format("%s|%s", resource.toString(), model.name());
+        final URI cached = cache.get(CACHE_NAMESPACE_FOR_STORE, cacheKey)
+                .filter(Cache.Entry::isNotExpired)
+                .map(e -> new String(e.payload(), UTF_8))
+                .map(URI::create)
+                .orElse(null);
+
+        if (null != cached) {
+            return completedFuture(cached);
+        }
+
         return completedFuture(null)
                 .thenCompose(unused -> fetchPolicy(model))
-                .thenCompose(policy -> upload(policy, resource));
+                .thenCompose(policy -> upload(policy, resource))
+                .whenComplete((v, ex) -> {
+                    if (null == ex) {
+                        cache.put(CACHE_NAMESPACE_FOR_STORE, cacheKey, v.toString().getBytes(UTF_8));
+                    }
+                });
     }
 
     private CompletionStage<Policy> fetchPolicy(Model model) {

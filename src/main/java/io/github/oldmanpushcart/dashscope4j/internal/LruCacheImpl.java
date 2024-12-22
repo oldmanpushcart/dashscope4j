@@ -89,6 +89,11 @@ class LruCacheImpl implements Cache {
                     .orElse(false);
         }
 
+        @Override
+        public boolean isNotExpired() {
+            return !isExpired();
+        }
+
     }
 
 }

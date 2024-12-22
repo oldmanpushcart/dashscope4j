@@ -29,7 +29,7 @@ public class DashscopeClientImpl implements DashscopeClient {
         this.cache = cache;
         this.http = http;
         final ApiOp apiOp = new ApiOpImpl(ak, http);
-        this.baseOp = new BaseOpImpl(http, apiOp);
+        this.baseOp = new BaseOpImpl(cache, http, apiOp);
         this.chatOp = new ChatOpImpl(apiOp);
         this.audioOp = new AudioOpImpl(apiOp);
     }

@@ -24,6 +24,8 @@ public interface Cache extends Closeable {
 
         boolean isExpired();
 
+        boolean isNotExpired();
+
         Instant expireAt();
 
     }
