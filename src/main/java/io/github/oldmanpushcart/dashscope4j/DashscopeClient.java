@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import okhttp3.OkHttpClient;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public interface DashscopeClient {
 
@@ -32,6 +33,14 @@ public interface DashscopeClient {
          * @return this
          */
         Builder ak(String ak);
+
+        /**
+         * 设置缓存工厂
+         *
+         * @param factory 缓存工厂
+         * @return this
+         */
+        Builder cacheFactory(Supplier<Cache> factory);
 
         Builder customizeOkHttpClient(Consumer<OkHttpClient.Builder> consumer);
 

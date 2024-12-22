@@ -41,7 +41,7 @@ public abstract class AlgoResponse<D> extends ApiResponse<D> {
      * @param usage 用量
      */
     protected AlgoResponse(String uuid, String code, String desc, Usage usage) {
-        super(uuid, null != code ? code : CODE_SUCCESS, desc);
+        super(uuid, code, desc);
         this.usage = null != usage ? usage : Usage.empty();
     }
 

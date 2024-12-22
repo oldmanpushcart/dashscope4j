@@ -41,7 +41,7 @@ public abstract class ApiResponse<D> {
      */
     protected ApiResponse(String uuid, String code, String desc) {
         this.uuid = uuid;
-        this.code = code;
+        this.code = null != code ? code : CODE_SUCCESS;
         this.desc = desc;
     }
 

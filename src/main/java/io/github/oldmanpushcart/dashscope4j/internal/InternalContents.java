@@ -10,4 +10,9 @@ public interface InternalContents {
     int WEBSOCKET_CLOSE_REASON_MAX_LENGTH = 123;
 
     MediaType MT_APPLICATION_JSON = MediaType.get("application/json");
+
+    MediaType MT_APPLICATION_OCTET_STREAM = MediaType.get("application/octet-stream");
+
+    String HTTP_HEADER_CONTENT_TYPE = "Content-Type";
+
 }
