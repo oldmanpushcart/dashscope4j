@@ -216,6 +216,18 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         }
 
         /**
+         * 设置消息列表
+         *
+         * @param messages 消息列表
+         * @return this
+         */
+        public Builder messages(Collection<Message> messages) {
+            this.messages.clear();
+            this.messages.addAll(messages);
+            return this;
+        }
+
+        /**
          * 添加消息
          *
          * @param message 消息
@@ -234,6 +246,18 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          */
         public Builder addMessages(Collection<Message> messages) {
             this.messages.addAll(messages);
+            return this;
+        }
+
+        /**
+         * 设置插件列表
+         *
+         * @param plugins 插件列表
+         * @return this
+         */
+        public Builder plugins(Collection<Plugin> plugins) {
+            this.plugins.clear();
+            this.plugins.addAll(plugins);
             return this;
         }
 
@@ -260,6 +284,18 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         }
 
         /**
+         * 设置工具列表
+         *
+         * @param tools 工具列表
+         * @return this
+         */
+        public Builder tools(Collection<Tool> tools) {
+            this.tools.clear();
+            this.tools.addAll(tools);
+            return this;
+        }
+
+        /**
          * 添加工具
          *
          * @param tool 工具
@@ -282,6 +318,25 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         }
 
         /**
+         * 设置函数列表
+         *
+         * @param functions 函数列表
+         * @return this
+         */
+        public Builder functions(Collection<ChatFunction<?, ?>> functions) {
+            this.tools.removeIf(tool -> tool instanceof ChatFunctionTool);
+            this.tools.addAll(toTools(functions));
+            return this;
+        }
+
+        private static List<Tool> toTools(Collection<ChatFunction<?, ?>> functions) {
+            return functions.stream()
+                    .map(ChatFunctionTool::of)
+                    .map(Tool.class::cast)
+                    .collect(Collectors.toList());
+        }
+
+        /**
          * 添加函数
          *
          * @param function 函数
@@ -298,11 +353,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder addFunctions(Collection<ChatFunction<?, ?>> functions) {
-            final List<Tool> tools = functions.stream()
-                    .map(ChatFunctionTool::of)
-                    .map(Tool.class::cast)
-                    .collect(Collectors.toList());
-            this.tools.addAll(tools);
+            this.tools.addAll(toTools(functions));
             return this;
         }
 

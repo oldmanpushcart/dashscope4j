@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.internal.DashscopeClientBuilderImpl;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import okhttp3.OkHttpClient;
 
+import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -41,6 +42,12 @@ public interface DashscopeClient {
          * @return this
          */
         Builder cacheFactory(Supplier<Cache> factory);
+
+        Builder interceptors(Collection<Interceptor> interceptors);
+
+        Builder addInterceptor(Interceptor interceptor);
+
+        Builder addInterceptors(Collection<Interceptor> interceptors);
 
         Builder customizeOkHttpClient(Consumer<OkHttpClient.Builder> consumer);
 

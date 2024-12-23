@@ -2,13 +2,16 @@ package io.github.oldmanpushcart.dashscope4j.internal;
 
 import io.github.oldmanpushcart.dashscope4j.Cache;
 import io.github.oldmanpushcart.dashscope4j.DashscopeClient;
-import okhttp3.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -20,9 +23,10 @@ public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
 
     private String ak;
     private Supplier<Cache> cacheFactory = () -> new LruCacheImpl(4096);
+    private final List<Interceptor> interceptors = new ArrayList<>();
     private final OkHttpClient.Builder okHttpClientBuilder
             = new OkHttpClient.Builder()
-            .addInterceptor(new Interceptor() {
+            .addInterceptor(new okhttp3.Interceptor() {
                 @NotNull
                 @Override
                 public Response intercept(@NotNull Chain chain) throws IOException {
@@ -56,6 +60,28 @@ public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
     }
 
     @Override
+    public DashscopeClient.Builder interceptors(Collection<Interceptor> interceptors) {
+        requireNonNull(interceptors);
+        this.interceptors.clear();
+        this.interceptors.addAll(interceptors);
+        return this;
+    }
+
+    @Override
+    public DashscopeClient.Builder addInterceptor(Interceptor interceptor) {
+        requireNonNull(interceptor);
+        this.interceptors.add(interceptor);
+        return this;
+    }
+
+    @Override
+    public DashscopeClient.Builder addInterceptors(Collection<Interceptor> interceptors) {
+        requireNonNull(interceptors);
+        this.interceptors.addAll(interceptors);
+        return this;
+    }
+
+    @Override
     public DashscopeClient.Builder customizeOkHttpClient(Consumer<OkHttpClient.Builder> consumer) {
         consumer.accept(okHttpClientBuilder);
         return this;
@@ -70,7 +96,7 @@ public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
 
             cache = cacheFactory.get();
             http = okHttpClientBuilder.build();
-            return new DashscopeClientImpl(ak, cache, http);
+            return new DashscopeClientImpl(ak, cache, interceptors, http);
 
         } catch (Throwable ex) {
 
