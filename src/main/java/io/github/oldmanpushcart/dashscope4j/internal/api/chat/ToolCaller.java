@@ -7,10 +7,9 @@ import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.ToolCallMessage;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.ToolMessage;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
-import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import io.reactivex.rxjava3.core.Flowable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -20,9 +19,9 @@ import java.util.concurrent.CompletionStage;
 
 import static java.util.Collections.unmodifiableList;
 
+@Slf4j
 class ToolCaller {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ChatOp chatOp;
     private final ChatRequest request;
     private final ToolCallMessage message;
@@ -120,22 +119,22 @@ class ToolCaller {
         final Type parameterType = tool.meta().parameterTs().type();
         final String parameterJson = call.stub().arguments();
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("dashscope://chat/function/{} <<< {}",
+        if (log.isDebugEnabled()) {
+            log.debug("dashscope://chat/function/{} <<< {}",
                     call.stub().name(),
-                    JacksonUtils.compact(parameterJson)
+                    JacksonJsonUtils.compact(parameterJson)
             );
         }
 
 
         try {
-            return tool.function().call(JacksonUtils.toObject(parameterJson, parameterType))
-                    .thenApply(JacksonUtils::toJson)
+            return tool.function().call(JacksonJsonUtils.toObject(parameterJson, parameterType))
+                    .thenApply(JacksonJsonUtils::toJson)
                     .whenComplete((resultJson, ex) -> {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("dashscope://chat/function/{} >>> {}",
+                        if (log.isDebugEnabled()) {
+                            log.debug("dashscope://chat/function/{} >>> {}",
                                     call.stub().name(),
-                                    JacksonUtils.compact(resultJson),
+                                    JacksonJsonUtils.compact(resultJson),
                                     ex
                             );
                         }

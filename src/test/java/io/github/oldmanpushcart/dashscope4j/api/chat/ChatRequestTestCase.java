@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -71,7 +71,7 @@ public class ChatRequestTestCase {
                 .addFunction(new EchoFunction())
                 .addMessage(Message.ofUser("Hello!"))
                 .build();
-        final String requestJson = JacksonUtils.toJson(request);
+        final String requestJson = JacksonJsonUtils.toJson(request);
         System.out.println(requestJson);
     }
 

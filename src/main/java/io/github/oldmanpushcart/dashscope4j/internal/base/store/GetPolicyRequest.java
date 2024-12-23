@@ -2,31 +2,32 @@ package io.github.oldmanpushcart.dashscope4j.internal.base.store;
 
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
-import lombok.Getter;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 import java.util.function.Function;
 
-@Getter
+@Value
 @Accessors(fluent = true)
+@EqualsAndHashCode(callSuper = true)
+@Slf4j
 class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Model model;
+    Model model;
 
-    protected GetPolicyRequest(Builder builder) {
+    private GetPolicyRequest(Builder builder) {
         super(GetPolicyResponse.class, builder);
         this.model = builder.model;
     }
 
     @Override
     public Request newHttpRequest() {
-        logger.debug("dashscope://base/store/get-policy >>> model={}", model.name());
+        log.debug("dashscope://base/store/get-policy >>> model={}", model.name());
         return new Request.Builder()
                 .url(String.format("https://dashscope.aliyuncs.com/api/v1/uploads?action=getPolicy&model=%s", model.name()))
                 .get()
@@ -41,8 +42,8 @@ class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {
     @Override
     public Function<String, GetPolicyResponse> newResponseDecoder() {
         return bodyJson -> {
-            logger.debug("dashscope://base/store/get-policy <<< {}", bodyJson);
-            return JacksonUtils.toObject(bodyJson, GetPolicyResponse.class);
+            log.debug("dashscope://base/store/get-policy <<< {}", bodyJson);
+            return JacksonJsonUtils.toObject(bodyJson, GetPolicyResponse.class);
         };
     }
 
@@ -54,7 +55,7 @@ class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {
         return new Builder(request);
     }
 
-    public static class Builder extends ApiRequest.Builder<GetPolicyRequest, Builder> {
+    static class Builder extends ApiRequest.Builder<GetPolicyRequest, Builder> {
 
         private Model model;
 

@@ -7,16 +7,15 @@ import io.github.oldmanpushcart.dashscope4j.base.store.StoreOp;
 import io.github.oldmanpushcart.dashscope4j.base.tokenizer.TokenizerOp;
 import io.github.oldmanpushcart.dashscope4j.internal.base.store.StoreOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.base.tokenizer.TokenizerOpImpl;
-import okhttp3.OkHttpClient;
 
 public class BaseOpImpl implements BaseOp {
 
     private final TokenizerOp tokenizerOp;
     private final StoreOp storeOp;
 
-    public BaseOpImpl(Cache cache, OkHttpClient http, ApiOp apiOp) {
+    public BaseOpImpl(Cache cache, ApiOp apiOp) {
         this.tokenizerOp = new TokenizerOpImpl(apiOp);
-        this.storeOp = new StoreOpImpl(cache, http, apiOp);
+        this.storeOp = new StoreOpImpl(cache, apiOp);
     }
 
     @Override

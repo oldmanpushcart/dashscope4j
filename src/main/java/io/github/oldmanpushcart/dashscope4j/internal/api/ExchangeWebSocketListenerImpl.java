@@ -9,21 +9,20 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.Exchange;
 import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -33,9 +32,8 @@ import java.util.function.Function;
 import static io.github.oldmanpushcart.dashscope4j.Exchange.NORMAL_CLOSURE;
 
 @AllArgsConstructor
+@Slf4j
 class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiResponse<?>> extends WebSocketListener {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final CompletableFuture<Exchange<T>> exchangeF;
     private final String uuid;
@@ -48,7 +46,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
 
     @Override
     public void onOpen(@NotNull WebSocket socket, @NotNull Response response) {
-        logger.trace("WEBSOCKET://{} <<< OPEN;", uuid);
+        log.trace("WEBSOCKET://{} <<< OPEN;", uuid);
         final Exchange<T> exchange = new ExchangeImpl<>(uuid, mode, socket, encoder, closeF);
         if (!exchangeF.complete(exchange)) {
             socket.cancel();
@@ -59,13 +57,13 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
 
     @Override
     public void onClosing(@NotNull WebSocket socket, int code, @NotNull String reason) {
-        logger.trace("WEBSOCKET://{} <<< CLOSING;code={};reason={};", uuid, code, reason);
+        log.trace("WEBSOCKET://{} <<< CLOSING;code={};reason={};", uuid, code, reason);
         socket.close(code, reason);
     }
 
     @Override
     public void onClosed(@NotNull WebSocket socket, int code, @NotNull String reason) {
-        logger.trace("WEBSOCKET://{} <<< CLOSE;code={};reason={};", uuid, code, reason);
+        log.trace("WEBSOCKET://{} <<< CLOSE;code={};reason={};", uuid, code, reason);
         if (NORMAL_CLOSURE == code) {
             listener.onCompleted();
             closeF.complete(null);
@@ -81,7 +79,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
 
     @Override
     public void onFailure(@NotNull WebSocket socket, @NotNull Throwable t, @Nullable Response response) {
-        logger.error("WEBSOCKET://{} <<< FAILURE;", uuid, t);
+        log.error("WEBSOCKET://{} <<< FAILURE;", uuid, t);
 
         /*
          * 如果交换对象还没有创建，说明连接还没有建立成功。
@@ -97,15 +95,15 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
 
     @Override
     public void onMessage(@NotNull WebSocket socket, @NotNull String text) {
-        logger.trace("WEBSOCKET://{} <<< TEXT;text={};", uuid, text);
+        log.trace("WEBSOCKET://{} <<< TEXT;text={};", uuid, text);
         final Exchange<T> exchange = exchangeF.join();
-        final InFrame frame = JacksonUtils.toObject(text, InFrame.class);
+        final InFrame frame = JacksonJsonUtils.toObject(text, InFrame.class);
         assert Objects.equals(uuid, frame.header().uuid());
 
         switch (frame.header().type()) {
 
             case STARTED: {
-                logger.debug("dashscope://exchange/{}/{} started! payload={};",
+                log.debug("dashscope://exchange/{}/{} started! payload={};",
                         mode,
                         uuid,
                         frame.payload()
@@ -118,7 +116,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
              * 记录失败信息并继续接收消息
              */
             case FAILED: {
-                logger.warn("dashscope://exchange/{}/{} running failed! code={};desc={};payload={};",
+                log.warn("dashscope://exchange/{}/{} running failed! code={};desc={};payload={};",
                         mode,
                         uuid,
                         frame.header().code(),
@@ -133,7 +131,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
              * 可以优雅地关闭连接。
              */
             case FINISHED: {
-                logger.debug("dashscope://exchange/{}/{} finished! payload={};",
+                log.debug("dashscope://exchange/{}/{} finished! payload={};",
                         mode,
                         uuid,
                         frame.payload()
@@ -153,7 +151,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
              * 转换为数据交换应答对象
              */
             case GENERATED: {
-                logger.debug("dashscope://exchange/{}/{} generated! payload={};",
+                log.debug("dashscope://exchange/{}/{} generated! payload={};",
                         mode,
                         uuid,
                         frame.payload()
@@ -168,7 +166,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
 
     @Override
     public void onMessage(@NotNull WebSocket webSocket, @NotNull ByteString bytes) {
-        logger.trace("WEBSOCKET://{} <<< BINARY;bytes={};", uuid, bytes.size());
+        log.trace("WEBSOCKET://{} <<< BINARY;bytes={};", uuid, bytes.size());
         listener.onByteBuffer(bytes.asByteBuffer());
     }
 

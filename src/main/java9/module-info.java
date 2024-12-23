@@ -4,9 +4,10 @@ open module dashscope4j {
 
     requires org.slf4j;
     requires kotlin.stdlib;
-    requires transitive com.fasterxml.jackson.databind;
-    requires transitive com.fasterxml.jackson.annotation;
-    requires transitive com.fasterxml.jackson.module.jsonSchema;
+    requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.annotation;
+    requires com.fasterxml.jackson.module.jsonSchema;
+    requires com.fasterxml.jackson.dataformat.xml;
     requires transitive io.reactivex.rxjava3;
     requires okhttp3;
     requires okhttp3.sse;

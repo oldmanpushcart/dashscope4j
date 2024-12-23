@@ -11,7 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
-import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -105,7 +105,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         final ChatModel.Mode mode = switchMode();
         final List<JsonNode> nodes = new LinkedList<>();
         messages.forEach(message -> {
-            final JsonNode messageNode = JacksonUtils.toNode(message);
+            final JsonNode messageNode = JacksonJsonUtils.toNode(message);
             if (messageNode instanceof ObjectNode) {
                 final ObjectNode node = (ObjectNode) messageNode;
                 switch (mode) {
@@ -143,7 +143,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
                             Plugin::meta,
                             (a, b) -> b
                     ));
-            builder.addHeader("X-DashScope-Plugin", JacksonUtils.toJson(pluginArgMap));
+            builder.addHeader("X-DashScope-Plugin", JacksonJsonUtils.toJson(pluginArgMap));
         }
 
         return builder.build();

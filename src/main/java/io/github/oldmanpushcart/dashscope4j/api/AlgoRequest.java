@@ -3,15 +3,14 @@ package io.github.oldmanpushcart.dashscope4j.api;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Option;
-import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
@@ -38,9 +37,8 @@ import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.MT_
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
+@Slf4j
 public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> extends ApiRequest<R> {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @JsonProperty
     private final M model;
@@ -93,8 +91,8 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
     @Override
     public Function<? super ApiRequest<R>, String> newRequestEncoder() {
         return request -> {
-            final String bodyJson = JacksonUtils.toJson(this);
-            logger.debug("dashscope://algo/{} >>> {}", model.name(), bodyJson);
+            final String bodyJson = JacksonJsonUtils.toJson(this);
+            log.debug("dashscope://algo/{} >>> {}", model.name(), bodyJson);
             return bodyJson;
         };
     }
@@ -102,8 +100,8 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
     @Override
     public Function<String, R> newResponseDecoder() {
         return bodyJson -> {
-            logger.debug("dashscope://algo/{} <<< {}", model.name(), bodyJson);
-            return JacksonUtils.toObject(bodyJson, responseType());
+            log.debug("dashscope://algo/{} <<< {}", model.name(), bodyJson);
+            return JacksonJsonUtils.toObject(bodyJson, responseType());
         };
     }
 

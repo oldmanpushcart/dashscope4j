@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -113,15 +113,15 @@ public class ChatFunctionTool implements Tool {
             private final JsonNode node;
 
             public TypeSchema(Type type) {
-                final JsonNode node = JacksonUtils.schema(type);
-                final String schema = JacksonUtils.toJson(node);
+                final JsonNode node = JacksonJsonUtils.schema(type);
+                final String schema = JacksonJsonUtils.toJson(node);
                 this.type = type;
                 this.node = node;
                 this.schema = schema;
             }
 
             public TypeSchema(Type type, String schema) {
-                final JsonNode node = JacksonUtils.toNode(schema);
+                final JsonNode node = JacksonJsonUtils.toNode(schema);
                 this.type = type;
                 this.node = node;
                 this.schema = schema;

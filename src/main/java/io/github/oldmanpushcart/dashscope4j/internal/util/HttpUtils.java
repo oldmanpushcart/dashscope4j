@@ -1,17 +1,15 @@
 package io.github.oldmanpushcart.dashscope4j.internal.util;
 
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.Headers;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Slf4j
 public class HttpUtils {
-
-    private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
 
     private static Map<String, String> parseHeaderMap(Headers headers) {
         final Map<String, String> headerMap = new LinkedHashMap<>();
@@ -19,6 +17,7 @@ public class HttpUtils {
             final String name = header.getFirst();
             final String value = header.getSecond();
             if ("Authorization".equalsIgnoreCase(name)) {
+                headerMap.put("Authorization", "Bearer ******");
                 return;
             }
             headerMap.put(name, value);
@@ -28,11 +27,11 @@ public class HttpUtils {
 
     public static void loggingHttpRequest(Request request) {
 
-        if (!logger.isTraceEnabled()) {
+        if (!log.isTraceEnabled()) {
             return;
         }
 
-        logger.trace("HTTP:// >>> {} {} {}",
+        log.trace("HTTP:// >>> {} {} {}",
                 request.method(),
                 request.url(),
                 parseHeaderMap(request.headers()).entrySet().stream()
@@ -45,18 +44,18 @@ public class HttpUtils {
 
     public static void loggingHttpResponse(Response response, Throwable ex) {
 
-        if (!logger.isTraceEnabled()) {
+        if (!log.isTraceEnabled()) {
             return;
         }
 
         // HTTP错误
         if (null != ex) {
-            logger.trace("HTTP:// << {}", ex.getLocalizedMessage());
+            log.trace("HTTP:// << {}", ex.getLocalizedMessage());
         }
 
         // HTTP应答
         else {
-            logger.trace("HTTP:// <<< {} {} {}",
+            log.trace("HTTP:// <<< {} {} {}",
                     response.code(),
                     response.message(),
                     parseHeaderMap(response.headers()).entrySet().stream()

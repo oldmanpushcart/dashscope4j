@@ -2,20 +2,46 @@ package io.github.oldmanpushcart.dashscope4j.internal;
 
 import io.github.oldmanpushcart.dashscope4j.Cache;
 import io.github.oldmanpushcart.dashscope4j.DashscopeClient;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static io.github.oldmanpushcart.dashscope4j.internal.util.HttpUtils.loggingHttpRequest;
+import static io.github.oldmanpushcart.dashscope4j.internal.util.HttpUtils.loggingHttpResponse;
 import static java.util.Objects.requireNonNull;
 
 public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
 
     private String ak;
-    private Supplier<Cache> cacheFactory = () -> new LruCacheImpl(1024);
+    private Supplier<Cache> cacheFactory = () -> new LruCacheImpl(4096);
     private final OkHttpClient.Builder okHttpClientBuilder
-            = new OkHttpClient.Builder();
+            = new OkHttpClient.Builder()
+            .addInterceptor(new Interceptor() {
+                @NotNull
+                @Override
+                public Response intercept(@NotNull Chain chain) throws IOException {
+                    try {
+                        final Request request = chain.request();
+                        loggingHttpRequest(request);
+                        final Response response = chain.proceed(request);
+                        loggingHttpResponse(response, null);
+                        return response;
+                    } catch (Exception ex) {
+                        loggingHttpResponse(null, ex);
+                        if (ex instanceof IOException) {
+                            throw (IOException) ex;
+                        } else {
+                            throw new IOException(ex);
+                        }
+                    }
+                }
+            });
 
     @Override
     public DashscopeClient.Builder ak(String ak) {

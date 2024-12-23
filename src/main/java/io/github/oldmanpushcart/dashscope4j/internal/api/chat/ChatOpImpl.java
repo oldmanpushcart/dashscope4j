@@ -9,6 +9,8 @@ import lombok.AllArgsConstructor;
 
 import java.util.concurrent.CompletionStage;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+
 @AllArgsConstructor
 public class ChatOpImpl implements ChatOp {
 
@@ -16,14 +18,15 @@ public class ChatOpImpl implements ChatOp {
 
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
-        return apiOp
-                .executeAsync(request)
+        return completedFuture(request)
+                .thenCompose(apiOp::executeAsync)
                 .thenCompose(new ToolCallOpAsyncHandler(this, request));
     }
 
     @Override
     public CompletionStage<Flowable<ChatResponse>> flow(ChatRequest request) {
-        return apiOp.executeFlow(request)
+        return completedFuture(request)
+                .thenCompose(apiOp::executeFlow)
                 .thenApply(new ToolCallOpFlowHandler(this, request));
     }
 

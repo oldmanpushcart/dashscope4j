@@ -19,7 +19,7 @@ import static lombok.AccessLevel.PROTECTED;
  */
 @Getter
 @Accessors(fluent = true)
-@ToString(callSuper = true)
+@ToString
 @EqualsAndHashCode
 public abstract class ApiRequest<R extends ApiResponse<?>> {
 

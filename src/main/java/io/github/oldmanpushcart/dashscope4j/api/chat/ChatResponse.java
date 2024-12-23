@@ -7,8 +7,8 @@ import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoResponse;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.ToString;
+import lombok.Value;
 import lombok.experimental.Accessors;
 
 import java.util.List;
@@ -25,14 +25,14 @@ import static java.util.Collections.unmodifiableList;
  *
  * </code></pre>
  */
-@Getter
+@Value
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public final class ChatResponse extends AlgoResponse<ChatResponse.Output> {
+public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
 
     @JsonProperty("output")
-    private final Output output;
+    Output output;
 
     @JsonCreator
     public ChatResponse(
@@ -87,7 +87,7 @@ public final class ChatResponse extends AlgoResponse<ChatResponse.Output> {
     /**
      * 输出
      */
-    @Getter
+    @Value
     @Accessors(fluent = true)
     @ToString
     @EqualsAndHashCode
@@ -97,7 +97,7 @@ public final class ChatResponse extends AlgoResponse<ChatResponse.Output> {
         /**
          * 候选结果集
          */
-        private final List<Choice> choices;
+        List<Choice> choices;
 
         /**
          * 构造输出
@@ -129,14 +129,14 @@ public final class ChatResponse extends AlgoResponse<ChatResponse.Output> {
     /**
      * 候选结果
      */
-    @Getter
+    @Value
     @Accessors(fluent = true)
     @ToString
     @EqualsAndHashCode
     public static class Choice implements Comparable<Choice> {
 
-        private final Finish finish;
-        private final List<Message> history;
+        Finish finish;
+        List<Message> history;
 
         /**
          * 构造候选结果

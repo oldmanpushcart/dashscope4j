@@ -12,7 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TimeZone;
 
-public class JacksonUtils {
+public class JacksonJsonUtils {
 
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(new PropertyNamingStrategies.SnakeCaseStrategy())

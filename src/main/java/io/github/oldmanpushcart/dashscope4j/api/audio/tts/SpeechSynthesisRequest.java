@@ -2,7 +2,9 @@ package io.github.oldmanpushcart.dashscope4j.api.audio.tts;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.Value;
 import lombok.experimental.Accessors;
 import okhttp3.Request;
 
@@ -13,23 +15,25 @@ import static java.util.Objects.requireNonNull;
 /**
  * 语音合成请求
  */
-@Getter
+@Value
 @Accessors(fluent = true)
-public final class SpeechSynthesisRequest extends AlgoRequest<SpeechSynthesisModel, SpeechSynthesisResponse> {
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class SpeechSynthesisRequest extends AlgoRequest<SpeechSynthesisModel, SpeechSynthesisResponse> {
 
     @JsonProperty("task_group")
-    private final String group = "audio";
+    String group = "audio";
 
     @JsonProperty("task")
-    private final String task = "tts";
+    String task = "tts";
 
     @JsonProperty("function")
-    private final String fn = "SpeechSynthesizer";
+    String fn = "SpeechSynthesizer";
 
     /**
      * 合成文本
      */
-    private final String text;
+    String text;
 
     private SpeechSynthesisRequest(Builder builder) {
         super(SpeechSynthesisResponse.class, builder);

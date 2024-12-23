@@ -2,25 +2,29 @@ package io.github.oldmanpushcart.dashscope4j.api.audio.asr;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.Value;
 import lombok.experimental.Accessors;
 import okhttp3.Request;
 
 /**
  * 语音识别请求
  */
-@Getter
+@Value
 @Accessors(fluent = true)
-public final class RecognitionRequest extends AlgoRequest<RecognitionModel, RecognitionResponse> {
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class RecognitionRequest extends AlgoRequest<RecognitionModel, RecognitionResponse> {
 
     @JsonProperty("task_group")
-    private final String group = "audio";
+    String group = "audio";
 
     @JsonProperty("task")
-    private final String task = "asr";
+    String task = "asr";
 
     @JsonProperty("function")
-    private final String fn = "recognition";
+    String fn = "recognition";
 
     private RecognitionRequest(Builder builder) {
         super(RecognitionResponse.class, builder);

@@ -7,7 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -26,9 +26,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static io.github.oldmanpushcart.dashscope4j.internal.util.HttpUtils.loggingHttpRequest;
-import static io.github.oldmanpushcart.dashscope4j.internal.util.HttpUtils.loggingHttpResponse;
-
 public class ApiOpImpl implements ApiOp {
 
     private final String ak;
@@ -39,7 +36,8 @@ public class ApiOpImpl implements ApiOp {
         this.http = http;
     }
 
-    private Request newDelegateHttpRequest(Request httpRequest, Consumer<Request.Builder> consumer) {
+    private Request newDelegateHttpRequest(ApiRequest<?> request, Consumer<Request.Builder> consumer) {
+        final Request httpRequest = request.newHttpRequest();
         final Request.Builder builder = new Request.Builder(httpRequest)
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Authorization", String.format("Bearer %s", ak))
@@ -48,8 +46,8 @@ public class ApiOpImpl implements ApiOp {
         return builder.build();
     }
 
-    private Request newDelegateHttpRequest(Request httpRequest) {
-        return newDelegateHttpRequest(httpRequest, b -> {
+    private Request newDelegateHttpRequest(ApiRequest<?> request) {
+        return newDelegateHttpRequest(request, b -> {
 
         });
     }
@@ -58,27 +56,28 @@ public class ApiOpImpl implements ApiOp {
     public <T extends ApiRequest<R>, R extends ApiResponse<?>>
     CompletionStage<R> executeAsync(T request) {
 
-        final Request httpRequest = newDelegateHttpRequest(request.newHttpRequest());
-        loggingHttpRequest(httpRequest);
+        final Request httpRequest = newDelegateHttpRequest(request);
 
         final CompletableFuture<R> completed = new CompletableFuture<>();
         http.newCall(httpRequest).enqueue(new Callback() {
 
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException ex) {
-                loggingHttpResponse(null, ex);
                 completed.completeExceptionally(ex);
             }
 
             @Override
-            public void onResponse(@NotNull Call call, @NotNull Response httpResponse) throws IOException {
-                loggingHttpResponse(httpResponse, null);
-                final String bodyString = Objects.requireNonNull(httpResponse.body()).string();
-                final R response = request.newResponseDecoder().apply(bodyString);
-                if (response.isSuccess()) {
-                    completed.complete(response);
-                } else {
-                    completed.completeExceptionally(new ApiException(response));
+            public void onResponse(@NotNull Call call, @NotNull Response httpResponse) {
+                try {
+                    final String bodyString = Objects.requireNonNull(httpResponse.body()).string();
+                    final R response = request.newResponseDecoder().apply(bodyString);
+                    if (response.isSuccess()) {
+                        completed.complete(response);
+                    } else {
+                        completed.completeExceptionally(new ApiException(response));
+                    }
+                } catch (Throwable ex) {
+                    completed.completeExceptionally(ex);
                 }
             }
 
@@ -91,21 +90,12 @@ public class ApiOpImpl implements ApiOp {
     public <T extends ApiRequest<R>, R extends ApiResponse<?>>
     CompletionStage<Flowable<R>> executeFlow(T request) {
 
-        final Request httpRequest = newDelegateHttpRequest(request.newHttpRequest(), builder ->
+        final Request httpRequest = newDelegateHttpRequest(request, builder ->
                 builder.addHeader("X-DashScope-SSE", "enable"));
-        loggingHttpRequest(httpRequest);
 
         final Flowable<R> flow = Flowable.create(emitter -> {
 
             final EventSource source = EventSources.createFactory(http).newEventSource(httpRequest, new EventSourceListener() {
-
-                private volatile boolean opened = false;
-
-                @Override
-                public void onOpen(@NotNull EventSource eventSource, @NotNull Response response) {
-                    loggingHttpResponse(response, null);
-                    this.opened = true;
-                }
 
                 @Override
                 public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
@@ -129,15 +119,6 @@ public class ApiOpImpl implements ApiOp {
 
                 @Override
                 public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
-
-                    /*
-                     * 如果opened=false，说明本次异常是建联异常。
-                     * 需要记录HTTP日志
-                     */
-                    if (!opened) {
-                        loggingHttpResponse(response, t);
-                    }
-
                     if (!emitter.isCancelled()) {
                         emitter.onError(t);
                     }
@@ -163,14 +144,14 @@ public class ApiOpImpl implements ApiOp {
     CompletionStage<Exchange<T>> executeExchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
         final CompletableFuture<Exchange<T>> exchangeF = new CompletableFuture<>();
         final String uuid = UUID.randomUUID().toString();
-        final Function<T, String> encoder = JacksonUtils::toJson;
+        final Function<T, String> encoder = JacksonJsonUtils::toJson;
 
         /*
          * Exchange的Response反序列化
          */
         final Function<String, R> decoder = s -> {
 
-            final ObjectNode payloadNode = (ObjectNode) JacksonUtils.toNode(s);
+            final ObjectNode payloadNode = (ObjectNode) JacksonJsonUtils.toNode(s);
 
             /*
              * 特殊处理应答报文：{"output":{}} -> {"request_id":"...","output":{}}
@@ -192,9 +173,7 @@ public class ApiOpImpl implements ApiOp {
                 decoder
         );
 
-        final Request httpRequest = newDelegateHttpRequest(request.newHttpRequest());
-        loggingHttpRequest(httpRequest);
-
+        final Request httpRequest = newDelegateHttpRequest(request);
         http.newWebSocket(httpRequest, wsListener);
         return exchangeF;
     }

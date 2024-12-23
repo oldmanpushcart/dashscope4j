@@ -3,15 +3,14 @@ package io.github.oldmanpushcart.dashscope4j.internal.api;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import io.github.oldmanpushcart.dashscope4j.Exchange;
-import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.WebSocket;
 import okio.ByteString;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +23,7 @@ import static io.github.oldmanpushcart.dashscope4j.internal.util.StringUtils.sub
 
 @Accessors(fluent = true)
 @AllArgsConstructor
+@Slf4j
 class ExchangeImpl<T> implements Exchange<T> {
 
     @Getter
@@ -36,7 +36,6 @@ class ExchangeImpl<T> implements Exchange<T> {
     private final Function<T, String> encoder;
     private final CompletableFuture<?> closeF;
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final AtomicBoolean isFirstRef = new AtomicBoolean(true);
 
     /**
@@ -51,7 +50,7 @@ class ExchangeImpl<T> implements Exchange<T> {
 
     private boolean send(String text) {
         final boolean ret = socket.send(text);
-        logger.trace("WEBSOCKET://{} >>> TEXT;ret={};text={};", uuid, ret, text);
+        log.trace("WEBSOCKET://{} >>> TEXT;ret={};text={};", uuid, ret, text);
         return ret;
     }
 
@@ -59,7 +58,7 @@ class ExchangeImpl<T> implements Exchange<T> {
     public boolean write(T data) {
         final OutFrame.Type type = isFirstFrame() ? OutFrame.Type.RUN : OutFrame.Type.CONTINUE;
         final OutFrame frame = new OutFrame(new OutFrame.Header(uuid, type, mode), encoder.apply(data));
-        final String encoded = JacksonUtils.toJson(frame);
+        final String encoded = JacksonJsonUtils.toJson(frame);
         return send(encoded);
     }
 
@@ -68,21 +67,21 @@ class ExchangeImpl<T> implements Exchange<T> {
         final int remaining = buf.remaining();
         final ByteString byteString = ByteString.of(buf);
         final boolean ret = socket.send(byteString);
-        logger.trace("WEBSOCKET://{} >>> BYTES;ret={};size={};", uuid, ret, remaining);
+        log.trace("WEBSOCKET://{} >>> BYTES;ret={};size={};", uuid, ret, remaining);
         return ret;
     }
 
     @Override
     public boolean finishing() {
         final OutFrame frame = new OutFrame(new OutFrame.Header(uuid, OutFrame.Type.FINISH, mode), "{\"input\": {}}");
-        final String encoded = JacksonUtils.toJson(frame);
+        final String encoded = JacksonJsonUtils.toJson(frame);
         return send(encoded);
     }
 
     @Override
     public boolean closing(int status, String reason) {
         final boolean ret = socket.close(status, substring(reason, WEBSOCKET_CLOSE_REASON_MAX_LENGTH));
-        logger.trace("WEBSOCKET://{} >>> CLOSING;ret={};code={};reason={};", uuid, ret, status, reason);
+        log.trace("WEBSOCKET://{} >>> CLOSING;ret={};code={};reason={};", uuid, ret, status, reason);
         return ret;
     }
 
@@ -93,7 +92,7 @@ class ExchangeImpl<T> implements Exchange<T> {
         }
         final String reason = ex.getClass().getSimpleName();
         final boolean ret = socket.close(INTERNAL_ERROR_CLOSURE, substring(reason, WEBSOCKET_CLOSE_REASON_MAX_LENGTH));
-        logger.trace("WEBSOCKET://{} >>> CLOSING;ret={};code={};reason={};", uuid, ret, INTERNAL_ERROR_CLOSURE, reason, ex);
+        log.trace("WEBSOCKET://{} >>> CLOSING;ret={};code={};reason={};", uuid, ret, INTERNAL_ERROR_CLOSURE, reason, ex);
         return ret;
     }
 
@@ -105,7 +104,7 @@ class ExchangeImpl<T> implements Exchange<T> {
     @Override
     public void abort() {
         socket.cancel();
-        logger.trace("WEBSOCKET://{} >>> ABORT;", uuid);
+        log.trace("WEBSOCKET://{} >>> ABORT;", uuid);
     }
 
     @Override
