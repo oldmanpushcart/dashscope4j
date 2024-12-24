@@ -19,17 +19,17 @@ import java.util.Objects;
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class FileCreateResponse extends OpenAiResponse<FileMeta> {
+public class FileDetailResponse extends OpenAiResponse<FileMeta> {
 
     FileMeta output;
 
-    private FileCreateResponse(String uuid, OpenAiError error, FileMeta output) {
+    FileDetailResponse(String uuid, OpenAiError error, FileMeta output) {
         super(uuid, error);
         this.output = output;
     }
 
     @JsonCreator
-    private static FileCreateResponse of(
+    private static FileDetailResponse of(
 
             @JacksonInject("header/x-request-id")
             String uuid,
@@ -55,7 +55,7 @@ public class FileCreateResponse extends OpenAiResponse<FileMeta> {
     ) {
 
         if (Objects.nonNull(error)) {
-            return new FileCreateResponse(uuid, error, null);
+            return new FileDetailResponse(uuid, error, null);
         }
 
         final FileMeta meta = new FileMeta(
@@ -65,7 +65,7 @@ public class FileCreateResponse extends OpenAiResponse<FileMeta> {
                 Instant.ofEpochSecond(created),
                 purpose
         );
-        return new FileCreateResponse(uuid, null, meta);
+        return new FileDetailResponse(uuid, null, meta);
 
     }
 

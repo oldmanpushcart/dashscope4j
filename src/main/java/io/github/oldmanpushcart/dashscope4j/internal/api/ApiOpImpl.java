@@ -25,6 +25,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.*;
 import static java.util.Objects.requireNonNull;
 
 public class ApiOpImpl implements ApiOp {
@@ -40,9 +41,9 @@ public class ApiOpImpl implements ApiOp {
     private Request newDelegateHttpRequest(ApiRequest<?> request, Consumer<Request.Builder> consumer) {
         final Request httpRequest = request.newHttpRequest();
         final Request.Builder builder = new Request.Builder(httpRequest)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Authorization", String.format("Bearer %s", ak))
-                .addHeader("X-DashScope-Client", Constants.VERSION);
+                .addHeader(HTTP_HEADER_CONTENT_TYPE, "application/json")
+                .addHeader(HTTP_HEADER_AUTHORIZATION, String.format("Bearer %s", ak))
+                .addHeader(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION);
         consumer.accept(builder);
         return builder.build();
     }
@@ -92,7 +93,7 @@ public class ApiOpImpl implements ApiOp {
     CompletionStage<Flowable<R>> executeFlow(T request) {
 
         final Request httpRequest = newDelegateHttpRequest(request, builder ->
-                builder.addHeader("X-DashScope-SSE", "enable"));
+                builder.addHeader(HTTP_HEADER_X_DASHSCOPE_SSE, ENABLE));
 
         final Flowable<R> flow = Flowable.create(emitter -> {
 

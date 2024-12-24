@@ -8,6 +8,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.MultipartBody;
 import okhttp3.Request;
 
@@ -22,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
+@Slf4j
 public class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
 
     URI resource;
@@ -37,6 +39,7 @@ public class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
 
     @Override
     public Request newHttpRequest() {
+        log.debug("dashscope://base/files/create >>> resource={};purpose={};", resource, purpose);
         return new Request.Builder()
                 .url("https://dashscope.aliyuncs.com/compatible-mode/v1/files")
                 .post(new MultipartBody.Builder()
@@ -50,6 +53,7 @@ public class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
     @Override
     public BiFunction<okhttp3.Response, String, FileCreateResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
+            log.debug("dashscope://base/files/create <<< {}", bodyJson);
             return JacksonJsonUtils.toObject(bodyJson, FileCreateResponse.class, httpResponse);
         };
     }

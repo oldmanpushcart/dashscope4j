@@ -21,7 +21,7 @@ public class FileMeta {
     String name;
     long size;
     Instant uploadedAt;
-    String purpose;
+    Purpose purpose;
 
     /**
      * 转换为URI

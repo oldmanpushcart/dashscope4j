@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.base.files;
 
 import java.io.File;
 import java.net.URI;
-import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -18,7 +18,7 @@ public interface FilesOp {
      * @param purpose  用途
      * @return 创建操作
      */
-    CompletionStage<FileMeta> upload(URI resource, String filename, Purpose purpose);
+    CompletionStage<FileMeta> create(URI resource, String filename, Purpose purpose);
 
     /**
      * 上传文件
@@ -27,8 +27,8 @@ public interface FilesOp {
      * @param purpose 用途
      * @return 创建操作
      */
-    default CompletionStage<FileMeta> upload(File file, Purpose purpose) {
-        return upload(file.toURI(), file.getName(), purpose);
+    default CompletionStage<FileMeta> create(File file, Purpose purpose) {
+        return create(file.toURI(), file.getName(), purpose);
     }
 
     /**
@@ -59,6 +59,6 @@ public interface FilesOp {
     /**
      * @return 文件迭代器
      */
-    CompletionStage<Iterator<FileMeta>> iterator();
+    CompletionStage<List<FileMeta>> list();
 
 }

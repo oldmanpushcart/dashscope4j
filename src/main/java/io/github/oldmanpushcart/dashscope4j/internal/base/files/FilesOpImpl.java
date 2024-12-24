@@ -7,7 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.base.files.Purpose;
 import lombok.AllArgsConstructor;
 
 import java.net.URI;
-import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 @AllArgsConstructor
@@ -16,7 +16,7 @@ public class FilesOpImpl implements FilesOp {
     private final ApiOp apiOp;
 
     @Override
-    public CompletionStage<FileMeta> upload(URI resource, String filename, Purpose purpose) {
+    public CompletionStage<FileMeta> create(URI resource, String filename, Purpose purpose) {
         final FileCreateRequest request = FileCreateRequest.newBuilder()
                 .resource(resource)
                 .filename(filename)
@@ -28,22 +28,37 @@ public class FilesOpImpl implements FilesOp {
 
     @Override
     public CompletionStage<FileMeta> detail(String id) {
-        return null;
+        final FileDetailRequest request = FileDetailRequest.newBuilder()
+                .identity(id)
+                .build();
+        return apiOp.executeAsync(request)
+                .thenApply(FileDetailResponse::output);
     }
 
     @Override
     public CompletionStage<Boolean> delete(String id) {
-        return null;
+        final FileDeleteRequest request = FileDeleteRequest.newBuilder()
+                .identity(id)
+                .build();
+        return apiOp.executeAsync(request)
+                .thenApply(FileDeleteResponse::output);
     }
 
     @Override
     public CompletionStage<Boolean> delete(String id, boolean isForce) {
-        return null;
+        final FileDeleteRequest request = FileDeleteRequest.newBuilder()
+                .identity(id)
+                .build();
+        return apiOp.executeAsync(request)
+                .thenApply(FileDeleteResponse::output);
     }
 
     @Override
-    public CompletionStage<Iterator<FileMeta>> iterator() {
-        return null;
+    public CompletionStage<List<FileMeta>> list() {
+        final FileListRequest request = FileListRequest.newBuilder()
+                .build();
+        return apiOp.executeAsync(request)
+                .thenApply(FileListResponse::output);
     }
 
 }

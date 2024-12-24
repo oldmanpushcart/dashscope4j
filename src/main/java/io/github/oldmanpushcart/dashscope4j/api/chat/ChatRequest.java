@@ -21,6 +21,7 @@ import okhttp3.Request;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.*;
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toMap;
 
@@ -131,7 +132,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         /*
          * 启用OSS路径解析
          */
-        builder.addHeader("X-DashScope-OssResourceResolve", "enable");
+        builder.addHeader(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE);
 
         /*
          * 如果有插件，则告知插件列表
@@ -143,7 +144,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
                             Plugin::meta,
                             (a, b) -> b
                     ));
-            builder.addHeader("X-DashScope-Plugin", JacksonJsonUtils.toJson(pluginArgMap));
+            builder.addHeader(HTTP_HEADER_X_DASHSCOPE_PLUGIN, JacksonJsonUtils.toJson(pluginArgMap));
         }
 
         return builder.build();
