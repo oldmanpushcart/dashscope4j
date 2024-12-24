@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 public class ChatVisionTestCase extends ClientSupport {
 
     @Test
-    public void test$chat$vision$local_file_image() {
+    public void test$chat$vision$local$image() {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
@@ -36,7 +36,7 @@ public class ChatVisionTestCase extends ClientSupport {
     }
 
     @Test
-    public void test$chat$vl$local_video_images() {
+    public void test$chat$vision$local$images() {
 
         final List<URI> images = Stream.of(Objects.requireNonNull(new File("./test-data/video-001-images").listFiles()))
                 .filter(File::isFile)
