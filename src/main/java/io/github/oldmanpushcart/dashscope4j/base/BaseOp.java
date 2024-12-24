@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.base;
 
+import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.base.store.StoreOp;
 import io.github.oldmanpushcart.dashscope4j.base.tokenizer.TokenizerOp;
 
@@ -14,5 +15,7 @@ public interface BaseOp {
     TokenizerOp tokenize();
 
     StoreOp store();
+
+    FilesOp files();
 
 }

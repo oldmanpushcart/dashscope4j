@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
 
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 @Value
 @Accessors(fluent = true)
@@ -35,13 +35,8 @@ class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {
     }
 
     @Override
-    public Function<? super ApiRequest<GetPolicyResponse>, String> newRequestEncoder() {
-        return null;
-    }
-
-    @Override
-    public Function<String, GetPolicyResponse> newResponseDecoder() {
-        return bodyJson -> {
+    public BiFunction<okhttp3.Response, String, GetPolicyResponse> newResponseDecoder() {
+        return (httpResponse, bodyJson) -> {
             log.debug("dashscope://base/store/get-policy <<< {}", bodyJson);
             return JacksonJsonUtils.toObject(bodyJson, GetPolicyResponse.class);
         };

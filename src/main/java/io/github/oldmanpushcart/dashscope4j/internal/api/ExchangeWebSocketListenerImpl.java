@@ -11,7 +11,6 @@ import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -27,11 +26,11 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.Exchange.NORMAL_CLOSURE;
 
-@AllArgsConstructor
 @Slf4j
 class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiResponse<?>> extends WebSocketListener {
 
@@ -40,18 +39,36 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
     private final Exchange.Mode mode;
     private final Exchange.Listener<T, R> listener;
     private final Function<T, String> encoder;
-    private final Function<String, R> decoder;
+    private final BiFunction<Response, String, R> decoder;
 
     private final CompletableFuture<?> closeF = new CompletableFuture<>();
+    private volatile okhttp3.Response httpResponse;
+
+    ExchangeWebSocketListenerImpl(final CompletableFuture<Exchange<T>> exchangeF,
+                                  final String uuid,
+                                  final Exchange.Mode mode,
+                                  final Exchange.Listener<T, R> listener,
+                                  final Function<T, String> encoder,
+                                  final BiFunction<okhttp3.Response, String, R> decoder) {
+        this.exchangeF = exchangeF;
+        this.uuid = uuid;
+        this.mode = mode;
+        this.listener = listener;
+        this.encoder = encoder;
+        this.decoder = decoder;
+    }
 
     @Override
-    public void onOpen(@NotNull WebSocket socket, @NotNull Response response) {
+    public void onOpen(@NotNull WebSocket socket, @NotNull Response httpResponse) {
         log.trace("WEBSOCKET://{} <<< OPEN;", uuid);
         final Exchange<T> exchange = new ExchangeImpl<>(uuid, mode, socket, encoder, closeF);
         if (!exchangeF.complete(exchange)) {
             socket.cancel();
             throw new IllegalStateException("Exchange already completed!");
         }
+        this.httpResponse = new Response.Builder(httpResponse)
+                .header("x-request-id", uuid)
+                .build();
         listener.onOpen(exchange);
     }
 
@@ -140,7 +157,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
                 /*
                  * FINISHED 数据帧中有些场景会包含了最终的数据结果
                  */
-                final R data = decoder.apply(frame.payload());
+                final R data = decoder.apply(httpResponse, frame.payload());
                 listener.onData(data);
                 exchange.closing(NORMAL_CLOSURE, "finished!");
                 return;
@@ -156,7 +173,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
                         uuid,
                         frame.payload()
                 );
-                final R data = decoder.apply(frame.payload());
+                final R data = decoder.apply(httpResponse, frame.payload());
                 listener.onData(data);
             }
 

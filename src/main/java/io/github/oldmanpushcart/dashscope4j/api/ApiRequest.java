@@ -6,9 +6,10 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import okhttp3.Response;
 
 import java.util.Collections;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import static lombok.AccessLevel.PROTECTED;
 
@@ -64,20 +65,12 @@ public abstract class ApiRequest<R extends ApiResponse<?>> {
     abstract public okhttp3.Request newHttpRequest();
 
     /**
-     * 构建 Request 解码器
-     * <p>{@code T -> JSON}</p>
-     *
-     * @return Request 解码器
-     */
-    abstract public Function<? super ApiRequest<R>, String> newRequestEncoder();
-
-    /**
      * 构建 Response 解码器
      * <p>{@code JSON -> R}</p>
      *
      * @return Response 解码器
      */
-    abstract public Function<String, R> newResponseDecoder();
+    abstract public BiFunction<Response, String, R> newResponseDecoder();
 
     /**
      * API请求构造器

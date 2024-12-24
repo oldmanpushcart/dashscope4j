@@ -21,4 +21,12 @@ public class StringUtils {
         return substring(str, 0, end);
     }
 
+    // 消除引号
+    public static String removeQuotes(String str) {
+        if (str == null) {
+            return null;
+        }
+        return str.replaceAll("^\"|\"$", "");
+    }
+
 }

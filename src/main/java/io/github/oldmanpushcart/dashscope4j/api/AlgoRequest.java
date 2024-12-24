@@ -11,7 +11,9 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.MT_APPLICATION_JSON;
@@ -88,8 +90,13 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
                 .build();
     }
 
-    @Override
-    public Function<? super ApiRequest<R>, String> newRequestEncoder() {
+    /**
+     * 构建 Request 解码器
+     * <p>{@code T -> JSON}</p>
+     *
+     * @return Request 解码器
+     */
+    protected Function<? super ApiRequest<R>, String> newRequestEncoder() {
         return request -> {
             final String bodyJson = JacksonJsonUtils.toJson(this);
             log.debug("dashscope://algo/{} >>> {}", model.name(), bodyJson);
@@ -98,10 +105,10 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
     }
 
     @Override
-    public Function<String, R> newResponseDecoder() {
-        return bodyJson -> {
+    public BiFunction<Response, String, R> newResponseDecoder() {
+        return (httpResponse, bodyJson) -> {
             log.debug("dashscope://algo/{} <<< {}", model.name(), bodyJson);
-            return JacksonJsonUtils.toObject(bodyJson, responseType());
+            return JacksonJsonUtils.toObject(bodyJson, responseType(), httpResponse);
         };
     }
 
@@ -112,7 +119,8 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
      * @param <T> 请求类型
      * @param <B> 构建器类型
      */
-    public static abstract class Builder<M extends Model, T extends AlgoRequest<M, ?>, B extends Builder<M, T, B>> extends ApiRequest.Builder<T, B> {
+    public static abstract class Builder<M extends Model, T extends AlgoRequest<M, ?>, B extends Builder<M, T, B>>
+            extends ApiRequest.Builder<T, B> {
 
         private M model;
         private final Option option;

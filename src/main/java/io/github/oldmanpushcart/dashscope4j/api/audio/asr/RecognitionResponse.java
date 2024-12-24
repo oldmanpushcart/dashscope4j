@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.api.audio.asr;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Usage;
@@ -24,7 +25,7 @@ public final class RecognitionResponse extends AlgoResponse<RecognitionResponse.
     @JsonCreator
     public RecognitionResponse(
 
-            @JsonProperty("request_id")
+            @JacksonInject("header/x-request-id")
             String uuid,
 
             @JsonProperty("code")

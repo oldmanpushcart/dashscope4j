@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.api.audio.tts;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Usage;
@@ -19,7 +20,7 @@ public final class SpeechSynthesisResponse extends AlgoResponse<SpeechSynthesisR
     @JsonCreator
     public SpeechSynthesisResponse(
 
-            @JsonProperty("request_id")
+            @JacksonInject("header/x-request-id")
             String uuid,
 
             @JsonProperty("code")

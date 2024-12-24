@@ -8,9 +8,7 @@ import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
 
 import java.lang.reflect.Type;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 
 public class JacksonJsonUtils {
 
@@ -78,6 +76,19 @@ public class JacksonJsonUtils {
     public static <T> T toObject(String json, Class<T> type) {
         try {
             return mapper.readValue(json, type);
+        } catch (JsonProcessingException cause) {
+            throw new IllegalArgumentException("parse json to object failed!", cause);
+        }
+    }
+
+    public static <T> T toObject(String json, Class<T> type, okhttp3.Response response) {
+        final Map<String, Object> headerMap = new HashMap<>();
+        response.headers().forEach(header -> headerMap.put(
+                String.format("header/%s", header.getFirst()),
+                header.getSecond()
+        ));
+        try {
+            return mapper.reader(new InjectableValues.Std(headerMap)).forType(type).readValue(json);
         } catch (JsonProcessingException cause) {
             throw new IllegalArgumentException("parse json to object failed!", cause);
         }

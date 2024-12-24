@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.assertApiResponseSuccessful;
 import static java.util.Collections.unmodifiableList;
 
 public class RecognitionTestCase extends ClientSupport {
@@ -37,6 +38,7 @@ public class RecognitionTestCase extends ClientSupport {
 
                     @Override
                     public void onData(RecognitionResponse data) {
+                        assertApiResponseSuccessful(data);
                         final SentenceTimeSpan sentence = data.output().sentence();
                         if (null != sentence && sentence.isEnd()) {
                             sentences.add(sentence.text());

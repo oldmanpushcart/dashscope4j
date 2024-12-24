@@ -2,8 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.internal;
 
 import io.github.oldmanpushcart.dashscope4j.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
-import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.api.chat.message.*;
 
 import java.net.URI;
 import java.util.Collection;
@@ -35,6 +34,12 @@ class ProcessChatMessageContentForUploadInterceptor implements Interceptor {
     }
 
     private CompletionStage<Message> processForMessage(Chain chain, ChatRequest request, Message message) {
+        if (message instanceof ToolCallMessage
+            || message instanceof ToolMessage
+            || message instanceof PluginCallMessage
+            || message instanceof PluginMessage) {
+            return completedFuture(message);
+        }
         return thenIterateCompose(message.contents(), content -> processForContent(chain, request, content))
                 .thenApply(newContents ->
                         new Message(message.role(), newContents));

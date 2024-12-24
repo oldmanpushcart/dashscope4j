@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.api.audio;
 
 import io.github.oldmanpushcart.dashscope4j.Exchange;
+import io.github.oldmanpushcart.dashscope4j.api.ApiAssertions;
+import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -26,6 +28,11 @@ public class CheckExchangeListener<T, R> implements Exchange.Listener<T, R> {
 
     @Override
     public void onData(R data) {
+
+        if(data instanceof ApiResponse<?>) {
+            ApiAssertions.assertApiResponseSuccessful((ApiResponse<?>)data);
+        }
+
         dataCntRef.incrementAndGet();
         items.add(data);
     }

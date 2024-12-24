@@ -13,11 +13,14 @@ public class ApiAssertions {
      *
      * @param response apiResponse
      */
-    public static void assertApiResponseBase(AlgoResponse<?> response) {
+    public static void assertApiResponseBase(ApiResponse<?> response) {
         assertNotNull(response, "Response is null");
         assertNotNull(response.uuid(), "Response uuid is null");
         assertNotNull(response.code(), "Response code is null");
-        assertNotNull(response.usage(), "Response usage is null");
+        if (response instanceof AlgoResponse<?>) {
+            final AlgoResponse<?> algoResponse = (AlgoResponse<?>) response;
+            assertNotNull(algoResponse.usage(), "AlgoResponse usage is null");
+        }
     }
 
     /**
@@ -30,14 +33,18 @@ public class ApiAssertions {
      *
      * @param response apiResponse
      */
-    public static void assertApiResponseSuccessful(AlgoResponse<?> response) {
+    public static void assertApiResponseSuccessful(ApiResponse<?> response) {
         assertApiResponseBase(response);
         assertTrue(response.isSuccess(), "Response is not successful");
-        response.usage().items().forEach(item -> {
-            assertNotNull(item, "Usage item is null");
-            assertNotNull(item.name(), "Usage item name is null");
-            assertTrue(item.cost() >= 0, "Usage item cost is negative");
-        });
+        if (response instanceof AlgoResponse<?>) {
+            final AlgoResponse<?> algoResponse = (AlgoResponse<?>) response;
+            algoResponse.usage().items().forEach(item -> {
+                assertNotNull(item, "Usage item is null");
+                assertNotNull(item.name(), "Usage item name is null");
+                assertTrue(item.cost() >= 0, "Usage item cost is negative");
+            });
+        }
+
     }
 
 }

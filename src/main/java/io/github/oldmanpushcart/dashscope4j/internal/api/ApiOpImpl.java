@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.internal.api;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.oldmanpushcart.dashscope4j.Constants;
 import io.github.oldmanpushcart.dashscope4j.Exchange;
 import io.github.oldmanpushcart.dashscope4j.api.ApiException;
@@ -19,12 +18,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import static java.util.Objects.requireNonNull;
 
 public class ApiOpImpl implements ApiOp {
 
@@ -69,8 +70,8 @@ public class ApiOpImpl implements ApiOp {
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response httpResponse) {
                 try {
-                    final String bodyString = Objects.requireNonNull(httpResponse.body()).string();
-                    final R response = request.newResponseDecoder().apply(bodyString);
+                    final String bodyJson = requireNonNull(httpResponse.body()).string();
+                    final R response = request.newResponseDecoder().apply(httpResponse, bodyJson);
                     if (response.isSuccess()) {
                         completed.complete(response);
                     } else {
@@ -97,11 +98,18 @@ public class ApiOpImpl implements ApiOp {
 
             final EventSource source = EventSources.createFactory(http).newEventSource(httpRequest, new EventSourceListener() {
 
+                private volatile okhttp3.Response httpResponse;
+
+                @Override
+                public void onOpen(@NotNull EventSource eventSource, @NotNull Response httpResponse) {
+                    this.httpResponse = httpResponse;
+                }
+
                 @Override
                 public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
                     try {
                         if ("result".equals(type) || "error".equals(type)) {
-                            final R response = request.newResponseDecoder().apply(data);
+                            final R response = request.newResponseDecoder().apply(httpResponse, data);
                             if (response.isSuccess()) {
                                 emitter.onNext(response);
                             } else {
@@ -145,24 +153,7 @@ public class ApiOpImpl implements ApiOp {
         final CompletableFuture<Exchange<T>> exchangeF = new CompletableFuture<>();
         final String uuid = UUID.randomUUID().toString();
         final Function<T, String> encoder = JacksonJsonUtils::toJson;
-
-        /*
-         * Exchange的Response反序列化
-         */
-        final Function<String, R> decoder = s -> {
-
-            final ObjectNode payloadNode = (ObjectNode) JacksonJsonUtils.toNode(s);
-
-            /*
-             * 特殊处理应答报文：{"output":{}} -> {"request_id":"...","output":{}}
-             * Exchange返回的数据格式其中是不包含Response所需的request_id的，而Response又被设计为不可变类。
-             * 所以需要手动在应答报文中添加上request_id属性，让Response反序列化得以正确进行。
-             */
-            payloadNode.put("request_id", uuid);
-
-            final String payloadJson = payloadNode.toString();
-            return request.newResponseDecoder().apply(payloadJson);
-        };
+        final BiFunction<okhttp3.Response, String, R> decoder = request.newResponseDecoder();
 
         final WebSocketListener wsListener = new ExchangeWebSocketListenerImpl<>(
                 exchangeF,

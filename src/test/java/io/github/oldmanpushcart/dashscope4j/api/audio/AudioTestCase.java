@@ -22,6 +22,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CompletableFuture;
 
+import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.assertApiResponseSuccessful;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 
@@ -126,6 +127,7 @@ public class AudioTestCase extends ClientSupport {
 
                         @Override
                         public void onData(RecognitionResponse data) {
+                            assertApiResponseSuccessful(data);
                             final SentenceTimeSpan sentence = data.output().sentence();
                             if (null != sentence && sentence.isEnd()) {
                                 stringBuilder.append(sentence.text());

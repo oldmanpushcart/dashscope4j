@@ -28,6 +28,11 @@ public abstract class ApiResponse<D> {
      */
     public static final String CODE_SUCCESS = "SUCCESS";
 
+    /**
+     * 失败应答编码
+     */
+    public static final String CODE_FAILURE = "FAILURE";
+
     private final String uuid;
     private final String code;
     private final String desc;
