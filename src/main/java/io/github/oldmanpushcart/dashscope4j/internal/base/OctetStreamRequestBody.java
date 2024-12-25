@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.internal.base;
 
-import io.github.oldmanpushcart.dashscope4j.internal.InternalContents;
 import lombok.AllArgsConstructor;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -13,6 +12,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 
+import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.MT_APPLICATION_OCTET_STREAM;
+
 @AllArgsConstructor
 public class OctetStreamRequestBody extends RequestBody {
 
@@ -20,7 +21,7 @@ public class OctetStreamRequestBody extends RequestBody {
 
     @Override
     public MediaType contentType() {
-        return InternalContents.MT_APPLICATION_OCTET_STREAM;
+        return MT_APPLICATION_OCTET_STREAM;
     }
 
     @Override

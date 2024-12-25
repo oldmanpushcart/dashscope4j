@@ -14,6 +14,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.assertApiResponseSuccessful;
+
 public class ChatVisionTestCase extends ClientSupport {
 
     @Test
@@ -30,6 +32,8 @@ public class ChatVisionTestCase extends ClientSupport {
         final ChatResponse response = client.chat().async(request)
                 .toCompletableFuture()
                 .join();
+
+        assertApiResponseSuccessful(response);
         final String text = response.output().best().message().text();
         Assertions.assertTrue(text.contains("5") || text.contains("五"));
 
@@ -63,6 +67,7 @@ public class ChatVisionTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
+        assertApiResponseSuccessful(response);
         Assertions.assertTrue("TRUE".equalsIgnoreCase(response.output().best().message().text()));
 
     }

@@ -3,6 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.internal.base.store;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
+import lombok.*;
+import lombok.experimental.Accessors;
 
 import java.net.URI;
 
@@ -21,12 +23,17 @@ import java.net.URI;
  * </Error>
  * </code></pre>
  */
-public class PostUploadResponse extends ApiResponse<URI> {
+@Getter
+@Accessors(fluent = true, chain = true)
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+class PostUploadResponse extends ApiResponse<URI> {
 
+    @Setter(AccessLevel.PACKAGE)
     private URI output;
 
-    public PostUploadResponse() {
-        super("", null, null);
+    public PostUploadResponse(String uuid) {
+        super(uuid, null, null);
     }
 
     @JsonCreator
@@ -43,16 +50,6 @@ public class PostUploadResponse extends ApiResponse<URI> {
 
     ) {
         super(uuid, code, message);
-    }
-
-    @Override
-    public URI output() {
-        return output;
-    }
-
-    PostUploadResponse output(URI output) {
-        this.output = output;
-        return this;
     }
 
 }

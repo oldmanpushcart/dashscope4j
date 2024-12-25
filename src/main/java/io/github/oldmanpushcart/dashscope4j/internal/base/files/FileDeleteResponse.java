@@ -14,17 +14,12 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class FileDeleteResponse extends OpenAiResponse<Boolean> {
+class FileDeleteResponse extends OpenAiResponse<Boolean> {
 
     Boolean output;
 
-    FileDeleteResponse(String uuid, OpenAiError error, Boolean output) {
-        super(uuid, error);
-        this.output = output;
-    }
-
     @JsonCreator
-    public static FileDeleteResponse of(
+    FileDeleteResponse(
 
             @JacksonInject("header/x-request-id")
             String uuid,
@@ -36,7 +31,8 @@ public class FileDeleteResponse extends OpenAiResponse<Boolean> {
             Boolean deleted
 
     ) {
-        return new FileDeleteResponse(uuid, error, Boolean.TRUE.equals(deleted));
+        super(uuid, error);
+        this.output = Boolean.TRUE.equals(deleted);
     }
 
 }

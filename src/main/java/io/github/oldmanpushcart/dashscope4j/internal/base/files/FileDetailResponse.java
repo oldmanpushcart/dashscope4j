@@ -13,13 +13,14 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 
 import java.time.Instant;
-import java.util.Objects;
+
+import static java.util.Objects.isNull;
 
 @Value
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class FileDetailResponse extends OpenAiResponse<FileMeta> {
+class FileDetailResponse extends OpenAiResponse<FileMeta> {
 
     FileMeta output;
 
@@ -29,7 +30,7 @@ public class FileDetailResponse extends OpenAiResponse<FileMeta> {
     }
 
     @JsonCreator
-    private static FileDetailResponse of(
+    private FileDetailResponse(
 
             @JacksonInject("header/x-request-id")
             String uuid,
@@ -53,20 +54,10 @@ public class FileDetailResponse extends OpenAiResponse<FileMeta> {
             Purpose purpose
 
     ) {
-
-        if (Objects.nonNull(error)) {
-            return new FileDetailResponse(uuid, error, null);
-        }
-
-        final FileMeta meta = new FileMeta(
-                identity,
-                name,
-                size,
-                Instant.ofEpochSecond(created),
-                purpose
-        );
-        return new FileDetailResponse(uuid, null, meta);
-
+        super(uuid, error);
+        this.output = isNull(error)
+                ? new FileMeta(identity, name, size, Instant.ofEpochSecond(created), purpose)
+                : null;
     }
 
 }

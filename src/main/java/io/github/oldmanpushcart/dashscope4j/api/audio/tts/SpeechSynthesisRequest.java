@@ -73,6 +73,7 @@ public class SpeechSynthesisRequest extends AlgoRequest<SpeechSynthesisModel, Sp
 
         public Builder(SpeechSynthesisRequest request) {
             super(request);
+            this.text = request.text();
         }
 
         public Builder text(String text) {

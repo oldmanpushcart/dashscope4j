@@ -19,7 +19,7 @@ import static java.util.Objects.requireNonNull;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
-public class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
+class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
 
     String identity;
 
@@ -71,6 +71,7 @@ public class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
 
         public Builder(FileDetailRequest request) {
             super(request);
+            this.identity = request.identity();
         }
 
         public Builder identity(String identity) {

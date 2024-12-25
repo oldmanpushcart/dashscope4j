@@ -14,8 +14,14 @@ public interface BaseOp {
      */
     TokenizerOp tokenize();
 
+    /**
+     * @return 存储操作
+     */
     StoreOp store();
 
+    /**
+     * @return 文件操作
+     */
     FilesOp files();
 
 }

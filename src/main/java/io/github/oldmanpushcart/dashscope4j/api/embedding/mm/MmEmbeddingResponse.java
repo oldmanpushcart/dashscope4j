@@ -1,28 +1,28 @@
-package io.github.oldmanpushcart.dashscope4j.internal.base.tokenizer.remote;
+package io.github.oldmanpushcart.dashscope4j.api.embedding.mm;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoResponse;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.Value;
+import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
-import static java.util.Collections.unmodifiableList;
-
+/**
+ * 多模态向量计算应答
+ */
 @Value
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-class TokenizeResponse extends AlgoResponse<TokenizeResponse.Output> {
+public class MmEmbeddingResponse extends AlgoResponse<MmEmbeddingResponse.Output> {
 
     Output output;
 
     @JsonCreator
-    public TokenizeResponse(
+    private MmEmbeddingResponse(
 
             @JsonProperty("request_id")
             String uuid,
@@ -48,29 +48,12 @@ class TokenizeResponse extends AlgoResponse<TokenizeResponse.Output> {
     @Accessors(fluent = true)
     @ToString
     @EqualsAndHashCode
+    @Jacksonized
+    @Builder(access = AccessLevel.PRIVATE)
     public static class Output {
 
-        List<Integer> tokenIds;
-        List<String> tokens;
-        int total;
-
-        @JsonCreator
-        public Output(
-
-                @JsonProperty("token_ids")
-                List<Integer> tokenIds,
-
-                @JsonProperty("tokens")
-                List<String> tokens,
-
-                @JsonProperty("input_tokens")
-                int total
-
-        ) {
-            this.tokenIds = unmodifiableList(tokenIds);
-            this.tokens = unmodifiableList(tokens);
-            this.total = total;
-        }
+        @JsonProperty("embeddings")
+        List<MmEmbedding> embeddings;
 
     }
 

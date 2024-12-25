@@ -62,6 +62,7 @@ class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {
 
         public Builder(GetPolicyRequest request) {
             super(request);
+            this.model = request.model();
         }
 
         public Builder model(Model model) {

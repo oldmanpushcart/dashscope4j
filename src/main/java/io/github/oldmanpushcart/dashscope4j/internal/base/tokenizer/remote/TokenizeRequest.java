@@ -20,7 +20,7 @@ import static java.util.Collections.unmodifiableList;
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class TokenizeRequest extends AlgoRequest<ChatModel, TokenizeResponse> {
+class TokenizeRequest extends AlgoRequest<ChatModel, TokenizeResponse> {
 
     List<Message> messages;
 
@@ -69,6 +69,7 @@ public class TokenizeRequest extends AlgoRequest<ChatModel, TokenizeResponse> {
 
         private Builder(TokenizeRequest request) {
             super(request);
+            this.messages.addAll(request.messages);
         }
 
         /**

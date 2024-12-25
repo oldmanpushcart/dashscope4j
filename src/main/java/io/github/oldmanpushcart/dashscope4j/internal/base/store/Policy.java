@@ -1,5 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.internal.base.store;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -7,6 +9,8 @@ import java.time.Instant;
 
 @Value
 @Accessors(fluent = true)
+@ToString
+@EqualsAndHashCode
 class Policy {
 
     String value;
@@ -18,6 +22,8 @@ class Policy {
 
     @Value
     @Accessors(fluent = true)
+    @ToString
+    @EqualsAndHashCode
     public static class Oss {
         String host;
         String directory;

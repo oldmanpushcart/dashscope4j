@@ -1,14 +1,13 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.base.files.Purpose;
+import okhttp3.MediaType;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.concurrent.ExecutionException;
 
 public class DebugTestCase extends ClientSupport {
@@ -22,15 +21,11 @@ public class DebugTestCase extends ClientSupport {
     }
 
     @Test
-    public void test$debug1() throws JsonProcessingException {
-        final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_TURBO)
-                .addMessage(Message.ofUser("hello"))
-                .build();
-        client.chat().async(request)
-                .toCompletableFuture()
-                .join();
-        System.out.println(request);
+    public void test$debug1() throws IOException {
+        final File file = new File("./test-data/P020210313315693279320.pdf");
+        final String ct = Files.probeContentType(file.toPath());
+        final MediaType mt = MediaType.get(ct);
+        System.out.println(mt);
     }
 
 }

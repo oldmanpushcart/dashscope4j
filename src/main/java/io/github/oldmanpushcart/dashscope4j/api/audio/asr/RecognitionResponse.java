@@ -6,10 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoResponse;
 import io.github.oldmanpushcart.dashscope4j.api.audio.asr.timespan.SentenceTimeSpan;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Value;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -18,12 +15,14 @@ import lombok.extern.jackson.Jacksonized;
  */
 @Getter
 @Accessors(fluent = true)
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public final class RecognitionResponse extends AlgoResponse<RecognitionResponse.Output> {
 
     private final Output output;
 
     @JsonCreator
-    public RecognitionResponse(
+    private RecognitionResponse(
 
             @JacksonInject("header/x-request-id")
             String uuid,
@@ -47,8 +46,10 @@ public final class RecognitionResponse extends AlgoResponse<RecognitionResponse.
 
     @Value
     @Accessors(fluent = true)
-    @Builder(access = AccessLevel.PRIVATE)
+    @ToString
+    @EqualsAndHashCode
     @Jacksonized
+    @Builder(access = AccessLevel.PRIVATE)
     public static class Output {
 
         @JsonProperty

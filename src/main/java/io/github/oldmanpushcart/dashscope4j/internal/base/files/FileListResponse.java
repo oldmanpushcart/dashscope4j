@@ -7,29 +7,27 @@ import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.base.files.Purpose;
 import io.github.oldmanpushcart.dashscope4j.internal.base.OpenAiError;
 import io.github.oldmanpushcart.dashscope4j.internal.base.OpenAiResponse;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.Value;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static java.util.Collections.unmodifiableList;
 
 @Value
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class FileListResponse extends OpenAiResponse<List<FileMeta>> {
+class FileListResponse extends OpenAiResponse<List<FileMeta>> {
 
     List<FileMeta> output;
 
     private FileListResponse(String uuid, OpenAiError error, List<FileMeta> output) {
         super(uuid, error);
-        this.output = output;
+        this.output = unmodifiableList(output);
     }
 
     @JsonCreator
@@ -48,13 +46,13 @@ public class FileListResponse extends OpenAiResponse<List<FileMeta>> {
         final List<FileMeta> metas = list.stream()
                 .map(Data::toMeta)
                 .collect(Collectors.toList());
-        return new FileListResponse(uuid, error, Collections.unmodifiableList(metas));
+        return new FileListResponse(uuid, error, unmodifiableList(metas));
     }
 
     @Value
     @Accessors(fluent = true)
     @Jacksonized
-    @Builder
+    @Builder(access = AccessLevel.PRIVATE)
     private static class Data {
 
         @JsonProperty("id")

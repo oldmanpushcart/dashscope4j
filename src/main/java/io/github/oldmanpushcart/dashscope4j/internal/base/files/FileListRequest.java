@@ -17,7 +17,7 @@ import java.util.function.BiFunction;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
-public class FileListRequest extends OpenAiRequest<FileListResponse> {
+class FileListRequest extends OpenAiRequest<FileListResponse> {
 
     private FileListRequest(Builder builder) {
         super(FileListResponse.class, builder);

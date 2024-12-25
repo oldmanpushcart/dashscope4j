@@ -6,11 +6,13 @@ import io.github.oldmanpushcart.dashscope4j.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.api.audio.AudioOp;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOp;
+import io.github.oldmanpushcart.dashscope4j.api.embedding.EmbeddingOp;
 import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.internal.api.ApiOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.InterceptionApiOp;
 import io.github.oldmanpushcart.dashscope4j.internal.api.audio.AudioOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.chat.ChatOpImpl;
+import io.github.oldmanpushcart.dashscope4j.internal.api.embedding.EmbeddingOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.base.BaseOpImpl;
 import okhttp3.OkHttpClient;
 
@@ -25,11 +27,13 @@ public class DashscopeClientImpl implements DashscopeClient {
     private final BaseOp baseOp;
     private final AudioOp audioOp;
     private final ChatOp chatOp;
+    private final EmbeddingOp embeddingOp;
 
-    DashscopeClientImpl(final String ak,
-                        final Cache cache,
-                        final Collection<Interceptor> interceptors,
-                        final OkHttpClient http
+    DashscopeClientImpl(
+            final String ak,
+            final Cache cache,
+            final Collection<Interceptor> interceptors,
+            final OkHttpClient http
     ) {
         this.cache = cache;
         this.http = http;
@@ -37,14 +41,20 @@ public class DashscopeClientImpl implements DashscopeClient {
         this.baseOp = new BaseOpImpl(cache, apiOp);
         this.chatOp = new ChatOpImpl(apiOp);
         this.audioOp = new AudioOpImpl(apiOp);
+        this.embeddingOp = new EmbeddingOpImpl(apiOp);
     }
 
     private ApiOp newApiOp(String ak, OkHttpClient http, Collection<Interceptor> interceptors) {
-        final ApiOp apiOp = new ApiOpImpl(ak, http);
-        final Collection<Interceptor> merged = new ArrayList<>();
+
+        /*
+         * 添加拦截器
+         * 拦截器的顺序为：自定义最前，系统自带最后
+         */
+        final Collection<Interceptor> merged = new ArrayList<>(interceptors);
         merged.add(new ProcessChatMessageContentForUploadInterceptor());
-        merged.addAll(interceptors);
-        return InterceptionApiOp.group(this, apiOp, merged);
+        merged.add(new ProcessMmEmbeddingContentForUploadInterceptor());
+
+        return InterceptionApiOp.group(this, new ApiOpImpl(ak, http), merged);
     }
 
     @Override
@@ -55,6 +65,11 @@ public class DashscopeClientImpl implements DashscopeClient {
     @Override
     public AudioOp audio() {
         return audioOp;
+    }
+
+    @Override
+    public EmbeddingOp embedding() {
+        return embeddingOp;
     }
 
     @Override

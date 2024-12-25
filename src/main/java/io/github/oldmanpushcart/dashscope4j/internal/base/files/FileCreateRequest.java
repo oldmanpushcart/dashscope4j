@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
-public class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
+class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
 
     URI resource;
     String filename;
@@ -78,6 +78,9 @@ public class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
 
         public Builder(FileCreateRequest request) {
             super(request);
+            this.resource = request.resource();
+            this.filename = request.filename();
+            this.purpose = request.purpose();
         }
 
         public Builder resource(URI resource) {

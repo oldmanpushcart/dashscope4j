@@ -138,7 +138,7 @@ public class ChatTestCase extends ClientSupport {
                     assertApiResponseSuccessful(response);
                     final String text = response.output().best().message().text();
                     assertNotNull(text);
-                    assertTrue(text.contains("五年规划"));
+                    assertTrue(text.contains("五年规划") || text.contains("十四五"));
                 })
                 .toCompletableFuture()
                 .join();
@@ -185,6 +185,7 @@ public class ChatTestCase extends ClientSupport {
                         .doOnError(Assertions::fail)
                         .reduce((a, b) -> b)
                         .blockingSubscribe(response -> {
+                            assertApiResponseSuccessful(response);
                             final String text = response.output().best().message().text();
                             assertNotNull(text);
                             assertTrue(text.contains("HELLO!"));

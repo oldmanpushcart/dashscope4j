@@ -13,9 +13,10 @@ import okhttp3.MultipartBody;
 import okhttp3.Request;
 
 import java.net.URI;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiFunction;
+
+import static java.util.Objects.requireNonNull;
 
 @Value
 @Accessors(fluent = true)
@@ -61,9 +62,10 @@ class PostUploadRequest extends ApiRequest<PostUploadResponse> {
     public BiFunction<okhttp3.Response, String, PostUploadResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
             log.debug("dashscope://base/store/upload/{} <<< {}", ossKey, bodyJson);
+            final String uuid = httpResponse.header("x-oss-request-id");
             return StringUtils.isNotBlank(bodyJson)
                     ? JacksonXmlUtils.toObject(bodyJson, PostUploadResponse.class)
-                    : new PostUploadResponse().output(URI.create(String.format("oss://%s", ossKey)));
+                    : new PostUploadResponse(uuid).output(URI.create(String.format("oss://%s", ossKey)));
         };
     }
 
@@ -99,22 +101,24 @@ class PostUploadRequest extends ApiRequest<PostUploadResponse> {
 
         public Builder(PostUploadRequest request) {
             super(request);
+            this.policy = request.policy();
+            this.resource = request.resource();
         }
 
         public Builder policy(Policy policy) {
-            this.policy = Objects.requireNonNull(policy);
+            this.policy = requireNonNull(policy);
             return this;
         }
 
         public Builder resource(URI resource) {
-            this.resource = Objects.requireNonNull(resource);
+            this.resource = requireNonNull(resource);
             return this;
         }
 
         @Override
         public PostUploadRequest build() {
-            Objects.requireNonNull(policy);
-            Objects.requireNonNull(resource);
+            requireNonNull(policy);
+            requireNonNull(resource);
             return new PostUploadRequest(this);
         }
 

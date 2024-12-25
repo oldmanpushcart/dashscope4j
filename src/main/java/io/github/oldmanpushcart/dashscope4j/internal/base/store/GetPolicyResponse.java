@@ -3,21 +3,24 @@ package io.github.oldmanpushcart.dashscope4j.internal.base.store;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
 import java.time.Duration;
 import java.time.Instant;
 
-@Getter
+@Value
 @Accessors(fluent = true)
-final class GetPolicyResponse extends ApiResponse<GetPolicyResponse.Output> {
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+class GetPolicyResponse extends ApiResponse<GetPolicyResponse.Output> {
 
-    private final Output output;
+    Output output;
 
     @JsonCreator
-    public GetPolicyResponse(
+    private GetPolicyResponse(
 
             @JsonProperty("request_id")
             String uuid,
@@ -38,6 +41,8 @@ final class GetPolicyResponse extends ApiResponse<GetPolicyResponse.Output> {
 
     @Value
     @Accessors(fluent = true)
+    @ToString
+    @EqualsAndHashCode
     public static class Output {
 
         private static final long MB_TO_BYTE = 1024L * 1024L;
@@ -45,6 +50,7 @@ final class GetPolicyResponse extends ApiResponse<GetPolicyResponse.Output> {
 
         @JsonCreator
         private Output(
+
                 @JsonProperty("policy")
                 String value,
 
@@ -74,6 +80,7 @@ final class GetPolicyResponse extends ApiResponse<GetPolicyResponse.Output> {
 
                 @JsonProperty("x_oss_forbid_overwrite")
                 boolean xOssForbidOverwrite
+
         ) {
             this.policy = new Policy(
                     value,

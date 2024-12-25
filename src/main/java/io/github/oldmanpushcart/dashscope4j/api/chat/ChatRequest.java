@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.*;
 import static java.util.Collections.unmodifiableList;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -199,21 +200,18 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
      */
     public static class Builder extends AlgoRequest.Builder<ChatModel, ChatRequest, Builder> {
 
-        private final List<Message> messages;
-        private final List<Plugin> plugins;
-        private final List<Tool> tools;
+        private final List<Message> messages = new LinkedList<>();
+        private final List<Plugin> plugins = new LinkedList<>();
+        private final List<Tool> tools = new LinkedList<>();
 
         protected Builder() {
-            this.messages = new LinkedList<>();
-            this.plugins = new LinkedList<>();
-            this.tools = new LinkedList<>();
         }
 
         protected Builder(ChatRequest request) {
             super(request);
-            this.messages = new LinkedList<>(request.messages);
-            this.plugins = new LinkedList<>(request.plugins);
-            this.tools = new LinkedList<>(request.tools);
+            this.messages.addAll(request.messages);
+            this.plugins.addAll(request.plugins);
+            this.tools.addAll(request.tools);
         }
 
         /**
@@ -223,6 +221,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder messages(Collection<Message> messages) {
+            requireNonNull(messages);
             this.messages.clear();
             this.messages.addAll(messages);
             return this;
@@ -235,6 +234,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder addMessage(Message message) {
+            requireNonNull(message);
             this.messages.add(message);
             return this;
         }
@@ -246,6 +246,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder addMessages(Collection<Message> messages) {
+            requireNonNull(messages);
             this.messages.addAll(messages);
             return this;
         }
@@ -257,6 +258,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder plugins(Collection<Plugin> plugins) {
+            requireNonNull(plugins);
             this.plugins.clear();
             this.plugins.addAll(plugins);
             return this;
@@ -269,6 +271,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder addPlugin(Plugin plugin) {
+            requireNonNull(plugin);
             this.plugins.add(plugin);
             return this;
         }
@@ -280,6 +283,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder addPlugins(Collection<Plugin> plugins) {
+            requireNonNull(plugins);
             this.plugins.addAll(plugins);
             return this;
         }
@@ -291,6 +295,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder tools(Collection<Tool> tools) {
+            requireNonNull(tools);
             this.tools.clear();
             this.tools.addAll(tools);
             return this;
@@ -303,6 +308,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder addTool(Tool tool) {
+            requireNonNull(tool);
             this.tools.add(tool);
             return this;
         }
@@ -314,6 +320,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder addTools(Collection<Tool> tools) {
+            requireNonNull(tools);
             this.tools.addAll(tools);
             return this;
         }
@@ -325,12 +332,14 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder functions(Collection<ChatFunction<?, ?>> functions) {
+            requireNonNull(functions);
             this.tools.removeIf(tool -> tool instanceof ChatFunctionTool);
             this.tools.addAll(toTools(functions));
             return this;
         }
 
         private static List<Tool> toTools(Collection<ChatFunction<?, ?>> functions) {
+            requireNonNull(functions);
             return functions.stream()
                     .map(ChatFunctionTool::of)
                     .map(Tool.class::cast)
@@ -344,6 +353,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder addFunction(ChatFunction<?, ?> function) {
+            requireNonNull(function);
             return addFunctions(Collections.singleton(function));
         }
 
@@ -354,6 +364,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @return this
          */
         public Builder addFunctions(Collection<ChatFunction<?, ?>> functions) {
+            requireNonNull(functions);
             this.tools.addAll(toTools(functions));
             return this;
         }
