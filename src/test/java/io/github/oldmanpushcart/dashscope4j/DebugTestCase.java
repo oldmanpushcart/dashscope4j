@@ -1,6 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.base.files.Purpose;
 import org.junit.jupiter.api.Test;
@@ -20,14 +23,14 @@ public class DebugTestCase extends ClientSupport {
 
     @Test
     public void test$debug1() throws JsonProcessingException {
-        final boolean deleted = client.base().files().delete("test-001")
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_TURBO)
+                .addMessage(Message.ofUser("hello"))
+                .build();
+        client.chat().async(request)
                 .toCompletableFuture()
                 .join();
-        System.out.println(deleted);
-
-//        client.base().files().list()
-//                .toCompletableFuture()
-//                .join();
+        System.out.println(request);
     }
 
 }

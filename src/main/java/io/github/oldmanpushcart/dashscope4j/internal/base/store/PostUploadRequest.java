@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.internal.base.OctetStreamRequestBody
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonXmlUtils;
 import io.github.oldmanpushcart.dashscope4j.internal.util.StringUtils;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import java.util.function.BiFunction;
 
 @Value
 @Accessors(fluent = true)
+@ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 class PostUploadRequest extends ApiRequest<PostUploadResponse> {

@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.Cache;
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.base.store.StoreOp;
+import io.github.oldmanpushcart.dashscope4j.internal.InternalContents;
 import lombok.AllArgsConstructor;
 
 import java.net.URI;
@@ -21,7 +22,6 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 @AllArgsConstructor
 public class StoreOpImpl implements StoreOp {
 
-    private static final String CACHE_NAMESPACE_FOR_STORE = "store";
     private final Cache cache;
     private final ApiOp apiOp;
     private final Map<String, Policy> policiesCache = new ConcurrentHashMap<>();
@@ -30,7 +30,7 @@ public class StoreOpImpl implements StoreOp {
     public CompletionStage<URI> upload(URI resource, Model model) {
 
         final String cacheKey = String.format("%s|%s", resource.toString(), model.name());
-        final URI cached = cache.get(CACHE_NAMESPACE_FOR_STORE, cacheKey)
+        final URI cached = cache.get(InternalContents.CACHE_NAMESPACE_STORE, cacheKey)
                 .filter(Cache.Entry::isNotExpired)
                 .map(e -> new String(e.payload(), UTF_8))
                 .map(URI::create)
@@ -47,7 +47,7 @@ public class StoreOpImpl implements StoreOp {
                     if (null == ex) {
                         final byte[] payload = v.toString().getBytes(UTF_8);
                         final Instant expireAt = Instant.now().plus(Duration.ofHours(48));
-                        cache.put(CACHE_NAMESPACE_FOR_STORE, cacheKey, payload, expireAt);
+                        cache.put(InternalContents.CACHE_NAMESPACE_STORE, cacheKey, payload, expireAt);
                     }
                 });
     }

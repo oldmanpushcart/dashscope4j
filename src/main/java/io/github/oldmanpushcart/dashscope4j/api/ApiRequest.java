@@ -24,6 +24,8 @@ import static lombok.AccessLevel.PROTECTED;
 @EqualsAndHashCode
 public abstract class ApiRequest<R extends ApiResponse<?>> {
 
+
+    @ToString.Exclude
     @Getter(PROTECTED)
     private final Class<R> responseType;
 

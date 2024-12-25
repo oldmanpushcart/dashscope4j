@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.base.files;
 
 import java.io.File;
 import java.net.URI;
-import java.util.List;
+import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -48,17 +48,8 @@ public interface FilesOp {
     CompletionStage<Boolean> delete(String id);
 
     /**
-     * 删除文件
-     *
-     * @param id      文件ID
-     * @param isForce 是否强制删除
-     * @return 删除操作
-     */
-    CompletionStage<Boolean> delete(String id, boolean isForce);
-
-    /**
      * @return 文件迭代器
      */
-    CompletionStage<List<FileMeta>> list();
+    CompletionStage<Iterator<FileMeta>> iterator();
 
 }

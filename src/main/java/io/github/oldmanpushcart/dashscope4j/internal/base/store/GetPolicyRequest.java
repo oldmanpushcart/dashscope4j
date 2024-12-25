@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import java.util.function.BiFunction;
 
 @Value
 @Accessors(fluent = true)
+@ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {

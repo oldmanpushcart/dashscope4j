@@ -7,6 +7,9 @@ import okhttp3.MediaType;
  */
 public interface InternalContents {
 
+    String CACHE_NAMESPACE_STORE = "store";
+    String CACHE_NAMESPACE_FILES = "files";
+
     String ENABLE = "enable";
 
     int WEBSOCKET_CLOSE_REASON_MAX_LENGTH = 123;
@@ -28,5 +31,4 @@ public interface InternalContents {
     String HTTP_HEADER_X_DASHSCOPE_SSE = "X-DashScope-SSE";
 
     String HTTP_HEADER_X_DASHSCOPE_ASYNC = "X-DashScope-Async";
-
 }

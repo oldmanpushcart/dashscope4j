@@ -1,9 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.base.files;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.Value;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.net.URI;
 import java.time.Instant;
@@ -15,12 +15,25 @@ import java.time.Instant;
 @Accessors(fluent = true)
 @ToString
 @EqualsAndHashCode
+@Jacksonized
+@Builder
+@AllArgsConstructor
 public class FileMeta {
 
+    @JsonProperty("identity")
     String identity;
+
+    @JsonProperty("filename")
     String name;
+
+    @JsonProperty("bytes")
     long size;
+
+    @EqualsAndHashCode.Exclude
+    @JsonProperty("create_at")
     Instant uploadedAt;
+
+    @JsonProperty("purpose")
     Purpose purpose;
 
     /**

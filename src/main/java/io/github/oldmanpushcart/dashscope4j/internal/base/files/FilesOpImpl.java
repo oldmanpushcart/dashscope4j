@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.base.files.Purpose;
 import lombok.AllArgsConstructor;
 
 import java.net.URI;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -45,20 +46,12 @@ public class FilesOpImpl implements FilesOp {
     }
 
     @Override
-    public CompletionStage<Boolean> delete(String id, boolean isForce) {
-        final FileDeleteRequest request = FileDeleteRequest.newBuilder()
-                .identity(id)
-                .build();
-        return apiOp.executeAsync(request)
-                .thenApply(FileDeleteResponse::output);
-    }
-
-    @Override
-    public CompletionStage<List<FileMeta>> list() {
+    public CompletionStage<Iterator<FileMeta>> iterator() {
         final FileListRequest request = FileListRequest.newBuilder()
                 .build();
         return apiOp.executeAsync(request)
-                .thenApply(FileListResponse::output);
+                .thenApply(FileListResponse::output)
+                .thenApply(List::iterator);
     }
 
 }

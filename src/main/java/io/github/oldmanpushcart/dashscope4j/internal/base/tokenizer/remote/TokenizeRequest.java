@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import okhttp3.Request;
@@ -17,6 +18,7 @@ import static java.util.Collections.unmodifiableList;
 
 @Value
 @Accessors(fluent = true)
+@ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class TokenizeRequest extends AlgoRequest<ChatModel, TokenizeResponse> {
 
