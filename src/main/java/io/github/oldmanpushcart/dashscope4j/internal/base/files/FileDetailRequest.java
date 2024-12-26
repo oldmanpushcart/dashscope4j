@@ -30,7 +30,7 @@ class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
 
     @Override
     public Request newHttpRequest() {
-        log.debug("dashscope://base/files/detail >>> identity={}", identity);
+        log.debug("dashscope://base/files/detail/{} >>> GET", identity);
         return new Request.Builder()
                 .url(String.format("https://dashscope.aliyuncs.com/compatible-mode/v1/files/%s", identity))
                 .get()
@@ -40,7 +40,7 @@ class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
     @Override
     public BiFunction<Response, String, FileDetailResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
-            log.debug("dashscope://base/files/detail <<< {}", bodyJson);
+            log.debug("dashscope://base/files/detail/{} <<< {}", identity, bodyJson);
             final FileDetailResponse response = JacksonJsonUtils.toObject(bodyJson, FileDetailResponse.class, httpResponse);
 
             /*

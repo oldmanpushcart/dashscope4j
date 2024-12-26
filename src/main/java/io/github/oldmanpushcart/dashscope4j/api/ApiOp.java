@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.api;
 
 import io.github.oldmanpushcart.dashscope4j.Exchange;
+import io.github.oldmanpushcart.dashscope4j.task.Task;
 import io.reactivex.rxjava3.core.Flowable;
 
 import java.util.concurrent.CompletionStage;
@@ -44,5 +45,8 @@ public interface ApiOp {
      */
     <T extends ApiRequest<R>, R extends ApiResponse<?>>
     CompletionStage<Exchange<T>> executeExchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener);
+
+    <T extends ApiRequest<R>, R extends ApiResponse<?>>
+    CompletionStage<Task.Half<R>> executeTask(T request);
 
 }

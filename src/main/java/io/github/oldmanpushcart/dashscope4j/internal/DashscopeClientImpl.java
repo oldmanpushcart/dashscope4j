@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class DashscopeClientImpl implements DashscopeClient {
+class DashscopeClientImpl implements DashscopeClient {
 
     private final Cache cache;
     private final OkHttpClient http;
@@ -40,7 +40,7 @@ public class DashscopeClientImpl implements DashscopeClient {
         final ApiOp apiOp = newApiOp(ak, http, interceptors);
         this.baseOp = new BaseOpImpl(cache, apiOp);
         this.chatOp = new ChatOpImpl(apiOp);
-        this.audioOp = new AudioOpImpl(apiOp);
+        this.audioOp = new AudioOpImpl(http, apiOp);
         this.embeddingOp = new EmbeddingOpImpl(apiOp);
     }
 
@@ -53,6 +53,7 @@ public class DashscopeClientImpl implements DashscopeClient {
         final Collection<Interceptor> merged = new ArrayList<>(interceptors);
         merged.add(new ProcessChatMessageContentForUploadInterceptor());
         merged.add(new ProcessMmEmbeddingContentForUploadInterceptor());
+        merged.add(new ProcessTranscriptionForUploadInterceptor());
 
         return InterceptionApiOp.group(this, new ApiOpImpl(ak, http), merged);
     }

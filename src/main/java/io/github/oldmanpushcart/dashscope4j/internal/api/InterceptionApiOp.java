@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.task.Task;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.AllArgsConstructor;
 import lombok.Value;
@@ -42,6 +43,13 @@ public class InterceptionApiOp implements ApiOp {
     public <T extends ApiRequest<R>, R extends ApiResponse<?>>
     CompletionStage<Exchange<T>> executeExchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
         final Interceptor.Chain chain = new ChainImpl(client, request, r -> apiOp.executeExchange(cast(r), mode, listener));
+        return interceptor.intercept(chain)
+                .thenApply(InterceptionApiOp::cast);
+    }
+
+    @Override
+    public <T extends ApiRequest<R>, R extends ApiResponse<?>> CompletionStage<Task.Half<R>> executeTask(T request) {
+        final Interceptor.Chain chain = new ChainImpl(client, request, apiOp::executeTask);
         return interceptor.intercept(chain)
                 .thenApply(InterceptionApiOp::cast);
     }

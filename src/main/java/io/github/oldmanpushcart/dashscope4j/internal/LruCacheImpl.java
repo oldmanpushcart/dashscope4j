@@ -22,7 +22,7 @@ class LruCacheImpl implements Cache {
 
     };
 
-    LruCacheImpl(int capacity) {
+    public LruCacheImpl(int capacity) {
         this.capacity = capacity;
     }
 

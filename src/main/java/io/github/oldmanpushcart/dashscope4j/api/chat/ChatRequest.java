@@ -21,7 +21,7 @@ import okhttp3.Request;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.*;
+import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.HTTP_HEADER_X_DASHSCOPE_PLUGIN;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
@@ -129,11 +129,6 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     @Override
     public Request newHttpRequest() {
         final Request.Builder builder = new Request.Builder(super.newHttpRequest());
-
-        /*
-         * 启用OSS路径解析
-         */
-        builder.addHeader(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE);
 
         /*
          * 如果有插件，则告知插件列表

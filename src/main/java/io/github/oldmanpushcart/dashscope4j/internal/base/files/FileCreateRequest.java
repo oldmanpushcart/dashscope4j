@@ -66,7 +66,7 @@ class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
         return new Builder(request);
     }
 
-    public static class Builder extends OpenAiRequest.Builder<FileCreateRequest, Builder> {
+    static class Builder extends OpenAiRequest.Builder<FileCreateRequest, Builder> {
 
         private URI resource;
         private String filename;

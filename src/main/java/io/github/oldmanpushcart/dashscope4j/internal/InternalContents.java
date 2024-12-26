@@ -8,9 +8,16 @@ import okhttp3.MediaType;
 public interface InternalContents {
 
     String CACHE_NAMESPACE_STORE = "store";
-    String CACHE_NAMESPACE_FILES = "files";
 
+    /**
+     * 启用
+     */
     String ENABLE = "enable";
+
+    /**
+     * 禁用
+     */
+    String DISABLE = "disable";
 
     int WEBSOCKET_CLOSE_REASON_MAX_LENGTH = 123;
 

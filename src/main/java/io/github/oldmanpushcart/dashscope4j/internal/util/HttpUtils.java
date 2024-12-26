@@ -1,12 +1,17 @@
 package io.github.oldmanpushcart.dashscope4j.internal.util;
 
+import io.github.oldmanpushcart.dashscope4j.internal.CompletableFutureCallback;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Headers;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
+import static java.util.Objects.requireNonNull;
 
 @Slf4j
 public class HttpUtils {
@@ -64,6 +69,21 @@ public class HttpUtils {
                             .orElse("")
             );
         }
+
+    }
+
+    public static CompletionStage<String> fetchAsString(okhttp3.OkHttpClient http, URI remote) {
+
+        final Request request = new Request.Builder()
+                .url(remote.toString())
+                .get()
+                .build();
+
+        final CompletableFutureCallback<String> callback = new CompletableFutureCallback<>((httpCall, httpResponse) ->
+                requireNonNull(httpResponse.body()).string());
+
+        http.newCall(request).enqueue(callback);
+        return callback;
 
     }
 

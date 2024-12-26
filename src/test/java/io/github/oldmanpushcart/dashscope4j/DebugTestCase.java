@@ -1,13 +1,17 @@
 package io.github.oldmanpushcart.dashscope4j;
 
+import io.github.oldmanpushcart.dashscope4j.api.audio.asr.TranscriptionModel;
+import io.github.oldmanpushcart.dashscope4j.api.audio.asr.TranscriptionRequest;
+import io.github.oldmanpushcart.dashscope4j.api.audio.asr.TranscriptionResponse;
 import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.base.files.Purpose;
-import okhttp3.MediaType;
+import io.github.oldmanpushcart.dashscope4j.task.Task;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
 public class DebugTestCase extends ClientSupport {
@@ -22,10 +26,28 @@ public class DebugTestCase extends ClientSupport {
 
     @Test
     public void test$debug1() throws IOException {
-        final File file = new File("./test-data/P020210313315693279320.pdf");
-        final String ct = Files.probeContentType(file.toPath());
-        final MediaType mt = MediaType.get(ct);
-        System.out.println(mt);
+        final TranscriptionRequest request = TranscriptionRequest.newBuilder()
+                .model(TranscriptionModel.PARAFORMER_V2)
+                .addResource(new File("./test-data/poetry-DengHuangHeLou.wav").toURI())
+                .build();
+        final TranscriptionResponse response = client.audio().transcription().task(request)
+                .thenCompose(half-> {
+                    return half.waitingFor(new Task.WaitStrategy() {
+                        @Override
+                        public CompletionStage<?> performWait(Task task) {
+                            return CompletableFuture.completedFuture(null);
+                        }
+                    });
+                })
+                .toCompletableFuture()
+                .join();
+        System.out.println(response);
+        response.output().results().forEach(item-> {
+            item.fetchTranscription()
+                    .thenAccept(System.out::println)
+                    .toCompletableFuture()
+                    .join();
+        });
     }
 
 }

@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.api;
 
+import io.github.oldmanpushcart.dashscope4j.Ret;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -19,23 +20,11 @@ import lombok.experimental.Accessors;
  */
 @Getter
 @Accessors(fluent = true)
-@ToString
-@EqualsAndHashCode
-public abstract class ApiResponse<D> {
-
-    /**
-     * 成功应答编码
-     */
-    public static final String CODE_SUCCESS = "SUCCESS";
-
-    /**
-     * 失败应答编码
-     */
-    public static final String CODE_FAILURE = "FAILURE";
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public abstract class ApiResponse<D> extends Ret {
 
     private final String uuid;
-    private final String code;
-    private final String desc;
 
     /**
      * 构建API应答
@@ -45,21 +34,13 @@ public abstract class ApiResponse<D> {
      * @param desc 应答信息
      */
     protected ApiResponse(String uuid, String code, String desc) {
+        super(code, desc);
         this.uuid = uuid;
-        this.code = null != code ? code : CODE_SUCCESS;
-        this.desc = desc;
     }
 
     /**
      * @return 应答数据
      */
     abstract public D output();
-
-    /**
-     * @return 是否成功
-     */
-    public boolean isSuccess() {
-        return CODE_SUCCESS.equals(code);
-    }
 
 }

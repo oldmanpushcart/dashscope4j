@@ -33,5 +33,6 @@ open module dashscope4j {
     exports io.github.oldmanpushcart.dashscope4j.base.tokenizer;
     exports io.github.oldmanpushcart.dashscope4j.base.store;
     exports io.github.oldmanpushcart.dashscope4j.base.files;
+    exports io.github.oldmanpushcart.dashscope4j.task;
 
 }
