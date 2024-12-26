@@ -11,7 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import static java.util.Objects.requireNonNull;
+import static io.github.oldmanpushcart.dashscope4j.internal.CompletableFutureCallback.newStringFutureCallback;
 
 @Slf4j
 public class HttpUtils {
@@ -79,8 +79,7 @@ public class HttpUtils {
                 .get()
                 .build();
 
-        final CompletableFutureCallback<String> callback = new CompletableFutureCallback<>((httpCall, httpResponse) ->
-                requireNonNull(httpResponse.body()).string());
+        final CompletableFutureCallback<String> callback = newStringFutureCallback();
 
         http.newCall(request).enqueue(callback);
         return callback;

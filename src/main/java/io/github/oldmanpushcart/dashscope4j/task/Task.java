@@ -198,7 +198,7 @@ public class Task {
                 try {
 
                     // 检查任务是否已经过了超时时间限制
-                    if (Instant.now().isAfter(task.timing.end.plus(timeout))) {
+                    if (Instant.now().isAfter(task.timing().submit().plus(timeout))) {
                         future.cancel(true);
                     }
 

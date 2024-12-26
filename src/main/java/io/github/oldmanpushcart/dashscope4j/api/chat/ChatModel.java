@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.Model;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -8,6 +10,8 @@ import java.net.URI;
 
 @Value
 @Accessors(fluent = true)
+@ToString
+@EqualsAndHashCode
 public class ChatModel implements Model {
 
     Mode mode;

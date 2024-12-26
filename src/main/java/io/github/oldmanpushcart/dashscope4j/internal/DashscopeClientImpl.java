@@ -7,12 +7,14 @@ import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.api.audio.AudioOp;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.api.embedding.EmbeddingOp;
+import io.github.oldmanpushcart.dashscope4j.api.image.ImageOp;
 import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.internal.api.ApiOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.InterceptionApiOp;
 import io.github.oldmanpushcart.dashscope4j.internal.api.audio.AudioOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.chat.ChatOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.embedding.EmbeddingOpImpl;
+import io.github.oldmanpushcart.dashscope4j.internal.api.image.ImageOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.base.BaseOpImpl;
 import okhttp3.OkHttpClient;
 
@@ -28,6 +30,7 @@ class DashscopeClientImpl implements DashscopeClient {
     private final AudioOp audioOp;
     private final ChatOp chatOp;
     private final EmbeddingOp embeddingOp;
+    private final ImageOp imageOp;
 
     DashscopeClientImpl(
             final String ak,
@@ -42,6 +45,7 @@ class DashscopeClientImpl implements DashscopeClient {
         this.chatOp = new ChatOpImpl(apiOp);
         this.audioOp = new AudioOpImpl(http, apiOp);
         this.embeddingOp = new EmbeddingOpImpl(apiOp);
+        this.imageOp = new ImageOpImpl(apiOp);
     }
 
     private ApiOp newApiOp(String ak, OkHttpClient http, Collection<Interceptor> interceptors) {
@@ -71,6 +75,11 @@ class DashscopeClientImpl implements DashscopeClient {
     @Override
     public EmbeddingOp embedding() {
         return embeddingOp;
+    }
+
+    @Override
+    public ImageOp image() {
+        return imageOp;
     }
 
     @Override
