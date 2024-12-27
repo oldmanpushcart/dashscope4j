@@ -1,5 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j;
 
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.base.files.Purpose;
 import org.junit.jupiter.api.Test;
@@ -20,11 +24,16 @@ public class DebugTestCase extends ClientSupport {
 
     @Test
     public void test$debug1() throws IOException, InterruptedException {
-        client.base().files().flow()
-                .blockingSubscribe(meta->{
-                    System.out.println(meta);
-                    Thread.sleep(1000);
-                });
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_TURBO)
+                .addMessage(Message.ofUser("你好呀!"))
+                .build();
+
+        final ChatResponse response = client.chat().async(request)
+                .toCompletableFuture()
+                .join();
+
+        System.out.println(response.output().best().message().text());
     }
 
 }

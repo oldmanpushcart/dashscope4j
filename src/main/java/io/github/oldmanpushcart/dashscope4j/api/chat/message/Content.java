@@ -27,11 +27,6 @@ import java.util.Map;
 public class Content<T> {
 
     /**
-     * 权重
-     */
-    float factor;
-
-    /**
      * 类型
      */
     Type type;
@@ -41,10 +36,6 @@ public class Content<T> {
      */
     T data;
 
-    private Content(Type type, T data) {
-        this(1.0f, type, data);
-    }
-
     /**
      * 创建新数据
      *
@@ -53,19 +44,7 @@ public class Content<T> {
      * @return 新内容
      */
     public <U> Content<U> newData(U data) {
-        return new Content<>(factor, type, data);
-    }
-
-    /**
-     * 创建新数据
-     *
-     * @param factor 权重
-     * @param data   数据
-     * @param <U>    数据类型
-     * @return 新内容
-     */
-    public <U> Content<U> newFactorData(float factor, U data) {
-        return new Content<>(factor, type, data);
+        return new Content<>(type, data);
     }
 
     /**
@@ -77,7 +56,6 @@ public class Content<T> {
     Map<Object, Object> extract() {
         return new HashMap<Object, Object>() {{
             put(type, data);
-            put("factor", factor);
         }};
     }
 

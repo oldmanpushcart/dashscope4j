@@ -9,7 +9,6 @@ import java.io.File;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class FilesTestCase extends ClientSupport {
