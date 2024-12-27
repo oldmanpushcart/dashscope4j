@@ -24,14 +24,10 @@ import static java.util.Collections.unmodifiableList;
 class FileListResponse extends OpenAiResponse<List<FileMeta>> {
 
     List<FileMeta> output;
-
-    private FileListResponse(String uuid, OpenAiError error, List<FileMeta> output) {
-        super(uuid, error);
-        this.output = unmodifiableList(output);
-    }
+    boolean hasNext;
 
     @JsonCreator
-    private static FileListResponse of(
+    private FileListResponse(
 
             @JacksonInject("header/x-request-id")
             String uuid,
@@ -40,13 +36,19 @@ class FileListResponse extends OpenAiResponse<List<FileMeta>> {
             OpenAiError error,
 
             @JsonProperty("data")
-            List<Data> list
+            List<Data> list,
+
+            @JsonProperty("has_more")
+            boolean hasNext
 
     ) {
+        super(uuid, error);
+
         final List<FileMeta> metas = list.stream()
                 .map(Data::toMeta)
                 .collect(Collectors.toList());
-        return new FileListResponse(uuid, error, unmodifiableList(metas));
+        this.output = unmodifiableList(metas);
+        this.hasNext = hasNext;
     }
 
     @Value

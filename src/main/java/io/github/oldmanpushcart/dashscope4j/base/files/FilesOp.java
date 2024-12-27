@@ -1,8 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.base.files;
 
+import io.reactivex.rxjava3.core.Flowable;
+
 import java.io.File;
 import java.net.URI;
-import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -48,8 +50,22 @@ public interface FilesOp {
     CompletionStage<Boolean> delete(String id);
 
     /**
-     * @return 文件迭代器
+     * 文件列表
+     * <p>按照文件创建顺序,从新到旧排序</p>
+     *
+     * @param after 从指定的文件ID之后开始(不含)
+     *              <p>若为{@code null}则从排序最新的开始</p>
+     * @param limit 列出的个数
+     * @return 文件列表操作
      */
-    CompletionStage<Iterator<FileMeta>> iterator();
+    CompletionStage<List<FileMeta>> list(String after, int limit);
+
+    /**
+     * 文件流
+     * <p>按照文件创建顺序,从新到旧排序</p>
+     *
+     * @return 文件流
+     */
+    Flowable<FileMeta> flow();
 
 }

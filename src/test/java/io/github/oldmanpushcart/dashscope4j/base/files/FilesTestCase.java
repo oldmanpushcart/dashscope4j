@@ -9,7 +9,8 @@ import java.io.File;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class FilesTestCase extends ClientSupport {
 
@@ -66,7 +67,7 @@ public class FilesTestCase extends ClientSupport {
     }
 
     @Test
-    public void test$file$iterator() {
+    public void test$file$list() {
 
         final String filename = encodingTestFilename(file.getName());
         final FileMeta meta1 = client.base().files().create(resource, filename, Purpose.FILE_EXTRACT)
@@ -77,24 +78,25 @@ public class FilesTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        final Iterator<FileMeta> metaIt = client.base().files().iterator()
-                .toCompletableFuture()
-                .join();
 
-        int hit = 0;
-        while (metaIt.hasNext()) {
-            final FileMeta meta = metaIt.next();
-            if (meta.identity().equals(meta1.identity())) {
-                assertFileMeta(meta);
-                Assertions.assertEquals(meta1, meta);
-                hit++;
-            } else if (meta.identity().equals(meta2.identity())) {
-                assertFileMeta(meta);
-                Assertions.assertEquals(meta2, meta);
-                hit++;
-            }
-        }
-        Assertions.assertEquals(2, hit);
+
+        final AtomicInteger hit = new AtomicInteger();
+        client.base().files().flow()
+                .blockingSubscribe(meta-> {
+
+                    if (meta.identity().equals(meta1.identity())) {
+                        assertFileMeta(meta);
+                        Assertions.assertEquals(meta1, meta);
+                        hit.getAndIncrement();
+                    } else if (meta.identity().equals(meta2.identity())) {
+                        assertFileMeta(meta);
+                        Assertions.assertEquals(meta2, meta);
+                        hit.getAndIncrement();
+                    }
+
+                });
+
+        Assertions.assertEquals(2, hit.get());
 
     }
 
@@ -118,21 +120,23 @@ public class FilesTestCase extends ClientSupport {
 
     @BeforeAll
     public static void cleanup() {
-        final Iterator<FileMeta> metaIt = client.base().files().iterator()
-                .toCompletableFuture()
-                .join();
-        while (metaIt.hasNext()) {
-            final FileMeta meta = metaIt.next();
-            if (!isTestFilename(meta.name())) {
-                continue;
-            }
-            final Instant instant = parseInstantFromTestFilename(meta.name());
-            if (instant.isBefore(Instant.now().minus(Duration.ofDays(1)))) {
-                client.base().files().delete(meta.identity())
-                        .toCompletableFuture()
-                        .join();
-            }
-        }
+
+        client.base().files().flow()
+                .blockingSubscribe(meta -> {
+
+                    if (!isTestFilename(meta.name())) {
+                        return;
+                    }
+
+                    final Instant instant = parseInstantFromTestFilename(meta.name());
+                    if (instant.isBefore(Instant.now().minus(Duration.ofDays(1)))) {
+                        client.base().files().delete(meta.identity())
+                                .toCompletableFuture()
+                                .join();
+                    }
+
+                });
+
     }
 
 }
