@@ -81,7 +81,7 @@ public class ApiOpImpl implements ApiOp {
             final String bodyJson = requireNonNull(httpResponse.body()).string();
             final R response = request.newResponseDecoder().apply(httpResponse, bodyJson);
             if (!response.isSuccess()) {
-                throw new ApiException(response);
+                throw new ApiException(httpResponse.code(), response);
             }
             return response;
         });
@@ -120,7 +120,7 @@ public class ApiOpImpl implements ApiOp {
                             if (response.isSuccess()) {
                                 emitter.onNext(response);
                             } else {
-                                throw new ApiException(response);
+                                throw new ApiException(httpResponse.code(), response);
                             }
                         } else {
                             throw new IllegalStateException(String.format("Unexpected event type: %s", type));
@@ -191,7 +191,7 @@ public class ApiOpImpl implements ApiOp {
                     final TaskHalfResponse halfResponse = JacksonJsonUtils.toObject(bodyJson, TaskHalfResponse.class);
 
                     if (!halfResponse.isSuccess()) {
-                        throw new ApiException(halfResponse);
+                        throw new ApiException(httpResponse.code(), halfResponse);
                     }
 
                     final TaskGetRequest taskGetRequest = TaskGetRequest.newBuilder()
