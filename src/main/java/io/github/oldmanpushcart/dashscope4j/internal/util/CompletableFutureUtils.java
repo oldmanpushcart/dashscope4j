@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.util;
+package io.github.oldmanpushcart.dashscope4j.internal.util;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -14,6 +14,12 @@ import java.util.function.Function;
  * CompletableFuture工具类
  */
 public class CompletableFutureUtils {
+
+    public static <T> CompletionStage<T> failedStage(Throwable ex) {
+        final CompletableFuture<T> future = new CompletableFuture<>();
+        future.completeExceptionally(ex);
+        return future;
+    }
 
     /**
      * 解包异常

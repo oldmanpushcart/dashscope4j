@@ -33,7 +33,7 @@ public class TranscriptionRequest extends AlgoRequest<TranscriptionModel, Transc
 
     @Override
     protected Object input() {
-        return new HashMap<>() {{
+        return new HashMap<String, Object>() {{
             put("file_urls", resources);
         }};
     }

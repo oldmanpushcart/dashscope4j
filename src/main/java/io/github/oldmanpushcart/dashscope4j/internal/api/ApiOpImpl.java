@@ -36,9 +36,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.*;
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CompletableFutureUtils.failedStage;
 import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.failedFuture;
 
 @Slf4j
 public class ApiOpImpl implements ApiOp {
@@ -257,7 +257,8 @@ public class ApiOpImpl implements ApiOp {
                                 }
 
                                 if (!task.isCancelable()) {
-                                    return failedFuture(ex);
+
+                                    return failedStage(ex);
                                 }
 
                                 final TaskCancelRequest taskCancelRequest = TaskCancelRequest.newBuilder()
@@ -268,7 +269,7 @@ public class ApiOpImpl implements ApiOp {
                                             log.warn("dashscope://task/cancel completed: task={};", task.identity(), cex);
                                             return cv;
                                         })
-                                        .thenCompose(cv -> failedFuture(ex));
+                                        .thenCompose(cv -> failedStage(ex));
 
                             })
                             .thenCompose(f -> f)

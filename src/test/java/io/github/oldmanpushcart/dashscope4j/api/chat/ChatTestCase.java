@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.assertApiResponseSuccessful;
-import static io.github.oldmanpushcart.dashscope4j.util.CompletableFutureUtils.unwrapEx;
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CompletableFutureUtils.unwrapEx;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

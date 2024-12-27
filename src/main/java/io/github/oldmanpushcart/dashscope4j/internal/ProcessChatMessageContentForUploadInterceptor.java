@@ -8,7 +8,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.concurrent.CompletionStage;
 
-import static io.github.oldmanpushcart.dashscope4j.util.CompletableFutureUtils.thenIterateCompose;
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CompletableFutureUtils.thenIterateCompose;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
