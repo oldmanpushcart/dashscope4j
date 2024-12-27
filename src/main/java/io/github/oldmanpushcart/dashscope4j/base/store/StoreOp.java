@@ -7,6 +7,8 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * 存储操作
+ *
+ * @link <a href="https://help.aliyun.com/zh/dashscope/developer-reference/guidance-of-temporary-storage-space">文件存储API</a>
  */
 public interface StoreOp {
 

@@ -2,16 +2,9 @@ package io.github.oldmanpushcart.dashscope4j;
 
 import java.util.concurrent.CompletionStage;
 
-/**
- * 异步操作
- *
- * @param <R> 结果类型
- */
-public interface OpAsync<R> {
+@FunctionalInterface
+public interface OpAsync<T, R> {
 
-    /**
-     * @return 异步操作
-     */
-    CompletionStage<R> async();
+    CompletionStage<R> async(T t);
 
 }

@@ -1,40 +1,48 @@
 package io.github.oldmanpushcart.dashscope4j.base.files;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
+import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+
 import java.net.URI;
+import java.time.Instant;
 
 /**
  * 文件元数据
  */
-public interface FileMeta {
+@Value
+@Accessors(fluent = true)
+@ToString
+@EqualsAndHashCode
+@Jacksonized
+@Builder
+@AllArgsConstructor
+public class FileMeta {
+
+    @JsonProperty("identity")
+    String identity;
+
+    @JsonProperty("filename")
+    String name;
+
+    @JsonProperty("bytes")
+    long size;
+
+    @EqualsAndHashCode.Exclude
+    @JsonProperty("create_at")
+    Instant uploadedAt;
+
+    @JsonProperty("purpose")
+    Purpose purpose;
 
     /**
-     * @return 文件ID
+     * 转换为URI
+     *
+     * @return URI
      */
-    String id();
-
-    /**
-     * @return 文件名
-     */
-    String name();
-
-    /**
-     * @return 文件大小
-     */
-    long size();
-
-    /**
-     * @return 文件上传时间
-     */
-    long uploadedAt();
-
-    /**
-     * @return 文件用途
-     */
-    String purpose();
-
-    /**
-     * @return 转换为URI
-     */
-    URI toURI();
+    public URI toURI() {
+        return URI.create(String.format("fileid://%s", identity));
+    }
 
 }

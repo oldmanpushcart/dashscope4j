@@ -1,8 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.base.files;
 
+import io.reactivex.rxjava3.core.Flowable;
+
 import java.io.File;
 import java.net.URI;
-import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -15,28 +17,20 @@ public interface FilesOp {
      *
      * @param resource 资源URI
      * @param filename 文件名
+     * @param purpose  用途
      * @return 创建操作
      */
-    CompletionStage<FileMeta> upload(URI resource, String filename);
+    CompletionStage<FileMeta> create(URI resource, String filename, Purpose purpose);
 
     /**
      * 上传文件
      *
-     * @param file 文件
+     * @param file    文件
+     * @param purpose 用途
      * @return 创建操作
      */
-    default CompletionStage<FileMeta> upload(File file) {
-        return upload(file.toURI(), file.getName());
-    }
-
-    /**
-     * 上传资源
-     *
-     * @param resource 资源URI
-     * @return 创建操作
-     */
-    default CompletionStage<FileMeta> upload(URI resource) {
-        return upload(resource, resource.getPath());
+    default CompletionStage<FileMeta> create(File file, Purpose purpose) {
+        return create(file.toURI(), file.getName(), purpose);
     }
 
     /**
@@ -56,17 +50,22 @@ public interface FilesOp {
     CompletionStage<Boolean> delete(String id);
 
     /**
-     * 删除文件
+     * 文件列表
+     * <p>按照文件创建顺序,从新到旧排序</p>
      *
-     * @param id      文件ID
-     * @param isForce 是否强制删除
-     * @return 删除操作
+     * @param after 从指定的文件ID之后开始(不含)
+     *              <p>若为{@code null}则从排序最新的开始</p>
+     * @param limit 列出的个数
+     * @return 文件列表操作
      */
-    CompletionStage<Boolean> delete(String id, boolean isForce);
+    CompletionStage<List<FileMeta>> list(String after, int limit);
 
     /**
-     * @return 文件迭代器
+     * 文件流
+     * <p>按照文件创建顺序,从新到旧排序</p>
+     *
+     * @return 文件流
      */
-    CompletionStage<Iterator<FileMeta>> iterator();
+    Flowable<FileMeta> flow();
 
 }

@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Properties;
 
-/**
- * 常量
- */
 public class Constants {
 
     private final static Properties properties = new Properties();
@@ -19,10 +16,9 @@ public class Constants {
         }
     }
 
-    /**
-     * 日志
-     */
-    public static final String LOGGER_NAME = "dashscope4j";
+    private Constants() {
+
+    }
 
     /**
      * 版本
@@ -31,36 +27,7 @@ public class Constants {
 
     /**
      * WEBSOCKET服务器地址
-     *
-     * @since 2.2.0
      */
     public static final URI WSS_REMOTE = URI.create("wss://dashscope.aliyuncs.com/api-ws/v1/inference/");
-
-    /**
-     * 缓存命名空间：临时空间
-     */
-    public static final String CACHE_NAMESPACE_FOR_STORE = "store";
-
-    /**
-     * 缓存命名空间：文件操作
-     */
-    public static final String CACHE_NAMESPACE_FOR_FILES = "files";
-
-    /**
-     * 缓存命名空间：文件操作-文件ID与缓存KEY倒排索引
-     *
-     * @since 2.1.1
-     */
-    public static final String CACHE_NAMESPACE_FOR_IDX_CACHE_FILES_FILEID_CACHE_KEY = "idx.files.fileid_cache-key";
-
-    /**
-     * 启用
-     */
-    public static final String ENABLE = "enable";
-
-    /**
-     * 禁用
-     */
-    public static final String DISABLE = "disable";
 
 }

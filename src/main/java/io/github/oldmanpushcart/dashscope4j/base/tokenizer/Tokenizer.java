@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.base.tokenizer;
 
-import io.github.oldmanpushcart.dashscope4j.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 
 import java.util.List;
 import java.util.Map;
@@ -8,8 +8,6 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * 标记器
- *
- * @since 2.1.1
  */
 public interface Tokenizer {
 
