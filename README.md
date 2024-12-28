@@ -92,7 +92,7 @@ public static void main(String... args) {
 
 ## 三、使用说明
 
-- 多模态对话生成
+- [多模态对话生成](https://github.com/oldmanpushcart/dashscope4j/wiki/Chat)
 - 多模态向量计算
 - 文生图
 - 语音处理
