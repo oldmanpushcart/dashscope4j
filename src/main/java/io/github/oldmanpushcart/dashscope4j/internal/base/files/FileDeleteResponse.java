@@ -19,7 +19,7 @@ class FileDeleteResponse extends OpenAiResponse<Boolean> {
     Boolean output;
 
     @JsonCreator
-    FileDeleteResponse(
+    private FileDeleteResponse(
 
             @JacksonInject("header/x-request-id")
             String uuid,

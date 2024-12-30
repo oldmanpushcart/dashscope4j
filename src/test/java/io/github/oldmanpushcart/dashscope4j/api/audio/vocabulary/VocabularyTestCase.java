@@ -19,7 +19,7 @@ public class VocabularyTestCase extends ClientSupport {
 
     @Test
     public void test$vocabulary$create() {
-        final List<Vocabulary.Item> items = new ArrayList<>() {{
+        final List<Vocabulary.Item> items = new ArrayList<Vocabulary.Item>() {{
             add(Vocabulary.Item.of("测试", "zh", 5));
             add(Vocabulary.Item.of("测试", "zh", 5));
         }};
@@ -44,14 +44,14 @@ public class VocabularyTestCase extends ClientSupport {
     @Test
     public void test$vocabulary$update() {
 
-        final Vocabulary created = client.audio().vocabulary().create(GROUP, RecognitionModel.PARAFORMER_REALTIME_V2, new ArrayList<>() {{
+        final Vocabulary created = client.audio().vocabulary().create(GROUP, RecognitionModel.PARAFORMER_REALTIME_V2, new ArrayList<Vocabulary.Item>() {{
                     add(Vocabulary.Item.of("测试", "zh", 5));
                     add(Vocabulary.Item.of("测试", "zh", 5));
                 }})
                 .toCompletableFuture()
                 .join();
 
-        client.audio().vocabulary().update(created.identity(), new ArrayList<>() {{
+        client.audio().vocabulary().update(created.identity(), new ArrayList<Vocabulary.Item>() {{
                     add(Vocabulary.Item.of("测试-UPDATE", "zh", 5));
                     add(Vocabulary.Item.of("测试-UPDATE", "zh", 5));
                 }})
@@ -88,7 +88,7 @@ public class VocabularyTestCase extends ClientSupport {
     public void test$vocabulary$update$not_existed() {
         final ApiException apiEx = Assertions.assertThrows(ApiException.class, () -> {
             try {
-                client.audio().vocabulary().update("not-existed-vocabularyId", new ArrayList<>() {{
+                client.audio().vocabulary().update("not-existed-vocabularyId", new ArrayList<Vocabulary.Item>() {{
                             add(Vocabulary.Item.of("测试-UPDATE", "zh", 5));
                             add(Vocabulary.Item.of("测试-UPDATE", "zh", 5));
                         }})

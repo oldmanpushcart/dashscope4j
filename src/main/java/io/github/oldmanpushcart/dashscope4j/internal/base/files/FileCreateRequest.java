@@ -32,9 +32,9 @@ class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
 
     private FileCreateRequest(Builder builder) {
         super(FileCreateResponse.class, builder);
-        this.resource = builder.resource;
-        this.filename = builder.filename;
-        this.purpose = builder.purpose;
+        this.resource = requireNonNull(builder.resource);
+        this.filename = requireNonNull(builder.filename);
+        this.purpose = requireNonNull(builder.purpose);
     }
 
     @Override
@@ -100,9 +100,6 @@ class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
 
         @Override
         public FileCreateRequest build() {
-            requireNonNull(resource);
-            requireNonNull(filename);
-            requireNonNull(purpose);
             return new FileCreateRequest(this);
         }
 

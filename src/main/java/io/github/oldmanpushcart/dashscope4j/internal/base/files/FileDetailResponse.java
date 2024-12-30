@@ -24,11 +24,6 @@ class FileDetailResponse extends OpenAiResponse<FileMeta> {
 
     FileMeta output;
 
-    FileDetailResponse(String uuid, OpenAiError error, FileMeta output) {
-        super(uuid, error);
-        this.output = output;
-    }
-
     @JsonCreator
     private FileDetailResponse(
 
@@ -45,10 +40,10 @@ class FileDetailResponse extends OpenAiResponse<FileMeta> {
             String name,
 
             @JsonProperty("bytes")
-            Long size,
+            long size,
 
             @JsonProperty("created_at")
-            Integer created,
+            int created,
 
             @JsonProperty("purpose")
             Purpose purpose

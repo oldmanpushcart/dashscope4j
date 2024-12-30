@@ -66,6 +66,22 @@ public class FilesTestCase extends ClientSupport {
     }
 
     @Test
+    public void test$file$delete$not_existed() {
+        client.base().files().delete("fileid-not-existed")
+                .thenAccept(Assertions::assertFalse)
+                .toCompletableFuture()
+                .join();
+    }
+
+    @Test
+    public void test$file$detail$not_existed() {
+        client.base().files().detail("fileid-not-existed")
+                .thenAccept(Assertions::assertNull)
+                .toCompletableFuture()
+                .join();
+    }
+
+    @Test
     public void test$file$list() {
 
         final String filename = encodingTestFilename(file.getName());
@@ -78,10 +94,9 @@ public class FilesTestCase extends ClientSupport {
                 .join();
 
 
-
         final AtomicInteger hit = new AtomicInteger();
         client.base().files().flow()
-                .blockingSubscribe(meta-> {
+                .blockingSubscribe(meta -> {
 
                     if (meta.identity().equals(meta1.identity())) {
                         assertFileMeta(meta);

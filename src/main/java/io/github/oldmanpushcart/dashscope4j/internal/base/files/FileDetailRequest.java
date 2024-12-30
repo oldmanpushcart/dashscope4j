@@ -25,7 +25,7 @@ class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
 
     private FileDetailRequest(Builder builder) {
         super(FileDetailResponse.class, builder);
-        this.identity = builder.identity;
+        this.identity = requireNonNull(builder.identity);
     }
 
     @Override
@@ -41,15 +41,7 @@ class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
     public BiFunction<Response, String, FileDetailResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
             log.debug("dashscope://base/files/detail/{} <<< {}", identity, bodyJson);
-            final FileDetailResponse response = JacksonJsonUtils.toObject(bodyJson, FileDetailResponse.class, httpResponse);
-
-            /*
-             * 如果查询文件详情失败且失败的原因是文件不存在，则返回null
-             * output = null
-             */
-            return !response.isSuccess() && httpResponse.code() == 404
-                    ? new FileDetailResponse(response.uuid(), null, null)
-                    : response;
+            return JacksonJsonUtils.toObject(bodyJson, FileDetailResponse.class, httpResponse);
         };
     }
 
@@ -61,7 +53,7 @@ class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
         return new Builder(request);
     }
 
-    public static class Builder extends OpenAiRequest.Builder<FileDetailRequest, Builder> {
+    static class Builder extends OpenAiRequest.Builder<FileDetailRequest, Builder> {
 
         private String identity;
 
@@ -81,7 +73,6 @@ class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
 
         @Override
         public FileDetailRequest build() {
-            requireNonNull(identity);
             return new FileDetailRequest(this);
         }
     }

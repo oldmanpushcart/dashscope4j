@@ -14,6 +14,8 @@ import lombok.extern.jackson.Jacksonized;
  */
 @Getter
 @Accessors(fluent = true)
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public final class SpeechSynthesisResponse extends AlgoResponse<SpeechSynthesisResponse.Output> {
 
     private final Output output;

@@ -4,10 +4,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoResponse;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.Value;
+import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 
 /**
@@ -58,19 +57,12 @@ public class VocabularyCreateResponse extends AlgoResponse<VocabularyCreateRespo
     @Accessors(fluent = true)
     @ToString
     @EqualsAndHashCode
+    @Jacksonized
+    @Builder(access = AccessLevel.PRIVATE)
     public static class Output {
 
+        @JsonProperty("vocabulary_id")
         String vocabularyId;
-
-        @JsonCreator
-        private Output(
-
-                @JsonProperty("vocabulary_id")
-                String vocabularyId
-
-        ) {
-            this.vocabularyId = vocabularyId;
-        }
 
     }
 
