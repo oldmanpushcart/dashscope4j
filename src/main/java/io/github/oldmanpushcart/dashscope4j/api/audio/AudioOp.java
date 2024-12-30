@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.api.audio.asr.TranscriptionRequest;
 import io.github.oldmanpushcart.dashscope4j.api.audio.asr.TranscriptionResponse;
 import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisRequest;
 import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisResponse;
+import io.github.oldmanpushcart.dashscope4j.api.audio.vocabulary.VocabularyOp;
 
 /**
  * 语音相关操作
@@ -29,5 +30,10 @@ public interface AudioOp {
      */
     OpExchange<SpeechSynthesisRequest, SpeechSynthesisResponse> synthesis();
 
+    /**
+     * @return 热词表管理
+     * @since 3.1.0
+     */
+    VocabularyOp vocabulary();
 
 }

@@ -10,10 +10,11 @@ import io.github.oldmanpushcart.dashscope4j.api.audio.asr.TranscriptionRequest;
 import io.github.oldmanpushcart.dashscope4j.api.audio.asr.TranscriptionResponse;
 import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisRequest;
 import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisResponse;
+import io.github.oldmanpushcart.dashscope4j.api.audio.vocabulary.VocabularyOp;
+import io.github.oldmanpushcart.dashscope4j.internal.api.audio.vocabulary.VocabularyOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.util.HttpUtils;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.task.Task;
-import lombok.AllArgsConstructor;
 import okhttp3.OkHttpClient;
 
 import java.util.List;
@@ -22,11 +23,18 @@ import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.util.StringUtils.isNotBlank;
 
-@AllArgsConstructor
 public class AudioOpImpl implements AudioOp {
 
     private final OkHttpClient http;
     private final ApiOp apiOp;
+    private final VocabularyOp vocabularyOp;
+
+    public AudioOpImpl(final OkHttpClient http,
+                       final ApiOp apiOp) {
+        this.http = http;
+        this.apiOp = apiOp;
+        this.vocabularyOp = new VocabularyOpImpl(apiOp);
+    }
 
     @Override
     public OpExchange<RecognitionRequest, RecognitionResponse> recognition() {
@@ -46,6 +54,11 @@ public class AudioOpImpl implements AudioOp {
                     }
                     return exchange;
                 });
+    }
+
+    @Override
+    public VocabularyOp vocabulary() {
+        return vocabularyOp;
     }
 
     @Override
