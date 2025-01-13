@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.api;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -8,7 +7,6 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 import okhttp3.Response;
 
-import java.util.Collections;
 import java.util.function.BiFunction;
 
 import static lombok.AccessLevel.PROTECTED;
@@ -24,7 +22,6 @@ import static lombok.AccessLevel.PROTECTED;
 @EqualsAndHashCode
 public abstract class ApiRequest<R extends ApiResponse<?>> {
 
-
     @ToString.Exclude
     @Getter(PROTECTED)
     private final Class<R> responseType;
@@ -37,21 +34,6 @@ public abstract class ApiRequest<R extends ApiResponse<?>> {
      */
     protected ApiRequest(Class<R> responseType, Builder<?, ?> builder) {
         this.responseType = responseType;
-    }
-
-    /**
-     * 生成Api请求中的数据
-     * <pre><code>
-     *     {
-     *         "input":{}
-     *     }
-     * </code></pre>
-     *
-     * @return Input
-     */
-    @JsonProperty
-    protected Object input() {
-        return Collections.emptyMap();
     }
 
     /**

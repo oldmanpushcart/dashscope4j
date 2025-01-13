@@ -1,13 +1,15 @@
 package io.github.oldmanpushcart.dashscope4j.internal.util;
 
-import java.util.Objects;
+import java.util.Collection;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import static java.util.Objects.requireNonNull;
 
 public class CommonUtils {
 
     public static String requireNonBlankString(String str, Supplier<String> messageSupplier) {
-        Objects.requireNonNull(messageSupplier);
+        requireNonNull(messageSupplier);
         if (StringUtils.isNotBlank(str)) {
             return str;
         }
@@ -16,6 +18,18 @@ public class CommonUtils {
 
     public static String requireNonBlankString(String str, String message) {
         return requireNonBlankString(str, () -> message);
+    }
+
+    public static <T extends Collection<?>> T requireNonEmptyCollection(T collection, Supplier<String> messageSupplier) {
+        requireNonNull(messageSupplier);
+        if (null == collection || collection.isEmpty()) {
+            throw new IllegalArgumentException(messageSupplier.get());
+        }
+        return collection;
+    }
+
+    public static <T extends Collection<?>> T requireNonEmptyCollection(T collection, String message) {
+        return requireNonEmptyCollection(collection, () -> message);
     }
 
     /**

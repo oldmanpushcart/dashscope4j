@@ -72,8 +72,8 @@ public class VocabularyPageQueryResponse extends AlgoResponse<VocabularyPageQuer
     public static class Item {
 
         String vocabularyId;
-        Instant createAt;
-        Instant updateAt;
+        Instant createdAt;
+        Instant updatedAt;
 
         @JsonCreator
         private Item(
@@ -83,16 +83,16 @@ public class VocabularyPageQueryResponse extends AlgoResponse<VocabularyPageQuer
 
                 @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
                 @JsonProperty("gmt_create")
-                Date createAt,
+                Date createdAt,
 
                 @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
                 @JsonProperty("gmt_modified")
-                Date updateAt
+                Date updatedAt
 
         ) {
             this.vocabularyId = vocabularyId;
-            this.createAt = createAt.toInstant();
-            this.updateAt = updateAt.toInstant();
+            this.createdAt = createdAt.toInstant();
+            this.updatedAt = updatedAt.toInstant();
         }
 
     }

@@ -76,8 +76,8 @@ public class VocabularyOpImpl implements VocabularyOp {
                         new Vocabulary(
                                 vocabularyId,
                                 response.output().target(),
-                                response.output().createAt(),
-                                response.output().updateAt(),
+                                response.output().createdAt(),
+                                response.output().updatedAt(),
                                 response.output().items()
                         ));
     }

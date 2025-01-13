@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils.requireNonEmptyCollection;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
@@ -28,6 +29,7 @@ public class TranscriptionRequest extends AlgoRequest<TranscriptionModel, Transc
 
     private TranscriptionRequest(Builder builder) {
         super(TranscriptionResponse.class, builder);
+        requireNonEmptyCollection(builder.resources, "resources is required!");
         this.resources = unmodifiableList(builder.resources);
     }
 

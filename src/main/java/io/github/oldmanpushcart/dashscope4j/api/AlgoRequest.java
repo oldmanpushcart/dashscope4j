@@ -13,6 +13,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+import java.util.Collections;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -80,6 +81,21 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
                 .merge(model.option())
                 .merge(option)
                 .unmodifiable();
+    }
+
+    /**
+     * 生成Api请求中的数据
+     * <pre><code>
+     *     {
+     *         "input":{}
+     *     }
+     * </code></pre>
+     *
+     * @return Input
+     */
+    @JsonProperty("input")
+    protected Object input() {
+        return Collections.emptyMap();
     }
 
     @Override

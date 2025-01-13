@@ -55,8 +55,8 @@ public class VocabularyDetailResponse extends AlgoResponse<VocabularyDetailRespo
     public static class Output {
 
         String target;
-        Instant createAt;
-        Instant updateAt;
+        Instant createdAt;
+        Instant updatedAt;
         List<Vocabulary.Item> items;
 
         @JsonCreator
@@ -67,19 +67,19 @@ public class VocabularyDetailResponse extends AlgoResponse<VocabularyDetailRespo
 
                 @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
                 @JsonProperty("gmt_create")
-                Date createAt,
+                Date createdAt,
 
                 @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
                 @JsonProperty("gmt_modified")
-                Date updateAt,
+                Date updatedAt,
 
                 @JsonProperty("vocabulary")
                 List<Vocabulary.Item> items
 
         ) {
             this.target = target;
-            this.createAt = createAt.toInstant();
-            this.updateAt = updateAt.toInstant();
+            this.createdAt = createdAt.toInstant();
+            this.updatedAt = updatedAt.toInstant();
             this.items = unmodifiableList(items);
         }
 

@@ -106,7 +106,7 @@ public class VocabularyTestCase extends ClientSupport {
     @BeforeAll
     public static void cleanup() {
         client.audio().vocabulary().flow(GROUP)
-                .filter(vocabulary -> vocabulary.createAt().isBefore(Instant.now().minus(Duration.ofDays(1))))
+                .filter(vocabulary -> vocabulary.createdAt().isBefore(Instant.now().minus(Duration.ofDays(1))))
                 .blockingSubscribe(vocabulary ->
                         client.audio().vocabulary().delete(vocabulary.identity())
                                 .toCompletableFuture()

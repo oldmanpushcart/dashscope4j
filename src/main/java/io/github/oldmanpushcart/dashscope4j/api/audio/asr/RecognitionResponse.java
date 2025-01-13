@@ -13,13 +13,13 @@ import lombok.extern.jackson.Jacksonized;
 /**
  * 语音识别应答
  */
-@Getter
+@Value
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public final class RecognitionResponse extends AlgoResponse<RecognitionResponse.Output> {
+public class RecognitionResponse extends AlgoResponse<RecognitionResponse.Output> {
 
-    private final Output output;
+    Output output;
 
     @JsonCreator
     private RecognitionResponse(

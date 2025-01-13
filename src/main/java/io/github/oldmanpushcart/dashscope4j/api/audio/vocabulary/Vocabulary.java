@@ -21,8 +21,8 @@ public class Vocabulary {
 
     String identity;
     String target;
-    Instant createAt;
-    Instant updateAt;
+    Instant createdAt;
+    Instant updatedAt;
     List<Item> items;
 
     /**
@@ -33,7 +33,7 @@ public class Vocabulary {
     @ToString
     @EqualsAndHashCode
     @Jacksonized
-    @Builder(builderMethodName = "newBuilder", access = AccessLevel.PRIVATE)
+    @Builder(access = AccessLevel.PRIVATE)
     public static class Item {
 
         /**
@@ -55,7 +55,7 @@ public class Vocabulary {
         int weight;
 
         public static Item of(String text) {
-            return newBuilder()
+            return builder()
                     .text(text)
                     .lang("zh")
                     .weight(0)
@@ -63,7 +63,7 @@ public class Vocabulary {
         }
 
         public static Item of(String text, String lang) {
-            return newBuilder()
+            return builder()
                     .text(text)
                     .lang(lang)
                     .weight(1)
@@ -71,7 +71,7 @@ public class Vocabulary {
         }
 
         public static Item of(String text, String lang, int weight) {
-            return newBuilder()
+            return builder()
                     .text(text)
                     .lang(lang)
                     .weight(weight)
