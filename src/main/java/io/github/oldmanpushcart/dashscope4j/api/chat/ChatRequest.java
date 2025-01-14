@@ -12,6 +12,7 @@ import io.github.oldmanpushcart.dashscope4j.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -22,6 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.HTTP_HEADER_X_DASHSCOPE_PLUGIN;
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils.requireNonEmptyCollection;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
@@ -55,6 +57,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     private ChatRequest(Builder builder) {
         super(ChatResponse.class, builder);
+        requireNonEmptyCollection(builder.messages, "messages is empty!");
         this.messages = unmodifiableList(builder.messages);
         this.plugins = unmodifiableList(builder.plugins);
         this.tools = unmodifiableList(builder.tools);
@@ -62,7 +65,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     @Override
     protected Object input() {
-        return new HashMap<Object, Object>() {{
+        return new ObjectMap() {{
             put("messages", encodeMessages());
         }};
     }

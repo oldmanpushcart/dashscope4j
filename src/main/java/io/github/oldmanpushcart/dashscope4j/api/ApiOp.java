@@ -46,6 +46,14 @@ public interface ApiOp {
     <T extends ApiRequest<R>, R extends ApiResponse<?>>
     CompletionStage<Exchange<T>> executeExchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener);
 
+    /**
+     * 执行任务操作
+     *
+     * @param request 请求
+     * @param <T>     请求类型
+     * @param <R>     应答类型
+     * @return 任务应答通知
+     */
     <T extends ApiRequest<R>, R extends ApiResponse<?>>
     CompletionStage<Task.Half<R>> executeTask(T request);
 

@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import static java.util.Collections.unmodifiableList;
 
-public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.Output> {
+class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.Output> {
 
     private static final OutputDeserializer[] deserializers = new OutputDeserializer[]{
             new TextFormatOutputDeserializer(),

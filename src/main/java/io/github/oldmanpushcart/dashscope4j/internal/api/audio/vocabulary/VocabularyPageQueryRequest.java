@@ -1,12 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.internal.api.audio.vocabulary;
 
 import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
-
-import java.util.HashMap;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils.check;
 import static java.util.Objects.requireNonNull;
@@ -30,7 +29,7 @@ public class VocabularyPageQueryRequest extends AlgoRequest<VocabularyModel, Voc
 
     @Override
     protected Object input() {
-        return new HashMap<String, Object>() {{
+        return new ObjectMap() {{
             put("action", "list_vocabulary");
             put("prefix", group);
             put("page_index", pageIndex);

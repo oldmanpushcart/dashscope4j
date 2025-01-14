@@ -18,6 +18,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.MT_APPLICATION_JSON;
+import static java.util.Objects.requireNonNull;
 
 /**
  * 算法请求
@@ -56,6 +57,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
      */
     protected AlgoRequest(Class<R> responseType, Builder<M, ?, ?> builder) {
         super(responseType, builder);
+        requireNonNull(builder.model, "model is required!");
         this.model = builder.model;
         this.option = builder.option;
     }
@@ -157,6 +159,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
          * @return this
          */
         public B model(M model) {
+            requireNonNull(model, "model is required!");
             this.model = model;
             return self();
         }

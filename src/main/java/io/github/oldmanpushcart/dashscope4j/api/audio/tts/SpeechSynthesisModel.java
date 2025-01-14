@@ -5,6 +5,8 @@ import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils;
 import io.github.oldmanpushcart.dashscope4j.internal.util.StringUtils;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -20,6 +22,8 @@ import static io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesis
  */
 @Value
 @Accessors(fluent = true)
+@ToString
+@EqualsAndHashCode
 public class SpeechSynthesisModel implements Model {
 
     String name;

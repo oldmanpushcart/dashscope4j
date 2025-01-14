@@ -1,12 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.internal.api.audio.vocabulary;
 
 import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
-
-import java.util.HashMap;
 
 import static java.util.Objects.requireNonNull;
 
@@ -20,12 +19,12 @@ public class VocabularyDeleteRequest extends AlgoRequest<VocabularyModel, Vocabu
 
     private VocabularyDeleteRequest(Builder builder) {
         super(VocabularyDeleteResponse.class, builder);
-        this.vocabularyId = requireNonNull(builder.vocabularyId);
+        this.vocabularyId = requireNonNull(builder.vocabularyId, "vocabularyId is required!");
     }
 
     @Override
     protected Object input() {
-        return new HashMap<String, Object>() {{
+        return new ObjectMap() {{
             put("action", "delete_vocabulary");
             put("vocabulary_id", vocabularyId);
         }};

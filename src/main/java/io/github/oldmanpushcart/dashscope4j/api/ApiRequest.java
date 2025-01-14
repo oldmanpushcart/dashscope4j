@@ -9,6 +9,7 @@ import okhttp3.Response;
 
 import java.util.function.BiFunction;
 
+import static java.util.Objects.requireNonNull;
 import static lombok.AccessLevel.PROTECTED;
 
 /**
@@ -33,6 +34,7 @@ public abstract class ApiRequest<R extends ApiResponse<?>> {
      * @param builder      构建器
      */
     protected ApiRequest(Class<R> responseType, Builder<?, ?> builder) {
+        requireNonNull(responseType, "responseType is required!");
         this.responseType = responseType;
     }
 
