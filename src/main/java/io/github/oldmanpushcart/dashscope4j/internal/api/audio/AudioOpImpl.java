@@ -12,14 +12,7 @@ import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisRequest
 import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisResponse;
 import io.github.oldmanpushcart.dashscope4j.api.audio.vocabulary.VocabularyOp;
 import io.github.oldmanpushcart.dashscope4j.internal.api.audio.vocabulary.VocabularyOpImpl;
-import io.github.oldmanpushcart.dashscope4j.internal.util.HttpUtils;
-import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.task.Task;
 import okhttp3.OkHttpClient;
-
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.util.StringUtils.isNotBlank;
 
@@ -63,51 +56,7 @@ public class AudioOpImpl implements AudioOp {
 
     @Override
     public OpTask<TranscriptionRequest, TranscriptionResponse> transcription() {
-        return new OpTask<TranscriptionRequest, TranscriptionResponse>() {
-            @Override
-            public CompletionStage<Task.Half<TranscriptionResponse>> task(TranscriptionRequest request) {
-                return apiOp.executeTask(request)
-                        .thenApply(half ->
-                                new Task.Half<TranscriptionResponse>() {
-
-                                    private TranscriptionResponse.Item proxyItem(TranscriptionResponse.Item item) {
-                                        return new TranscriptionResponse.Item(
-                                                item.code(),
-                                                item.desc(),
-                                                item.originURI(),
-                                                item.transcriptionURI()
-                                        ) {
-
-                                            @Override
-                                            public CompletionStage<TranscriptionResponse.Transcription> fetchTranscription() {
-                                                return HttpUtils.fetchAsString(http, item.transcriptionURI())
-                                                        .thenApply(bodyJson ->
-                                                                JacksonJsonUtils.toObject(bodyJson, TranscriptionResponse.Transcription.class));
-                                            }
-
-                                        };
-                                    }
-
-                                    @Override
-                                    public CompletionStage<TranscriptionResponse> waitingFor(Task.WaitStrategy strategy) {
-                                        return half.waitingFor(strategy)
-                                                .thenApply(response -> {
-                                                    final List<TranscriptionResponse.Item> newResults = response.output().results().stream()
-                                                            .map(this::proxyItem)
-                                                            .collect(Collectors.toList());
-                                                    return new TranscriptionResponse(
-                                                            response.uuid(),
-                                                            response.code(),
-                                                            response.desc(),
-                                                            response.usage(),
-                                                            new TranscriptionResponse.Output(newResults)
-                                                    );
-                                                });
-                                    }
-
-                                });
-            }
-        };
+        return apiOp::executeTask;
     }
 
 }

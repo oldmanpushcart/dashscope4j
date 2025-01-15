@@ -6,8 +6,8 @@ import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoResponse;
 import io.github.oldmanpushcart.dashscope4j.api.audio.asr.timespan.SentenceTimeSpan;
+import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -16,6 +16,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import static java.util.Collections.unmodifiableList;
 
@@ -31,7 +32,7 @@ public class TranscriptionResponse extends AlgoResponse<TranscriptionResponse.Ou
     Output output;
 
     @JsonCreator
-    public TranscriptionResponse(
+    private TranscriptionResponse(
 
             @JsonProperty("request_id")
             String uuid,
@@ -73,20 +74,14 @@ public class TranscriptionResponse extends AlgoResponse<TranscriptionResponse.Ou
 
     }
 
-    @Getter
+    @Value
     @Accessors(fluent = true)
     @ToString(callSuper = true)
     @EqualsAndHashCode(callSuper = true)
     public static class Item extends Ret {
 
-        private final URI originURI;
-        private final URI transcriptionURI;
-
-        protected Item(String code, String desc, URI originURI, URI transcriptionURI) {
-            super(code, desc);
-            this.originURI = originURI;
-            this.transcriptionURI = transcriptionURI;
-        }
+        URI originURI;
+        URI transcriptionURI;
 
         @JsonCreator
         private Item(
@@ -109,8 +104,13 @@ public class TranscriptionResponse extends AlgoResponse<TranscriptionResponse.Ou
             this.transcriptionURI = URI.create(transcriptionUrl);
         }
 
-        public CompletionStage<Transcription> fetchTranscription() {
-            throw new UnsupportedOperationException();
+        private Transcription decode(String json) {
+            return JacksonJsonUtils.toObject(json, Transcription.class);
+        }
+
+        public CompletionStage<Transcription> fetchTranscription(Function<URI, CompletionStage<String>> downloader) {
+            return downloader.apply(transcriptionURI)
+                    .thenApply(this::decode);
         }
 
     }

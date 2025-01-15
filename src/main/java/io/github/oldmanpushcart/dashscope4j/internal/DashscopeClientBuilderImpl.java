@@ -3,22 +3,21 @@ package io.github.oldmanpushcart.dashscope4j.internal;
 import io.github.oldmanpushcart.dashscope4j.Cache;
 import io.github.oldmanpushcart.dashscope4j.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.Interceptor;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static io.github.oldmanpushcart.dashscope4j.internal.util.HttpUtils.loggingHttpRequest;
-import static io.github.oldmanpushcart.dashscope4j.internal.util.HttpUtils.loggingHttpResponse;
 import static java.util.Objects.requireNonNull;
 
+@Slf4j
 public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
 
     private String ak;
@@ -45,6 +44,63 @@ public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
                         }
                     }
                 }
+
+                private Map<String, String> parseHeaderMap(Headers headers) {
+                    final Map<String, String> headerMap = new LinkedHashMap<>();
+                    headers.forEach(header -> {
+                        final String name = header.getFirst();
+                        final String value = header.getSecond();
+                        if ("Authorization".equalsIgnoreCase(name)) {
+                            headerMap.put("Authorization", "Bearer ******");
+                            return;
+                        }
+                        headerMap.put(name, value);
+                    });
+                    return headerMap;
+                }
+
+                private void loggingHttpRequest(Request request) {
+
+                    if (!log.isTraceEnabled()) {
+                        return;
+                    }
+
+                    log.trace("HTTP:// >>> {} {} {}",
+                            request.method(),
+                            request.url(),
+                            parseHeaderMap(request.headers()).entrySet().stream()
+                                    .map(entry -> entry.getKey() + ": " + entry.getValue())
+                                    .reduce((a, b) -> a + ", " + b)
+                                    .orElse("")
+                    );
+
+                }
+
+                private void loggingHttpResponse(Response response, Throwable ex) {
+
+                    if (!log.isTraceEnabled()) {
+                        return;
+                    }
+
+                    // HTTP错误
+                    if (null != ex) {
+                        log.trace("HTTP:// << {}", ex.getLocalizedMessage());
+                    }
+
+                    // HTTP应答
+                    else {
+                        log.trace("HTTP:// <<< {} {} {}",
+                                response.code(),
+                                response.message(),
+                                parseHeaderMap(response.headers()).entrySet().stream()
+                                        .map(entry -> entry.getKey() + ": " + entry.getValue())
+                                        .reduce((a, b) -> a + ", " + b)
+                                        .orElse("")
+                        );
+                    }
+
+                }
+
             });
 
     @Override

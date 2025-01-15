@@ -5,11 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoResponse;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-import lombok.Value;
+import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.net.URI;
 import java.util.List;
@@ -23,7 +21,7 @@ public class GenImageResponse extends AlgoResponse<GenImageResponse.Output> {
     Output output;
 
     @JsonCreator
-    public GenImageResponse(
+    private GenImageResponse(
 
             @JsonProperty("request_id")
             String uuid,
@@ -45,10 +43,12 @@ public class GenImageResponse extends AlgoResponse<GenImageResponse.Output> {
         this.output = output;
     }
 
-    @Getter
+    @Value
     @Accessors(fluent = true)
     @ToString
     @EqualsAndHashCode
+    @Jacksonized
+    @Builder(access = AccessLevel.PRIVATE)
     public static class Output {
 
         @JsonProperty("results")
@@ -56,7 +56,7 @@ public class GenImageResponse extends AlgoResponse<GenImageResponse.Output> {
 
     }
 
-    @Getter
+    @Value
     @Accessors(fluent = true)
     @ToString(callSuper = true)
     @EqualsAndHashCode(callSuper = true)
@@ -65,7 +65,7 @@ public class GenImageResponse extends AlgoResponse<GenImageResponse.Output> {
         URI image;
 
         @JsonCreator
-        public Item(
+        private Item(
 
                 @JsonProperty("code")
                 String code,

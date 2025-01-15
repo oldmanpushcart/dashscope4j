@@ -9,17 +9,25 @@ import io.github.oldmanpushcart.dashscope4j.base.tokenizer.TokenizerOp;
 import io.github.oldmanpushcart.dashscope4j.internal.base.files.FilesOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.base.store.StoreOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.base.tokenizer.TokenizerOpImpl;
+import okhttp3.OkHttpClient;
 
 public class BaseOpImpl implements BaseOp {
 
+    private final okhttp3.OkHttpClient http;
     private final TokenizerOp tokenizerOp;
     private final StoreOp storeOp;
     private final FilesOp filesOp;
 
-    public BaseOpImpl(Cache cache, ApiOp apiOp) {
+    public BaseOpImpl(okhttp3.OkHttpClient http, Cache cache, ApiOp apiOp) {
+        this.http = http;
         this.tokenizerOp = new TokenizerOpImpl(apiOp);
         this.storeOp = new StoreOpImpl(cache, apiOp);
         this.filesOp = new FilesOpImpl(apiOp);
+    }
+
+    @Override
+    public OkHttpClient http() {
+        return http;
     }
 
     @Override
