@@ -28,6 +28,7 @@ import okhttp3.sse.EventSources;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -55,8 +56,16 @@ public class ApiOpImpl implements ApiOp {
         final Request httpRequest = request.newHttpRequest();
         final Request.Builder builder = new Request.Builder(httpRequest)
                 .addHeader(HTTP_HEADER_CONTENT_TYPE, "application/json")
-                .addHeader(HTTP_HEADER_AUTHORIZATION, String.format("Bearer %s", ak))
                 .addHeader(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION);
+
+        /*
+         * 如果有设置AK，这里才主动设置AUTHORIZATION
+         * 否则应该尽量依靠外部的设置
+         */
+        if (Objects.nonNull(ak)) {
+            builder.addHeader(HTTP_HEADER_AUTHORIZATION, String.format("Bearer %s", ak));
+        }
+
         consumer.accept(builder);
         return builder.build();
     }
