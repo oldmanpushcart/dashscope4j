@@ -3,12 +3,12 @@ package io.github.oldmanpushcart.dashscope4j.api.chat.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.github.oldmanpushcart.dashscope4j.internal.util.ObjectMap;
 import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -53,8 +53,8 @@ public class Content<T> {
      * @return Json Object Map
      */
     @JsonValue
-    Map<Object, Object> extract() {
-        return new HashMap<Object, Object>() {{
+    ObjectMap extract() {
+        return new ObjectMap() {{
             put(type, data);
         }};
     }

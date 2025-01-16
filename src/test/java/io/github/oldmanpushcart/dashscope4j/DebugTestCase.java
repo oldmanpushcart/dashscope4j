@@ -13,7 +13,23 @@ import java.util.Arrays;
 public class DebugTestCase extends ClientSupport {
 
     @Test
-    public void test$debug() {
+    public void test$debug$text() {
+
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_TURBO)
+                .addMessage(Message.ofUser("你好"))
+                .build();
+
+        final ChatResponse response = client.chat().async(request)
+                .toCompletableFuture()
+                .join();
+
+        System.out.println(response);
+
+    }
+
+    @Test
+    public void test$debug$vl() {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
