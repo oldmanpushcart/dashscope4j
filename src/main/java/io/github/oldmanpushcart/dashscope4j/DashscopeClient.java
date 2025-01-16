@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j;
 
+import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.api.audio.AudioOp;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.api.embedding.EmbeddingOp;
@@ -42,6 +43,12 @@ public interface DashscopeClient {
      * @return 基础操作
      */
     BaseOp base();
+
+    /**
+     * @return API操作
+     * @since 3.1.0
+     */
+    ApiOp api();
 
     /**
      * 关闭客户端

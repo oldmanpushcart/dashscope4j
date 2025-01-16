@@ -26,6 +26,7 @@ class DashscopeClientImpl implements DashscopeClient {
 
     private final Cache cache;
     private final OkHttpClient http;
+    private final ApiOp apiOp;
     private final BaseOp baseOp;
     private final AudioOp audioOp;
     private final ChatOp chatOp;
@@ -40,7 +41,7 @@ class DashscopeClientImpl implements DashscopeClient {
     ) {
         this.cache = cache;
         this.http = http;
-        final ApiOp apiOp = newApiOp(ak, http, interceptors);
+        this.apiOp = newApiOp(ak, http, interceptors);
         this.baseOp = new BaseOpImpl(http, cache, apiOp);
         this.chatOp = new ChatOpImpl(apiOp);
         this.audioOp = new AudioOpImpl(http, apiOp);
@@ -85,6 +86,11 @@ class DashscopeClientImpl implements DashscopeClient {
     @Override
     public BaseOp base() {
         return baseOp;
+    }
+
+    @Override
+    public ApiOp api() {
+        return apiOp;
     }
 
     @Override
