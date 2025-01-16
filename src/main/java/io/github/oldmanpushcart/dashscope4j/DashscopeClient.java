@@ -13,18 +13,39 @@ import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+/**
+ * Dashscope 客户端
+ */
 public interface DashscopeClient {
 
+    /**
+     * @return 对话操作
+     */
     ChatOp chat();
 
+    /**
+     * @return 语音操作
+     */
     AudioOp audio();
 
+    /**
+     * @return 向量操作
+     */
     EmbeddingOp embedding();
 
+    /**
+     * @return 图像操作
+     */
     ImageOp image();
 
+    /**
+     * @return 基础操作
+     */
     BaseOp base();
 
+    /**
+     * 关闭客户端
+     */
     void shutdown();
 
     static Builder newBuilder() {

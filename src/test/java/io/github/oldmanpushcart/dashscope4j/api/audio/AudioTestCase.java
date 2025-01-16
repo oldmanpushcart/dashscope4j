@@ -102,7 +102,7 @@ public class AudioTestCase extends ClientSupport {
                                 "更上一层楼。",
                         };
                         for (final String string : strings) {
-                            exchange.write(SpeechSynthesisRequest.newBuilder(request)
+                            exchange.writeData(SpeechSynthesisRequest.newBuilder(request)
                                     .text(string)
                                     .build());
                         }
@@ -140,7 +140,7 @@ public class AudioTestCase extends ClientSupport {
                         try (final FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ)) {
                             while (channel.read(buffer) != -1) {
                                 buffer.flip();
-                                exchange.write(buffer);
+                                exchange.writeByteBuffer(buffer);
                                 buffer.clear();
                             }
                             exchange.finishing();

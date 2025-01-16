@@ -31,7 +31,7 @@ public class StoreOpImpl implements StoreOp {
 
         final String cacheKey = String.format("%s|%s", resource.toString(), model.name());
         final URI cached = cache.get(InternalContents.CACHE_NAMESPACE_STORE, cacheKey)
-                .filter(Cache.Entry::isNotExpired)
+                .filter(e -> !e.isExpired())
                 .map(e -> new String(e.payload(), UTF_8))
                 .map(URI::create)
                 .orElse(null);

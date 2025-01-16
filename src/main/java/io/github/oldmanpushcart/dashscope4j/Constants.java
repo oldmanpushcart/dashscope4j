@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Properties;
 
+/**
+ * 常量
+ */
 public class Constants {
 
     private final static Properties properties = new Properties();

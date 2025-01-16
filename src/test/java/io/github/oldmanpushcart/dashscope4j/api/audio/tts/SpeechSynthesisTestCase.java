@@ -75,7 +75,7 @@ public class SpeechSynthesisTestCase extends ClientSupport {
                 .exchange(request, Exchange.Mode.DUPLEX, listener)
                 .thenAccept(exchange -> {
                     for (final String string : strings) {
-                        exchange.write(SpeechSynthesisRequest.newBuilder(request)
+                        exchange.writeData(SpeechSynthesisRequest.newBuilder(request)
                                 .text(string)
                                 .build());
                     }
