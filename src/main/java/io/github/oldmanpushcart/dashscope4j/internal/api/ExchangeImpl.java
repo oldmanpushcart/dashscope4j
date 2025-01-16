@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import io.github.oldmanpushcart.dashscope4j.Exchange;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
-import lombok.AllArgsConstructor;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -22,7 +24,6 @@ import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.WEB
 import static io.github.oldmanpushcart.dashscope4j.internal.util.StringUtils.substring;
 
 @Accessors(fluent = true)
-@AllArgsConstructor
 @Slf4j
 class ExchangeImpl<T> implements Exchange<T> {
 
@@ -37,6 +38,20 @@ class ExchangeImpl<T> implements Exchange<T> {
     private final CompletableFuture<?> closeF;
 
     private final AtomicBoolean isFirstRef = new AtomicBoolean(true);
+    private final CompositeDisposable disposes = new CompositeDisposable();
+
+    ExchangeImpl(final String uuid,
+                 final Mode mode,
+                 final WebSocket socket,
+                 final Function<T, String> encoder,
+                 final CompletableFuture<?> closeF) {
+        this.uuid = uuid;
+        this.mode = mode;
+        this.socket = socket;
+        this.encoder = encoder;
+        this.closeF = closeF
+                .whenComplete((v, ex) -> disposes.dispose());
+    }
 
     /**
      * 校验当前帧是否为首帧
@@ -48,22 +63,28 @@ class ExchangeImpl<T> implements Exchange<T> {
                && isFirstRef.compareAndSet(true, false);
     }
 
-    private boolean send(String text) {
-        final boolean ret = socket.send(text);
-        log.trace("WEBSOCKET://{} >>> TEXT;ret={};text={};", uuid, ret, text);
+    @Override
+    public boolean write(T data) {
+        return writeData(data);
+    }
+
+    @Override
+    public boolean writeData(T data) {
+        final OutFrame.Type type = isFirstFrame() ? OutFrame.Type.RUN : OutFrame.Type.CONTINUE;
+        final OutFrame frame = new OutFrame(new OutFrame.Header(uuid, type, mode), encoder.apply(data));
+        final String encoded = JacksonJsonUtils.toJson(frame);
+        final boolean ret = socket.send(encoded);
+        log.trace("WEBSOCKET://{} >>> DATA;ret={};payload={};", uuid, ret, encoded);
         return ret;
     }
 
     @Override
-    public boolean write(T data) {
-        final OutFrame.Type type = isFirstFrame() ? OutFrame.Type.RUN : OutFrame.Type.CONTINUE;
-        final OutFrame frame = new OutFrame(new OutFrame.Header(uuid, type, mode), encoder.apply(data));
-        final String encoded = JacksonJsonUtils.toJson(frame);
-        return send(encoded);
+    public boolean write(ByteBuffer buf) {
+        return writeByteBuffer(buf);
     }
 
     @Override
-    public boolean write(ByteBuffer buf) {
+    public boolean writeByteBuffer(ByteBuffer buf) {
         final int remaining = buf.remaining();
         final ByteString byteString = ByteString.of(buf);
         final boolean ret = socket.send(byteString);
@@ -72,10 +93,64 @@ class ExchangeImpl<T> implements Exchange<T> {
     }
 
     @Override
+    public Disposable subscribeForWriteData(Flowable<T> flow, boolean finishingAfterWrite) {
+        final Disposable dispose;
+        dispose = flow.subscribe(
+                data -> {
+                    if (!writeData(data)) {
+                        abort();
+                    }
+                },
+                ex -> {
+                    if (!closing(ex)) {
+                        abort();
+                    }
+                },
+                () -> {
+                    disposes.remove(disposes);
+                    if (finishingAfterWrite) {
+                        if (!finishing()) {
+                            abort();
+                        }
+                    }
+                });
+        disposes.add(dispose);
+        return dispose;
+    }
+
+    @Override
+    public Disposable subscribeForWriteByteBuffer(Flowable<ByteBuffer> flow, boolean finishingAfterWrite) {
+        final Disposable dispose;
+        dispose = flow.subscribe(
+                buf -> {
+                    if (!writeByteBuffer(buf)) {
+                        abort();
+                    }
+                },
+                ex -> {
+                    if (!closing(ex)) {
+                        abort();
+                    }
+                },
+                () -> {
+                    disposes.remove(disposes);
+                    if (finishingAfterWrite) {
+                        if (!finishing()) {
+                            abort();
+                        }
+                    }
+                });
+        disposes.add(dispose);
+        return dispose;
+    }
+
+    @Override
     public boolean finishing() {
         final OutFrame frame = new OutFrame(new OutFrame.Header(uuid, OutFrame.Type.FINISH, mode), "{\"input\": {}}");
         final String encoded = JacksonJsonUtils.toJson(frame);
-        return send(encoded);
+        final boolean ret = socket.send(encoded);
+        log.trace("WEBSOCKET://{} >>> FINISHING;ret={};payload={};", uuid, ret, encoded);
+        return ret;
     }
 
     @Override
