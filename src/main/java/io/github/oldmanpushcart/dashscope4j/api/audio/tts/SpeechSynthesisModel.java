@@ -27,62 +27,52 @@ import static java.util.Objects.requireNonNull;
 public class SpeechSynthesisModel implements Model {
 
     /**
-     * 采样率：48K
-     *
-     * @deprecated use {@link Constants#SAMPLE_RATE_48K}
-     */
-    @Deprecated
-    public static final int SAMPLE_RATE_48K = Constants.SAMPLE_RATE_48K;
-
-    /**
-     * 采样率：16K
-     *
-     * @deprecated use {@link Constants#SAMPLE_RATE_16K}
-     */
-    @Deprecated
-    public static final int SAMPLE_RATE_16K = Constants.SAMPLE_RATE_16K;
-
-    /**
      * 模型名称：cosyvoice-v1
      *
      * @since 3.1.0
      */
     public static final String MODEL_NAME_COSYVOICE_V1 = "cosyvoice-v1";
 
-    public static final SpeechSynthesisModel COSYVOICE_V1_LONGXIAOCHUN = new Builder()
+    /**
+     * 模型：cosyvoice-v1
+     *
+     * @since 3.1.0
+     */
+    public static final SpeechSynthesisModel COSYVOICE_V1 = new Builder()
             .name(MODEL_NAME_COSYVOICE_V1)
+            .remote(WSS_REMOTE)
+            .build();
+
+    /**
+     * 模型：cosyvoice-v1-longxiaochun
+     *
+     * @since 3.1.0
+     */
+    public static final SpeechSynthesisModel COSYVOICE_V1_LONGXIAOCHUN = new Builder(COSYVOICE_V1)
             .options("voice", "longxiaochun")
             .options(SAMPLE_RATE, 22050)
             .options(FORMAT, SpeechSynthesisOptions.Format.MP3)
             .build();
 
     /**
-     * @deprecated 不符合命名规范，请使用 {@link #COSYVOICE_V1_LONGXIAOCHUN}
+     * 模型：sambert-zhichu-v1
+     *
+     * @since 3.1.0
      */
-    @Deprecated
-    public static final SpeechSynthesisModel COSYVOICE_LONGXIAOCHUN_V1 = COSYVOICE_V1_LONGXIAOCHUN;
-
     public static final SpeechSynthesisModel SAMBERT_V1_ZHICHU = new Builder()
             .name("sambert-zhichu-v1")
-            .options(SAMPLE_RATE, SAMPLE_RATE_48K)
+            .options(SAMPLE_RATE, Constants.SAMPLE_RATE_48K)
             .build();
 
     /**
-     * @deprecated 不符合命名规范，请使用 {@link #SAMBERT_V1_ZHICHU}
+     * 模型：sambert-zhijing-v1
+     *
+     * @since 3.1.0
      */
-    @Deprecated
-    public static final SpeechSynthesisModel SAMBERT_ZHICHU_V1 = SAMBERT_V1_ZHICHU;
-
     public static final SpeechSynthesisModel SAMBERT_V1_ZHIJING = new Builder()
             .name("sambert-zhijing-v1")
-            .options(SAMPLE_RATE, SAMPLE_RATE_16K)
+            .options(SAMPLE_RATE, Constants.SAMPLE_RATE_16K)
             .build();
-
-    /**
-     * @deprecated 不符合命名规范，请使用 {@link #SAMBERT_V1_ZHIJING}
-     */
-    @Deprecated
-    public static final SpeechSynthesisModel SAMBERT_ZHIJING_V1 = null;
 
     String name;
     URI remote;
@@ -152,5 +142,40 @@ public class SpeechSynthesisModel implements Model {
         }
 
     }
+
+
+    /**
+     * 采样率：48K
+     *
+     * @deprecated use {@link Constants#SAMPLE_RATE_48K}
+     */
+    @Deprecated
+    public static final int SAMPLE_RATE_48K = Constants.SAMPLE_RATE_48K;
+
+    /**
+     * 采样率：16K
+     *
+     * @deprecated use {@link Constants#SAMPLE_RATE_16K}
+     */
+    @Deprecated
+    public static final int SAMPLE_RATE_16K = Constants.SAMPLE_RATE_16K;
+
+    /**
+     * @deprecated 不符合命名规范，请使用 {@link #COSYVOICE_V1_LONGXIAOCHUN}
+     */
+    @Deprecated
+    public static final SpeechSynthesisModel COSYVOICE_LONGXIAOCHUN_V1 = COSYVOICE_V1_LONGXIAOCHUN;
+
+    /**
+     * @deprecated 不符合命名规范，请使用 {@link #SAMBERT_V1_ZHICHU}
+     */
+    @Deprecated
+    public static final SpeechSynthesisModel SAMBERT_ZHICHU_V1 = SAMBERT_V1_ZHICHU;
+
+    /**
+     * @deprecated 不符合命名规范，请使用 {@link #SAMBERT_V1_ZHIJING}
+     */
+    @Deprecated
+    public static final SpeechSynthesisModel SAMBERT_ZHIJING_V1 = null;
 
 }

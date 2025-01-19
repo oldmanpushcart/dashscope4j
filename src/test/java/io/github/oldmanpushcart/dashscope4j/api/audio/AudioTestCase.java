@@ -36,7 +36,7 @@ public class AudioTestCase extends ClientSupport {
         // 将文本转换为音频并存储到file
         {
             final SpeechSynthesisRequest request = SpeechSynthesisRequest.newBuilder()
-                    .model(SpeechSynthesisModel.SAMBERT_ZHICHU_V1)
+                    .model(SpeechSynthesisModel.SAMBERT_V1_ZHICHU)
                     .option(SpeechSynthesisOptions.FORMAT, SpeechSynthesisOptions.Format.WAV)
                     .build();
             final CompletableFuture<?> completed = new CompletableFuture<>();

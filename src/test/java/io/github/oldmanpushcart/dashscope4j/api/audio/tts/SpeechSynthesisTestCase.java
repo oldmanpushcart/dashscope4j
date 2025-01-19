@@ -12,7 +12,7 @@ public class SpeechSynthesisTestCase extends ClientSupport {
     @Test
     public void test$synthesis$none() {
         final SpeechSynthesisRequest request = SpeechSynthesisRequest.newBuilder()
-                .model(SpeechSynthesisModel.SAMBERT_ZHICHU_V1)
+                .model(SpeechSynthesisModel.SAMBERT_V1_ZHICHU)
                 .option(SpeechSynthesisOptions.FORMAT, SpeechSynthesisOptions.Format.WAV)
                 .option(SpeechSynthesisOptions.ENABLE_PHONEME_TIMESTAMP, true)
                 .option(SpeechSynthesisOptions.ENABLE_WORDS_TIMESTAMP, true)
@@ -33,7 +33,7 @@ public class SpeechSynthesisTestCase extends ClientSupport {
     @Test
     public void test$synthesis$out() {
         final SpeechSynthesisRequest request = SpeechSynthesisRequest.newBuilder()
-                .model(SpeechSynthesisModel.SAMBERT_ZHICHU_V1)
+                .model(SpeechSynthesisModel.SAMBERT_V1_ZHICHU)
                 .option(SpeechSynthesisOptions.FORMAT, SpeechSynthesisOptions.Format.WAV)
                 .option(SpeechSynthesisOptions.ENABLE_PHONEME_TIMESTAMP, true)
                 .option(SpeechSynthesisOptions.ENABLE_WORDS_TIMESTAMP, true)
@@ -62,7 +62,7 @@ public class SpeechSynthesisTestCase extends ClientSupport {
         };
 
         final SpeechSynthesisRequest request = SpeechSynthesisRequest.newBuilder()
-                .model(SpeechSynthesisModel.SAMBERT_ZHICHU_V1)
+                .model(SpeechSynthesisModel.SAMBERT_V1_ZHICHU)
                 .option(SpeechSynthesisOptions.FORMAT, SpeechSynthesisOptions.Format.WAV)
                 .option(SpeechSynthesisOptions.ENABLE_PHONEME_TIMESTAMP, true)
                 .option(SpeechSynthesisOptions.ENABLE_WORDS_TIMESTAMP, true)

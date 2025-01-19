@@ -16,8 +16,8 @@ public class DebugTestCase extends ClientSupport {
     public void test$debug$text() {
 
         final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_TURBO)
-                .addMessage(Message.ofUser("背诵西游记第一章"))
+                .model(ChatModel.QWEN_MAX)
+                .addMessage(Message.ofUser("你好啊，小贱人"))
                 .build();
 
         client.chat().flow(request)
