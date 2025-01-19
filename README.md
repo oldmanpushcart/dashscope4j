@@ -15,7 +15,7 @@ Dashscope4j 支持以下API功能：
 
 - **对话（Chat）**
   - 提供用户与灵积进行多模态(图、音、文)对话
-  - 支持函数、插件调用
+  - 函数、插件调用
 
 - **向量（Embeddings）**
   - 将文本转换为向量表示，用于文本相似度比较、聚类等任务
@@ -25,12 +25,14 @@ Dashscope4j 支持以下API功能：
   - **文生图：** 将文本描述转换为相应的图像
 
 - **语音识别与合成**
-  - 支持实时、非实时语音识别、合成
-  - 支持音视频文件语音转录文本
+  - 实时、非实时语音识别、合成
+  - 音视频文件语音转录文本
+  - 语音识别热词管理
+  - 语音合成音色管理
 
 - **基础功能**
-  - 支持Tokenizer计算（远程、本地）
-  - 支持灵积提供的临时空间、文件管理
+  - Tokenizer计算（远程、本地）
+  - 灵积提供的临时空间、文件管理
   - 拦截器
 
 ## 二、快速使用
@@ -49,7 +51,7 @@ Dashscope4j 支持以下API功能：
 <dependency>
     <groupId>io.github.oldmanpushcart</groupId>
     <artifactId>dashscope4j</artifactId>
-    <version>3.0.0</version>
+    <version>3.1.0</version>
 </dependency>
 ```
 

@@ -11,22 +11,23 @@ import io.github.oldmanpushcart.dashscope4j.api.audio.asr.TranscriptionResponse;
 import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisRequest;
 import io.github.oldmanpushcart.dashscope4j.api.audio.tts.SpeechSynthesisResponse;
 import io.github.oldmanpushcart.dashscope4j.api.audio.vocabulary.VocabularyOp;
+import io.github.oldmanpushcart.dashscope4j.api.audio.voice.VoiceOp;
 import io.github.oldmanpushcart.dashscope4j.internal.api.audio.vocabulary.VocabularyOpImpl;
+import io.github.oldmanpushcart.dashscope4j.internal.api.audio.voice.VoiceOpImpl;
 import okhttp3.OkHttpClient;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.util.StringUtils.isNotBlank;
 
 public class AudioOpImpl implements AudioOp {
 
-    private final OkHttpClient http;
     private final ApiOp apiOp;
     private final VocabularyOp vocabularyOp;
+    private final VoiceOp voiceOp;
 
-    public AudioOpImpl(final OkHttpClient http,
-                       final ApiOp apiOp) {
-        this.http = http;
+    public AudioOpImpl(final ApiOp apiOp) {
         this.apiOp = apiOp;
         this.vocabularyOp = new VocabularyOpImpl(apiOp);
+        this.voiceOp = new VoiceOpImpl(apiOp);
     }
 
     @Override
@@ -52,6 +53,11 @@ public class AudioOpImpl implements AudioOp {
     @Override
     public VocabularyOp vocabulary() {
         return vocabularyOp;
+    }
+
+    @Override
+    public VoiceOp voice() {
+        return voiceOp;
     }
 
     @Override

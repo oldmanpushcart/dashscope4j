@@ -1,13 +1,13 @@
-package io.github.oldmanpushcart.dashscope4j.internal.api.audio.vocabulary;
+package io.github.oldmanpushcart.dashscope4j.internal.api.audio.voice;
 
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
-import io.github.oldmanpushcart.dashscope4j.api.audio.vocabulary.Vocabulary;
-import io.github.oldmanpushcart.dashscope4j.api.audio.vocabulary.VocabularyOp;
+import io.github.oldmanpushcart.dashscope4j.api.audio.voice.Voice;
+import io.github.oldmanpushcart.dashscope4j.api.audio.voice.VoiceOp;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.AllArgsConstructor;
 
-import java.util.Collection;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -20,73 +20,67 @@ import static java.util.Objects.nonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @AllArgsConstructor
-public class VocabularyOpImpl implements VocabularyOp {
+public class VoiceOpImpl implements VoiceOp {
 
     private final ApiOp apiOp;
 
     @Override
-    public CompletionStage<Vocabulary> create(String group, Model targetModel, Collection<Vocabulary.Item> items) {
-
-        final VocabularyCreateRequest request = VocabularyCreateRequest.newBuilder()
-                .model(VocabularyModel.SPEECH_BIASING)
+    public CompletionStage<Voice> create(String group, Model targetModel, URI resource) {
+        final VoiceCreateRequest request = VoiceCreateRequest.newBuilder()
+                .model(VoiceModel.VOICE_ENROLLMENT)
                 .group(group)
                 .targetModel(targetModel)
-                .items(items)
+                .resource(resource)
                 .build();
-
         return apiOp.executeAsync(request)
-                .thenCompose(response ->
-                        implDetail(response.output().vocabularyId()));
-
+                .thenCompose(response -> detail(response.output().voiceId()));
     }
 
     @Override
-    public CompletionStage<Vocabulary> detail(String vocabularyId) {
-        return implDetail(vocabularyId)
+    public CompletionStage<Voice> detail(String voiceId) {
+        return implDetail(voiceId)
 
                 /*
-                 * 如果查询错误的原因是热词表不存在，则返回null
+                 * 如果查询错误的原因是数据不存在，则返回null
                  */
-                .<CompletionStage<Vocabulary>>handle((v, ex) ->
+                .<CompletionStage<Voice>>handle((v, ex) ->
                         isNull(ex) || isCauseByResourceNotExisted(ex)
                                 ? completedFuture(v)
                                 : failedStage(ex))
                 .thenCompose(v -> v);
-
     }
 
-    private CompletionStage<Vocabulary> implDetail(String vocabularyId) {
-        final VocabularyDetailRequest request = VocabularyDetailRequest.newBuilder()
-                .model(VocabularyModel.SPEECH_BIASING)
-                .vocabularyId(vocabularyId)
+    private CompletionStage<Voice> implDetail(String voiceId) {
+        final VoiceDetailRequest request = VoiceDetailRequest.newBuilder()
+                .model(VoiceModel.VOICE_ENROLLMENT)
+                .voiceId(voiceId)
                 .build();
         return apiOp.executeAsync(request)
                 .thenApply(response ->
-                        new Vocabulary(
-                                vocabularyId,
+                        new Voice(
+                                voiceId,
                                 response.output().target(),
                                 response.output().createdAt(),
                                 response.output().updatedAt(),
-                                response.output().items()
+                                response.output().resource()
                         ));
     }
 
     @Override
-    public CompletionStage<?> update(String vocabularyId, Collection<Vocabulary.Item> items) {
-        final VocabularyUpdateRequest request = VocabularyUpdateRequest.newBuilder()
-                .model(VocabularyModel.SPEECH_BIASING)
-                .vocabularyId(vocabularyId)
-                .items(items)
+    public CompletionStage<?> update(String voiceId, URI resource) {
+        final VoiceUpdateRequest request = VoiceUpdateRequest.newBuilder()
+                .model(VoiceModel.VOICE_ENROLLMENT)
+                .voiceId(voiceId)
+                .resource(resource)
                 .build();
         return apiOp.executeAsync(request);
     }
 
-
     @Override
-    public CompletionStage<Boolean> delete(String vocabularyId) {
-        final VocabularyDeleteRequest request = VocabularyDeleteRequest.newBuilder()
-                .model(VocabularyModel.SPEECH_BIASING)
-                .vocabularyId(vocabularyId)
+    public CompletionStage<Boolean> delete(String voiceId) {
+        final VoiceDeleteRequest request = VoiceDeleteRequest.newBuilder()
+                .model(VoiceModel.VOICE_ENROLLMENT)
+                .voiceId(voiceId)
                 .build();
         return apiOp.executeAsync(request)
 
@@ -102,13 +96,12 @@ public class VocabularyOpImpl implements VocabularyOp {
                             : failedStage(ex);
                 })
                 .thenCompose(v -> v);
-
     }
 
     @Override
     public CompletionStage<List<String>> page(String group, int pageIndex, int pageSize) {
-        final VocabularyPageQueryRequest request = VocabularyPageQueryRequest.newBuilder()
-                .model(VocabularyModel.SPEECH_BIASING)
+        final VoicePageQueryRequest request = VoicePageQueryRequest.newBuilder()
+                .model(VoiceModel.VOICE_ENROLLMENT)
                 .group(group)
                 .pageIndex(pageIndex)
                 .pageSize(pageSize)
@@ -116,27 +109,27 @@ public class VocabularyOpImpl implements VocabularyOp {
         return apiOp.executeAsync(request)
                 .thenApply(response ->
                         response.output().items().stream()
-                                .map(VocabularyPageQueryResponse.Item::vocabularyId)
+                                .map(VoicePageQueryResponse.Item::voiceId)
                                 .collect(Collectors.toList()))
                 .thenApply(Collections::unmodifiableList);
     }
 
     @Override
-    public Flowable<Vocabulary> flow(String group) {
+    public Flowable<Voice> flow(String group) {
         return fetchPage(group, 0, 10)
-                .flatMap(vocabularyId -> Flowable.fromCompletionStage(implDetail(vocabularyId)));
+                .flatMap(voiceId -> Flowable.fromCompletionStage(implDetail(voiceId)));
     }
 
     private Flowable<String> fetchPage(String group, int pageIndex, int pageSize) {
         return Flowable.fromCompletionStage(page(group, pageIndex, pageSize))
-                .flatMap(vocabularyIds -> {
+                .flatMap(voiceIds -> {
 
-                    if (vocabularyIds.isEmpty() || vocabularyIds.size() < pageSize) {
-                        return Flowable.fromIterable(vocabularyIds);
+                    if (voiceIds.isEmpty() || voiceIds.size() < pageSize) {
+                        return Flowable.fromIterable(voiceIds);
                     }
 
                     return Flowable.concat(
-                            Flowable.fromIterable(vocabularyIds),
+                            Flowable.fromIterable(voiceIds),
                             Flowable.defer(() -> fetchPage(group, pageIndex + 1, pageSize))
                     );
 
