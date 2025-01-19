@@ -44,7 +44,7 @@ class DashscopeClientImpl implements DashscopeClient {
         this.apiOp = newApiOp(ak, http, interceptors);
         this.baseOp = new BaseOpImpl(http, cache, apiOp);
         this.chatOp = new ChatOpImpl(apiOp);
-        this.audioOp = new AudioOpImpl(http, apiOp);
+        this.audioOp = new AudioOpImpl(apiOp);
         this.embeddingOp = new EmbeddingOpImpl(apiOp);
         this.imageOp = new ImageOpImpl(apiOp);
     }
@@ -59,6 +59,7 @@ class DashscopeClientImpl implements DashscopeClient {
         merged.add(new ProcessChatMessageContentForUploadInterceptor());
         merged.add(new ProcessMmEmbeddingContentForUploadInterceptor());
         merged.add(new ProcessTranscriptionForUploadInterceptor());
+        merged.add(new ProcessVoiceForUploadInterceptor());
 
         return InterceptionApiOp.group(this, new ApiOpImpl(ak, http), merged);
     }

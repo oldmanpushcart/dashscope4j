@@ -77,6 +77,24 @@ public class VocabularyTestCase extends ClientSupport {
     }
 
     @Test
+    public void test$vocabulary$delete() {
+        final Vocabulary created = client.audio().vocabulary().create(GROUP, RecognitionModel.PARAFORMER_REALTIME_V2, new ArrayList<Vocabulary.Item>() {{
+                    add(Vocabulary.Item.of("测试", "zh", 5));
+                    add(Vocabulary.Item.of("测试", "zh", 5));
+                }})
+                .toCompletableFuture()
+                .join();
+        final boolean ret = client.audio().vocabulary().delete(created.identity())
+                .toCompletableFuture()
+                .join();
+        Assertions.assertTrue(ret);
+        final Vocabulary vocabulary = client.audio().vocabulary().detail(created.identity())
+                .toCompletableFuture()
+                .join();
+        Assertions.assertNull(vocabulary);
+    }
+
+    @Test
     public void test$vocabulary$delete$not_existed() {
         client.audio().vocabulary().delete("not-existed-vocabularyId")
                 .thenAccept(Assertions::assertFalse)

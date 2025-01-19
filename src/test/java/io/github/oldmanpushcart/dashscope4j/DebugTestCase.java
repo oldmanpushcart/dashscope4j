@@ -17,14 +17,17 @@ public class DebugTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
-                .addMessage(Message.ofUser("你好"))
+                .addMessage(Message.ofUser("背诵西游记第一章"))
                 .build();
 
-        final ChatResponse response = client.chat().async(request)
+        client.chat().flow(request)
+                .thenAccept(flow-> {
+                    flow.blockingSubscribe(r-> {
+                        System.out.println(r);
+                    });
+                })
                 .toCompletableFuture()
                 .join();
-
-        System.out.println(response);
 
     }
 

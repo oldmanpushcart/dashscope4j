@@ -33,4 +33,14 @@ public class Constants {
      */
     public static final URI WSS_REMOTE = URI.create("wss://dashscope.aliyuncs.com/api-ws/v1/inference/");
 
+    /**
+     * 采样率：48K
+     */
+    public static final int SAMPLE_RATE_48K = 48000;
+
+    /**
+     * 采样率：16K
+     */
+    public static final int SAMPLE_RATE_16K = 16000;
+
 }

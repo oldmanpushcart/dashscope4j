@@ -19,10 +19,29 @@ import java.util.List;
 @EqualsAndHashCode
 public class Vocabulary {
 
+    /**
+     * 热词表ID
+     */
     String identity;
+
+    /**
+     * 作用模型名称
+     */
     String target;
+
+    /**
+     * 创建时间
+     */
     Instant createdAt;
+
+    /**
+     * 更新时间
+     */
     Instant updatedAt;
+
+    /**
+     * 热词表
+     */
     List<Item> items;
 
     /**
