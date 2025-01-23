@@ -94,9 +94,24 @@ class DashscopeClientImpl implements DashscopeClient {
         return apiOp;
     }
 
+    private void closeHttp() {
+        http.dispatcher().executorService().shutdown();
+        http.connectionPool().evictAll();
+        try {
+            final okhttp3.Cache cache = http.cache();
+            if(null != cache) {
+                cache.close();
+            }
+        } catch (IOException e) {
+            // ignore
+        }
+    }
+
     @Override
     public void shutdown() {
-        http.dispatcher().executorService().shutdown();
+
+        closeHttp();
+
         try {
             cache.close();
         } catch (IOException e) {

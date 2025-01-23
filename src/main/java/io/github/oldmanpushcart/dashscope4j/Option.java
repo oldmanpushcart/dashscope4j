@@ -53,7 +53,7 @@ public final class Option {
     /**
      * 设置选项
      *
-     * @param name  选项名称
+     * @param name  选项名
      * @param value 选项值
      * @return this
      */
@@ -62,9 +62,41 @@ public final class Option {
         return this;
     }
 
+    /**
+     * 合并选项
+     *
+     * @param option 选项
+     * @return this
+     */
     public Option merge(Option option) {
         map.putAll(option.map);
         return this;
+    }
+
+    /**
+     * 判断选项是否存在
+     *
+     * @param opt   选项
+     * @param value 值
+     * @param <T>   选项类型
+     * @param <R>   值类型
+     * @return this
+     * @since 3.1.0
+     */
+    public <T, R> boolean has(Opt<T, R> opt, T value) {
+        return map.containsKey(opt.name()) && map.get(opt.name()).equals(opt.convert(value));
+    }
+
+    /**
+     * 判断选项是否存在
+     *
+     * @param name  选项名
+     * @param value 选项值
+     * @return this
+     * @since 3.1.0
+     */
+    public boolean has(String name, Object value) {
+        return map.containsKey(name) && map.get(name).equals(value);
     }
 
     /**

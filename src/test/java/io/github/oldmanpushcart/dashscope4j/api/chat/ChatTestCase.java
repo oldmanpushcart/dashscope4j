@@ -200,6 +200,34 @@ public class ChatTestCase extends ClientSupport {
             "qwen-turbo",
             "qwen-max"
     })
+    public void test$chat$flow_incremental$tool$function$echo(String mName) {
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(getModel(mName))
+                .addFunction(new EchoFunction())
+                .addMessage(Message.ofUser("echo: HELLO!"))
+                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .build();
+        client.chat().flow(request)
+                .thenAccept(flow -> flow
+                        .doOnNext(ApiAssertions::assertApiResponseSuccessful)
+                        .doOnError(Assertions::fail)
+                        .doOnNext(ApiAssertions::assertApiResponseSuccessful)
+                        .map(r->r.output().best().message().text())
+                        .reduce((a, b) -> a+b)
+                        .blockingSubscribe(text -> {
+                            assertNotNull(text);
+                            assertTrue(text.contains("HELLO!"));
+                        }))
+                .toCompletableFuture()
+                .join();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "qwen-plus",
+            "qwen-turbo",
+            "qwen-max"
+    })
     public void test$chat$async$exception() {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)

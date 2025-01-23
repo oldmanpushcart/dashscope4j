@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -40,6 +41,7 @@ public class ChatFunctionTool implements Tool {
      */
     @Value
     @Accessors(fluent = true)
+    @AllArgsConstructor
     @lombok.Builder(access = AccessLevel.PRIVATE)
     @Jacksonized
     public static class Call implements Tool.Call {
@@ -58,6 +60,7 @@ public class ChatFunctionTool implements Tool {
 
         @Value
         @Accessors(fluent = true)
+        @AllArgsConstructor
         @lombok.Builder(access = AccessLevel.PRIVATE)
         @Jacksonized
         public static class Stub {

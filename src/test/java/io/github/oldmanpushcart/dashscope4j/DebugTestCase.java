@@ -1,8 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j;
 
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import org.junit.jupiter.api.Test;
@@ -17,13 +19,15 @@ public class DebugTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_MAX)
-                .addMessage(Message.ofUser("你好啊，小贱人"))
+                .addMessage(Message.ofUser("echo: HELLO!"))
+                .addFunction(new EchoFunction())
+                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, false)
                 .build();
 
         client.chat().flow(request)
                 .thenAccept(flow-> {
                     flow.blockingSubscribe(r-> {
-                        System.out.println(r);
+                        System.out.println(r.output().best().message().text());
                     });
                 })
                 .toCompletableFuture()

@@ -23,7 +23,7 @@ public class VoiceTestCase extends ClientSupport {
     private static final SpeechSynthesisModel TARGET_MODEL = SpeechSynthesisModel.newBuilder()
             .name(SpeechSynthesisModel.MODEL_NAME_COSYVOICE_V1)
             .remote(Constants.WSS_REMOTE)
-            .options(SAMPLE_RATE, Constants.SAMPLE_RATE_48K)
+            .option(SAMPLE_RATE, Constants.SAMPLE_RATE_48K)
             .build();
 
     private static final URI RESOURCE = new File("./test-data/sc2-human.mp3").toURI();

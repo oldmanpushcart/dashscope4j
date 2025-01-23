@@ -49,9 +49,9 @@ public class SpeechSynthesisModel implements Model {
      * @since 3.1.0
      */
     public static final SpeechSynthesisModel COSYVOICE_V1_LONGXIAOCHUN = new Builder(COSYVOICE_V1)
-            .options("voice", "longxiaochun")
-            .options(SAMPLE_RATE, 22050)
-            .options(FORMAT, SpeechSynthesisOptions.Format.MP3)
+            .option("voice", "longxiaochun")
+            .option(SAMPLE_RATE, 22050)
+            .option(FORMAT, SpeechSynthesisOptions.Format.MP3)
             .build();
 
     /**
@@ -61,7 +61,7 @@ public class SpeechSynthesisModel implements Model {
      */
     public static final SpeechSynthesisModel SAMBERT_V1_ZHICHU = new Builder()
             .name("sambert-zhichu-v1")
-            .options(SAMPLE_RATE, Constants.SAMPLE_RATE_48K)
+            .option(SAMPLE_RATE, Constants.SAMPLE_RATE_48K)
             .build();
 
     /**
@@ -71,7 +71,7 @@ public class SpeechSynthesisModel implements Model {
      */
     public static final SpeechSynthesisModel SAMBERT_V1_ZHIJING = new Builder()
             .name("sambert-zhijing-v1")
-            .options(SAMPLE_RATE, Constants.SAMPLE_RATE_16K)
+            .option(SAMPLE_RATE, Constants.SAMPLE_RATE_16K)
             .build();
 
     String name;
@@ -125,12 +125,12 @@ public class SpeechSynthesisModel implements Model {
             return this;
         }
 
-        public <T, R> Builder options(Option.Opt<T, R> opt, T value) {
+        public <T, R> Builder option(Option.Opt<T, R> opt, T value) {
             this.option.option(opt, value);
             return this;
         }
 
-        public Builder options(String name, Object value) {
+        public Builder option(String name, Object value) {
             this.option.option(name, value);
             return this;
         }
