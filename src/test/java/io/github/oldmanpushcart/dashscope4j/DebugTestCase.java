@@ -5,23 +5,28 @@ import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.api.chat.function.EchoFunction;
-import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
 import java.util.Arrays;
+import java.util.List;
 
 public class DebugTestCase extends ClientSupport {
 
     @Test
     public void test$debug$text() {
 
+        final List<ChatFunctionTool> tools = Arrays.asList(
+                ChatFunctionTool.of(new EchoFunction())
+        );
+
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_MAX)
-                .addMessage(Message.ofUser("echo: HELLO!"))
-                .addFunction(new EchoFunction())
+                .addMessage(Message.ofUser("今天星期几?"))
+                .addTools(tools)
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, false)
+                .option(ChatOptions.ENABLE_WEB_SEARCH, true)
                 .build();
 
         client.chat().flow(request)
@@ -40,10 +45,7 @@ public class DebugTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
-                .addMessage(Message.ofUser(Arrays.asList(
-                        Content.ofImage(URI.create("https://ompc-images.oss-cn-hangzhou.aliyuncs.com/image-002.jpeg")),
-                        Content.ofText("图片中有几辆自行车?")
-                )))
+                .addMessage(Message.ofUser(""))
                 .build();
 
         final ChatResponse response = client.chat().async(request)

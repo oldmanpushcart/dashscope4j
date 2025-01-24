@@ -218,7 +218,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param messages 消息列表
          * @return this
          */
-        public Builder messages(Collection<Message> messages) {
+        public Builder messages(Collection<? extends Message> messages) {
             requireNonNull(messages);
             this.messages.clear();
             this.messages.addAll(messages);
@@ -243,7 +243,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param messages 消息列表
          * @return this
          */
-        public Builder addMessages(Collection<Message> messages) {
+        public Builder addMessages(Collection<? extends Message> messages) {
             requireNonNull(messages);
             this.messages.addAll(messages);
             return this;
@@ -255,7 +255,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param plugins 插件列表
          * @return this
          */
-        public Builder plugins(Collection<Plugin> plugins) {
+        public Builder plugins(Collection<? extends Plugin> plugins) {
             requireNonNull(plugins);
             this.plugins.clear();
             this.plugins.addAll(plugins);
@@ -280,7 +280,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param plugins 插件列表
          * @return this
          */
-        public Builder addPlugins(Collection<Plugin> plugins) {
+        public Builder addPlugins(Collection<? extends Plugin> plugins) {
             requireNonNull(plugins);
             this.plugins.addAll(plugins);
             return this;
@@ -292,7 +292,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param tools 工具列表
          * @return this
          */
-        public Builder tools(Collection<Tool> tools) {
+        public Builder tools(Collection<? extends Tool> tools) {
             requireNonNull(tools);
             this.tools.clear();
             this.tools.addAll(tools);
@@ -317,7 +317,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param tools 工具列表
          * @return this
          */
-        public Builder addTools(Collection<Tool> tools) {
+        public Builder addTools(Collection<? extends Tool> tools) {
             requireNonNull(tools);
             this.tools.addAll(tools);
             return this;
@@ -329,14 +329,14 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param functions 函数列表
          * @return this
          */
-        public Builder functions(Collection<ChatFunction<?, ?>> functions) {
+        public Builder functions(Collection<? extends ChatFunction<?, ?>> functions) {
             requireNonNull(functions);
             this.tools.removeIf(tool -> tool instanceof ChatFunctionTool);
             this.tools.addAll(toTools(functions));
             return this;
         }
 
-        private static List<Tool> toTools(Collection<ChatFunction<?, ?>> functions) {
+        private static List<Tool> toTools(Collection<? extends ChatFunction<?, ?>> functions) {
             requireNonNull(functions);
             return functions.stream()
                     .map(ChatFunctionTool::of)
@@ -361,7 +361,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param functions 函数列表
          * @return this
          */
-        public Builder addFunctions(Collection<ChatFunction<?, ?>> functions) {
+        public Builder addFunctions(Collection<? extends ChatFunction<?, ?>> functions) {
             requireNonNull(functions);
             this.tools.addAll(toTools(functions));
             return this;
