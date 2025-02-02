@@ -117,7 +117,8 @@ public static void main(String... args) {
 
 灵积是有官方的Java客户端的，我之所以还需要开发这个 Dashscope4j 主要是基于以下几点考虑
 
-1. 官方的SDK并不开源，你无法查看其源码，也无法自行修改和定制
+1. ~~官方的SDK并不开源，你无法查看其源码，也无法自行修改和定制~~
+   > 官方的SDK已经开源了，你可以查看 [dashscope-sdk-java](https://github.com/dashscope/dashscope-sdk-java)
 2. 个人练手习惯，反正也不花我多少时间，嗯嗯
 
 ## 七、相关链接

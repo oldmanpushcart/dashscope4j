@@ -96,7 +96,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
 
     @Override
     public void onFailure(@NotNull WebSocket socket, @NotNull Throwable t, @Nullable Response response) {
-        log.error("WEBSOCKET://{} <<< FAILURE;", uuid, t);
+        log.trace("WEBSOCKET://{} <<< FAILURE;", uuid, t);
 
         /*
          * 如果交换对象还没有创建，说明连接还没有建立成功。
