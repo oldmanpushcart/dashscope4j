@@ -7,8 +7,11 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 import okhttp3.Response;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BiFunction;
 
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 import static lombok.AccessLevel.PROTECTED;
 
@@ -27,6 +30,8 @@ public abstract class ApiRequest<R extends ApiResponse<?>> {
     @Getter(PROTECTED)
     private final Class<R> responseType;
 
+    private final Map<String, String> properties;
+
     /**
      * 构建Api请求
      *
@@ -36,6 +41,15 @@ public abstract class ApiRequest<R extends ApiResponse<?>> {
     protected ApiRequest(Class<R> responseType, Builder<?, ?> builder) {
         requireNonNull(responseType, "responseType is required!");
         this.responseType = responseType;
+        this.properties = unmodifiableMap(builder.properties);
+    }
+
+    /**
+     * @return 属性
+     * @since 3.1.0
+     */
+    public Map<String, String> properties() {
+        return properties;
     }
 
     /**
@@ -66,12 +80,28 @@ public abstract class ApiRequest<R extends ApiResponse<?>> {
      */
     public static abstract class Builder<T extends ApiRequest<?>, B extends ApiRequest.Builder<T, B>> implements Buildable<T, B> {
 
+        private final Map<String, String> properties = new HashMap<>();
+
         protected Builder() {
 
         }
 
         protected Builder(T request) {
+            requireNonNull(request, "request is required!");
+            properties.putAll(request.properties());
+        }
 
+        /**
+         * 设置属性
+         *
+         * @param key   属性键
+         * @param value 属性值
+         * @return 构造器
+         * @since 3.1.0
+         */
+        public B property(String key, String value) {
+            properties.put(key, value);
+            return self();
         }
 
     }
