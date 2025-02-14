@@ -81,14 +81,22 @@ public class JacksonJsonUtils {
         }
     }
 
+    /**
+     * {@code json -> T}
+     * @param json json
+     * @param type 对象类型
+     * @param response HTTP响应
+     * @return 对象
+     * @param <T> 对象类型
+     */
     public static <T> T toObject(String json, Class<T> type, okhttp3.Response response) {
-        final Map<String, Object> headerMap = new HashMap<>();
-        response.headers().forEach(header -> headerMap.put(
+        final Map<String, Object> variableMap = new HashMap<>();
+        response.headers().forEach(header -> variableMap.put(
                 String.format("header/%s", header.getFirst()),
                 header.getSecond()
         ));
         try {
-            return mapper.reader(new InjectableValues.Std(headerMap)).forType(type).readValue(json);
+            return mapper.reader(new InjectableValues.Std(variableMap)).forType(type).readValue(json);
         } catch (JsonProcessingException cause) {
             throw new IllegalArgumentException("parse json to object failed!", cause);
         }
