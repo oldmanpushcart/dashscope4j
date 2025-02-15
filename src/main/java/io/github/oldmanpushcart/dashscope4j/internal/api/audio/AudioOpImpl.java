@@ -1,5 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.internal.api.audio;
 
+import io.github.oldmanpushcart.dashscope4j.DelegateExchange;
+import io.github.oldmanpushcart.dashscope4j.Exchange;
 import io.github.oldmanpushcart.dashscope4j.OpExchange;
 import io.github.oldmanpushcart.dashscope4j.OpTask;
 import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
@@ -16,6 +18,7 @@ import io.github.oldmanpushcart.dashscope4j.internal.api.audio.vocabulary.Vocabu
 import io.github.oldmanpushcart.dashscope4j.internal.api.audio.voice.VoiceOpImpl;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.util.StringUtils.isNotBlank;
+import static java.util.Objects.nonNull;
 
 public class AudioOpImpl implements AudioOp {
 
@@ -29,24 +32,46 @@ public class AudioOpImpl implements AudioOp {
         this.voiceOp = new VoiceOpImpl(apiOp);
     }
 
+    private Exchange.Listener<RecognitionRequest, RecognitionResponse> deleteRecognitionListener(Exchange.Listener<RecognitionRequest, RecognitionResponse> listener) {
+        return new DelegateExchange.Listener<RecognitionRequest, RecognitionResponse>(listener) {
+
+            @Override
+            public void onData(RecognitionResponse response) {
+
+                /*
+                 * 过滤掉识别结果为空的情况
+                 * 这种情况存在于DUPLEX模式下，服务端对finished类型请求的应答下，服务端返回的数据为："payload":{"output":{}}
+                 * 这将会导致output拿到的sentence为null，而且只能在此处进行过滤
+                 */
+                if (nonNull(response.output().sentence())) {
+                    super.onData(response);
+                }
+
+            }
+
+        };
+    }
+
     @Override
     public OpExchange<RecognitionRequest, RecognitionResponse> recognition() {
-        return (request, mode, listener) -> apiOp.executeExchange(request, mode, listener)
-                .thenApply(exchange -> {
-                    exchange.writeData(request);
-                    return exchange;
-                });
+        return (request, mode, listener) ->
+                apiOp.executeExchange(request, mode, deleteRecognitionListener(listener))
+                        .thenApply(exchange -> {
+                            exchange.writeData(request);
+                            return exchange;
+                        });
     }
 
     @Override
     public OpExchange<SpeechSynthesisRequest, SpeechSynthesisResponse> synthesis() {
-        return (request, mode, listener) -> apiOp.executeExchange(request, mode, listener)
-                .thenApply(exchange -> {
-                    if (isNotBlank(request.text())) {
-                        exchange.writeData(request);
-                    }
-                    return exchange;
-                });
+        return (request, mode, listener) ->
+                apiOp.executeExchange(request, mode, listener)
+                        .thenApply(exchange -> {
+                            if (isNotBlank(request.text())) {
+                                exchange.writeData(request);
+                            }
+                            return exchange;
+                        });
     }
 
     @Override

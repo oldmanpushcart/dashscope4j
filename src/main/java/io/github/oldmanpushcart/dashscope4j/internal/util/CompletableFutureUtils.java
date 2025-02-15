@@ -22,6 +22,12 @@ public class CompletableFutureUtils {
         return future;
     }
 
+    public static <T> CompletionStage<T> completedStage(T value) {
+        final CompletableFuture<T> future = new CompletableFuture<>();
+        future.complete(value);
+        return future;
+    }
+
     /**
      * 解包异常
      *
