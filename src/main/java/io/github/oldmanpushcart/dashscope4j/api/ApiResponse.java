@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.api;
 
-import io.github.oldmanpushcart.dashscope4j.Ret;
+import io.github.oldmanpushcart.dashscope4j.internal.api.Response;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -22,7 +22,7 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public abstract class ApiResponse<D> extends Ret {
+public abstract class ApiResponse<D> extends Response {
 
     private final String uuid;
 

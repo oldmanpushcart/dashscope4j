@@ -86,17 +86,21 @@ public class ApiOpImpl implements ApiOp {
                 .addHeader(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
         );
 
-        final CompletableFutureCallback<R> callback = new CompletableFutureCallback<>((call, httpResponse) -> {
-            final String bodyJson = requireNonNull(httpResponse.body()).string();
-            final R response = request.newResponseDecoder().apply(httpResponse, bodyJson);
-            if (!response.isSuccess()) {
-                throw new ApiException(httpResponse.code(), response);
-            }
-            return response;
-        });
+        final CompletableFutureCallback<R> callback =
+                new CompletableFutureCallback<>((call, httpResponse) -> {
+                    final String bodyJson = requireNonNull(httpResponse.body()).string();
+                    final R response = request.newResponseDecoder().apply(httpResponse, bodyJson);
+                    if (!response.isSuccess()) {
+                        throw new ApiException(httpResponse.code(), response);
+                    }
+                    return response;
+                });
 
         http.newCall(httpRequest).enqueue(callback);
-        return callback;
+        return callback
+
+                // 回填请求信息
+                .thenApply(response -> response.fill(request));
 
     }
 
@@ -125,7 +129,12 @@ public class ApiOpImpl implements ApiOp {
                 public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
                     try {
                         if ("result".equals(type) || "error".equals(type)) {
-                            final R response = request.newResponseDecoder().apply(httpResponse, data);
+
+                            // 构造应答
+                            final R response = request.newResponseDecoder()
+                                    .apply(httpResponse, data)
+                                    .fill(request);
+
                             if (response.isSuccess()) {
                                 emitter.onNext(response);
                             } else {
@@ -168,8 +177,15 @@ public class ApiOpImpl implements ApiOp {
     CompletionStage<Exchange<T>> executeExchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
         final CompletableFuture<Exchange<T>> exchangeF = new CompletableFuture<>();
         final String uuid = UUID.randomUUID().toString();
+
+        // 请求编码器
         final Function<T, String> encoder = JacksonJsonUtils::toJson;
-        final BiFunction<okhttp3.Response, String, R> decoder = request.newResponseDecoder();
+
+        // 应答解码器
+        final BiFunction<okhttp3.Response, String, R> decoder = (response, responseJson) ->
+                request.newResponseDecoder()
+                        .apply(response, responseJson)
+                        .fill(request);
 
         final WebSocketListener wsListener = new ExchangeWebSocketListenerImpl<>(
                 exchangeF,
@@ -196,8 +212,10 @@ public class ApiOpImpl implements ApiOp {
 
         final CompletableFutureCallback<Task.Half<R>> callback =
                 new CompletableFutureCallback<>((call, httpResponse) -> {
-                    final String bodyJson = requireNonNull(httpResponse.body()).string();
-                    final TaskHalfResponse halfResponse = JacksonJsonUtils.toObject(bodyJson, TaskHalfResponse.class);
+
+                    final TaskHalfResponse halfResponse = JacksonJsonUtils
+                            .toObject(requireNonNull(httpResponse.body()).string(), TaskHalfResponse.class)
+                            .fill(request);
 
                     if (!halfResponse.isSuccess()) {
                         throw new ApiException(httpResponse.code(), halfResponse);
@@ -205,11 +223,13 @@ public class ApiOpImpl implements ApiOp {
 
                     final TaskGetRequest taskGetRequest = TaskGetRequest.newBuilder()
                             .taskId(halfResponse.output().taskId())
+                            .context(request.context())
                             .build();
 
                     final Function<String, R> decoder = json ->
                             request.newResponseDecoder()
-                                    .apply(httpResponse, json);
+                                    .apply(httpResponse, json)
+                                    .fill(request);
 
                     return strategy -> rollingTask(taskGetRequest, strategy, decoder);
                 });
@@ -266,12 +286,12 @@ public class ApiOpImpl implements ApiOp {
                                 }
 
                                 if (!task.isCancelable()) {
-
                                     return failedStage(ex);
                                 }
 
                                 final TaskCancelRequest taskCancelRequest = TaskCancelRequest.newBuilder()
                                         .taskId(task.identity())
+                                        .context(taskGetRequest.context())
                                         .build();
                                 return executeAsync(taskCancelRequest)
                                         .handle((cv, cex) -> {

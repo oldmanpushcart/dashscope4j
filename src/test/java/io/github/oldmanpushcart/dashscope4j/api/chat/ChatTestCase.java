@@ -212,8 +212,8 @@ public class ChatTestCase extends ClientSupport {
                         .doOnNext(ApiAssertions::assertApiResponseSuccessful)
                         .doOnError(Assertions::fail)
                         .doOnNext(ApiAssertions::assertApiResponseSuccessful)
-                        .map(r->r.output().best().message().text())
-                        .reduce((a, b) -> a+b)
+                        .map(r -> r.output().best().message().text())
+                        .reduce((a, b) -> a + b)
                         .blockingSubscribe(text -> {
                             assertNotNull(text);
                             assertTrue(text.contains("HELLO!"));
@@ -235,7 +235,7 @@ public class ChatTestCase extends ClientSupport {
                 .build();
         final AtomicReference<Throwable> exRef = new AtomicReference<>();
         client.chat().async(request)
-                .exceptionally(ex-> {
+                .exceptionally(ex -> {
                     exRef.set(unwrapEx(ex));
                     return null;
                 })

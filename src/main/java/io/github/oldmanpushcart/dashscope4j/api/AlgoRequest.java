@@ -148,6 +148,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
         }
 
         protected Builder(T request) {
+            super(request);
             this.model = request.model();
             this.option = request.option().clone();
         }

@@ -1,17 +1,14 @@
 package io.github.oldmanpushcart.dashscope4j.api;
 
-import io.github.oldmanpushcart.dashscope4j.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.internal.api.Request;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import okhttp3.Response;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.BiFunction;
 
-import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 import static lombok.AccessLevel.PROTECTED;
 
@@ -23,14 +20,12 @@ import static lombok.AccessLevel.PROTECTED;
 @Getter
 @Accessors(fluent = true)
 @ToString
-@EqualsAndHashCode
-public abstract class ApiRequest<R extends ApiResponse<?>> {
+@EqualsAndHashCode(callSuper = true)
+public abstract class ApiRequest<R extends ApiResponse<?>> extends Request {
 
     @ToString.Exclude
     @Getter(PROTECTED)
     private final Class<R> responseType;
-
-    private final Map<String, String> properties;
 
     /**
      * 构建Api请求
@@ -39,17 +34,9 @@ public abstract class ApiRequest<R extends ApiResponse<?>> {
      * @param builder      构建器
      */
     protected ApiRequest(Class<R> responseType, Builder<?, ?> builder) {
+        super(builder);
         requireNonNull(responseType, "responseType is required!");
         this.responseType = responseType;
-        this.properties = unmodifiableMap(builder.properties);
-    }
-
-    /**
-     * @return 属性
-     * @since 3.1.0
-     */
-    public Map<String, String> properties() {
-        return properties;
     }
 
     /**
@@ -78,30 +65,14 @@ public abstract class ApiRequest<R extends ApiResponse<?>> {
      * @param <T> 请求类型
      * @param <B> 构造器类型
      */
-    public static abstract class Builder<T extends ApiRequest<?>, B extends ApiRequest.Builder<T, B>> implements Buildable<T, B> {
-
-        private final Map<String, String> properties = new HashMap<>();
+    public static abstract class Builder<T extends ApiRequest<?>, B extends ApiRequest.Builder<T, B>> extends Request.Builder<T, B> {
 
         protected Builder() {
 
         }
 
         protected Builder(T request) {
-            requireNonNull(request, "request is required!");
-            properties.putAll(request.properties());
-        }
-
-        /**
-         * 设置属性
-         *
-         * @param key   属性键
-         * @param value 属性值
-         * @return 构造器
-         * @since 3.1.0
-         */
-        public B property(String key, String value) {
-            properties.put(key, value);
-            return self();
+            super(request);
         }
 
     }
