@@ -53,14 +53,14 @@ public abstract class Request {
 
     public static abstract class Builder<T extends Request, B extends Builder<T, B>> implements Buildable<T, B> {
 
-        private final Map<Class<?>, Object> contextMap;
+        private final Map<Class<?>, Object> contextMap = new HashMap<>();
 
         public Builder() {
-            this.contextMap = new HashMap<>();
+
         }
 
         public Builder(Request request) {
-            this.contextMap = request.contextMap;
+            this.contextMap.putAll(request.contextMap);
         }
 
         /**
