@@ -3,20 +3,26 @@ package io.github.oldmanpushcart.dashscope4j.internal.api;
 import io.github.oldmanpushcart.dashscope4j.Ret;
 import lombok.ToString;
 
-import java.util.Map;
-
 public abstract class Response extends Ret {
 
     @ToString.Exclude
-    private Map<Class<?>, Object> contextMap;
+    private Request request;
 
     protected Response(String code, String desc) {
         super(code, desc);
     }
 
+    /**
+     * @return 获取请求
+     * @since 3.1.0
+     */
+    public Request request() {
+        return request;
+    }
+
     @SuppressWarnings("unchecked")
     protected <T extends Response> T fill(Request request) {
-        this.contextMap = request.contextMap();
+        this.request = request;
         return (T) this;
     }
 
@@ -45,7 +51,7 @@ public abstract class Response extends Ret {
      */
     @SuppressWarnings("unchecked")
     public <C> C context(Class<C> type) {
-        return (C) contextMap.get(type);
+        return (C) request.contextMap().get(type);
     }
 
 }

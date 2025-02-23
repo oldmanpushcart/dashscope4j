@@ -15,19 +15,21 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 public class ChatOpImpl implements ChatOp {
 
     private final ApiOp apiOp;
+    private final ToolCallOpAsyncHandler toolCallOpAsyncHandler = new ToolCallOpAsyncHandler(this);
+    private final ToolCallOpFlowHandler toolCallOpFlowHandler = new ToolCallOpFlowHandler(this);
 
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
         return completedFuture(request)
                 .thenCompose(apiOp::executeAsync)
-                .thenCompose(new ToolCallOpAsyncHandler(this, request));
+                .thenCompose(toolCallOpAsyncHandler);
     }
 
     @Override
     public CompletionStage<Flowable<ChatResponse>> flow(ChatRequest request) {
         return completedFuture(request)
                 .thenCompose(apiOp::executeFlow)
-                .thenApply(new ToolCallOpFlowHandler(this, request));
+                .thenApply(toolCallOpFlowHandler);
     }
 
 }

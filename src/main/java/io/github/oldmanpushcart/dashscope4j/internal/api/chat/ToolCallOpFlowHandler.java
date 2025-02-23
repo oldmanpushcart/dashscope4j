@@ -20,7 +20,6 @@ import java.util.function.UnaryOperator;
 class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
 
     private final ChatOp chatOp;
-    private final ChatRequest request;
 
     @Override
     public Flowable<ChatResponse> apply(Flowable<ChatResponse> flow) {
@@ -44,7 +43,8 @@ class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
             return Flowable
                     .just(response)
                     .concatWith(Flowable.defer(() -> {
-                        final ToolCallMessage toolCallMessage = newTollCallMessage(toolCallMessages);
+                        final ChatRequest request = (ChatRequest) response.request();
+                        final ToolCallMessage toolCallMessage = newTollCallMessage(request, toolCallMessages);
                         final CompletionStage<Flowable<ChatResponse>> tcFlow
                                 = new ToolCaller(chatOp, request, toolCallMessage)
                                 .flowCall();
@@ -56,7 +56,7 @@ class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
         });
     }
 
-    private ToolCallMessage newTollCallMessage(List<ToolCallMessage> toolCallMessages) {
+    private ToolCallMessage newTollCallMessage(ChatRequest request, List<ToolCallMessage> toolCallMessages) {
         final StringBuilder nameBuilder = new StringBuilder();
         final StringBuilder argumentsBuilder = new StringBuilder();
         final boolean isIncrementalOutput = request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true);

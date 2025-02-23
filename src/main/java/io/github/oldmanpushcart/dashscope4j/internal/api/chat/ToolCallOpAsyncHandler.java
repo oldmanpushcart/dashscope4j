@@ -14,7 +14,6 @@ import java.util.function.Function;
 class ToolCallOpAsyncHandler implements Function<ChatResponse, CompletionStage<ChatResponse>> {
 
     private final ChatOp chatOp;
-    private final ChatRequest request;
 
     @Override
     public CompletionStage<ChatResponse> apply(ChatResponse response) {
@@ -24,6 +23,7 @@ class ToolCallOpAsyncHandler implements Function<ChatResponse, CompletionStage<C
             return CompletableFuture.completedFuture(response);
         }
 
+        final ChatRequest request = (ChatRequest) response.request();
         final ToolCallMessage message = (ToolCallMessage) choice.message();
         return new ToolCaller(chatOp, request, message)
                 .asyncCall();
