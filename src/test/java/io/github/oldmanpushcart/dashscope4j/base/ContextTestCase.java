@@ -27,15 +27,18 @@ public class ContextTestCase extends ClientSupport {
     @Test
     public void test$async$context() {
         final Object context = new Object();
+        final String stringCtx = "HELLO!";
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
                 .addMessage(Message.ofUser("hello!"))
                 .context(context)
+                .context(String.class, stringCtx)
                 .build();
         final ChatResponse response = client.chat().async(request)
                 .toCompletableFuture()
                 .join();
         Assertions.assertEquals(context, response.context());
+        Assertions.assertEquals(stringCtx, response.context(String.class));
     }
 
     @Test
