@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.base.files;
 
+import io.github.oldmanpushcart.dashscope4j.util.ProgressListener;
 import io.reactivex.rxjava3.core.Flowable;
 
 import java.io.File;
@@ -23,6 +24,18 @@ public interface FilesOp {
     CompletionStage<FileMeta> create(URI resource, String filename, Purpose purpose);
 
     /**
+     * 上传资源
+     *
+     * @param resource 资源URI
+     * @param filename 文件名
+     * @param purpose  用途
+     * @param listener 进度监听器
+     * @return 创建操作
+     * @since 3.1.0
+     */
+    CompletionStage<FileMeta> create(URI resource, String filename, Purpose purpose, ProgressListener listener);
+
+    /**
      * 上传文件
      *
      * @param file    文件
@@ -31,6 +44,19 @@ public interface FilesOp {
      */
     default CompletionStage<FileMeta> create(File file, Purpose purpose) {
         return create(file.toURI(), file.getName(), purpose);
+    }
+
+    /**
+     * 上传文件
+     *
+     * @param file     文件
+     * @param purpose  用途
+     * @param listener 进度监听器
+     * @return 创建操作
+     * @since 3.1.0
+     */
+    default CompletionStage<FileMeta> create(File file, Purpose purpose, ProgressListener listener) {
+        return create(file.toURI(), file.getName(), purpose, listener);
     }
 
     /**

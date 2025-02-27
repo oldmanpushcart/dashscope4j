@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.base.files;
 
 import io.github.oldmanpushcart.dashscope4j.ClientSupport;
+import io.github.oldmanpushcart.dashscope4j.util.ProgressListener;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,8 +28,15 @@ public class FilesTestCase extends ClientSupport {
     @Test
     public void test$file$create() {
 
+        final ProgressListener checker = (bytesWritten, contentLength, done) -> {
+            Assertions.assertTrue(bytesWritten <= contentLength);
+            if (bytesWritten == contentLength) {
+                Assertions.assertTrue(done);
+            }
+        };
+
         final String filename = encodingTestFilename(file.getName());
-        final FileMeta created = client.base().files().create(resource, filename, Purpose.FILE_EXTRACT)
+        final FileMeta created = client.base().files().create(resource, filename, Purpose.FILE_EXTRACT, checker)
                 .toCompletableFuture()
                 .join();
 
@@ -39,7 +47,6 @@ public class FilesTestCase extends ClientSupport {
                 .join();
 
         assertFileMeta(existed);
-
         Assertions.assertEquals(created, existed);
 
     }

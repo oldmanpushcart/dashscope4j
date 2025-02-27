@@ -110,37 +110,11 @@ public class HttpUtils {
                 public long read(@NotNull Buffer sink, long byteCount) throws IOException {
                     long bytesRead = super.read(sink, byteCount);
                     totalBytesRead += bytesRead != -1 ? bytesRead : 0;
-                    progressListener.update(totalBytesRead, responseBody.contentLength(), bytesRead == -1);
+                    progressListener.onProgress(totalBytesRead, responseBody.contentLength(), bytesRead == -1);
                     return bytesRead;
                 }
             };
         }
-    }
-
-    /**
-     * 进度监听器
-     */
-    @FunctionalInterface
-    public interface ProgressListener {
-
-        /**
-         * 更新下载进度
-         *
-         * @param bytesRead     已读取的字节数
-         *                      <p>
-         *                      已经从网络响应中读取的字节总数
-         *                      </p>
-         * @param contentLength 总字节数
-         *                      <p>
-         *                      此方法返回响应体的总长度（以字节为单位）。这个值代表整个资源的大小。需要注意的是，并不是所有的HTTP响应都会提供这个信息（例如，当使用分块传输编码时）。如果无法获取内容长度，则此方法可能返回-1。
-         *                      </p>
-         * @param done          是否读取完成
-         *                      <p>
-         *                      如果到达流的末尾（即所有数据都已读取完毕）
-         *                      </p>
-         */
-        void update(long bytesRead, long contentLength, boolean done);
-
     }
 
 }

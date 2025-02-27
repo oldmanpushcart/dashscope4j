@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.base.files.Purpose;
 import io.github.oldmanpushcart.dashscope4j.internal.util.CompletableFutureUtils;
+import io.github.oldmanpushcart.dashscope4j.util.ProgressListener;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.AllArgsConstructor;
 
@@ -22,10 +23,16 @@ public class FilesOpImpl implements FilesOp {
 
     @Override
     public CompletionStage<FileMeta> create(URI resource, String filename, Purpose purpose) {
+        return create(resource, filename, purpose, ProgressListener.empty);
+    }
+
+    @Override
+    public CompletionStage<FileMeta> create(URI resource, String filename, Purpose purpose, ProgressListener listener) {
         final FileCreateRequest request = FileCreateRequest.newBuilder()
                 .resource(resource)
                 .filename(filename)
                 .purpose(purpose)
+                .listener(listener)
                 .build();
         return apiOp.executeAsync(request)
                 .thenApply(FileCreateResponse::output);

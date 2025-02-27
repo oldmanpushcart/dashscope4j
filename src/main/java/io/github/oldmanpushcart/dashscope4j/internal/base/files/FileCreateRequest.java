@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.base.files.Purpose;
 import io.github.oldmanpushcart.dashscope4j.internal.base.OctetStreamRequestBody;
 import io.github.oldmanpushcart.dashscope4j.internal.base.OpenAiRequest;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.util.ProgressListener;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -29,12 +30,14 @@ class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
     URI resource;
     String filename;
     Purpose purpose;
+    ProgressListener listener;
 
     private FileCreateRequest(Builder builder) {
         super(FileCreateResponse.class, builder);
         this.resource = requireNonNull(builder.resource);
         this.filename = requireNonNull(builder.filename);
         this.purpose = requireNonNull(builder.purpose);
+        this.listener = requireNonNull(builder.listener);
     }
 
     @Override
@@ -45,7 +48,7 @@ class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
                 .post(new MultipartBody.Builder()
                         .setType(MultipartBody.FORM)
                         .addFormDataPart("purpose", removeQuotes(toJson(purpose)))
-                        .addFormDataPart("file", filename, new OctetStreamRequestBody(resource))
+                        .addFormDataPart("file", filename, new OctetStreamRequestBody(resource, listener))
                         .build())
                 .build();
     }
@@ -71,6 +74,7 @@ class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
         private URI resource;
         private String filename;
         private Purpose purpose;
+        private ProgressListener listener;
 
         public Builder() {
 
@@ -95,6 +99,11 @@ class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
 
         public Builder purpose(Purpose purpose) {
             this.purpose = requireNonNull(purpose);
+            return this;
+        }
+
+        public Builder listener(ProgressListener listener) {
+            this.listener = requireNonNull(listener);
             return this;
         }
 

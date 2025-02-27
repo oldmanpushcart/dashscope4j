@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.base.store.StoreOp;
 import io.github.oldmanpushcart.dashscope4j.internal.InternalContents;
+import io.github.oldmanpushcart.dashscope4j.util.ProgressListener;
 import lombok.AllArgsConstructor;
 
 import java.net.URI;
@@ -28,7 +29,11 @@ public class StoreOpImpl implements StoreOp {
 
     @Override
     public CompletionStage<URI> upload(URI resource, Model model) {
+        return upload(resource, model, ProgressListener.empty);
+    }
 
+    @Override
+    public CompletionStage<URI> upload(URI resource, Model model, ProgressListener listener) {
         final String cacheKey = String.format("%s|%s", resource.toString(), model.name());
         final URI cached = cache.get(InternalContents.CACHE_NAMESPACE_STORE, cacheKey)
                 .filter(e -> !e.isExpired())
@@ -37,12 +42,13 @@ public class StoreOpImpl implements StoreOp {
                 .orElse(null);
 
         if (null != cached) {
+            listener.onProgress(-1, -1, true);
             return completedFuture(cached);
         }
 
         return completedFuture(null)
                 .thenCompose(unused -> fetchPolicy(model))
-                .thenCompose(policy -> upload(policy, resource))
+                .thenCompose(policy -> upload(policy, resource, listener))
                 .whenComplete((v, ex) -> {
                     if (null == ex) {
                         final byte[] payload = v.toString().getBytes(UTF_8);
@@ -70,10 +76,11 @@ public class StoreOpImpl implements StoreOp {
                 });
     }
 
-    private CompletionStage<URI> upload(Policy policy, URI resource) {
+    private CompletionStage<URI> upload(Policy policy, URI resource, ProgressListener listener) {
         final PostUploadRequest request = PostUploadRequest.newBuilder()
                 .policy(policy)
                 .resource(resource)
+                .listener(listener)
                 .build();
         return apiOp.executeAsync(request)
                 .thenApply(PostUploadResponse::output);
