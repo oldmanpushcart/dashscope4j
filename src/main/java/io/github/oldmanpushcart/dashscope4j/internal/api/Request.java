@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.internal.api;
 
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.util.HashMap;
@@ -10,8 +11,9 @@ import java.util.Objects;
 /**
  * 请求基类
  */
+@EqualsAndHashCode
 public abstract class Request {
-
+    
     @ToString.Exclude
     private final Map<Class<?>, Object> contextMap;
 
