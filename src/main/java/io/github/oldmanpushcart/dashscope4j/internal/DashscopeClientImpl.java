@@ -21,6 +21,8 @@ import okhttp3.OkHttpClient;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 class DashscopeClientImpl implements DashscopeClient {
 
@@ -43,7 +45,7 @@ class DashscopeClientImpl implements DashscopeClient {
         this.http = http;
         this.apiOp = newApiOp(ak, http, interceptors);
         this.baseOp = new BaseOpImpl(http, cache, apiOp);
-        this.chatOp = new ChatOpImpl(apiOp);
+        this.chatOp = new ChatOpImpl(this, apiOp);
         this.audioOp = new AudioOpImpl(apiOp);
         this.embeddingOp = new EmbeddingOpImpl(apiOp);
         this.imageOp = new ImageOpImpl(apiOp);
@@ -55,14 +57,19 @@ class DashscopeClientImpl implements DashscopeClient {
          * 添加拦截器
          * 拦截器的顺序为：自定义最前，系统自带最后
          */
-        final Collection<Interceptor> merged = new ArrayList<>(interceptors);
+        final List<Interceptor> merged = new ArrayList<>(interceptors);
         merged.add(new ProcessChatMessageContentForQwenLongInterceptor());
         merged.add(new ProcessChatMessageContentForUploadInterceptor());
         merged.add(new ProcessMmEmbeddingContentForUploadInterceptor());
         merged.add(new ProcessTranscriptionForUploadInterceptor());
         merged.add(new ProcessVoiceForUploadInterceptor());
 
+        // 倒置merged中的顺序，因为拦截生效的顺序为倒序
+        Collections.reverse(merged);
+
+        // 生成拦截器组
         return InterceptionApiOp.group(this, new ApiOpImpl(ak, http), merged);
+
     }
 
     @Override
@@ -100,7 +107,7 @@ class DashscopeClientImpl implements DashscopeClient {
         http.connectionPool().evictAll();
         try {
             final okhttp3.Cache cache = http.cache();
-            if(null != cache) {
+            if (null != cache) {
                 cache.close();
             }
         } catch (IOException e) {

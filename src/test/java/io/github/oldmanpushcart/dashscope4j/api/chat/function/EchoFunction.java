@@ -18,7 +18,7 @@ import java.util.concurrent.CompletionStage;
 public class EchoFunction implements ChatFunction<EchoFunction.Echo, EchoFunction.Echo> {
 
     @Override
-    public CompletionStage<Echo> call(Echo echo) {
+    public CompletionStage<Echo> call(Caller caller, Echo echo) {
         return CompletableFuture.completedFuture(new Echo(echo.words()));
     }
 

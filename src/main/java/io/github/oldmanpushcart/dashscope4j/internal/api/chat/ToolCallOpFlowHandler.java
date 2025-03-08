@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.internal.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
@@ -19,6 +20,7 @@ import java.util.function.UnaryOperator;
 @AllArgsConstructor
 class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
 
+    private final DashscopeClient client;
     private final ChatOp chatOp;
 
     @Override
@@ -46,7 +48,7 @@ class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
                         final ChatRequest request = (ChatRequest) response.request();
                         final ToolCallMessage toolCallMessage = newTollCallMessage(request, toolCallMessages);
                         final CompletionStage<Flowable<ChatResponse>> tcFlow
-                                = new ToolCaller(chatOp, request, toolCallMessage)
+                                = new ToolCaller(client, chatOp, request, toolCallMessage)
                                 .flowCall();
                         return Flowable
                                 .fromCompletionStage(tcFlow)

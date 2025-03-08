@@ -1,11 +1,13 @@
 package io.github.oldmanpushcart.dashscope4j.internal.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.ToolCallMessage;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.ToolMessage;
+import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import io.reactivex.rxjava3.core.Flowable;
@@ -20,14 +22,16 @@ import java.util.concurrent.CompletionStage;
 import static java.util.Collections.unmodifiableList;
 
 @Slf4j
-class ToolCaller {
+class ToolCaller implements ChatFunction.Caller {
 
+    private final DashscopeClient client;
     private final ChatOp chatOp;
     private final ChatRequest request;
     private final ToolCallMessage message;
 
-    public ToolCaller(ChatOp chatOp, ChatRequest request, ToolCallMessage message) {
+    public ToolCaller(DashscopeClient client, ChatOp chatOp, ChatRequest request, ToolCallMessage message) {
         preCheck(message);
+        this.client = client;
         this.chatOp = chatOp;
         this.request = request;
         this.message = message;
@@ -126,9 +130,8 @@ class ToolCaller {
             );
         }
 
-
         try {
-            return tool.function().call(JacksonJsonUtils.toObject(parameterJson, parameterType))
+            return tool.function().call(this, JacksonJsonUtils.toObject(parameterJson, parameterType))
                     .thenApply(JacksonJsonUtils::toJson)
                     .whenComplete((resultJson, ex) -> {
                         if (log.isDebugEnabled()) {
@@ -166,6 +169,16 @@ class ToolCaller {
                 .orElseThrow(() -> new IllegalArgumentException(String.format("Function Not found! fn=%s",
                         functionCall.stub().name()
                 )));
+    }
+
+    @Override
+    public DashscopeClient client() {
+        return client;
+    }
+
+    @Override
+    public ChatRequest request() {
+        return request;
     }
 
 }

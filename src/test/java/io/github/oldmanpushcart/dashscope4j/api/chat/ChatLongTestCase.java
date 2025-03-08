@@ -74,7 +74,7 @@ public class ChatLongTestCase extends ClientSupport {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_LONG)
                 .addMessage(Message.ofUser(List.of(
-                        Content.ofText("总结文章内容"),
+                        Content.ofText("总结两篇文章内容"),
                         Content.ofFile(meta1.toURI()),
                         Content.ofFile(meta2.toURI())
                 )))

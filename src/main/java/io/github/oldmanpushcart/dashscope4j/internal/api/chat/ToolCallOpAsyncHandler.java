@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.internal.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
@@ -13,6 +14,7 @@ import java.util.function.Function;
 @AllArgsConstructor
 class ToolCallOpAsyncHandler implements Function<ChatResponse, CompletionStage<ChatResponse>> {
 
+    private final DashscopeClient client;
     private final ChatOp chatOp;
 
     @Override
@@ -25,7 +27,7 @@ class ToolCallOpAsyncHandler implements Function<ChatResponse, CompletionStage<C
 
         final ChatRequest request = (ChatRequest) response.request();
         final ToolCallMessage message = (ToolCallMessage) choice.message();
-        return new ToolCaller(chatOp, request, message)
+        return new ToolCaller(client, chatOp, request, message)
                 .asyncCall();
     }
 
