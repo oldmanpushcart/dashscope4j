@@ -62,12 +62,13 @@ class DashscopeClientImpl implements DashscopeClient {
          * 拦截器的顺序为：自定义最前，系统自带最后
          */
         final List<Interceptor> merged = new ArrayList<>(interceptors);
-        merged.add(new ProcessChatMessageContentForQwenLongInterceptor());
-        merged.add(new ProcessChatMessageContentForUploadInterceptor());
+
         merged.add(new ProcessMmEmbeddingContentForUploadInterceptor());
         merged.add(new ProcessTranscriptionForUploadInterceptor());
         merged.add(new ProcessVoiceForUploadInterceptor());
         merged.add(new ProcessImageGenVideoForUploadInterceptor());
+        merged.add(new ProcessChatMessageContentForUploadInterceptor());
+        merged.add(new ProcessChatMessageContentForQwenLongInterceptor());
 
         // 倒置merged中的顺序，因为拦截生效的顺序为倒序
         Collections.reverse(merged);

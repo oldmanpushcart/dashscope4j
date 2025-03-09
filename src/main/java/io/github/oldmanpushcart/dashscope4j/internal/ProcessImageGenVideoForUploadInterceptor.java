@@ -8,7 +8,10 @@ import java.util.concurrent.CompletionStage;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
-public class ProcessImageGenVideoForUploadInterceptor implements Interceptor {
+/**
+ * 处理图片生成视频的请求
+ */
+class ProcessImageGenVideoForUploadInterceptor implements Interceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain) {

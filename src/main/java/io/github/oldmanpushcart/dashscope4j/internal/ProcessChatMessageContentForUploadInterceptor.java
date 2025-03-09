@@ -1,8 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.internal;
 
 import io.github.oldmanpushcart.dashscope4j.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.Model;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.*;
+import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
+import io.github.oldmanpushcart.dashscope4j.base.files.Purpose;
 
 import java.net.URI;
 import java.util.Collection;
@@ -50,14 +54,14 @@ class ProcessChatMessageContentForUploadInterceptor implements Interceptor {
 
     private CompletionStage<Content<?>> processContent(Chain chain, ChatRequest request, Content<?> content) {
         if (content.data() instanceof Collection<?>) {
-            return thenIterateCompose((Collection<?>) content.data(), data -> upload(chain, request, data))
+            return thenIterateCompose((Collection<?>) content.data(), data -> processUpload(chain, request, data))
                     .thenApply(content::newData);
         }
-        return upload(chain, request, content.data())
+        return processUpload(chain, request, content.data())
                 .thenApply(content::newData);
     }
 
-    private CompletionStage<?> upload(Chain chain, ChatRequest request, Object data) {
+    private CompletionStage<?> processUpload(Chain chain, ChatRequest request, Object data) {
 
         /*
          * 只上传URI类型的数据
@@ -74,8 +78,24 @@ class ProcessChatMessageContentForUploadInterceptor implements Interceptor {
             return completedFuture(data);
         }
 
-        return chain.client().base().store().upload(resource, request.model())
-                .thenApply(URI::toString);
+        return upload(chain, request, resource);
+    }
+
+    private CompletionStage<?> upload(Chain chain, ChatRequest request, URI resource) {
+
+        final Model model = request.model();
+
+        /*
+         * 这里做一个特殊处理，如果是QwenLong模型，则使用base接口上传文件，否则使用store接口上传文件
+         */
+        if (ChatModel.QWEN_LONG.name().equals(model.name())) {
+            return chain.client().base().files().create(resource, resource.getPath(), Purpose.FILE_EXTRACT)
+                    .thenApply(FileMeta::toURI);
+        } else {
+            return chain.client().base().store().upload(resource, model)
+                    .thenApply(URI::toString);
+        }
+
     }
 
 }
