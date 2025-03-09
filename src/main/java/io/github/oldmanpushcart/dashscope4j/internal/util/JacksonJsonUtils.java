@@ -24,6 +24,9 @@ public class JacksonJsonUtils {
      * @return json
      */
     public static String compact(String json) {
+        if (null == json) {
+            return null;
+        }
         return toJson(toNode(json));
     }
 
@@ -83,11 +86,12 @@ public class JacksonJsonUtils {
 
     /**
      * {@code json -> T}
-     * @param json json
-     * @param type 对象类型
+     *
+     * @param json     json
+     * @param type     对象类型
      * @param response HTTP响应
+     * @param <T>      对象类型
      * @return 对象
-     * @param <T> 对象类型
      */
     public static <T> T toObject(String json, Class<T> type, okhttp3.Response response) {
         final Map<String, Object> variableMap = new HashMap<>();
@@ -121,10 +125,11 @@ public class JacksonJsonUtils {
 
     /**
      * {@code node -> T}
+     *
      * @param node json node
      * @param type 对象类型
+     * @param <T>  对象类型
      * @return 目标对象
-     * @param <T> 对象类型
      */
     public static <T> T toObject(JsonNode node, Class<T> type) {
         try {
