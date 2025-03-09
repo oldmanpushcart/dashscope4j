@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.api.audio.AudioOp;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.api.embedding.EmbeddingOp;
 import io.github.oldmanpushcart.dashscope4j.api.image.ImageOp;
+import io.github.oldmanpushcart.dashscope4j.api.video.VideoOp;
 import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.internal.DashscopeClientBuilderImpl;
 import io.github.oldmanpushcart.dashscope4j.util.Buildable;
@@ -38,6 +39,12 @@ public interface DashscopeClient {
      * @return 图像操作
      */
     ImageOp image();
+
+    /**
+     * @return 视频操作
+     * @since 3.1.0
+     */
+    VideoOp video();
 
     /**
      * @return 基础操作

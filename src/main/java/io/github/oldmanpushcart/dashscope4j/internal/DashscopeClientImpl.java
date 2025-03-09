@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.api.audio.AudioOp;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.api.embedding.EmbeddingOp;
 import io.github.oldmanpushcart.dashscope4j.api.image.ImageOp;
+import io.github.oldmanpushcart.dashscope4j.api.video.VideoOp;
 import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.internal.api.ApiOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.InterceptionApiOp;
@@ -15,6 +16,7 @@ import io.github.oldmanpushcart.dashscope4j.internal.api.audio.AudioOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.chat.ChatOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.embedding.EmbeddingOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.image.ImageOpImpl;
+import io.github.oldmanpushcart.dashscope4j.internal.api.video.VideoOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.base.BaseOpImpl;
 import okhttp3.OkHttpClient;
 
@@ -34,6 +36,7 @@ class DashscopeClientImpl implements DashscopeClient {
     private final ChatOp chatOp;
     private final EmbeddingOp embeddingOp;
     private final ImageOp imageOp;
+    private final VideoOp videoOp;
 
     DashscopeClientImpl(
             final String ak,
@@ -49,6 +52,7 @@ class DashscopeClientImpl implements DashscopeClient {
         this.audioOp = new AudioOpImpl(apiOp);
         this.embeddingOp = new EmbeddingOpImpl(apiOp);
         this.imageOp = new ImageOpImpl(apiOp);
+        this.videoOp = new VideoOpImpl(apiOp);
     }
 
     private ApiOp newApiOp(String ak, OkHttpClient http, Collection<Interceptor> interceptors) {
@@ -63,6 +67,7 @@ class DashscopeClientImpl implements DashscopeClient {
         merged.add(new ProcessMmEmbeddingContentForUploadInterceptor());
         merged.add(new ProcessTranscriptionForUploadInterceptor());
         merged.add(new ProcessVoiceForUploadInterceptor());
+        merged.add(new ProcessImageGenVideoForUploadInterceptor());
 
         // 倒置merged中的顺序，因为拦截生效的顺序为倒序
         Collections.reverse(merged);
@@ -90,6 +95,11 @@ class DashscopeClientImpl implements DashscopeClient {
     @Override
     public ImageOp image() {
         return imageOp;
+    }
+
+    @Override
+    public VideoOp video() {
+        return videoOp;
     }
 
     @Override

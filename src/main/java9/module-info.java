@@ -33,6 +33,8 @@ open module dashscope4j {
     exports io.github.oldmanpushcart.dashscope4j.api.embedding.mm;
     exports io.github.oldmanpushcart.dashscope4j.api.image;
     exports io.github.oldmanpushcart.dashscope4j.api.image.generation;
+    exports io.github.oldmanpushcart.dashscope4j.api.video;
+    exports io.github.oldmanpushcart.dashscope4j.api.video.generation;
     exports io.github.oldmanpushcart.dashscope4j.base;
     exports io.github.oldmanpushcart.dashscope4j.base.tokenizer;
     exports io.github.oldmanpushcart.dashscope4j.base.store;
