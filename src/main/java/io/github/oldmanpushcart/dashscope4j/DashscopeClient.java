@@ -13,7 +13,6 @@ import okhttp3.OkHttpClient;
 
 import java.util.Collection;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Dashscope 客户端
@@ -75,14 +74,6 @@ public interface DashscopeClient {
          * @return this
          */
         Builder ak(String ak);
-
-        /**
-         * 设置缓存工厂
-         *
-         * @param factory 缓存工厂
-         * @return this
-         */
-        Builder cacheFactory(Supplier<Cache> factory);
 
         Builder interceptors(Collection<Interceptor> interceptors);
 

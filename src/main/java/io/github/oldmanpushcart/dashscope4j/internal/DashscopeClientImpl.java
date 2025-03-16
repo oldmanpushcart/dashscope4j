@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.internal;
 
-import io.github.oldmanpushcart.dashscope4j.Cache;
 import io.github.oldmanpushcart.dashscope4j.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
@@ -28,7 +27,6 @@ import java.util.List;
 
 class DashscopeClientImpl implements DashscopeClient {
 
-    private final Cache cache;
     private final OkHttpClient http;
     private final ApiOp apiOp;
     private final BaseOp baseOp;
@@ -40,14 +38,12 @@ class DashscopeClientImpl implements DashscopeClient {
 
     DashscopeClientImpl(
             final String ak,
-            final Cache cache,
             final Collection<Interceptor> interceptors,
             final OkHttpClient http
     ) {
-        this.cache = cache;
         this.http = http;
         this.apiOp = newApiOp(ak, http, interceptors);
-        this.baseOp = new BaseOpImpl(http, cache, apiOp);
+        this.baseOp = new BaseOpImpl(http, apiOp);
         this.chatOp = new ChatOpImpl(this, apiOp);
         this.audioOp = new AudioOpImpl(apiOp);
         this.embeddingOp = new EmbeddingOpImpl(apiOp);
@@ -128,14 +124,7 @@ class DashscopeClientImpl implements DashscopeClient {
 
     @Override
     public void shutdown() {
-
         closeHttp();
-
-        try {
-            cache.close();
-        } catch (IOException e) {
-            // ignore
-        }
     }
 
 }

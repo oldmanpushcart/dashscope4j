@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.internal.base;
 
-import io.github.oldmanpushcart.dashscope4j.Cache;
 import io.github.oldmanpushcart.dashscope4j.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.base.files.FilesOp;
@@ -18,10 +17,10 @@ public class BaseOpImpl implements BaseOp {
     private final StoreOp storeOp;
     private final FilesOp filesOp;
 
-    public BaseOpImpl(okhttp3.OkHttpClient http, Cache cache, ApiOp apiOp) {
+    public BaseOpImpl(okhttp3.OkHttpClient http, ApiOp apiOp) {
         this.http = http;
         this.tokenizerOp = new TokenizerOpImpl(apiOp);
-        this.storeOp = new StoreOpImpl(cache, apiOp);
+        this.storeOp = new StoreOpImpl(apiOp);
         this.filesOp = new FilesOpImpl(apiOp);
     }
 

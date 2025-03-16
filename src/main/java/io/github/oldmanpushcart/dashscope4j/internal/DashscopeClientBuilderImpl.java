@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.internal;
 
-import io.github.oldmanpushcart.dashscope4j.Cache;
 import io.github.oldmanpushcart.dashscope4j.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.Interceptor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +12,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
@@ -21,7 +19,6 @@ import static java.util.Objects.requireNonNull;
 public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
 
     private String ak;
-    private Supplier<Cache> cacheFactory = () -> new LruCacheImpl(4096);
     private final List<Interceptor> interceptors = new ArrayList<>();
     private final OkHttpClient.Builder okHttpClientBuilder
             = new OkHttpClient.Builder()
@@ -30,12 +27,6 @@ public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
     @Override
     public DashscopeClient.Builder ak(String ak) {
         this.ak = requireNonNull(ak);
-        return this;
-    }
-
-    @Override
-    public DashscopeClient.Builder cacheFactory(Supplier<Cache> factory) {
-        this.cacheFactory = requireNonNull(factory);
         return this;
     }
 
@@ -69,23 +60,12 @@ public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
 
     @Override
     public DashscopeClient build() {
-        Cache cache = null;
         OkHttpClient http = null;
         try {
-
-            cache = cacheFactory.get();
             http = okHttpClientBuilder.build();
-            return new DashscopeClientImpl(ak, cache, interceptors, http);
+            return new DashscopeClientImpl(ak, interceptors, http);
 
         } catch (Throwable ex) {
-
-            if (null != cache) {
-                try {
-                    cache.close();
-                } catch (IOException e) {
-                    // ignore
-                }
-            }
 
             if (null != http) {
                 http.dispatcher()

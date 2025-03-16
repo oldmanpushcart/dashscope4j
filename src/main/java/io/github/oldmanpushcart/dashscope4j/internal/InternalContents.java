@@ -7,8 +7,6 @@ import okhttp3.MediaType;
  */
 public interface InternalContents {
 
-    String CACHE_NAMESPACE_STORE = "store";
-
     /**
      * 启用
      */
