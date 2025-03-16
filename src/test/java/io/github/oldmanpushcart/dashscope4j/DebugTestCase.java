@@ -46,20 +46,4 @@ public class DebugTestCase extends ClientSupport {
 
     }
 
-    @Test
-    public void test$debug$vl() {
-
-        final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_VL_MAX)
-                .addMessage(Message.ofUser(""))
-                .build();
-
-        final ChatResponse response = client.chat().async(request)
-                .toCompletableFuture()
-                .join();
-
-        System.out.println(response);
-
-    }
-
 }

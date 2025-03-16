@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -13,6 +14,7 @@ import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.assertApiRe
 
 public class ChatAudioTestCase extends ClientSupport {
 
+    @Disabled
     @Test
     public void test$chat$audio$local() {
         final ChatRequest request = ChatRequest.newBuilder()

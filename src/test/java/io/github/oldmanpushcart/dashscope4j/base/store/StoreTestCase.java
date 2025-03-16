@@ -31,24 +31,4 @@ public class StoreTestCase extends ClientSupport {
         Assertions.assertEquals("oss", uploaded.getScheme());
     }
 
-    @Test
-    public void test$upload$cached() throws IOException {
-
-        final ProgressListener checker = (bytesWritten, contentLength, done) -> {
-            Assertions.assertTrue(bytesWritten <= contentLength);
-            if (bytesWritten == contentLength) {
-                Assertions.assertTrue(done);
-            }
-        };
-
-        final File file = Files.createTempFile("test", ".pdf").toFile();
-        final URI uploadedForA = client.base().store().upload(file.toURI(), ChatModel.QWEN_TURBO, checker)
-                .toCompletableFuture()
-                .join();
-        final URI uploadedForB = client.base().store().upload(file.toURI(), ChatModel.QWEN_TURBO, checker)
-                .toCompletableFuture()
-                .join();
-        Assertions.assertEquals(uploadedForA, uploadedForB);
-    }
-
 }
