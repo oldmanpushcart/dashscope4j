@@ -1,6 +1,6 @@
 open module dashscope4j {
     requires static lombok;
-    requires static annotations;
+    requires static jakarta.validation;
 
     requires org.slf4j;
     requires kotlin.stdlib;

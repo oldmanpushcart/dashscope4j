@@ -103,7 +103,7 @@
                 <version>3.13.0</version>
                 <executions>
                     <execution>
-                        <id>compile-default</id>
+                        <id>compile-java8</id>
                         <goals>
                             <goal>compile</goal>
                         </goals>

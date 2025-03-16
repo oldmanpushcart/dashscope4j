@@ -1,13 +1,13 @@
 package io.github.oldmanpushcart.dashscope4j.internal.base;
 
 import io.github.oldmanpushcart.dashscope4j.util.ProgressListener;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
 import okio.BufferedSink;
 import okio.Okio;
 import okio.Source;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;

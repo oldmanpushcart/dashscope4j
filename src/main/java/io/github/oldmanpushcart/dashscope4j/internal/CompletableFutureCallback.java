@@ -1,9 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.internal;
 
+import jakarta.validation.constraints.NotNull;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;

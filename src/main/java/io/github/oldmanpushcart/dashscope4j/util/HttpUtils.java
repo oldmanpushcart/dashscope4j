@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.util;
 
+import jakarta.validation.constraints.NotNull;
 import okhttp3.*;
 import okio.*;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.URI;
