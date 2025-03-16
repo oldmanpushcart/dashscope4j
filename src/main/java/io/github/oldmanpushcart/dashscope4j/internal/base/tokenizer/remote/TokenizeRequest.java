@@ -58,9 +58,8 @@ class TokenizeRequest extends AlgoRequest<ChatModel, TokenizeResponse> {
         return new Builder(request);
     }
 
-    public static class Builder extends AlgoRequest.Builder<ChatModel, TokenizeRequest, Builder> {
+    static class Builder extends AlgoRequest.Builder<ChatModel, TokenizeRequest, Builder> {
 
-        private ChatModel model;
         private final List<Message> messages = new ArrayList<>();
 
         private Builder() {

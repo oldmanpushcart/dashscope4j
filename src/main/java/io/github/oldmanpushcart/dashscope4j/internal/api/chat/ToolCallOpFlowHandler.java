@@ -62,23 +62,22 @@ class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
         final StringBuilder nameBuilder = new StringBuilder();
         final StringBuilder argumentsBuilder = new StringBuilder();
         final boolean isIncrementalOutput = request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true);
-        toolCallMessages.forEach(message -> {
-            message.calls().stream()
-                    .filter(call -> call instanceof ChatFunctionTool.Call)
-                    .map(ChatFunctionTool.Call.class::cast)
-                    .forEach(call -> {
-                        if (!isIncrementalOutput) {
-                            nameBuilder.setLength(0);
-                            argumentsBuilder.setLength(0);
-                        }
-                        if(null != call.stub().name()) {
-                            nameBuilder.append(call.stub().name());
-                        }
-                        if(null != call.stub().arguments()) {
-                            argumentsBuilder.append(call.stub().arguments());
-                        }
-                    });
-        });
+        toolCallMessages.forEach(message ->
+                message.calls().stream()
+                        .filter(call -> call instanceof ChatFunctionTool.Call)
+                        .map(ChatFunctionTool.Call.class::cast)
+                        .forEach(call -> {
+                            if (!isIncrementalOutput) {
+                                nameBuilder.setLength(0);
+                                argumentsBuilder.setLength(0);
+                            }
+                            if (null != call.stub().name()) {
+                                nameBuilder.append(call.stub().name());
+                            }
+                            if (null != call.stub().arguments()) {
+                                argumentsBuilder.append(call.stub().arguments());
+                            }
+                        }));
 
         final List<Tool.Call> calls = new ArrayList<>();
         calls.add(new ChatFunctionTool.Call(new ChatFunctionTool.Call.Stub(
