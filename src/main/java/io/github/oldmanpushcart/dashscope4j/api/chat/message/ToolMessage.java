@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -31,7 +32,16 @@ public class ToolMessage extends Message {
      * @param text 应答结果
      * @param name 工具名称
      */
-    public ToolMessage(String text, String name) {
+    @JsonCreator
+    public ToolMessage(
+
+            @JsonProperty("content")
+            String text,
+
+            @JsonProperty("name")
+            String name
+
+    ) {
         super(Role.TOOL, Content.ofText(text));
         this.name = name;
     }

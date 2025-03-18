@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.Plugin;
 import lombok.EqualsAndHashCode;
@@ -33,7 +34,16 @@ public class PluginCallMessage extends Message {
      *             <p>在插件调用场景下通常为空，这里保留主要考虑是未来可能扩展</p>
      * @param call 插件调用存根
      */
-    public PluginCallMessage(String text, Plugin.Call call) {
+    @JsonCreator
+    public PluginCallMessage(
+
+            @JsonProperty("content")
+            String text,
+
+            @JsonProperty("plugin_call")
+            Plugin.Call call
+
+    ) {
         super(Role.AI, Content.ofText(text));
         this.call = call;
     }

@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -41,6 +42,26 @@ public class Message {
      */
     public Message(Role role, Content<?> content) {
         this(role, singletonList(content));
+    }
+
+    /**
+     * 构造消息（文本）
+     *
+     * @param role    角色
+     * @param content 文本内容
+     * @since 3.1.0
+     */
+    @JsonCreator
+    public Message(
+
+            @JsonProperty("role")
+            Role role,
+
+            @JsonProperty("content")
+            String content
+
+    ) {
+        this(role, Content.ofText(content));
     }
 
     /**

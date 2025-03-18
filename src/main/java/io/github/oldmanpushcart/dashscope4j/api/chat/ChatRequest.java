@@ -1,11 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.util.MessageCodec;
 import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.Tool;
@@ -108,25 +108,9 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
      */
     private List<JsonNode> encodeMessages() {
         final ChatModel.Mode mode = switchMode();
-        final List<JsonNode> nodes = new LinkedList<>();
-        messages.forEach(message -> {
-            final JsonNode messageNode = JacksonJsonUtils.toNode(message);
-            if (messageNode instanceof ObjectNode) {
-                final ObjectNode node = (ObjectNode) messageNode;
-                switch (mode) {
-                    case TEXT:
-                        node.put("content", message.text());
-                        break;
-                    case MULTIMODAL:
-                        node.putPOJO("content", message.contents());
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unsupported mode: " + mode);
-                }
-            }
-            nodes.add(messageNode);
-        });
-        return nodes;
+        return messages.stream()
+                .map(message -> MessageCodec.encodeToJsonNode(mode, message))
+                .collect(Collectors.toList());
     }
 
     @Override

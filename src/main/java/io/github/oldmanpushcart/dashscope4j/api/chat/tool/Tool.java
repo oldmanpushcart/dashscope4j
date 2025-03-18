@@ -1,6 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat.tool;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
 
 /**
  * 工具
@@ -25,6 +28,15 @@ public interface Tool {
     /**
      * 工具调用存根
      */
+    @JsonTypeInfo(
+            use = JsonTypeInfo.Id.NAME,
+            include = JsonTypeInfo.As.PROPERTY,
+            property = "type",
+            visible = true
+    )
+    @JsonSubTypes({
+            @JsonSubTypes.Type(value = ChatFunctionTool.Call.class, name = "function")
+    })
     interface Call {
 
         /**
