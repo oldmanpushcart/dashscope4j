@@ -168,7 +168,9 @@ public class ApiOpImpl implements ApiOp {
                         return;
                     }
 
-                    this.httpResponse = httpResponse;
+                    if(null == this.httpResponse) {
+                        this.httpResponse = httpResponse;
+                    }
 
                     /*
                      * 异常为空，说明错误信息可能藏在response.body中
