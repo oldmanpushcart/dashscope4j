@@ -1,9 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOptions;
-import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.api.chat.*;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
@@ -22,7 +19,18 @@ public class DebugTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_MAX)
-                .addMessage(Message.ofUser("HELLO!"))
+                .addMessage(Message.ofUser(
+                        "用户输入：\n" +
+                            "英伟达公司最新股价" +
+                            "\n\n"+
+                            "参考资料：\n" +
+                            "[]"
+                ))
+                .option(ChatOptions.ENABLE_WEB_SEARCH, true)
+                .option(ChatOptions.SEARCH_OPTIONS, new ChatSearchOption()
+                        .enableSource(true)
+                        .enableCitation(true)
+                        .forcedSearch(true))
                 .build();
 
         final Flowable<ChatResponse> responseFlow = client.chat().directFlow(request);

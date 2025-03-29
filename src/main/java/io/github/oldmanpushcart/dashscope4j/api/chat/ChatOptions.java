@@ -56,4 +56,11 @@ public interface ChatOptions {
      */
     Option.SimpleOpt<Integer> SEED = new Option.SimpleOpt<>("seed", Integer.class);
 
+    /**
+     * SEARCH选项
+     *
+     * @since 3.1.0
+     */
+    Option.SimpleOpt<ChatSearchOption> SEARCH_OPTIONS = new Option.SimpleOpt<>("search_options", ChatSearchOption.class);
+
 }
