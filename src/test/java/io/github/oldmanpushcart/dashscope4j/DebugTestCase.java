@@ -1,15 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import io.github.oldmanpushcart.dashscope4j.api.ApiAssertions;
-import io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.api.chat.*;
 import io.github.oldmanpushcart.dashscope4j.api.chat.function.QueryScoreFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.assertApiResponseSuccessful;
-import static io.github.oldmanpushcart.dashscope4j.api.chat.ChatOptions.ENABLE_PARALLEL_TOOL_CALLS;
 
 public class DebugTestCase extends ClientSupport {
 
@@ -17,23 +11,22 @@ public class DebugTestCase extends ClientSupport {
     public void test$debug$text() {
 
         final ChatRequest request = ChatRequest.newBuilder()
-                .option(ENABLE_PARALLEL_TOOL_CALLS, true)
-                .model(ChatModel.QWEN_TURBO)
+                .model(ChatModel.QWEN_MAX)
                 .addFunction(new QueryScoreFunction())
-                .addMessage(Message.ofUser("查询数学和语文的成绩"))
+                .addMessage(Message.ofUser("杭州明天天气如何？"))
+                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .option(ChatOptions.ENABLE_PARALLEL_TOOL_CALLS, true)
+                .option(ChatOptions.ENABLE_WEB_SEARCH, true)
+                .option(ChatOptions.SEARCH_OPTIONS, new ChatSearchOption()
+                        .forcedSearch(true)
+                        .enableSource(true)
+                        .enableCitation(true)
+                        .searchStrategy(ChatSearchOption.SearchStrategy.STANDARD)
+                )
                 .build();
-        client.chat().flow(request)
-                .thenAccept(flow -> flow
-                        .doOnNext(ApiAssertions::assertApiResponseSuccessful)
-                        .doOnError(Assertions::fail)
-                        .reduce((a, b) -> b)
-                        .blockingSubscribe(response -> {
-                            assertApiResponseSuccessful(response);
-                            final String text = response.output().best().message().text();
-                            System.out.println(text);
-                        }))
-                .toCompletableFuture()
-                .join();
+        client.chat().directFlow(request)
+                .doOnNext(response-> System.out.println(response.output().best().message().text()))
+                .blockingSubscribe();
 
     }
 

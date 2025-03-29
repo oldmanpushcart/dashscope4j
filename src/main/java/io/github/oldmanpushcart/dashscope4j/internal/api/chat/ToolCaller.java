@@ -87,13 +87,6 @@ class ToolCaller implements ChatFunction.Caller {
         return history;
     }
 
-    private List<Message> newHistory(List<ToolMessage> toolMessages) {
-        final List<Message> history = new ArrayList<>();
-        history.add(message);
-        history.addAll(toolMessages);
-        return history;
-    }
-
     // 构建新的对话请求消息，并记住本次函数调用历史
     private ChatRequest newHistoryRequest(List<Message> history) {
         return ChatRequest.newBuilder(request)
@@ -116,7 +109,11 @@ class ToolCaller implements ChatFunction.Caller {
                 choices.add(choice);
             }
         });
-        final ChatResponse.Output output = new ChatResponse.Output(unmodifiableList(choices));
+
+        final ChatResponse.Output output = new ChatResponse.Output(
+                response.output().search(),
+                unmodifiableList(choices)
+        );
         return new ChatResponse(
                 response.uuid(),
                 response.code(),

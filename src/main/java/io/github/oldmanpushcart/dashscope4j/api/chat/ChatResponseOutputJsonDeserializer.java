@@ -51,6 +51,10 @@ class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.O
 
         @Override
         public ChatResponse.Output deserialize(DeserializationContext context, JsonNode node) throws IOException {
+
+            final JsonNode searchNode = node.get("search_info");
+            final ChatResponse.SearchInfo search = context.readTreeAsValue(searchNode, ChatResponse.SearchInfo.class);
+
             final JsonNode choicesNode = node.get("choices");
 
             // 如果没有 choices 节点，说明不是 message
@@ -86,7 +90,7 @@ class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.O
             }
 
             // 返回应答数据
-            return new ChatResponse.Output(unmodifiableList(choices));
+            return new ChatResponse.Output(search, unmodifiableList(choices));
         }
 
     }
@@ -95,6 +99,10 @@ class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.O
 
         @Override
         public ChatResponse.Output deserialize(DeserializationContext context, JsonNode node) throws IOException {
+
+            final JsonNode searchNode = node.get("search_info");
+            final ChatResponse.SearchInfo search = context.readTreeAsValue(searchNode, ChatResponse.SearchInfo.class);
+
             final JsonNode choicesNode = node.get("choices");
 
             // 如果有 choices 节点，说明不是 text only
@@ -104,7 +112,7 @@ class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.O
 
             final InnerOutput data = context.readTreeAsValue(node, InnerOutput.class);
             final Choice choice = new Choice(data.finish, Message.ofAi(data.text));
-            return new ChatResponse.Output(choice);
+            return new ChatResponse.Output(search, choice);
         }
 
         @Value
