@@ -40,6 +40,12 @@ public interface Tool {
     interface Call {
 
         /**
+         * @return 调用ID
+         * @since 3.1.0
+         */
+        String id();
+
+        /**
          * @return 工具分类
          */
         Classify classify();

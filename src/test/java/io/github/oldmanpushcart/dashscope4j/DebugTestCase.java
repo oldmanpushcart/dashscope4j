@@ -1,16 +1,15 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import io.github.oldmanpushcart.dashscope4j.api.chat.*;
-import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
+import io.github.oldmanpushcart.dashscope4j.api.ApiAssertions;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.api.chat.function.QueryScoreFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.base.files.FileMeta;
-import io.github.oldmanpushcart.dashscope4j.base.files.Purpose;
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.disposables.Disposable;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.util.List;
+import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.assertApiResponseSuccessful;
+import static io.github.oldmanpushcart.dashscope4j.api.chat.ChatOptions.ENABLE_PARALLEL_TOOL_CALLS;
 
 public class DebugTestCase extends ClientSupport {
 
@@ -18,27 +17,23 @@ public class DebugTestCase extends ClientSupport {
     public void test$debug$text() {
 
         final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_MAX)
-                .addMessage(Message.ofUser(
-                        "用户输入：\n" +
-                            "英伟达公司最新股价" +
-                            "\n\n"+
-                            "参考资料：\n" +
-                            "[]"
-                ))
-                .option(ChatOptions.ENABLE_WEB_SEARCH, true)
-                .option(ChatOptions.SEARCH_OPTIONS, new ChatSearchOption()
-                        .enableSource(true)
-                        .enableCitation(true)
-                        .forcedSearch(true))
+                .option(ENABLE_PARALLEL_TOOL_CALLS, true)
+                .model(ChatModel.QWEN_TURBO)
+                .addFunction(new QueryScoreFunction())
+                .addMessage(Message.ofUser("查询数学和语文的成绩"))
                 .build();
-
-        final Flowable<ChatResponse> responseFlow = client.chat().directFlow(request);
-        responseFlow
-                .blockingSubscribe(
-                        System.out::println,
-                        Throwable::printStackTrace
-                );
+        client.chat().flow(request)
+                .thenAccept(flow -> flow
+                        .doOnNext(ApiAssertions::assertApiResponseSuccessful)
+                        .doOnError(Assertions::fail)
+                        .reduce((a, b) -> b)
+                        .blockingSubscribe(response -> {
+                            assertApiResponseSuccessful(response);
+                            final String text = response.output().best().message().text();
+                            System.out.println(text);
+                        }))
+                .toCompletableFuture()
+                .join();
 
     }
 

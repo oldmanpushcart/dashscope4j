@@ -13,9 +13,12 @@ import io.reactivex.rxjava3.core.Flowable;
 import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
@@ -59,33 +62,58 @@ class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
     }
 
     private ToolCallMessage newTollCallMessage(ChatRequest request, List<ToolCallMessage> toolCallMessages) {
-        final StringBuilder nameBuilder = new StringBuilder();
-        final StringBuilder argumentsBuilder = new StringBuilder();
         final boolean isIncrementalOutput = request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true);
-        toolCallMessages.forEach(message ->
-                message.calls().stream()
-                        .filter(call -> call instanceof ChatFunctionTool.Call)
-                        .map(ChatFunctionTool.Call.class::cast)
-                        .forEach(call -> {
-                            if (!isIncrementalOutput) {
-                                nameBuilder.setLength(0);
-                                argumentsBuilder.setLength(0);
-                            }
-                            if (null != call.stub().name()) {
-                                nameBuilder.append(call.stub().name());
-                            }
-                            if (null != call.stub().arguments()) {
-                                argumentsBuilder.append(call.stub().arguments());
-                            }
-                        }));
+        final Map<String, FunctionToolCallBuilder> functionToolCallBuilderMap = new HashMap<>();
+        toolCallMessages.stream()
+                .flatMap(message -> message.calls().stream())
+                .filter(call -> call instanceof ChatFunctionTool.Call)
+                .map(ChatFunctionTool.Call.class::cast)
+                .forEach(call -> {
 
-        final List<Tool.Call> calls = new ArrayList<>();
-        calls.add(new ChatFunctionTool.Call(new ChatFunctionTool.Call.Stub(
-                nameBuilder.toString(),
-                argumentsBuilder.toString()
-        )));
+                    final FunctionToolCallBuilder builder;
+                    if (!functionToolCallBuilderMap.containsKey(call.id())) {
+                        builder = new FunctionToolCallBuilder(call.id());
+                        functionToolCallBuilderMap.put(call.id(), builder);
+                    } else {
+                        builder = functionToolCallBuilderMap.get(call.id());
+                    }
+
+                    if (!isIncrementalOutput) {
+                        builder.nameBuilder.setLength(0);
+                        builder.argsBuilder.setLength(0);
+                    }
+                    if (null != call.stub().name()) {
+                        builder.nameBuilder.append(call.stub().name());
+                    }
+                    if (null != call.stub().arguments()) {
+                        builder.argsBuilder.append(call.stub().arguments());
+                    }
+
+                });
+
+        final List<Tool.Call> calls = functionToolCallBuilderMap.values()
+                .stream()
+                .map(FunctionToolCallBuilder::toToolCall)
+                .collect(Collectors.toList());
 
         return new ToolCallMessage("", calls);
+    }
+
+    @AllArgsConstructor
+    private static class FunctionToolCallBuilder {
+        private final String id;
+        private final StringBuilder nameBuilder = new StringBuilder();
+        private final StringBuilder argsBuilder = new StringBuilder();
+
+        public Tool.Call toToolCall() {
+            return new ChatFunctionTool.Call(
+                    id,
+                    new ChatFunctionTool.Call.Stub(
+                            nameBuilder.toString(),
+                            argsBuilder.toString()
+                    ));
+        }
+
     }
 
 }

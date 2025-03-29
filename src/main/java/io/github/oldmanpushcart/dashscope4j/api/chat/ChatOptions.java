@@ -63,4 +63,11 @@ public interface ChatOptions {
      */
     Option.SimpleOpt<ChatSearchOption> SEARCH_OPTIONS = new Option.SimpleOpt<>("search_options", ChatSearchOption.class);
 
+    /**
+     * 启用并发工具调用
+     *
+     * @since 3.1.0
+     */
+    Option.SimpleOpt<Boolean> ENABLE_PARALLEL_TOOL_CALLS = new Option.SimpleOpt<>("parallel_tool_calls", Boolean.class);
+
 }

@@ -21,29 +21,31 @@ import lombok.experimental.Accessors;
 public class ToolMessage extends Message {
 
     /**
-     * 工具名称
+     * 调用ID
+     *
+     * @since 3.1.0
      */
-    @JsonProperty
-    String name;
+    @JsonProperty("tool_call_id")
+    String id;
 
     /**
      * 构造工具应答消息
      *
+     * @param id   调用ID
      * @param text 应答结果
-     * @param name 工具名称
      */
     @JsonCreator
     public ToolMessage(
 
-            @JsonProperty("content")
-            String text,
+            @JsonProperty("tool_call_id")
+            String id,
 
-            @JsonProperty("name")
-            String name
+            @JsonProperty("content")
+            String text
 
     ) {
         super(Role.TOOL, Content.ofText(text));
-        this.name = name;
+        this.id = id;
     }
 
 }
