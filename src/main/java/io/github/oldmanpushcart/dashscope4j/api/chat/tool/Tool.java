@@ -40,6 +40,12 @@ public interface Tool {
     interface Call {
 
         /**
+         * @return 工具调用索引
+         * @since 3.1.0
+         */
+        int index();
+
+        /**
          * @return 调用ID
          * @since 3.1.0
          */

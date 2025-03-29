@@ -46,6 +46,26 @@ public class ChatToolCallTestCase extends ClientSupport {
 
         DashscopeAssertions.assertByDashscope(client, "数学的成绩是88.0分，语文的成绩是100.0分", stringBuf.toString());
 
+    }
+
+    @Test
+    public void test$chat$tool$function$flow$incremental() {
+
+        final ChatRequest request = ChatRequest.newBuilder()
+                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .option(ChatOptions.ENABLE_PARALLEL_TOOL_CALLS, true)
+                .model(ChatModel.QWEN_TURBO)
+                .addFunction(new QueryScoreFunction())
+                .addMessage(Message.ofUser("查询数学和语文的成绩"))
+                .build();
+
+        final StringBuilder stringBuf = new StringBuilder();
+        client.chat().directFlow(request)
+                .map(response-> response.output().best().message().text())
+                .doOnNext(stringBuf::append)
+                .blockingSubscribe();
+
+        DashscopeAssertions.assertByDashscope(client, "数学的成绩是88.0分，语文的成绩是100.0分", stringBuf.toString());
 
     }
 

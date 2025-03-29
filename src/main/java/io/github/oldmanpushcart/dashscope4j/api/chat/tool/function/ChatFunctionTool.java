@@ -46,6 +46,9 @@ public class ChatFunctionTool implements Tool {
     @Jacksonized
     public static class Call implements Tool.Call {
 
+        @JsonProperty("index")
+        int index;
+
         @JsonProperty("id")
         String id;
 
