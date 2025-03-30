@@ -35,7 +35,7 @@ public class GenImageRequest extends AlgoRequest<GenImageModel, GenImageResponse
         return new ObjectMap() {{
             put("prompt", prompt);
             put("negative_prompt", negative);
-            put("ref_image", reference);
+            put("ref_img", reference);
         }};
     }
 
