@@ -4,8 +4,12 @@ import jakarta.validation.constraints.NotNull;
 import okhttp3.*;
 import okio.*;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -66,6 +70,70 @@ public class HttpUtils {
                     future.completeExceptionally(e);
                 }
             }
+        });
+        return future;
+    }
+
+    /**
+     * 从远程文件下载到临时文件
+     *
+     * @param http   http客户端
+     * @param remote 文件地址
+     * @return 下载操作
+     * @since 3.1.0
+     */
+    public static CompletionStage<File> fetchAsTempFile(OkHttpClient http, URI remote) {
+        return fetchAsTempFile(http, remote, (bytesRead, contentLength, done) -> {
+        });
+    }
+
+    /**
+     * 从远程文件下载到临时文件
+     *
+     * @param http     http客户端
+     * @param remote   文件地址
+     * @param listener 进度监听器
+     * @return 下载操作
+     * @since 3.1.0
+     */
+    public static CompletionStage<File> fetchAsTempFile(OkHttpClient http, URI remote, ProgressListener listener) {
+        final Request request = new Request.Builder()
+                .url(remote.toString())
+                .get()
+                .build();
+        final CompletableFuture<File> future = new CompletableFuture<>();
+        http.newCall(request).enqueue(new Callback() {
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                future.completeExceptionally(e);
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    future.completeExceptionally(new IOException(String.format("Unexpected code: %s", response.code())));
+                    return;
+                }
+
+                final byte[] buffer = new byte[1024];
+                final File tempFile = File.createTempFile("dashscope4j", ".download.tmp");
+                final ResponseBody progressResponseBody = new ProgressResponseBody(response.body(), listener);
+                try (final InputStream input = progressResponseBody.byteStream();
+                     final OutputStream output = Files.newOutputStream(tempFile.toPath())) {
+                    int bytesRead;
+
+                    // 逐步读取并写入文件
+                    while ((bytesRead = input.read(buffer)) != -1) {
+                        output.write(buffer, 0, bytesRead);
+                    }
+
+                }
+
+                // 完成下载，返回临时文件
+                future.complete(tempFile);
+            }
+
         });
         return future;
     }
