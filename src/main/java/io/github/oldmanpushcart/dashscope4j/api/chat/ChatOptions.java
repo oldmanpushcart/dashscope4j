@@ -1,6 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.Option;
+
+import java.util.HashMap;
 
 public interface ChatOptions {
 
@@ -69,5 +72,32 @@ public interface ChatOptions {
      * @since 3.1.0
      */
     Option.SimpleOpt<Boolean> ENABLE_PARALLEL_TOOL_CALLS = new Option.SimpleOpt<>("parallel_tool_calls", Boolean.class);
+
+    /**
+     * 返回格式
+     *
+     * @since 3.1.0
+     */
+    Option.StdOpt<ResponseFormat, Object> RESPONSE_FORMAT = new Option.StdOpt<>(
+            "response_format",
+            Object.class,
+            responseFormat -> new HashMap<String, ResponseFormat>() {{
+                put("type", responseFormat);
+            }});
+
+    /**
+     * 返回格式
+     *
+     * @since 3.1.0
+     */
+    enum ResponseFormat {
+
+        @JsonProperty("text")
+        TEXT,
+
+        @JsonProperty("json_object")
+        JSON
+
+    }
 
 }

@@ -124,5 +124,16 @@ public class ChatModel implements Model {
      */
     public static final ChatModel QWEN2_AUDIO_INSTRUCT = ofMultimodal("qwen2-audio-instruct");
 
+    /**
+     * QWQ-PLUS
+     * <p>通义千问对话模型推理（稳定版）</p>
+     */
+    public static final ChatModel QWQ_PLUS = ofText("qwq-plus");
+
+    /**
+     * QWQ-PLUS-LATEST
+     * <p>通义千问对话模型推理（最新版）</p>
+     */
+    public static final ChatModel QWQ_PLUS_LATEST = ofText("qwq-plus-latest");
 
 }

@@ -111,7 +111,7 @@ class ToolCaller implements ChatFunction.Caller {
         });
 
         final ChatResponse.Output output = new ChatResponse.Output(
-                response.output().search(),
+                response.output().searchInfo(),
                 unmodifiableList(choices)
         );
         return new ChatResponse(

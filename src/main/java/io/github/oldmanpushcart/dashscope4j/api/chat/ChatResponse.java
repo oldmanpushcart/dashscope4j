@@ -97,7 +97,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
     @JsonDeserialize(using = ChatResponseOutputJsonDeserializer.class)
     public static class Output {
 
-        SearchInfo search;
+        SearchInfo searchInfo;
 
         /**
          * 候选结果集
@@ -141,7 +141,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
          * @since 3.1.0
          */
         public Output(SearchInfo search, List<Choice> choices) {
-            this.search = search;
+            this.searchInfo = search;
             this.choices = unmodifiableList(choices);
         }
 
@@ -149,6 +149,16 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
             return Optional.ofNullable(choices)
                     .flatMap(choices -> choices.stream().sorted().findFirst())
                     .orElse(null);
+        }
+
+        /**
+         * @return 是否有搜索信息
+         * @since 3.1.0
+         */
+        public boolean hasSearchInfo() {
+            return Objects.nonNull(searchInfo)
+                   && Objects.nonNull(searchInfo.results())
+                   && !searchInfo.results().isEmpty();
         }
 
     }
@@ -281,7 +291,9 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
                 List<SearchResult> results
 
         ) {
-            this.results = Collections.unmodifiableList(results);
+            this.results = Objects.isNull(results)
+                    ? Collections.emptyList()
+                    : Collections.unmodifiableList(results);
         }
 
     }

@@ -141,16 +141,16 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
             extends ApiRequest.Builder<T, B> {
 
         private M model;
-        private final Option option;
+        private final Option option = new Option();
 
         protected Builder() {
-            this.option = new Option();
+
         }
 
         protected Builder(T request) {
             super(request);
             this.model = request.model();
-            this.option = request.option().clone();
+            this.option.merge(request.option());
         }
 
         /**
