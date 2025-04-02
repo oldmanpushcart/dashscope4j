@@ -77,7 +77,7 @@ public class MessageCodec {
         final JsonNode contentNode = messageNode.required("content");
         final Message.Role role = JacksonJsonUtils.toObject(roleNode, Message.Role.class);
 
-        // 处理多模态内容
+        // 处理多内容（一般是多模态）
         if (contentNode.isArray()) {
             final Content<?>[] contents = JacksonJsonUtils.toObject(contentNode, Content[].class);
             return new Message(role, Arrays.asList(contents));
