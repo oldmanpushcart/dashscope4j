@@ -149,9 +149,12 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         }
 
         // 工具必选参数
-        if (!tools.isEmpty()) {
+        final List<Tool> enabledTools = tools.stream()
+                .filter(Tool::isEnabled)
+                .collect(Collectors.toList());
+        if (!enabledTools.isEmpty()) {
             option.option("result_format", "message");
-            option.option("tools", tools);
+            option.option("tools", enabledTools);
         }
 
         return new Option()

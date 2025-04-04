@@ -30,6 +30,11 @@ public class ChatFunctionTool implements Tool {
 
     ChatFunction<?, ?> function;
 
+    @Override
+    public boolean isEnabled() {
+        return function.isEnabled();
+    }
+
     @JsonProperty("type")
     @Override
     public Classify classify() {

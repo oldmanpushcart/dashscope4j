@@ -11,6 +11,14 @@ import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionT
 public interface Tool {
 
     /**
+     * @return 工具是否可用
+     * @since 3.1.0
+     */
+    default boolean isEnabled() {
+        return true;
+    }
+
+    /**
      * @return 工具分类
      */
     Classify classify();
