@@ -4,14 +4,27 @@
 ![JDK8+](https://img.shields.io/badge/JDK-8+-blue.svg)
 ![LLM-通义千问](https://img.shields.io/badge/LLM-%E9%80%9A%E4%B9%89%E5%8D%83%E9%97%AE-blue.svg)
 
-`Dashscope4j`是一个开源的灵积非官方 Java SDK，基于 JDK8 构建。 它旨在提供一个功能丰富、易于集成和使用的Java库，
+**Dashscope4j** 是一个开源的灵积非官方 Java SDK，基于 JDK8 构建。 它旨在提供一个功能丰富、易于集成和使用的Java库，
 以便Java开发者能轻松调用灵积平台的多模态对话、向量嵌入和图像处理等模型API。
+
+我个人使用于自己的智能助理项目：[MOSS-桌面个人助手](https://github.com/oldmanpushcart/moss)
 
 > 请注意：在使用 Dashscope4j 时，你需要遵守灵积的使用条款和条件。
 
 ## 一、功能特性
 
-Dashscope4j 支持以下API功能：
+### Dashscope4j 独有功能特性
+
+- **增强FunctionCall**
+  - 本地函数：注解或构造器方式声明 FunctionCall
+  - 多级调用：当大模型需要串联、并行调用多个函数时，自动帮你完成多级请求串联
+- **支持请求拦截器**
+  - OkHttp拦截器
+  - Dashscope请求拦截器
+- 增强对话请求：多模态的对话生成编码统一风格
+- 响应式编程风格：友好的任务、同步、异步、流、数据双工通讯请求API
+
+### Dashscope4j 支持以下阿里云百炼平台以下API功能
 
 - **对话（Chat）**
   - 提供用户与灵积进行多模态(图、音、文)对话
@@ -23,6 +36,11 @@ Dashscope4j 支持以下API功能：
 
 - **图像（Images）**
   - **文生图：** 将文本描述转换为相应的图像
+  - **图生图：** 将文本描述和参考图片转换为相应的图像
+
+- **视频（Video）**
+  - **文生视频：** 将文本描述转换为相应的视频
+  - **图生视频：** 将文本描述和参考图片转换为相应的视频
 
 - **语音识别与合成**
   - 实时、非实时语音识别、合成
@@ -119,7 +137,8 @@ public static void main(String... args) {
 
 1. ~~官方的SDK并不开源，你无法查看其源码，也无法自行修改和定制~~
    > 官方的SDK已经开源了，你可以查看 [dashscope-sdk-java](https://github.com/dashscope/dashscope-sdk-java)
-2. 个人练手习惯，反正也不花我多少时间，嗯嗯
+2. 我个人更喜欢响应式的编程风格，也更喜欢chain式的API声明
+3. 个人练手习惯，反正也不花我多少时间
 
 ## 七、相关链接
 

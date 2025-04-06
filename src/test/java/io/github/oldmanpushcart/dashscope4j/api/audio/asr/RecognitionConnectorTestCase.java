@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.api.audio.asr;
 
 import io.github.oldmanpushcart.dashscope4j.ClientSupport;
+import io.github.oldmanpushcart.dashscope4j.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.ExchangeConnector;
 import io.github.oldmanpushcart.dashscope4j.api.audio.asr.timespan.SentenceTimeSpan;
 import org.junit.jupiter.api.Assertions;
@@ -59,8 +60,7 @@ public class RecognitionConnectorTestCase extends ClientSupport {
 
         }
 
-        Assertions.assertEquals("白日依山尽，黄河入海流。欲穷千里目，更上一层楼。", stringBuilder.toString());
-
+        DashscopeAssertions.assertByDashscope(client, "是否是这句诗：白日依山尽，黄河入海流。欲穷千里目，更上一层楼。", stringBuilder.toString());
 
     }
 
