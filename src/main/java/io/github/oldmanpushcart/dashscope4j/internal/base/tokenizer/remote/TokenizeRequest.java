@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.internal.base.tokenizer.remote;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -11,7 +12,6 @@ import okhttp3.Request;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 
 import static java.util.Collections.unmodifiableList;
@@ -31,10 +31,10 @@ class TokenizeRequest extends AlgoRequest<ChatModel, TokenizeResponse> {
 
     @Override
     protected Object input() {
-        return new HashMap<Object, Object>() {{
+        return new ObjectMap() {{
             put("messages", new ArrayList<Object>() {{
                 for (final Message message : messages) {
-                    add(new HashMap<Object, Object>() {{
+                    add(new ObjectMap() {{
                         put("role", message.role());
                         put("content", message.text());
                     }});
@@ -58,9 +58,8 @@ class TokenizeRequest extends AlgoRequest<ChatModel, TokenizeResponse> {
         return new Builder(request);
     }
 
-    public static class Builder extends AlgoRequest.Builder<ChatModel, TokenizeRequest, Builder> {
+    static class Builder extends AlgoRequest.Builder<ChatModel, TokenizeRequest, Builder> {
 
-        private ChatModel model;
         private final List<Message> messages = new ArrayList<>();
 
         private Builder() {

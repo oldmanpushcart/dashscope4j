@@ -24,6 +24,11 @@ public interface RecognitionOptions {
     Option.SimpleOpt<Boolean> ENABLE_DISFLUENCY_REMOVAL = new Option.SimpleOpt<>("disfluency_removal_enabled", Boolean.class);
 
     /**
+     * 是否启用语义断句
+     */
+    Option.SimpleOpt<Boolean> ENABLE_SEMANTIC_PUNCTUATION = new Option.SimpleOpt<>("semantic_punctuation_enabled", Boolean.class);
+
+    /**
      * 指定识别语音中的语言代码列表
      * <p>
      *     <ul>

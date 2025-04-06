@@ -2,11 +2,11 @@ package io.github.oldmanpushcart.dashscope4j.api.embedding.text;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * 向量计算结果

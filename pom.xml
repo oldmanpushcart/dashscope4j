@@ -4,7 +4,7 @@
     <groupId>io.github.oldmanpushcart</groupId>
     <artifactId>dashscope4j</artifactId>
     <packaging>jar</packaging>
-    <version>3.0.0</version>
+    <version>3.1.0</version>
     <name>dashscope4j ${project.version}</name>
 
     <description>Java library for DashScope</description>
@@ -34,7 +34,7 @@
     <properties>
         <release.jdk.version>8</release.jdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jackson.version>2.18.2</jackson.version>
+        <jackson.version>2.18.3</jackson.version>
         <lombok.version>1.18.36</lombok.version>
         <okhttp.version>4.12.0</okhttp.version>
         <okio.version>3.6.0</okio.version>
@@ -103,7 +103,7 @@
                 <version>3.13.0</version>
                 <executions>
                     <execution>
-                        <id>compile-default</id>
+                        <id>compile-java8</id>
                         <goals>
                             <goal>compile</goal>
                         </goals>
@@ -210,7 +210,7 @@
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-jsonSchema</artifactId>
+            <artifactId>jackson-module-jsonSchema-jakarta</artifactId>
             <version>${jackson.version}</version>
         </dependency>
         <dependency>

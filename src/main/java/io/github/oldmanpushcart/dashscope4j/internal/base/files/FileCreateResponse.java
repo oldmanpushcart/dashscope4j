@@ -39,10 +39,10 @@ class FileCreateResponse extends OpenAiResponse<FileMeta> {
             String name,
 
             @JsonProperty("bytes")
-            Long size,
+            long size,
 
             @JsonProperty("created_at")
-            Integer created,
+            int created,
 
             @JsonProperty("purpose")
             Purpose purpose

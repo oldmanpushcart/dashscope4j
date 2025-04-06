@@ -25,7 +25,7 @@ class FileDeleteRequest extends OpenAiRequest<FileDeleteResponse> {
 
     private FileDeleteRequest(Builder builder) {
         super(FileDeleteResponse.class, builder);
-        this.identity = builder.identity;
+        this.identity = requireNonNull(builder.identity);
     }
 
     @Override
@@ -41,15 +41,7 @@ class FileDeleteRequest extends OpenAiRequest<FileDeleteResponse> {
     public BiFunction<Response, String, FileDeleteResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
             log.debug("dashscope://base/files/delete/{} <<< {}", identity, bodyJson);
-            final FileDeleteResponse response = JacksonJsonUtils.toObject(bodyJson, FileDeleteResponse.class, httpResponse);
-
-            /*
-             * 如果删除文件失败的原因是文件不存在，则认为删除操作成功
-             * output = false
-             */
-            return !response.isSuccess() && httpResponse.code() == 404
-                    ? new FileDeleteResponse(response.uuid(), null, false)
-                    : response;
+            return JacksonJsonUtils.toObject(bodyJson, FileDeleteResponse.class, httpResponse);
         };
     }
 
@@ -61,7 +53,7 @@ class FileDeleteRequest extends OpenAiRequest<FileDeleteResponse> {
         return new Builder(request);
     }
 
-    public static class Builder extends OpenAiRequest.Builder<FileDeleteRequest, Builder> {
+    static class Builder extends OpenAiRequest.Builder<FileDeleteRequest, Builder> {
 
         private String identity;
 
@@ -81,7 +73,6 @@ class FileDeleteRequest extends OpenAiRequest<FileDeleteResponse> {
 
         @Override
         public FileDeleteRequest build() {
-            requireNonNull(identity);
             return new FileDeleteRequest(this);
         }
     }

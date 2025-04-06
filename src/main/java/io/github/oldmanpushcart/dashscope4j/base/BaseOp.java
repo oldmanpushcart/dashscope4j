@@ -10,6 +10,12 @@ import io.github.oldmanpushcart.dashscope4j.base.tokenizer.TokenizerOp;
 public interface BaseOp {
 
     /**
+     * @return http客户端
+     * @since 3.1.0
+     */
+    okhttp3.OkHttpClient http();
+
+    /**
      * @return 标记操作
      */
     TokenizerOp tokenize();

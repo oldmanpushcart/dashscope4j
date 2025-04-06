@@ -3,13 +3,15 @@ package io.github.oldmanpushcart.dashscope4j.api.chat.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.github.oldmanpushcart.dashscope4j.internal.util.ObjectMap;
 import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 消息内容
@@ -53,8 +55,8 @@ public class Content<T> {
      * @return Json Object Map
      */
     @JsonValue
-    Map<Object, Object> extract() {
-        return new HashMap<Object, Object>() {{
+    ObjectMap extract() {
+        return new ObjectMap() {{
             put(type, data);
         }};
     }
@@ -66,13 +68,41 @@ public class Content<T> {
      * @return 内容
      */
     @JsonCreator
-    static Content<?> of(Map<Type, String> map) {
+    static Content<?> of(Map<Type, Object> map) {
         return map.entrySet().stream()
-                .filter(entry -> entry.getKey() == Type.TEXT)
-                .map(entry -> ofText(entry.getValue()))
+                .map(entry -> {
+
+                    final Type type = entry.getKey();
+                    final Object data = entry.getValue();
+
+                    // 文本内容为字符串
+                    if (type == Type.TEXT) {
+                        return new Content<>(type, data.toString());
+                    }
+
+                    // 多模态的数据内容为URI
+                    if (type == Type.IMAGE || type == Type.AUDIO || type == Type.FILE || type == Type.VIDEO) {
+                        if (data instanceof Collection) {
+                            final Collection<?> collection = (Collection<?>) data;
+                            final Collection<URI> URIs = collection
+                                    .stream()
+                                    .map(item -> URI.create(item.toString()))
+                                    .collect(Collectors.toList());
+                            return new Content<>(type, URIs);
+                        } else {
+                            return new Content<>(type, URI.create(data.toString()));
+                        }
+                    }
+
+                    // 其他类型不做反序列化支持
+                    return null;
+
+                })
+                .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
     }
+
 
     /**
      * 文本

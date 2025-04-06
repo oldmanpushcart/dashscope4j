@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.api.audio.asr;
 
 import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -9,9 +10,9 @@ import lombok.experimental.Accessors;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils.requireNonEmptyCollection;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
@@ -28,12 +29,13 @@ public class TranscriptionRequest extends AlgoRequest<TranscriptionModel, Transc
 
     private TranscriptionRequest(Builder builder) {
         super(TranscriptionResponse.class, builder);
+        requireNonEmptyCollection(builder.resources, "resources is empty!");
         this.resources = unmodifiableList(builder.resources);
     }
 
     @Override
     protected Object input() {
-        return new HashMap<String, Object>() {{
+        return new ObjectMap() {{
             put("file_urls", resources);
         }};
     }

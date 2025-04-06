@@ -1,61 +1,32 @@
 package io.github.oldmanpushcart.dashscope4j.internal;
 
-import io.github.oldmanpushcart.dashscope4j.Cache;
 import io.github.oldmanpushcart.dashscope4j.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.Interceptor;
+import jakarta.validation.constraints.NotNull;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
-import static io.github.oldmanpushcart.dashscope4j.internal.util.HttpUtils.loggingHttpRequest;
-import static io.github.oldmanpushcart.dashscope4j.internal.util.HttpUtils.loggingHttpResponse;
 import static java.util.Objects.requireNonNull;
 
+@Slf4j
 public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
 
     private String ak;
-    private Supplier<Cache> cacheFactory = () -> new LruCacheImpl(4096);
     private final List<Interceptor> interceptors = new ArrayList<>();
     private final OkHttpClient.Builder okHttpClientBuilder
             = new OkHttpClient.Builder()
-            .addInterceptor(new okhttp3.Interceptor() {
-                @NotNull
-                @Override
-                public Response intercept(@NotNull Chain chain) throws IOException {
-                    try {
-                        final Request request = chain.request();
-                        loggingHttpRequest(request);
-                        final Response response = chain.proceed(request);
-                        loggingHttpResponse(response, null);
-                        return response;
-                    } catch (Exception ex) {
-                        loggingHttpResponse(null, ex);
-                        if (ex instanceof IOException) {
-                            throw (IOException) ex;
-                        } else {
-                            throw new IOException(ex);
-                        }
-                    }
-                }
-            });
+            .addInterceptor(new LogHttpInterceptor());
 
     @Override
     public DashscopeClient.Builder ak(String ak) {
         this.ak = requireNonNull(ak);
-        return this;
-    }
-
-    @Override
-    public DashscopeClient.Builder cacheFactory(Supplier<Cache> factory) {
-        this.cacheFactory = requireNonNull(factory);
         return this;
     }
 
@@ -89,24 +60,12 @@ public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
 
     @Override
     public DashscopeClient build() {
-        requireNonNull(ak, "require ak");
-        Cache cache = null;
         OkHttpClient http = null;
         try {
-
-            cache = cacheFactory.get();
             http = okHttpClientBuilder.build();
-            return new DashscopeClientImpl(ak, cache, interceptors, http);
+            return new DashscopeClientImpl(ak, interceptors, http);
 
         } catch (Throwable ex) {
-
-            if (null != cache) {
-                try {
-                    cache.close();
-                } catch (IOException e) {
-                    // ignore
-                }
-            }
 
             if (null != http) {
                 http.dispatcher()
@@ -120,4 +79,81 @@ public class DashscopeClientBuilderImpl implements DashscopeClient.Builder {
 
     }
 
+    private static class LogHttpInterceptor implements okhttp3.Interceptor {
+        @NotNull
+        @Override
+        public Response intercept(@NotNull Chain chain) throws IOException {
+            try {
+                final Request request = chain.request();
+                loggingHttpRequest(request);
+                final Response response = chain.proceed(request);
+                loggingHttpResponse(response, null);
+                return response;
+            } catch (Exception ex) {
+                loggingHttpResponse(null, ex);
+                if (ex instanceof IOException) {
+                    throw (IOException) ex;
+                } else {
+                    throw new IOException(ex);
+                }
+            }
+        }
+
+        private Map<String, String> parseHeaderMap(Headers headers) {
+            final Map<String, String> headerMap = new LinkedHashMap<>();
+            headers.forEach(header -> {
+                final String name = header.getFirst();
+                final String value = header.getSecond();
+                if ("Authorization".equalsIgnoreCase(name)) {
+                    headerMap.put("Authorization", "Bearer ******");
+                    return;
+                }
+                headerMap.put(name, value);
+            });
+            return headerMap;
+        }
+
+        private void loggingHttpRequest(Request request) {
+
+            if (!log.isTraceEnabled()) {
+                return;
+            }
+
+            log.trace("HTTP:// >>> {} {} {}",
+                    request.method(),
+                    request.url(),
+                    parseHeaderMap(request.headers()).entrySet().stream()
+                            .map(entry -> entry.getKey() + ": " + entry.getValue())
+                            .reduce((a, b) -> a + ", " + b)
+                            .orElse("")
+            );
+
+        }
+
+        private void loggingHttpResponse(Response response, Throwable ex) {
+
+            if (!log.isTraceEnabled()) {
+                return;
+            }
+
+            // HTTP错误
+            if (null != ex) {
+                log.trace("HTTP:// << {}", ex.getLocalizedMessage());
+            }
+
+            // HTTP应答
+            else {
+                log.trace("HTTP:// <<< {} {} {}",
+                        response.code(),
+                        response.message(),
+                        parseHeaderMap(response.headers()).entrySet().stream()
+                                .map(entry -> entry.getKey() + ": " + entry.getValue())
+                                .reduce((a, b) -> a + ", " + b)
+                                .orElse("")
+                );
+            }
+
+        }
+
+    }
 }

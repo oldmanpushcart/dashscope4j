@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Properties;
 
+/**
+ * 常量
+ */
 public class Constants {
 
     private final static Properties properties = new Properties();
@@ -29,5 +32,15 @@ public class Constants {
      * WEBSOCKET服务器地址
      */
     public static final URI WSS_REMOTE = URI.create("wss://dashscope.aliyuncs.com/api-ws/v1/inference/");
+
+    /**
+     * 采样率：48K
+     */
+    public static final int SAMPLE_RATE_48K = 48000;
+
+    /**
+     * 采样率：16K
+     */
+    public static final int SAMPLE_RATE_16K = 16000;
 
 }

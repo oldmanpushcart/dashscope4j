@@ -13,10 +13,12 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+import java.util.Collections;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.MT_APPLICATION_JSON;
+import static java.util.Objects.requireNonNull;
 
 /**
  * 算法请求
@@ -55,6 +57,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
      */
     protected AlgoRequest(Class<R> responseType, Builder<M, ?, ?> builder) {
         super(responseType, builder);
+        requireNonNull(builder.model, "model is required!");
         this.model = builder.model;
         this.option = builder.option;
     }
@@ -80,6 +83,21 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
                 .merge(model.option())
                 .merge(option)
                 .unmodifiable();
+    }
+
+    /**
+     * 生成Api请求中的数据
+     * <pre><code>
+     *     {
+     *         "input":{}
+     *     }
+     * </code></pre>
+     *
+     * @return Input
+     */
+    @JsonProperty("input")
+    protected Object input() {
+        return Collections.emptyMap();
     }
 
     @Override
@@ -123,15 +141,16 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
             extends ApiRequest.Builder<T, B> {
 
         private M model;
-        private final Option option;
+        private final Option option = new Option();
 
         protected Builder() {
-            this.option = new Option();
+
         }
 
         protected Builder(T request) {
+            super(request);
             this.model = request.model();
-            this.option = request.option().clone();
+            this.option.merge(request.option());
         }
 
         /**
@@ -141,6 +160,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
          * @return this
          */
         public B model(M model) {
+            requireNonNull(model, "model is required!");
             this.model = model;
             return self();
         }

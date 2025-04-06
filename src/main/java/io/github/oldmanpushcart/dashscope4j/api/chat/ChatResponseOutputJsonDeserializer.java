@@ -6,10 +6,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse.Choice;
-import io.github.oldmanpushcart.dashscope4j.api.chat.message.*;
-import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.Plugin;
-import io.github.oldmanpushcart.dashscope4j.api.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.util.MessageCodec;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Value;
@@ -23,7 +21,7 @@ import java.util.Objects;
 
 import static java.util.Collections.unmodifiableList;
 
-public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.Output> {
+class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.Output> {
 
     private static final OutputDeserializer[] deserializers = new OutputDeserializer[]{
             new TextFormatOutputDeserializer(),
@@ -53,6 +51,10 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
 
         @Override
         public ChatResponse.Output deserialize(DeserializationContext context, JsonNode node) throws IOException {
+
+            final JsonNode searchNode = node.get("search_info");
+            final ChatResponse.SearchInfo search = context.readTreeAsValue(searchNode, ChatResponse.SearchInfo.class);
+
             final JsonNode choicesNode = node.get("choices");
 
             // 如果没有 choices 节点，说明不是 message
@@ -69,24 +71,9 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
 
                 // 单消息
                 if (choiceNode.has("message")) {
-
                     final JsonNode messageNode = choiceNode.required("message");
-                    final JsonNode contentNode = messageNode.required("content");
-
-                    // 处理多模态内容
-                    if (contentNode.isArray()) {
-                        final InnerMultiMessage inMultiMessage = context.readTreeAsValue(messageNode, InnerMultiMessage.class);
-                        final Message message = new Message(inMultiMessage.role, inMultiMessage.contents());
-                        choices.add(new Choice(finish, message));
-                    }
-
-                    // 处理文本内容
-                    else {
-                        final InnerTextMessage inTextMessage = context.readTreeAsValue(messageNode, InnerTextMessage.class);
-                        final Message message = deserializeMessage(context, messageNode, inTextMessage);
-                        choices.add(new Choice(finish, message));
-                    }
-
+                    final Message message = MessageCodec.decode(messageNode);
+                    choices.add(new Choice(finish, message));
                 }
 
                 // 多消息：见于plugin场景
@@ -94,8 +81,7 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
                     final JsonNode messagesNode = choiceNode.required("messages");
                     final List<Message> messages = new ArrayList<>();
                     for (final JsonNode messageNode : messagesNode) {
-                        final InnerTextMessage inTextMessage = context.readTreeAsValue(messageNode, InnerTextMessage.class);
-                        final Message message = deserializeMessage(context, messageNode, inTextMessage);
+                        final Message message = MessageCodec.decode(messageNode);
                         messages.add(message);
                     }
                     choices.add(new Choice(finish, unmodifiableList(messages)));
@@ -104,79 +90,7 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
             }
 
             // 返回应答数据
-            return new ChatResponse.Output(unmodifiableList(choices));
-        }
-
-        private Message deserializeMessage(DeserializationContext context, JsonNode messageNode, InnerTextMessage inTextMessage) throws IOException {
-
-            final String text = inTextMessage.text();
-
-            // 处理插件应答消息
-            if (inTextMessage.role() == Message.Role.PLUGIN) {
-                final String name = messageNode.required("name").asText();
-                final Plugin.Status status = context.readTreeAsValue(messageNode.required("status"), Plugin.Status.class);
-                return new PluginMessage(text, name, status);
-            }
-
-            // 处理插件请求消息
-            else if (inTextMessage.role() == Message.Role.AI && messageNode.hasNonNull("plugin_call")) {
-                final Plugin.Call call = context.readTreeAsValue(messageNode.required("plugin_call"), Plugin.Call.class);
-                return new PluginCallMessage(text, call);
-            }
-
-            // 处理工具应答消息
-            else if (inTextMessage.role() == Message.Role.TOOL) {
-                final String name = messageNode.required("name").asText();
-                return new ToolMessage(text, name);
-            }
-
-            // 处理工具请求消息
-            else if (inTextMessage.role() == Message.Role.AI && messageNode.has("tool_calls")) {
-                final JsonNode toolCallsNode = messageNode.required("tool_calls");
-                final List<Tool.Call> toolCalls = new ArrayList<>();
-                for (final JsonNode toolCallNode : toolCallsNode) {
-                    if ("function".equals(toolCallNode.required("type").asText())) {
-                        final ChatFunctionTool.Call call = context.readTreeAsValue(toolCallNode, ChatFunctionTool.Call.class);
-                        toolCalls.add(call);
-                    }
-                }
-                return new ToolCallMessage(text, unmodifiableList(toolCalls));
-            }
-
-            // 处理普通消息
-            else {
-                final Message.Role role = inTextMessage.role();
-                return new Message(role, Content.ofText(text));
-            }
-
-        }
-
-        @Value
-        @Accessors(fluent = true)
-        @Builder(access = AccessLevel.PRIVATE)
-        @Jacksonized
-        private static class InnerMultiMessage {
-
-            @JsonProperty
-            Message.Role role;
-
-            @JsonProperty("content")
-            List<Content<?>> contents;
-            
-        }
-
-        @Value
-        @Accessors(fluent = true)
-        @Builder(access = AccessLevel.PRIVATE)
-        @Jacksonized
-        private static class InnerTextMessage {
-
-            @JsonProperty
-            Message.Role role;
-
-            @JsonProperty("content")
-            String text;
-
+            return new ChatResponse.Output(search, unmodifiableList(choices));
         }
 
     }
@@ -185,6 +99,10 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
 
         @Override
         public ChatResponse.Output deserialize(DeserializationContext context, JsonNode node) throws IOException {
+
+            final JsonNode searchNode = node.get("search_info");
+            final ChatResponse.SearchInfo search = context.readTreeAsValue(searchNode, ChatResponse.SearchInfo.class);
+
             final JsonNode choicesNode = node.get("choices");
 
             // 如果有 choices 节点，说明不是 text only
@@ -194,7 +112,7 @@ public class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatRes
 
             final InnerOutput data = context.readTreeAsValue(node, InnerOutput.class);
             final Choice choice = new Choice(data.finish, Message.ofAi(data.text));
-            return new ChatResponse.Output(choice);
+            return new ChatResponse.Output(search, choice);
         }
 
         @Value

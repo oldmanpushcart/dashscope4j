@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.disposables.Disposable;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletionStage;
@@ -41,16 +43,80 @@ public interface Exchange<T> {
      *
      * @param data 数据
      * @return 是否成功
+     * @deprecated 请使用{@link #writeData(Object)}
      */
+    @Deprecated
     boolean write(T data);
+
+    /**
+     * 写入数据
+     *
+     * @param data 数据
+     * @return 是否成功
+     * @since 3.1.0
+     */
+    boolean writeData(T data);
 
     /**
      * 写入ByteBuffer
      *
      * @param buf ByteBuffer
      * @return 是否成功
+     * @deprecated 请使用{@link #writeByteBuffer(ByteBuffer)}
      */
+    @Deprecated
     boolean write(ByteBuffer buf);
+
+    /**
+     * 写入ByteBuffer
+     *
+     * @param buf ByteBuffer
+     * @return 是否成功
+     * @since 3.1.0
+     */
+    boolean writeByteBuffer(ByteBuffer buf);
+
+    /**
+     * 订阅并写入数据
+     *
+     * @param flow 数据流
+     * @return 订阅
+     * @since 3.1.0
+     */
+    default Disposable subscribeForWriteData(Flowable<T> flow) {
+        return subscribeForWriteData(flow, false);
+    }
+
+    /**
+     * 订阅并写入数据
+     *
+     * @param flow                数据流
+     * @param finishingAfterWrite 在写入完成后结束交换
+     * @return 订阅
+     * @since 3.1.0
+     */
+    Disposable subscribeForWriteData(Flowable<T> flow, boolean finishingAfterWrite);
+
+    /**
+     * 订阅并写入ByteBuffer
+     *
+     * @param flow ByteBuffer流
+     * @return 订阅
+     * @since 3.1.0
+     */
+    default Disposable subscribeForWriteByteBuffer(Flowable<ByteBuffer> flow) {
+        return subscribeForWriteByteBuffer(flow, false);
+    }
+
+    /**
+     * 订阅并写入ByteBuffer
+     *
+     * @param flow                ByteBuffer流
+     * @param finishingAfterWrite 在写入完成后结束交换
+     * @return 订阅
+     * @since 3.1.0
+     */
+    Disposable subscribeForWriteByteBuffer(Flowable<ByteBuffer> flow, boolean finishingAfterWrite);
 
     /**
      * 申请结束
@@ -86,6 +152,7 @@ public interface Exchange<T> {
      * @param ex 导致关闭的异常
      * @return 是否成功
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean closing(Throwable ex);
 
     /**

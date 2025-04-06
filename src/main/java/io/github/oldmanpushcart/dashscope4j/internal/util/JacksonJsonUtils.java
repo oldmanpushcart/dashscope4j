@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
-import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
+import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchema;
+import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchemaGenerator;
 
 import java.lang.reflect.Type;
 import java.util.*;
@@ -24,6 +24,9 @@ public class JacksonJsonUtils {
      * @return json
      */
     public static String compact(String json) {
+        if (null == json) {
+            return null;
+        }
         return toJson(toNode(json));
     }
 
@@ -81,14 +84,23 @@ public class JacksonJsonUtils {
         }
     }
 
+    /**
+     * {@code json -> T}
+     *
+     * @param json     json
+     * @param type     对象类型
+     * @param response HTTP响应
+     * @param <T>      对象类型
+     * @return 对象
+     */
     public static <T> T toObject(String json, Class<T> type, okhttp3.Response response) {
-        final Map<String, Object> headerMap = new HashMap<>();
-        response.headers().forEach(header -> headerMap.put(
+        final Map<String, Object> variableMap = new HashMap<>();
+        response.headers().forEach(header -> variableMap.put(
                 String.format("header/%s", header.getFirst()),
                 header.getSecond()
         ));
         try {
-            return mapper.reader(new InjectableValues.Std(headerMap)).forType(type).readValue(json);
+            return mapper.reader(new InjectableValues.Std(variableMap)).forType(type).readValue(json);
         } catch (JsonProcessingException cause) {
             throw new IllegalArgumentException("parse json to object failed!", cause);
         }
@@ -113,10 +125,11 @@ public class JacksonJsonUtils {
 
     /**
      * {@code node -> T}
+     *
      * @param node json node
      * @param type 对象类型
+     * @param <T>  对象类型
      * @return 目标对象
-     * @param <T> 对象类型
      */
     public static <T> T toObject(JsonNode node, Class<T> type) {
         try {

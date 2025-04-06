@@ -2,7 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.api.audio.asr;
 
 import io.github.oldmanpushcart.dashscope4j.Model;
 import io.github.oldmanpushcart.dashscope4j.Option;
-import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -15,7 +16,8 @@ import static io.github.oldmanpushcart.dashscope4j.api.audio.asr.TranscriptionOp
  */
 @Value
 @Accessors(fluent = true)
-@AllArgsConstructor
+@ToString
+@EqualsAndHashCode
 public class TranscriptionModel implements Model {
 
     String name;

@@ -64,10 +64,10 @@ class FileListResponse extends OpenAiResponse<List<FileMeta>> {
         String object;
 
         @JsonProperty("bytes")
-        Long bytes;
+        long bytes;
 
         @JsonProperty("created_at")
-        Integer created;
+        int created;
 
         @JsonProperty("filename")
         String filename;

@@ -7,10 +7,13 @@ import io.github.oldmanpushcart.dashscope4j.Usage;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoResponse;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
+import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -69,7 +72,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
         if (null == usage) {
             return null;
         }
-        
+
         final List<Usage.Item> items = usage.items()
                 .stream()
 
@@ -94,6 +97,8 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
     @JsonDeserialize(using = ChatResponseOutputJsonDeserializer.class)
     public static class Output {
 
+        SearchInfo searchInfo;
+
         /**
          * 候选结果集
          */
@@ -105,7 +110,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
          * @param choice 候选结果
          */
         public Output(Choice choice) {
-            this(singletonList(choice));
+            this(new SearchInfo(Collections.emptyList()), singletonList(choice));
         }
 
         /**
@@ -114,6 +119,29 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
          * @param choices 候选结果集
          */
         public Output(List<Choice> choices) {
+            this(new SearchInfo(Collections.emptyList()), choices);
+        }
+
+        /**
+         * 构造输出
+         *
+         * @param search 搜索信息
+         * @param choice 候选结果
+         * @since 3.1.0
+         */
+        public Output(SearchInfo search, Choice choice) {
+            this(search, singletonList(choice));
+        }
+
+        /**
+         * 构造输出
+         *
+         * @param search  搜索信息
+         * @param choices 候选结果集
+         * @since 3.1.0
+         */
+        public Output(SearchInfo search, List<Choice> choices) {
+            this.searchInfo = search;
             this.choices = unmodifiableList(choices);
         }
 
@@ -121,6 +149,16 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
             return Optional.ofNullable(choices)
                     .flatMap(choices -> choices.stream().sorted().findFirst())
                     .orElse(null);
+        }
+
+        /**
+         * @return 是否有搜索信息
+         * @since 3.1.0
+         */
+        public boolean hasSearchInfo() {
+            return Objects.nonNull(searchInfo)
+                   && Objects.nonNull(searchInfo.results())
+                   && !searchInfo.results().isEmpty();
         }
 
     }
@@ -229,6 +267,89 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
 
         Finish(int weight) {
             this.weight = weight;
+        }
+
+    }
+
+    /**
+     * 搜索信息
+     *
+     * @since 3.1.0
+     */
+    @Getter
+    @Accessors(fluent = true)
+    @ToString
+    @EqualsAndHashCode
+    public static class SearchInfo {
+
+        private final List<SearchResult> results;
+
+        @JsonCreator
+        public SearchInfo(
+
+                @JsonProperty("search_results")
+                List<SearchResult> results
+
+        ) {
+            this.results = Objects.isNull(results)
+                    ? Collections.emptyList()
+                    : Collections.unmodifiableList(results);
+        }
+
+    }
+
+    /**
+     * 搜索结果
+     *
+     * @since 3.1.0
+     */
+    @Getter
+    @Accessors(fluent = true)
+    @ToString
+    @EqualsAndHashCode
+    public static class SearchResult {
+
+        private final int index;
+        private final String name;
+        private final String title;
+        private final URI icon;
+        private final URI site;
+
+        @JsonCreator
+        public SearchResult(
+
+                @JsonProperty("index")
+                int index,
+
+                @JsonProperty("site_name")
+                String name,
+
+                @JsonProperty("title")
+                String title,
+
+                @JsonProperty("icon")
+                URI icon,
+
+                @JsonProperty("url")
+                URI site
+
+        ) {
+            this.index = index;
+            this.title = title;
+            this.site = site;
+
+            if (null != name && !name.isEmpty()) {
+                this.name = name;
+            } else {
+                this.name = site.getHost();
+            }
+
+            if (null != icon && !icon.toString().isEmpty()) {
+                this.icon = icon;
+            } else {
+                this.icon = null;
+            }
+
         }
 
     }

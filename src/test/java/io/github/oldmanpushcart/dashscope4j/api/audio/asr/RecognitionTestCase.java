@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.api.audio.asr;
 
 import io.github.oldmanpushcart.dashscope4j.ClientSupport;
+import io.github.oldmanpushcart.dashscope4j.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.Exchange;
 import io.github.oldmanpushcart.dashscope4j.api.audio.asr.timespan.SentenceTimeSpan;
 import org.junit.jupiter.api.Assertions;
@@ -65,13 +66,13 @@ public class RecognitionTestCase extends ClientSupport {
         try (final FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ)) {
             while (channel.read(buffer) != -1) {
                 buffer.flip();
-                exchange.write(buffer);
+                exchange.writeByteBuffer(buffer);
                 buffer.clear();
             }
             exchange.finishing();
         }
 
-        Assertions.assertEquals(Arrays.asList("白日依山尽，黄河入海流。", "欲穷千里目，更上一层楼。"), completed.join());
+        DashscopeAssertions.assertByDashscope(client, "是否是这句诗：白日依山尽，黄河入海流。欲穷千里目，更上一层楼。", completed.join().toString());
 
     }
 

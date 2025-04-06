@@ -1,17 +1,18 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.oldmanpushcart.dashscope4j.Option;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.util.MessageCodec;
 import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.ChatPlugin;
 import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -22,6 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.HTTP_HEADER_X_DASHSCOPE_PLUGIN;
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils.requireNonEmptyCollection;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
@@ -55,6 +57,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     private ChatRequest(Builder builder) {
         super(ChatResponse.class, builder);
+        requireNonEmptyCollection(builder.messages, "messages is empty!");
         this.messages = unmodifiableList(builder.messages);
         this.plugins = unmodifiableList(builder.plugins);
         this.tools = unmodifiableList(builder.tools);
@@ -62,7 +65,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     @Override
     protected Object input() {
-        return new HashMap<Object, Object>() {{
+        return new ObjectMap() {{
             put("messages", encodeMessages());
         }};
     }
@@ -105,25 +108,9 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
      */
     private List<JsonNode> encodeMessages() {
         final ChatModel.Mode mode = switchMode();
-        final List<JsonNode> nodes = new LinkedList<>();
-        messages.forEach(message -> {
-            final JsonNode messageNode = JacksonJsonUtils.toNode(message);
-            if (messageNode instanceof ObjectNode) {
-                final ObjectNode node = (ObjectNode) messageNode;
-                switch (mode) {
-                    case TEXT:
-                        node.put("content", message.text());
-                        break;
-                    case MULTIMODAL:
-                        node.putPOJO("content", message.contents());
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unsupported mode: " + mode);
-                }
-            }
-            nodes.add(messageNode);
-        });
-        return nodes;
+        return messages.stream()
+                .map(message -> MessageCodec.encodeToJsonNode(mode, message))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -162,9 +149,12 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         }
 
         // 工具必选参数
-        if (!tools.isEmpty()) {
+        final List<Tool> enabledTools = tools.stream()
+                .filter(Tool::isEnabled)
+                .collect(Collectors.toList());
+        if (!enabledTools.isEmpty()) {
             option.option("result_format", "message");
-            option.option("tools", tools);
+            option.option("tools", enabledTools);
         }
 
         return new Option()
@@ -215,7 +205,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param messages 消息列表
          * @return this
          */
-        public Builder messages(Collection<Message> messages) {
+        public Builder messages(Collection<? extends Message> messages) {
             requireNonNull(messages);
             this.messages.clear();
             this.messages.addAll(messages);
@@ -240,7 +230,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param messages 消息列表
          * @return this
          */
-        public Builder addMessages(Collection<Message> messages) {
+        public Builder addMessages(Collection<? extends Message> messages) {
             requireNonNull(messages);
             this.messages.addAll(messages);
             return this;
@@ -252,7 +242,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param plugins 插件列表
          * @return this
          */
-        public Builder plugins(Collection<Plugin> plugins) {
+        public Builder plugins(Collection<? extends Plugin> plugins) {
             requireNonNull(plugins);
             this.plugins.clear();
             this.plugins.addAll(plugins);
@@ -277,7 +267,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param plugins 插件列表
          * @return this
          */
-        public Builder addPlugins(Collection<Plugin> plugins) {
+        public Builder addPlugins(Collection<? extends Plugin> plugins) {
             requireNonNull(plugins);
             this.plugins.addAll(plugins);
             return this;
@@ -289,7 +279,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param tools 工具列表
          * @return this
          */
-        public Builder tools(Collection<Tool> tools) {
+        public Builder tools(Collection<? extends Tool> tools) {
             requireNonNull(tools);
             this.tools.clear();
             this.tools.addAll(tools);
@@ -314,7 +304,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param tools 工具列表
          * @return this
          */
-        public Builder addTools(Collection<Tool> tools) {
+        public Builder addTools(Collection<? extends Tool> tools) {
             requireNonNull(tools);
             this.tools.addAll(tools);
             return this;
@@ -326,14 +316,14 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param functions 函数列表
          * @return this
          */
-        public Builder functions(Collection<ChatFunction<?, ?>> functions) {
+        public Builder functions(Collection<? extends ChatFunction<?, ?>> functions) {
             requireNonNull(functions);
             this.tools.removeIf(tool -> tool instanceof ChatFunctionTool);
             this.tools.addAll(toTools(functions));
             return this;
         }
 
-        private static List<Tool> toTools(Collection<ChatFunction<?, ?>> functions) {
+        private static List<Tool> toTools(Collection<? extends ChatFunction<?, ?>> functions) {
             requireNonNull(functions);
             return functions.stream()
                     .map(ChatFunctionTool::of)
@@ -358,7 +348,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @param functions 函数列表
          * @return this
          */
-        public Builder addFunctions(Collection<ChatFunction<?, ?>> functions) {
+        public Builder addFunctions(Collection<? extends ChatFunction<?, ?>> functions) {
             requireNonNull(functions);
             this.tools.addAll(toTools(functions));
             return this;

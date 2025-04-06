@@ -1,33 +1,36 @@
 package io.github.oldmanpushcart.dashscope4j.internal.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.ToolCallMessage;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.ToolMessage;
+import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import static java.util.Collections.unmodifiableList;
 
 @Slf4j
-class ToolCaller {
+class ToolCaller implements ChatFunction.Caller {
 
+    private final DashscopeClient client;
     private final ChatOp chatOp;
     private final ChatRequest request;
     private final ToolCallMessage message;
 
-    public ToolCaller(ChatOp chatOp, ChatRequest request, ToolCallMessage message) {
+    public ToolCaller(DashscopeClient client, ChatOp chatOp, ChatRequest request, ToolCallMessage message) {
         preCheck(message);
+        this.client = client;
         this.chatOp = chatOp;
         this.request = request;
         this.message = message;
@@ -44,19 +47,14 @@ class ToolCaller {
             throw new UnsupportedOperationException("Only support function call in tool call.");
         }
 
-        // 检查函数调用是否有多个，当前只支持单一函数调用
-        if (message.calls().size() != 1) {
-            throw new UnsupportedOperationException("Only support single function call in tool call.");
-        }
-
     }
 
     public CompletionStage<ChatResponse> asyncCall() {
-        final ChatFunctionTool.Call call = parseFunctionCall();
-        final ChatFunctionTool tool = switchFunctionTool(call);
-        return callFunction(tool, call)
-                .thenCompose(resultJson -> {
-                    final List<Message> history = newHistory(call, resultJson);
+
+        final Map<String, CompletableFuture<String>> futureMap = parallelCallFunction();
+        return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
+                .thenCompose(unused -> {
+                    final List<Message> history = newHistory(futureMap);
                     final ChatRequest newRequest = newHistoryRequest(history);
                     return chatOp.async(newRequest)
                             .thenApply(response -> newHistoryResponse(history, response));
@@ -64,21 +62,28 @@ class ToolCaller {
     }
 
     public CompletionStage<Flowable<ChatResponse>> flowCall() {
-        final ChatFunctionTool.Call call = parseFunctionCall();
-        final ChatFunctionTool tool = switchFunctionTool(call);
-        return callFunction(tool, call)
-                .thenCompose(resultJson -> {
-                    final List<Message> history = newHistory(call, resultJson);
+
+        final Map<String, CompletableFuture<String>> futureMap = parallelCallFunction();
+        return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
+                .thenCompose(unused -> {
+                    final List<Message> history = newHistory(futureMap);
                     final ChatRequest newRequest = newHistoryRequest(history);
                     return chatOp.flow(newRequest)
                             .thenApply(flow -> flow.map(r -> newHistoryResponse(history, r)));
                 });
     }
 
-    private List<Message> newHistory(ChatFunctionTool.Call call, String resultJson) {
+    private List<Message> newHistory(Map<String, CompletableFuture<String>> futureMap) {
         final List<Message> history = new ArrayList<>();
         history.add(message);
-        history.add(new ToolMessage(resultJson, call.stub().name()));
+        futureMap.entrySet()
+                .stream()
+                .map(entry -> {
+                    final String id = entry.getKey();
+                    final String resultJson = entry.getValue().join();
+                    return new ToolMessage(id, resultJson);
+                })
+                .forEach(history::add);
         return history;
     }
 
@@ -104,7 +109,11 @@ class ToolCaller {
                 choices.add(choice);
             }
         });
-        final ChatResponse.Output output = new ChatResponse.Output(unmodifiableList(choices));
+
+        final ChatResponse.Output output = new ChatResponse.Output(
+                response.output().searchInfo(),
+                unmodifiableList(choices)
+        );
         return new ChatResponse(
                 response.uuid(),
                 response.code(),
@@ -112,6 +121,20 @@ class ToolCaller {
                 response.usage(),
                 output
         );
+    }
+
+    // 并行调用函数
+    private Map<String, CompletableFuture<String>> parallelCallFunction() {
+        final Map<String, CompletableFuture<String>> futureMap = new HashMap<>();
+        message.calls().stream()
+                .map(ChatFunctionTool.Call.class::cast)
+                .forEach(call -> {
+                    final ChatFunctionTool tool = switchFunctionTool(call);
+                    final CompletableFuture<String> future = callFunction(tool, call)
+                            .toCompletableFuture();
+                    futureMap.put(call.id(), future);
+                });
+        return futureMap;
     }
 
     // 函数调用
@@ -126,9 +149,8 @@ class ToolCaller {
             );
         }
 
-
         try {
-            return tool.function().call(JacksonJsonUtils.toObject(parameterJson, parameterType))
+            return tool.function().call(this, JacksonJsonUtils.toObject(parameterJson, parameterType))
                     .thenApply(JacksonJsonUtils::toJson)
                     .whenComplete((resultJson, ex) -> {
                         if (log.isDebugEnabled()) {
@@ -151,11 +173,6 @@ class ToolCaller {
         }
     }
 
-    // 解析出函数调用存根
-    private ChatFunctionTool.Call parseFunctionCall() {
-        return (ChatFunctionTool.Call) message.calls().get(0);
-    }
-
     // 找到函数工具
     private ChatFunctionTool switchFunctionTool(ChatFunctionTool.Call functionCall) {
         return request.tools().stream()
@@ -166,6 +183,16 @@ class ToolCaller {
                 .orElseThrow(() -> new IllegalArgumentException(String.format("Function Not found! fn=%s",
                         functionCall.stub().name()
                 )));
+    }
+
+    @Override
+    public DashscopeClient client() {
+        return client;
+    }
+
+    @Override
+    public ChatRequest request() {
+        return request;
     }
 
 }

@@ -1,12 +1,12 @@
 open module dashscope4j {
     requires static lombok;
-    requires static annotations;
+    requires static jakarta.validation;
 
     requires org.slf4j;
     requires kotlin.stdlib;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.annotation;
-    requires com.fasterxml.jackson.module.jsonSchema;
+    requires com.fasterxml.jackson.module.jsonSchema.jakarta;
     requires com.fasterxml.jackson.dataformat.xml;
     requires transitive io.reactivex.rxjava3;
     requires okhttp3;
@@ -26,11 +26,15 @@ open module dashscope4j {
     exports io.github.oldmanpushcart.dashscope4j.api.audio.asr.timespan;
     exports io.github.oldmanpushcart.dashscope4j.api.audio.tts;
     exports io.github.oldmanpushcart.dashscope4j.api.audio.tts.timespan;
+    exports io.github.oldmanpushcart.dashscope4j.api.audio.vocabulary;
+    exports io.github.oldmanpushcart.dashscope4j.api.audio.voice;
     exports io.github.oldmanpushcart.dashscope4j.api.embedding;
     exports io.github.oldmanpushcart.dashscope4j.api.embedding.text;
     exports io.github.oldmanpushcart.dashscope4j.api.embedding.mm;
     exports io.github.oldmanpushcart.dashscope4j.api.image;
     exports io.github.oldmanpushcart.dashscope4j.api.image.generation;
+    exports io.github.oldmanpushcart.dashscope4j.api.video;
+    exports io.github.oldmanpushcart.dashscope4j.api.video.generation;
     exports io.github.oldmanpushcart.dashscope4j.base;
     exports io.github.oldmanpushcart.dashscope4j.base.tokenizer;
     exports io.github.oldmanpushcart.dashscope4j.base.store;

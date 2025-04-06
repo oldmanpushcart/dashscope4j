@@ -3,12 +3,13 @@ package io.github.oldmanpushcart.dashscope4j.internal.util;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+
+import static java.util.Objects.nonNull;
 
 /**
  * CompletableFuture工具类
@@ -21,6 +22,12 @@ public class CompletableFutureUtils {
         return future;
     }
 
+    public static <T> CompletionStage<T> completedStage(T value) {
+        final CompletableFuture<T> future = new CompletableFuture<>();
+        future.complete(value);
+        return future;
+    }
+
     /**
      * 解包异常
      *
@@ -28,10 +35,7 @@ public class CompletableFutureUtils {
      * @return 解包后的异常
      */
     public static Throwable unwrapEx(Throwable ex) {
-        if (Objects.isNull(ex.getCause())) {
-            return ex;
-        }
-        if (ex instanceof CompletionException || ex instanceof ExecutionException) {
+        if ((ex instanceof CompletionException || ex instanceof ExecutionException) && nonNull(ex.getCause())) {
             return unwrapEx(ex.getCause());
         } else {
             return ex;

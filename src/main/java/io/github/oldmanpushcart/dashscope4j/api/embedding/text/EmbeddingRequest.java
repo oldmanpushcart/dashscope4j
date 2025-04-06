@@ -1,13 +1,18 @@
 package io.github.oldmanpushcart.dashscope4j.api.embedding.text;
 
 import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils.requireNonEmptyCollection;
+import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -23,12 +28,13 @@ public class EmbeddingRequest extends AlgoRequest<EmbeddingModel, EmbeddingRespo
 
     private EmbeddingRequest(Builder builder) {
         super(EmbeddingResponse.class, builder);
-        documents = Collections.unmodifiableList(builder.documents);
+        requireNonEmptyCollection(builder.documents, "documents is empty!");
+        documents = unmodifiableList(builder.documents);
     }
 
     @Override
     protected Object input() {
-        return new HashMap<String, Object>(){{
+        return new ObjectMap() {{
             put("texts", documents);
         }};
     }

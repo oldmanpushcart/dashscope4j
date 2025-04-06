@@ -1,16 +1,15 @@
 package io.github.oldmanpushcart.dashscope4j.api;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.internal.api.Request;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import okhttp3.Response;
 
-import java.util.Collections;
 import java.util.function.BiFunction;
 
+import static java.util.Objects.requireNonNull;
 import static lombok.AccessLevel.PROTECTED;
 
 /**
@@ -21,9 +20,8 @@ import static lombok.AccessLevel.PROTECTED;
 @Getter
 @Accessors(fluent = true)
 @ToString
-@EqualsAndHashCode
-public abstract class ApiRequest<R extends ApiResponse<?>> {
-
+@EqualsAndHashCode(callSuper = true)
+public abstract class ApiRequest<R extends ApiResponse<?>> extends Request {
 
     @ToString.Exclude
     @Getter(PROTECTED)
@@ -36,22 +34,9 @@ public abstract class ApiRequest<R extends ApiResponse<?>> {
      * @param builder      构建器
      */
     protected ApiRequest(Class<R> responseType, Builder<?, ?> builder) {
+        super(builder);
+        requireNonNull(responseType, "responseType is required!");
         this.responseType = responseType;
-    }
-
-    /**
-     * 生成Api请求中的数据
-     * <pre><code>
-     *     {
-     *         "input":{}
-     *     }
-     * </code></pre>
-     *
-     * @return Input
-     */
-    @JsonProperty
-    protected Object input() {
-        return Collections.emptyMap();
     }
 
     /**
@@ -80,14 +65,14 @@ public abstract class ApiRequest<R extends ApiResponse<?>> {
      * @param <T> 请求类型
      * @param <B> 构造器类型
      */
-    public static abstract class Builder<T extends ApiRequest<?>, B extends ApiRequest.Builder<T, B>> implements Buildable<T, B> {
+    public static abstract class Builder<T extends ApiRequest<?>, B extends ApiRequest.Builder<T, B>> extends Request.Builder<T, B> {
 
         protected Builder() {
 
         }
 
         protected Builder(T request) {
-
+            super(request);
         }
 
     }

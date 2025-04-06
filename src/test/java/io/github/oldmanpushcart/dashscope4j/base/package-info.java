@@ -1,1 +1,0 @@
-package io.github.oldmanpushcart.dashscope4j.base;

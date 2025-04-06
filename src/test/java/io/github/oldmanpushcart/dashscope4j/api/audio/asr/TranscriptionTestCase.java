@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.api.audio.asr;
 import io.github.oldmanpushcart.dashscope4j.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.api.ApiAssertions;
 import io.github.oldmanpushcart.dashscope4j.task.Task;
+import io.github.oldmanpushcart.dashscope4j.util.HttpUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +19,7 @@ public class TranscriptionTestCase extends ClientSupport {
             Assertions.assertNotNull(item.transcriptionURI());
             Assertions.assertNotNull(item.originURI());
             Assertions.assertTrue(item.isSuccess());
-            item.fetchTranscription()
+            item.fetchTranscription(uri -> HttpUtils.fetchAsString(client.base().http(), uri))
                     .thenAccept(transcription -> {
                         Assertions.assertFalse(transcription.transcripts().isEmpty());
 
@@ -67,7 +68,7 @@ public class TranscriptionTestCase extends ClientSupport {
         ApiAssertions.assertApiResponseSuccessful(response);
         assertTranscriptionResponse(response);
         response.output().results().forEach(item ->
-                item.fetchTranscription()
+                item.fetchTranscription(uri -> HttpUtils.fetchAsString(client.base().http(), uri))
                         .thenAccept(transcription -> {
                             final boolean matched = transcription.transcripts().stream()
                                     .anyMatch(transcript -> transcript.text().equals("白日依山尽，黄河入海流。欲穷千里目，更上一层楼。"));

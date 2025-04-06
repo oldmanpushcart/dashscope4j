@@ -10,6 +10,8 @@ import io.github.oldmanpushcart.dashscope4j.Exchange;
 import io.github.oldmanpushcart.dashscope4j.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
+import io.reactivex.rxjava3.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Value;
@@ -20,8 +22,6 @@ import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -96,7 +96,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
 
     @Override
     public void onFailure(@NotNull WebSocket socket, @NotNull Throwable t, @Nullable Response response) {
-        log.error("WEBSOCKET://{} <<< FAILURE;", uuid, t);
+        log.trace("WEBSOCKET://{} <<< FAILURE;", uuid, t);
 
         /*
          * 如果交换对象还没有创建，说明连接还没有建立成功。

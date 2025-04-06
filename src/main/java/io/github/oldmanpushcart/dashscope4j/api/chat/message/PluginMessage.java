@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.api.chat.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.api.chat.plugin.Plugin;
 import lombok.EqualsAndHashCode;
@@ -39,7 +40,19 @@ public class PluginMessage extends Message {
      * @param name   插件名称
      * @param status 插件应答状态
      */
-    public PluginMessage(String text, String name, Plugin.Status status) {
+    @JsonCreator
+    public PluginMessage(
+
+            @JsonProperty("content")
+            String text,
+
+            @JsonProperty("name")
+            String name,
+
+            @JsonProperty("status")
+            Plugin.Status status
+
+    ) {
         super(Role.PLUGIN, Content.ofText(text));
         this.name = name;
         this.status = status;

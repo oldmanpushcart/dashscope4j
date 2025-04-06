@@ -14,9 +14,14 @@ import io.github.oldmanpushcart.dashscope4j.internal.task.TaskHalfResponse;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.task.Task;
 import io.github.oldmanpushcart.dashscope4j.task.TaskException;
+import io.reactivex.rxjava3.annotations.Nullable;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Value;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -25,9 +30,10 @@ import okhttp3.WebSocketListener;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import okhttp3.sse.EventSources;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.util.Objects;
+import java.util.Scanner;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -55,8 +61,16 @@ public class ApiOpImpl implements ApiOp {
         final Request httpRequest = request.newHttpRequest();
         final Request.Builder builder = new Request.Builder(httpRequest)
                 .addHeader(HTTP_HEADER_CONTENT_TYPE, "application/json")
-                .addHeader(HTTP_HEADER_AUTHORIZATION, String.format("Bearer %s", ak))
                 .addHeader(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION);
+
+        /*
+         * 如果有设置AK，这里才主动设置AUTHORIZATION
+         * 否则应该尽量依靠外部的设置
+         */
+        if (Objects.nonNull(ak)) {
+            builder.addHeader(HTTP_HEADER_AUTHORIZATION, String.format("Bearer %s", ak));
+        }
+
         consumer.accept(builder);
         return builder.build();
     }
@@ -77,17 +91,21 @@ public class ApiOpImpl implements ApiOp {
                 .addHeader(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
         );
 
-        final CompletableFutureCallback<R> callback = new CompletableFutureCallback<>((call, httpResponse) -> {
-            final String bodyJson = requireNonNull(httpResponse.body()).string();
-            final R response = request.newResponseDecoder().apply(httpResponse, bodyJson);
-            if (!response.isSuccess()) {
-                throw new ApiException(httpResponse.code(), response);
-            }
-            return response;
-        });
+        final CompletableFutureCallback<R> callback =
+                new CompletableFutureCallback<>((call, httpResponse) -> {
+                    final String bodyJson = requireNonNull(httpResponse.body()).string();
+                    final R response = request.newResponseDecoder().apply(httpResponse, bodyJson);
+                    if (!response.isSuccess()) {
+                        throw new ApiException(httpResponse.code(), response);
+                    }
+                    return response;
+                });
 
         http.newCall(httpRequest).enqueue(callback);
-        return callback;
+        return callback
+
+                // 回填请求信息
+                .thenApply(response -> response.fill(request));
 
     }
 
@@ -116,7 +134,12 @@ public class ApiOpImpl implements ApiOp {
                 public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
                     try {
                         if ("result".equals(type) || "error".equals(type)) {
-                            final R response = request.newResponseDecoder().apply(httpResponse, data);
+
+                            // 构造应答
+                            final R response = request.newResponseDecoder()
+                                    .apply(httpResponse, data)
+                                    .fill(request);
+
                             if (response.isSuccess()) {
                                 emitter.onNext(response);
                             } else {
@@ -133,10 +156,88 @@ public class ApiOpImpl implements ApiOp {
                 }
 
                 @Override
-                public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
-                    if (!emitter.isCancelled()) {
-                        emitter.onError(t);
+                public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response httpResponse) {
+
+                    if (emitter.isCancelled()) {
+                        return;
                     }
+
+                    // 如果异常不为空，则优先使用异常作为错误
+                    if (Objects.nonNull(t)) {
+                        emitter.onError(t);
+                        return;
+                    }
+
+                    if(null == this.httpResponse) {
+                        this.httpResponse = httpResponse;
+                    }
+
+                    /*
+                     * 异常为空，说明错误信息可能藏在response.body中
+                     * body可能有两种情况，一种是event类型，一种则是普通的信息
+                     * 这里尝试进行解析，如果解析不出期待的Event，则按照普通信息处理
+                     */
+                    if (!httpResponse.isSuccessful()) {
+                        try {
+                            final String body = requireNonNull(httpResponse.body()).string();
+                            final Event event = parseEvent(body);
+                            if (null != event) {
+                                onEvent(eventSource, event.id(), event.type(), event.data());
+                            } else {
+                                emitter.onError(new RuntimeException(String.format("dashscope://flow error! code: %d, body: %s",
+                                        httpResponse.code(),
+                                        body
+                                )));
+                            }
+                            return;
+                        } catch (IOException ex) {
+                            log.debug("dashscope://flow parse event error!", ex);
+                        }
+                    }
+
+                    /*
+                     * 走到这一步则说明获取body失败，则直接抛出异常
+                     */
+                    emitter.onError(new RuntimeException(String.format("dashscope://flow error! code: %d",
+                            httpResponse.code()
+                    )));
+
+                }
+
+                /**
+                 * 解析事件
+                 * @param body 响应BODY
+                 * @return 事件
+                 */
+                private Event parseEvent(String body) {
+                    String id = null;
+                    String type = null;
+                    String data = null;
+                    try (final Scanner scanner = new Scanner(body)) {
+                        while (scanner.hasNextLine()) {
+                            final String line = scanner.nextLine();
+                            if (line.startsWith("id:")) {
+                                id = line.substring(3).trim();
+                            } else if (line.startsWith("event:")) {
+                                type = line.substring(6).trim();
+                            } else if (line.startsWith("data:")) {
+                                data = line.substring(5).trim();
+                            }
+                        }
+                    }
+                    if (null == id || null == type || null == data) {
+                        return null;
+                    }
+                    return new Event(id, type, data);
+                }
+
+                @Value
+                @Accessors(fluent = true)
+                @AllArgsConstructor
+                class Event {
+                    String id;
+                    String type;
+                    String data;
                 }
 
                 @Override
@@ -159,8 +260,15 @@ public class ApiOpImpl implements ApiOp {
     CompletionStage<Exchange<T>> executeExchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
         final CompletableFuture<Exchange<T>> exchangeF = new CompletableFuture<>();
         final String uuid = UUID.randomUUID().toString();
+
+        // 请求编码器
         final Function<T, String> encoder = JacksonJsonUtils::toJson;
-        final BiFunction<okhttp3.Response, String, R> decoder = request.newResponseDecoder();
+
+        // 应答解码器
+        final BiFunction<okhttp3.Response, String, R> decoder = (response, responseJson) ->
+                request.newResponseDecoder()
+                        .apply(response, responseJson)
+                        .fill(request);
 
         final WebSocketListener wsListener = new ExchangeWebSocketListenerImpl<>(
                 exchangeF,
@@ -187,8 +295,10 @@ public class ApiOpImpl implements ApiOp {
 
         final CompletableFutureCallback<Task.Half<R>> callback =
                 new CompletableFutureCallback<>((call, httpResponse) -> {
-                    final String bodyJson = requireNonNull(httpResponse.body()).string();
-                    final TaskHalfResponse halfResponse = JacksonJsonUtils.toObject(bodyJson, TaskHalfResponse.class);
+
+                    final TaskHalfResponse halfResponse = JacksonJsonUtils
+                            .toObject(requireNonNull(httpResponse.body()).string(), TaskHalfResponse.class)
+                            .fill(request);
 
                     if (!halfResponse.isSuccess()) {
                         throw new ApiException(httpResponse.code(), halfResponse);
@@ -196,11 +306,13 @@ public class ApiOpImpl implements ApiOp {
 
                     final TaskGetRequest taskGetRequest = TaskGetRequest.newBuilder()
                             .taskId(halfResponse.output().taskId())
+                            .context(request.context())
                             .build();
 
                     final Function<String, R> decoder = json ->
                             request.newResponseDecoder()
-                                    .apply(httpResponse, json);
+                                    .apply(httpResponse, json)
+                                    .fill(request);
 
                     return strategy -> rollingTask(taskGetRequest, strategy, decoder);
                 });
@@ -257,12 +369,12 @@ public class ApiOpImpl implements ApiOp {
                                 }
 
                                 if (!task.isCancelable()) {
-
                                     return failedStage(ex);
                                 }
 
                                 final TaskCancelRequest taskCancelRequest = TaskCancelRequest.newBuilder()
                                         .taskId(task.identity())
+                                        .context(taskGetRequest.context())
                                         .build();
                                 return executeAsync(taskCancelRequest)
                                         .handle((cv, cex) -> {

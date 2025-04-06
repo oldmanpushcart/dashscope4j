@@ -30,4 +30,26 @@ public class GenImageModel implements Model {
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis")
     );
 
+    /**
+     * WANX-V2.1-TURBO
+     * <p>生成速度更快，通用生成模型。</p>
+     *
+     * @since 3.1.0
+     */
+    public static final GenImageModel WANX_V2_1_TURBO = new GenImageModel(
+            "wanx2.1-t2i-turbo",
+            URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis")
+    );
+
+    /**
+     * WANX-V2.1-PLUS
+     * <p>生成图像细节更丰富，速度稍慢，通用生成模型。</p>
+     *
+     * @since 3.1.0
+     */
+    public static final GenImageModel WANX_V2_1_PLUS = new GenImageModel(
+            "wanx2.1-t2i-turbo",
+            URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis")
+    );
+
 }

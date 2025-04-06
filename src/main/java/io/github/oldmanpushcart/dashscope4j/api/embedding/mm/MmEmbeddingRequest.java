@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.api.embedding.mm;
 
 import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Content;
+import io.github.oldmanpushcart.dashscope4j.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -10,11 +11,11 @@ import okhttp3.Request;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 
 import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.ENABLE;
 import static io.github.oldmanpushcart.dashscope4j.internal.InternalContents.HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE;
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils.requireNonEmptyCollection;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
@@ -40,6 +41,7 @@ public class MmEmbeddingRequest extends AlgoRequest<MmEmbeddingModel, MmEmbeddin
 
     private MmEmbeddingRequest(Builder builder) {
         super(MmEmbeddingResponse.class, builder);
+        requireNonEmptyCollection(builder.contents, "contents is empty!");
         this.contents = unmodifiableList(builder.contents);
     }
 
@@ -57,7 +59,7 @@ public class MmEmbeddingRequest extends AlgoRequest<MmEmbeddingModel, MmEmbeddin
 
     @Override
     protected Object input() {
-        return new HashMap<String, Object>() {{
+        return new ObjectMap() {{
             put("contents", contents);
         }};
     }

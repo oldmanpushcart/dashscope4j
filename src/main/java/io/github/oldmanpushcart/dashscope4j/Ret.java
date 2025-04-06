@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
+/**
+ * 返回结果
+ */
 @Getter
 @Accessors(fluent = true)
 @ToString

@@ -2,13 +2,12 @@ package io.github.oldmanpushcart.dashscope4j.api.audio.tts;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import okhttp3.Request;
-
-import java.util.HashMap;
 
 import static java.util.Objects.requireNonNull;
 
@@ -42,7 +41,7 @@ public class SpeechSynthesisRequest extends AlgoRequest<SpeechSynthesisModel, Sp
 
     @Override
     protected Object input() {
-        return new HashMap<Object, Object>() {{
+        return new ObjectMap() {{
             put("text", text);
         }};
     }

@@ -1,14 +1,15 @@
 package io.github.oldmanpushcart.dashscope4j.api.image.generation;
 
 import io.github.oldmanpushcart.dashscope4j.api.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
-import java.util.HashMap;
 
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CommonUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
 
 @Value
@@ -23,6 +24,7 @@ public class GenImageRequest extends AlgoRequest<GenImageModel, GenImageResponse
 
     private GenImageRequest(Builder builder) {
         super(GenImageResponse.class, builder);
+        requireNonBlankString(builder.prompt, "prompt is blank");
         this.prompt = builder.prompt;
         this.negative = builder.negative;
         this.reference = builder.reference;
@@ -30,10 +32,10 @@ public class GenImageRequest extends AlgoRequest<GenImageModel, GenImageResponse
 
     @Override
     protected Object input() {
-        return new HashMap<String, Object>() {{
+        return new ObjectMap() {{
             put("prompt", prompt);
             put("negative_prompt", negative);
-            put("ref_image", reference);
+            put("ref_img", reference);
         }};
     }
 
