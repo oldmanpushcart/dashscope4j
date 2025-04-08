@@ -11,6 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.api.video.VideoOp;
 import io.github.oldmanpushcart.dashscope4j.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.internal.api.ApiOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.InterceptionApiOp;
+import io.github.oldmanpushcart.dashscope4j.internal.api.RequestInterceptionApiOp;
 import io.github.oldmanpushcart.dashscope4j.internal.api.audio.AudioOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.chat.ChatOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.embedding.EmbeddingOpImpl;
@@ -22,7 +23,6 @@ import okhttp3.OkHttpClient;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 class DashscopeClientImpl implements DashscopeClient {
@@ -66,11 +66,10 @@ class DashscopeClientImpl implements DashscopeClient {
         merged.add(new ProcessChatMessageContentForUploadInterceptor());
         merged.add(new ProcessChatMessageContentForQwenLongInterceptor());
 
-        // 倒置merged中的顺序，因为拦截生效的顺序为倒序
-        Collections.reverse(merged);
-
         // 生成拦截器组
-        return InterceptionApiOp.group(this, new ApiOpImpl(ak, http), merged);
+        final ApiOp realApiOp = new ApiOpImpl(ak, http);
+        final ApiOp requestInterceptorApiOp = new RequestInterceptionApiOp(this, realApiOp);
+        return InterceptionApiOp.group(this, requestInterceptorApiOp, merged);
 
     }
 

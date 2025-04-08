@@ -12,7 +12,10 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -75,8 +78,14 @@ public class InterceptionApiOp implements ApiOp {
     }
 
     public static ApiOp group(DashscopeClient client, ApiOp apiOp, Collection<Interceptor> interceptors) {
+
+        final List<Interceptor> cloneInterceptors = new ArrayList<>(interceptors);
+
+        // 倒置顺序，因为拦截生效的顺序为倒序
+        Collections.reverse(cloneInterceptors);
+
         ApiOp op = apiOp;
-        for (Interceptor interceptor : interceptors) {
+        for (Interceptor interceptor : cloneInterceptors) {
             op = new InterceptionApiOp(client, op, interceptor);
         }
         return op;
