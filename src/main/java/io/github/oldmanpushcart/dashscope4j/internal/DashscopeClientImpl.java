@@ -14,6 +14,7 @@ import io.github.oldmanpushcart.dashscope4j.internal.api.InterceptionApiOp;
 import io.github.oldmanpushcart.dashscope4j.internal.api.RequestInterceptionApiOp;
 import io.github.oldmanpushcart.dashscope4j.internal.api.audio.AudioOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.chat.ChatOpImpl;
+import io.github.oldmanpushcart.dashscope4j.internal.api.chat.ProcessToolCallForChatInterceptor;
 import io.github.oldmanpushcart.dashscope4j.internal.api.embedding.EmbeddingOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.image.ImageOpImpl;
 import io.github.oldmanpushcart.dashscope4j.internal.api.video.VideoOpImpl;
@@ -44,7 +45,7 @@ class DashscopeClientImpl implements DashscopeClient {
         this.http = http;
         this.apiOp = newApiOp(ak, http, interceptors);
         this.baseOp = new BaseOpImpl(http, apiOp);
-        this.chatOp = new ChatOpImpl(this, apiOp);
+        this.chatOp = new ChatOpImpl(apiOp);
         this.audioOp = new AudioOpImpl(apiOp);
         this.embeddingOp = new EmbeddingOpImpl(apiOp);
         this.imageOp = new ImageOpImpl(apiOp);
@@ -55,7 +56,11 @@ class DashscopeClientImpl implements DashscopeClient {
 
         /*
          * 添加拦截器
-         * 拦截器的顺序为：自定义最前，系统自带最后
+         *
+         * 拦截器的顺序为：系统自带最先被执行，自定义最后执行
+         * 之所以要这样设计，是为了让自定义拦截器在拦截请求时，感受到的请求行为与API承诺的一致
+         * 比如ToolCall的行为是内部拼接的多段请求，自定义拦截器不能感知到内部分裂多段的查询，必须感知为一个查询整体
+         *
          */
         final List<Interceptor> merged = new ArrayList<>(interceptors);
 
@@ -65,11 +70,12 @@ class DashscopeClientImpl implements DashscopeClient {
         merged.add(new ProcessImageGenVideoForUploadInterceptor());
         merged.add(new ProcessChatMessageContentForUploadInterceptor());
         merged.add(new ProcessChatMessageContentForQwenLongInterceptor());
+        merged.add(new ProcessToolCallForChatInterceptor());
 
         // 生成拦截器组
         final ApiOp realApiOp = new ApiOpImpl(ak, http);
-        final ApiOp requestInterceptorApiOp = new RequestInterceptionApiOp(this, realApiOp);
-        return InterceptionApiOp.group(this, requestInterceptorApiOp, merged);
+        final ApiOp interceptionApiOp = InterceptionApiOp.group(this, realApiOp, merged);
+        return new RequestInterceptionApiOp(this, interceptionApiOp);
 
     }
 
