@@ -35,7 +35,10 @@ public abstract class Response extends Ret {
      * @param <C> 上下文类型
      * @return 上下文
      * @since 3.1.0
+     * @deprecated 请通过 {@link #request} 获取请求后，在请求上直接修改上下文。
+     * 这里废弃的原因是和{@link Request#context()}功能重复而且容易产生不必要的歧义
      */
+    @Deprecated
     @SuppressWarnings("unchecked")
     public <C> C context() {
         return (C) context(Object.class);
@@ -48,7 +51,10 @@ public abstract class Response extends Ret {
      * @param <C>  上下文类型
      * @return 上下文
      * @since 3.1.0
+     * @deprecated 请通过 {@link #request} 获取请求后，在请求上直接修改上下文
+     * 这里废弃的原因是和{@link Request#context()}功能重复而且容易产生不必要的歧义
      */
+    @Deprecated
     @SuppressWarnings("unchecked")
     public <C> C context(Class<C> type) {
         return (C) request.contextMap().get(type);

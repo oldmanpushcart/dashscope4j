@@ -13,7 +13,7 @@ import java.util.Objects;
  */
 @EqualsAndHashCode
 public abstract class Request {
-    
+
     @ToString.Exclude
     private final Map<Class<?>, Object> contextMap;
 
@@ -49,7 +49,17 @@ public abstract class Request {
         return (C) contextMap.get(type);
     }
 
-    protected Map<Class<?>, Object> contextMap() {
+    /**
+     * 获取上下文集合
+     * <p>
+     * 虽然开放这个出来很危险，但可以帮助跟踪系统做一些跟踪埋点。
+     * 请慎用！
+     * </p>
+     *
+     * @return 上下文集合
+     * @since 3.1.1
+     */
+    public Map<Class<?>, Object> contextMap() {
         return contextMap;
     }
 
