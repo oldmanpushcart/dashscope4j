@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j;
 
-import io.github.oldmanpushcart.dashscope4j.api.chat.*;
-import io.github.oldmanpushcart.dashscope4j.api.chat.function.QueryScoreFunction;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.Message;
 import org.junit.jupiter.api.Test;
 

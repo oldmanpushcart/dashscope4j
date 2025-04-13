@@ -4,7 +4,6 @@ import io.github.oldmanpushcart.dashscope4j.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.ExchangeConnector;
 import io.github.oldmanpushcart.dashscope4j.api.audio.asr.timespan.SentenceTimeSpan;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
