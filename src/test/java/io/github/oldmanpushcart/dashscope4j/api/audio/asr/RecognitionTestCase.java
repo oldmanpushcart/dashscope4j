@@ -4,7 +4,6 @@ import io.github.oldmanpushcart.dashscope4j.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.Exchange;
 import io.github.oldmanpushcart.dashscope4j.api.audio.asr.timespan.SentenceTimeSpan;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -13,7 +12,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 

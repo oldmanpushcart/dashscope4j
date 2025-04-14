@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.api;
 
+import io.github.oldmanpushcart.dashscope4j.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.internal.api.Request;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -7,8 +8,11 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 import okhttp3.Response;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiFunction;
 
+import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static lombok.AccessLevel.PROTECTED;
 
@@ -27,6 +31,9 @@ public abstract class ApiRequest<R extends ApiResponse<?>> extends Request {
     @Getter(PROTECTED)
     private final Class<R> responseType;
 
+    @ToString.Exclude
+    private final List<Interceptor> interceptors;
+
     /**
      * 构建Api请求
      *
@@ -37,6 +44,7 @@ public abstract class ApiRequest<R extends ApiResponse<?>> extends Request {
         super(builder);
         requireNonNull(responseType, "responseType is required!");
         this.responseType = responseType;
+        this.interceptors = unmodifiableList(builder.interceptors);
     }
 
     /**
@@ -67,12 +75,55 @@ public abstract class ApiRequest<R extends ApiResponse<?>> extends Request {
      */
     public static abstract class Builder<T extends ApiRequest<?>, B extends ApiRequest.Builder<T, B>> extends Request.Builder<T, B> {
 
+        private final List<Interceptor> interceptors = new ArrayList<>();
+
         protected Builder() {
 
         }
 
         protected Builder(T request) {
             super(request);
+            this.interceptors.addAll(request.interceptors());
+        }
+
+        /**
+         * 设置拦截器列表
+         *
+         * @param interceptors 拦截器列表
+         * @return this
+         * @since 3.1.1
+         */
+        public B interceptors(List<Interceptor> interceptors) {
+            requireNonNull(interceptors);
+            this.interceptors.clear();
+            this.interceptors.addAll(interceptors);
+            return self();
+        }
+
+        /**
+         * 添加拦截器
+         *
+         * @param interceptor 拦截器
+         * @return this
+         * @since 3.1.1
+         */
+        public B addInterceptor(Interceptor interceptor) {
+            requireNonNull(interceptor);
+            this.interceptors.add(interceptor);
+            return self();
+        }
+
+        /**
+         * 添加拦截器列表
+         *
+         * @param interceptors 拦截器列表
+         * @return this
+         * @since 3.1.1
+         */
+        public B addInterceptors(List<Interceptor> interceptors) {
+            requireNonNull(interceptors);
+            this.interceptors.addAll(interceptors);
+            return self();
         }
 
     }

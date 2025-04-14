@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.internal.util;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -13,6 +14,7 @@ import java.util.*;
 public class JacksonJsonUtils {
 
     private static final ObjectMapper mapper = new ObjectMapper()
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .setPropertyNamingStrategy(new PropertyNamingStrategies.SnakeCaseStrategy())
             .setTimeZone(TimeZone.getTimeZone("GMT+8"))
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
