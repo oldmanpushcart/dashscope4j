@@ -150,7 +150,7 @@ class ToolCaller implements ChatFunction.Caller {
         }
 
         try {
-            return tool.function().call(this, JacksonJsonUtils.toObject(parameterJson, parameterType))
+            return tool.function().call(this, toArgument(parameterJson, parameterType))
                     .thenApply(JacksonJsonUtils::toJson)
                     .whenComplete((resultJson, ex) -> {
                         if (log.isDebugEnabled()) {
@@ -171,6 +171,18 @@ class ToolCaller implements ChatFunction.Caller {
                     cause
             );
         }
+    }
+
+    /*
+     * 转换为参数
+     * 这里需要处理传递的参数直接为null的情况，null -> null
+     * 不要拿null到jackson进行转换
+     */
+    private <T> T toArgument(String parameterJson, Type parameterType) {
+        if (null == parameterJson || parameterJson.trim().isEmpty()) {
+            return null;
+        }
+        return JacksonJsonUtils.toObject(parameterJson, parameterType);
     }
 
     // 找到函数工具
