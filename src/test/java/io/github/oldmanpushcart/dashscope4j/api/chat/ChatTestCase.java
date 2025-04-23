@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.net.URI;
+import java.io.File;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -130,7 +130,7 @@ public class ChatTestCase extends ClientSupport {
                 .addPlugin(ChatPlugin.PDF_EXTRACTER)
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("请总结这篇文档"),
-                        Content.ofFile(URI.create("https://ompc.oss-cn-hangzhou.aliyuncs.com/share/P020210313315693279320.pdf"))
+                        Content.ofFile(new File("./test-data/P020210313315693279320.pdf").toURI())
                 )))
                 .build();
         client.chat().async(request)

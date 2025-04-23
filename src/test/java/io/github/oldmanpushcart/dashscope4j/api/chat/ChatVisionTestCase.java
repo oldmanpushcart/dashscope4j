@@ -50,7 +50,7 @@ public class ChatVisionTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
-                .addMessage(Message.ofUser(List.of(
+                .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofVideo(images),
                         Content.ofText("请根据视频内容来判断我的描述是否正确，如果正确请返回TRUE，否则返回FALSE，不需要说多余的话。\n" +
                                        "我的描述是：\n" +

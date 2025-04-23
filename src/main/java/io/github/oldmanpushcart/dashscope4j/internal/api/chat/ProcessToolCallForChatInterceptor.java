@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.internal.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.api.chat.ChatResponse;
@@ -28,9 +29,11 @@ public class ProcessToolCallForChatInterceptor implements Interceptor {
     // 处理应答
     private CompletionStage<?> process(Chain chain, Object v) {
 
+        final DashscopeClient client = chain.client();
+
         // 处理Async应答
         if (v instanceof ChatResponse) {
-            return new ToolCallOpAsyncHandler(chain.client(), chain.client().chat())
+            return new ToolCallOpAsyncHandler(client, client.chat())
                     .apply((ChatResponse) v);
         }
 
@@ -38,7 +41,7 @@ public class ProcessToolCallForChatInterceptor implements Interceptor {
         else if (v instanceof Flowable<?>) {
             @SuppressWarnings("unchecked")
             final Flowable<ChatResponse> responseFlow = (Flowable<ChatResponse>) v;
-            final Flowable<ChatResponse> tcFlow = new ToolCallOpFlowHandler(chain.client(), chain.client().chat())
+            final Flowable<ChatResponse> tcFlow = new ToolCallOpFlowHandler(client, client.chat())
                     .apply(responseFlow);
             return CompletableFuture.completedFuture(tcFlow);
         }

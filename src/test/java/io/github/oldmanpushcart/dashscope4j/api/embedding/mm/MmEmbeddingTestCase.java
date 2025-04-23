@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.util.List;
+import java.util.Arrays;
 
 import static io.github.oldmanpushcart.dashscope4j.api.ApiAssertions.assertApiResponseSuccessful;
 
@@ -17,7 +17,7 @@ public class MmEmbeddingTestCase extends ClientSupport {
 
         final MmEmbeddingRequest request = MmEmbeddingRequest.newBuilder()
                 .model(MmEmbeddingModel.MM_EMBEDDING_V1)
-                .contents(List.of(
+                .contents(Arrays.asList(
                         Content.ofImage(new File("./test-data/image-002.jpeg").toURI()),
                         Content.ofText("一个帅哥在骑自行车念经"),
                         Content.ofText("有两个自行车")

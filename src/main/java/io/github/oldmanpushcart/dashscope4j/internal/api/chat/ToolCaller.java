@@ -9,6 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.api.chat.message.ToolCallMessage;
 import io.github.oldmanpushcart.dashscope4j.api.chat.message.ToolMessage;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.api.chat.tool.function.FunctionToolNotFoundException;
 import io.github.oldmanpushcart.dashscope4j.internal.util.JacksonJsonUtils;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import static io.github.oldmanpushcart.dashscope4j.internal.util.CompletableFutureUtils.failedStage;
 import static java.util.Collections.unmodifiableList;
 
 @Slf4j
@@ -129,10 +131,14 @@ class ToolCaller implements ChatFunction.Caller {
         message.calls().stream()
                 .map(ChatFunctionTool.Call.class::cast)
                 .forEach(call -> {
-                    final ChatFunctionTool tool = switchFunctionTool(call);
-                    final CompletableFuture<String> future = callFunction(tool, call)
-                            .toCompletableFuture();
-                    futureMap.put(call.id(), future);
+                    CompletionStage<String> future;
+                    try {
+                        final ChatFunctionTool tool = switchFunctionTool(call);
+                        future = callFunction(tool, call);
+                    } catch (Throwable ex) {
+                        future = failedStage(ex);
+                    }
+                    futureMap.put(call.id(), future.toCompletableFuture());
                 });
         return futureMap;
     }
@@ -192,9 +198,7 @@ class ToolCaller implements ChatFunction.Caller {
                 .map(ChatFunctionTool.class::cast)
                 .filter(tool -> Objects.equals(tool.meta().name(), functionCall.stub().name()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(String.format("Function Not found! fn=%s",
-                        functionCall.stub().name()
-                )));
+                .orElseThrow(() -> new FunctionToolNotFoundException(functionCall.stub().name()));
     }
 
     @Override

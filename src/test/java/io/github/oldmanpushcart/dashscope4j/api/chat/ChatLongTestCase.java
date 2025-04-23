@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
+import java.util.Arrays;
 
 public class ChatLongTestCase extends ClientSupport {
 
@@ -73,7 +73,7 @@ public class ChatLongTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_LONG)
-                .addMessage(Message.ofUser(List.of(
+                .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("总结两篇文章内容"),
                         Content.ofFile(meta1.toURI()),
                         Content.ofFile(meta2.toURI())
@@ -84,7 +84,6 @@ public class ChatLongTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        System.out.println(response.output().best().message().text());
         final String text = response.output().best().message().text();
         Assertions.assertTrue(text.contains("规划"));
         Assertions.assertTrue(text.contains("原神"));

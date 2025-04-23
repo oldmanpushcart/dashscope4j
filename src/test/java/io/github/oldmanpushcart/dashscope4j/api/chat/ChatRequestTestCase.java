@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
 
 import static io.github.oldmanpushcart.dashscope4j.api.chat.ChatModel.Mode.MULTIMODAL;
@@ -85,29 +86,29 @@ public class ChatRequestTestCase {
     @Test
     public void test$chat$message$codec() {
 
-        final List<Message> messages = List.of(
-                Message.ofUser("Hello!"),
-                Message.ofUser(List.of(
-                        Content.ofText("Hello!"),
-                        Content.ofText("你好!")
-                )),
-                Message.ofUser(List.of(
-                        Content.ofText("Hello!"),
-                        Content.ofAudio(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav")),
-                        Content.ofImage(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav")),
-                        Content.ofVideo(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav")),
-                        Content.ofFile(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav"))
-                )),
-                Message.ofUser(List.of(
-                        Content.ofText("Hello!"),
-                        Content.ofVideo(List.of(
-                                URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav"),
-                                URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav"),
-                                URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav"),
-                                URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav")
-                        ))
-                ))
-        );
+        final List<Message> messages = Arrays.asList(
+            Message.ofUser("Hello!"),
+            Message.ofUser(Arrays.asList(
+                    Content.ofText("Hello!"),
+                    Content.ofText("你好!")
+            )),
+            Message.ofUser(Arrays.asList(
+                    Content.ofText("Hello!"),
+                    Content.ofAudio(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav")),
+                    Content.ofImage(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav")),
+                    Content.ofVideo(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav")),
+                    Content.ofFile(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav"))
+            )),
+            Message.ofUser(Arrays.asList(
+                    Content.ofText("Hello!"),
+                    Content.ofVideo(Arrays.asList(
+                            URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav"),
+                            URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav"),
+                            URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav"),
+                            URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav")
+                    ))
+            ))
+    );
 
         messages.forEach(expect -> {
             final String actualJson = MessageCodec.encode(MULTIMODAL, expect, JacksonJsonUtils::toJson);

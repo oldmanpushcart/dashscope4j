@@ -100,4 +100,11 @@ public interface ChatOptions {
 
     }
 
+    /**
+     * 工具选择
+     *
+     * @since 3.1.3
+     */
+    Option.SimpleOpt<ChatToolChoice> TOOL_CHOICE = new Option.SimpleOpt<>("tool_choice", ChatToolChoice.class);
+
 }
