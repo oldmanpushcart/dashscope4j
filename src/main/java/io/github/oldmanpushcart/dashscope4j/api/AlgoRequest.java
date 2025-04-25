@@ -147,10 +147,10 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
 
         }
 
-        protected Builder(T request) {
+        protected Builder(AlgoRequest<M,?> request) {
             super(request);
-            this.model = request.model();
-            this.option.merge(request.option());
+            this.model = request.model;
+            this.option.merge(request.option);
         }
 
         /**

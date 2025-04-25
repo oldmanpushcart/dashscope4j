@@ -81,9 +81,9 @@ public abstract class ApiRequest<R extends ApiResponse<?>> extends Request {
 
         }
 
-        protected Builder(T request) {
+        protected Builder(ApiRequest<?> request) {
             super(request);
-            this.interceptors.addAll(request.interceptors());
+            this.interceptors.addAll(request.interceptors);
         }
 
         /**

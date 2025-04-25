@@ -57,7 +57,7 @@ public class EmbeddingRequest extends AlgoRequest<EmbeddingModel, EmbeddingRespo
 
         public Builder(EmbeddingRequest request) {
             super(request);
-            documents.addAll(request.documents());
+            documents.addAll(request.documents);
         }
 
         public Builder addDocument(String document) {

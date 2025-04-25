@@ -17,7 +17,7 @@ public abstract class OpenAiRequest<R extends OpenAiResponse<?>> extends ApiRequ
 
         }
 
-        protected Builder(T request) {
+        protected Builder(OpenAiRequest<?> request) {
             super(request);
         }
 
