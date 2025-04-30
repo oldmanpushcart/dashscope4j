@@ -1,0 +1,42 @@
+package io.github.oldmanpushcart.dashscope4j.client.api.embedding.text;
+
+import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+
+import static io.github.oldmanpushcart.dashscope4j.client.api.ApiAssertions.assertApiResponseSuccessful;
+
+public class EmbeddingTestCase extends ClientSupport {
+
+    @Test
+    public void test$embedding() {
+
+        final EmbeddingRequest request = EmbeddingRequest.newBuilder()
+                .model(EmbeddingModel.TEXT_EMBEDDING_V2)
+                .documents(Arrays.asList("我爱北京天安门", "天安门上太阳升"))
+                .build();
+
+        final EmbeddingResponse response = client.embedding().text().async(request)
+                .toCompletableFuture()
+                .join();
+
+        assertApiResponseSuccessful(response);
+        assertEmbeddingResponse(response);
+
+        response.output().embeddings().forEach(embedding -> {
+            Assertions.assertNotNull(embedding);
+            Assertions.assertNotNull(embedding.vector());
+            Assertions.assertEquals(embedding.vector().length, EmbeddingModel.TEXT_EMBEDDING_V2.dimension());
+        });
+
+    }
+
+    private static void assertEmbeddingResponse(EmbeddingResponse response) {
+        Assertions.assertNotNull(response.output());
+        Assertions.assertNotNull(response.output().embeddings());
+        Assertions.assertFalse(response.output().embeddings().isEmpty());
+    }
+
+}
