@@ -73,8 +73,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
      * @return Parameters
      */
     @JsonProperty("parameters")
-    public Option option() {
-
+    protected Option parameters() {
         /*
          * 由请求中的model和option属性先后拼接而成
          * 后者优先级最高
