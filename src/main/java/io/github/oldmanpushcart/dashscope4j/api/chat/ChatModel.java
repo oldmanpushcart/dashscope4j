@@ -136,4 +136,10 @@ public class ChatModel implements Model {
      */
     public static final ChatModel QWQ_PLUS_LATEST = ofText("qwq-plus-latest");
 
+    /**
+     * QVQ-MAX
+     * <p>是视觉推理模型，支持视觉输入及思维链输出，在数学、编程、视觉分析、创作以及通用任务上都表现了更强的能力。</p>
+     */
+    public static final ChatModel QVQ_MAX = ofMultimodal("qvq-max");
+
 }
