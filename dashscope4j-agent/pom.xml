@@ -7,6 +7,7 @@
         <version>${revision}</version>
     </parent>
     <artifactId>dashscope4j-agent</artifactId>
+    <packaging>jar</packaging>
 
     <build>
         <resources>
@@ -17,34 +18,33 @@
                     <include>dashscope4j-agent-meta.properties</include>
                 </includes>
             </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>dashscope4j-agent-meta.properties</exclude>
+                </excludes>
+            </resource>
         </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
+                <configuration>
+                    <release>${release.jdk.version}</release>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                    <showDeprecation>true</showDeprecation>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
                 <executions>
-                    <execution>
-                        <id>compile-java8</id>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <release>${release.jdk.version}</release>
-                            <encoding>${project.build.sourceEncoding}</encoding>
-                            <showDeprecation>true</showDeprecation>
-                            <compileSourceRoots>
-                                <compileSourceRoot>${project.basedir}/src/main/java</compileSourceRoot>
-                            </compileSourceRoots>
-                            <annotationProcessorPaths>
-                                <path>
-                                    <groupId>org.projectlombok</groupId>
-                                    <artifactId>lombok</artifactId>
-                                    <version>${lombok.version}</version>
-                                </path>
-                            </annotationProcessorPaths>
-                        </configuration>
-                    </execution>
                     <execution>
                         <id>compile-java9</id>
                         <goals>
@@ -78,5 +78,35 @@
         </plugins>
     </build>
 
+    <dependencies>
+        <dependency>
+            <groupId>io.github.oldmanpushcart</groupId>
+            <artifactId>dashscope4j-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
 </project>

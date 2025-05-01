@@ -142,4 +142,6 @@ public class ChatModel implements Model {
      */
     public static final ChatModel QVQ_MAX = ofMultimodal("qvq-max");
 
+
+
 }

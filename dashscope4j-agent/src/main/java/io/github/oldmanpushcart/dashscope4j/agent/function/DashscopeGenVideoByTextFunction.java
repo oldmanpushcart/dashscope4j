@@ -1,0 +1,65 @@
+package io.github.oldmanpushcart.dashscope4j.agent.function;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
+import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenVideoModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenVideoOptions;
+import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenVideoRequest;
+import io.github.oldmanpushcart.dashscope4j.client.task.Task;
+import lombok.Value;
+import lombok.experimental.Accessors;
+
+import java.net.URI;
+import java.time.Duration;
+import java.util.concurrent.CompletionStage;
+
+@ChatFnName("dashscope_text2video")
+@ChatFnDescription("根据文本提示生成视频")
+public class DashscopeGenVideoByTextFunction implements ChatFunction<DashscopeGenVideoByTextFunction.Parameter, DashscopeGenVideoByTextFunction.Result> {
+
+    @Override
+    public CompletionStage<Result> call(Caller caller, Parameter parameter) {
+        
+        final TextGenVideoRequest request = TextGenVideoRequest.newBuilder()
+                .model(TextGenVideoModel.WANX_V2_1_T2V_TURBO)
+                .option(TextGenVideoOptions.ENABLE_PROMPT_EXTEND, true)
+                .prompt(parameter.prompt())
+                .build();
+
+        return caller.client().video().genByText()
+                .task(request)
+                .thenCompose(this::waitingFor)
+                .thenApply(response -> response.output().video())
+                .thenApply(Result::new);
+    }
+
+    private <T> CompletionStage<T> waitingFor(Task.Half<T> half) {
+        return half.waitingFor(Task.WaitStrategies.until(
+                Duration.ofMinutes(1),
+                Duration.ofMinutes(5)
+        ));
+    }
+
+    @Value
+    @Accessors(fluent = true)
+    public static class Parameter {
+
+        @JsonPropertyDescription("描述生成视频所期待的内容")
+        @JsonProperty(required = true)
+        String prompt;
+
+    }
+
+    @Value
+    public static class Result {
+
+        @JsonPropertyDescription("生成视频的URI")
+        @JsonProperty
+        URI videoURI;
+
+    }
+
+}

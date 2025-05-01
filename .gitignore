@@ -27,3 +27,6 @@ replay_pid*
 .idea
 *.iml
 target/
+
+## for maven
+.flattened-pom.xml
