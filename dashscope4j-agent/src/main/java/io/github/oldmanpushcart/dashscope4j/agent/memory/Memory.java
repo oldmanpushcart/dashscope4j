@@ -100,26 +100,52 @@ public interface Memory {
     }
 
 
+    /**
+     * 记忆体上下文
+     */
     @Data
     @Accessors(fluent = true, chain = true)
     class Context {
 
+        /**
+         * 会话 ID
+         */
         String sessionId;
+
+        /**
+         * 新于指定记忆片段 ID
+         */
         Long newerThenFragmentId;
+
+        /**
+         * 旧于指定记忆片段 ID
+         */
         Long olderThenFragmentId;
 
+        /**
+         * @return 新于指定记忆片段 ID
+         */
         public long newerThenFragmentId() {
             return newerThenFragmentId == null
                     ? Long.MAX_VALUE
                     : newerThenFragmentId;
         }
 
+        /**
+         * @return 旧于指定记忆片段 ID
+         */
         public long olderThenFragmentId() {
             return olderThenFragmentId == null
                     ? -1L
                     : olderThenFragmentId;
         }
 
+        /**
+         * 判断上下文是否无效
+         *
+         * @param context 上下文
+         * @return TRUE | FALSE
+         */
         public static boolean isInvalid(Context context) {
             return context == null || context.sessionId() == null;
         }

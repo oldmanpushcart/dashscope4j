@@ -8,6 +8,8 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.AccessLevel;
@@ -16,14 +18,18 @@ import lombok.experimental.Accessors;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 基础智能体
+ */
 @Getter(AccessLevel.PROTECTED)
 @Accessors(fluent = true)
 public abstract class BaseChatAgent implements ChatAgent {
@@ -31,47 +37,52 @@ public abstract class BaseChatAgent implements ChatAgent {
     private final DashscopeClient client;
     private final Memory memory;
     private final List<Interceptor> interceptors;
+    private final List<ChatFunctionTool> functionTools;
 
     protected BaseChatAgent(Builder<?, ?> builder) {
         this.memory = builder.memory;
         this.client = builder.client;
         this.interceptors = unmodifiableList(builder.interceptors);
+        this.functionTools = unmodifiableList(builder.functionTools);
     }
 
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
-        return CompletableFuture.completedFuture(request)
-                .thenApply(this::processChatRequestForInterceptors)
-                .thenApply(this::processChatRequestForMemoryRecall)
-                .thenCompose(this::baseAsync)
+        return baseAsync(newChatRequest(request))
                 .thenApply(response -> processPersistMemoryFragmentForAsync(request, response));
     }
 
     @Override
     public CompletionStage<Flowable<ChatResponse>> flow(ChatRequest request) {
-        return CompletableFuture.completedFuture(request)
-                .thenApply(this::processChatRequestForInterceptors)
-                .thenApply(this::processChatRequestForMemoryRecall)
-                .thenCompose(this::baseFlow)
+        return baseFlow(newChatRequest(request))
                 .thenApply(responseFlow -> processPersistMemoryFragmentForFlow(request, responseFlow));
     }
 
-    private ChatRequest processChatRequestForInterceptors(ChatRequest request) {
+    /**
+     * 创建新的对话请求
+     *
+     * @param request 原始对话请求
+     * @return 新的对话请求
+     */
+    private ChatRequest newChatRequest(ChatRequest request) {
         return ChatRequest.newBuilder(request)
+
+                // 添加Agent拦截器
                 .addInterceptors(interceptors)
-                .build();
-    }
 
-    private ChatRequest processChatRequestForMemoryRecall(ChatRequest request) {
+                // 添加Agent工具
+                .addTools(functionTools)
 
-        final Memory.Context context = request.context(Memory.Context.class);
-        if (Objects.isNull(memory)
-            || Memory.Context.isInvalid(context)) {
-            return request;
-        }
-
-        return ChatRequest.newBuilder(request)
+                /*
+                 * 在对话列表中添加回忆部分
+                 */
                 .building(builder -> {
+
+                    final Memory.Context context = request.context(Memory.Context.class);
+                    if (Objects.isNull(memory)
+                        || Memory.Context.isInvalid(context)) {
+                        return;
+                    }
 
                     final List<Message> newMessages = new ArrayList<>();
 
@@ -96,10 +107,12 @@ public abstract class BaseChatAgent implements ChatAgent {
 
                     // 替换原有的消息列表
                     builder.messages(newMessages);
+
                 })
                 .build();
     }
 
+    // 处理异步请求的记忆片段存储
     private ChatResponse processPersistMemoryFragmentForAsync(ChatRequest request, ChatResponse response) {
         final Memory.Context context = request.context(Memory.Context.class);
         if (Objects.isNull(memory)
@@ -123,6 +136,7 @@ public abstract class BaseChatAgent implements ChatAgent {
         return response;
     }
 
+    // 处理流式请求的记忆片段存储
     private Flowable<ChatResponse> processPersistMemoryFragmentForFlow(ChatRequest request, Flowable<ChatResponse> responseFlow) {
 
         final Memory.Context context = request.context(Memory.Context.class);
@@ -174,15 +188,37 @@ public abstract class BaseChatAgent implements ChatAgent {
                 });
     }
 
+    /**
+     * 异步对话
+     *
+     * @param request 对话请求
+     * @return 对话结果
+     */
     abstract protected CompletionStage<ChatResponse> baseAsync(ChatRequest request);
 
+    /**
+     * 流式对话
+     *
+     * @param request 对话请求
+     * @return 对话结果
+     */
     abstract protected CompletionStage<Flowable<ChatResponse>> baseFlow(ChatRequest request);
 
+
+    // ------------------------- BUILDER -------------------------
+
+    /**
+     * 基础智能体构造器
+     *
+     * @param <T> 智能体类型
+     * @param <B> 构造器类型
+     */
     public static abstract class Builder<T extends BaseChatAgent, B extends Builder<T, B>> implements Buildable<T, B> {
 
         private DashscopeClient client;
         private Memory memory;
         private final List<Interceptor> interceptors = new ArrayList<>();
+        private final List<ChatFunctionTool> functionTools = new ArrayList<>();
 
         public Builder() {
 
@@ -192,6 +228,7 @@ public abstract class BaseChatAgent implements ChatAgent {
             this.client = agent.client;
             this.memory = agent.memory;
             this.interceptors.addAll(agent.interceptors);
+            this.functionTools.addAll(agent.functionTools);
         }
 
         /**
@@ -251,6 +288,76 @@ public abstract class BaseChatAgent implements ChatAgent {
             requireNonNull(interceptors);
             this.interceptors.addAll(interceptors);
             return self();
+        }
+
+        /**
+         * 添加函数工具
+         *
+         * @param functionTool 函数工具
+         * @return this
+         */
+        public B addFunctionTool(ChatFunctionTool functionTool) {
+            this.functionTools.add(functionTool);
+            return self();
+        }
+
+        /**
+         * 批量添加函数工具
+         *
+         * @param functionTools 函数工具集合
+         * @return this
+         */
+        public B addFunctionTools(Collection<? extends ChatFunctionTool> functionTools) {
+            this.functionTools.addAll(functionTools);
+            return self();
+        }
+
+        /**
+         * 设置函数工具列表
+         *
+         * @param functionTools 函数工具列表
+         * @return this
+         */
+        public B functionTools(Collection<? extends ChatFunctionTool> functionTools) {
+            this.functionTools.clear();
+            this.functionTools.addAll(functionTools);
+            return self();
+        }
+
+        /**
+         * 添加函数
+         *
+         * @param function 函数
+         * @return this
+         */
+        public B addFunction(ChatFunction<?, ?> function) {
+            return addFunctionTool(ChatFunctionTool.of(function));
+        }
+
+        /**
+         * 批量添加函数
+         *
+         * @param functions 函数列表
+         * @return this
+         */
+        public B addFunctions(Collection<? extends ChatFunction<?, ?>> functions) {
+            final List<ChatFunctionTool> functionTools = functions.stream()
+                    .map(ChatFunctionTool::of)
+                    .collect(Collectors.toList());
+            return addFunctionTools(functionTools);
+        }
+
+        /**
+         * 设置函数列表
+         *
+         * @param functions 函数列表
+         * @return this
+         */
+        public B functions(Collection<? extends ChatFunction<?, ?>> functions) {
+            final List<ChatFunctionTool> functionTools = functions.stream()
+                    .map(ChatFunctionTool::of)
+                    .collect(Collectors.toList());
+            return functionTools(functionTools);
         }
 
     }

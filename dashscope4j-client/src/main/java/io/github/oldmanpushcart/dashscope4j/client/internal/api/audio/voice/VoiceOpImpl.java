@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.client.internal.util.CompletableFutureUtils.failedStage;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.failedStage;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.DashscopeApiUtils.isCauseByResourceNotExisted;
 import static java.util.Objects.isNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;

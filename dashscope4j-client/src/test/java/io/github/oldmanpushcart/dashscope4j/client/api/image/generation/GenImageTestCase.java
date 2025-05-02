@@ -12,7 +12,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
 import static io.github.oldmanpushcart.dashscope4j.client.api.ApiAssertions.assertApiResponseSuccessful;
-import static io.github.oldmanpushcart.dashscope4j.client.internal.util.CompletableFutureUtils.unwrapEx;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.unwrapEx;
 
 public class GenImageTestCase extends ClientSupport {
 

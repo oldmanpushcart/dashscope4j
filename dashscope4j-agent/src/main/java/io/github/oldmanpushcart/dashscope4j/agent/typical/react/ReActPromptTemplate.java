@@ -7,9 +7,12 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFu
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.agent.internal.util.IOUtils.resourceToString;
+import static io.github.oldmanpushcart.dashscope4j.agent.internal.util.ResourceUtils.resourceToString;
 
-public class ReActPromptTemplate extends PromptTemplate {
+/**
+ * React 提示语模板
+ */
+class ReActPromptTemplate extends PromptTemplate {
 
     private static final String REACT_TEMPLATE_RES_NAME = "dashscope4j/agent/typical/react/react-prompt-template.md";
 
@@ -19,7 +22,6 @@ public class ReActPromptTemplate extends PromptTemplate {
 
     /**
      * 构造提示语模板
-     *
      */
     public ReActPromptTemplate() {
         super(resourceToString(REACT_TEMPLATE_RES_NAME));

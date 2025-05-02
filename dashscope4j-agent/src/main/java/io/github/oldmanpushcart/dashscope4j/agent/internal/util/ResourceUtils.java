@@ -7,10 +7,10 @@ import java.io.InputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class IOUtils {
+public class ResourceUtils {
 
     public static String resourceToString(String resourceName) {
-        return resourceToString(resourceName, IOUtils.class.getClassLoader());
+        return resourceToString(resourceName, ResourceUtils.class.getClassLoader());
     }
 
     public static String resourceToString(String resourceName, ClassLoader loader) {

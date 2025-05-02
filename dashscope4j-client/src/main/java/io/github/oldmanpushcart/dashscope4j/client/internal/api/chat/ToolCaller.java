@@ -19,7 +19,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import static io.github.oldmanpushcart.dashscope4j.client.internal.util.CompletableFutureUtils.failedStage;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.failedStage;
 import static java.util.Collections.unmodifiableList;
 
 @Slf4j

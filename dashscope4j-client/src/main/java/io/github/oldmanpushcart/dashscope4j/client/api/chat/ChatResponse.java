@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
@@ -84,6 +85,23 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
 
                 .collect(Collectors.toList());
         return new Usage(unmodifiableList(items));
+    }
+
+    public ChatResponse changeMessages(UnaryOperator<Message> operator) {
+        final List<ChatResponse.Choice> newChoices = output().choices()
+                .stream()
+                .map(choice -> new Choice(choice.finish(), operator.apply(choice.message())))
+                .collect(Collectors.toList());
+        return new ChatResponse(
+                uuid(),
+                code(),
+                desc(),
+                usage(),
+                new ChatResponse.Output(
+                        output().searchInfo(),
+                        newChoices
+                )
+        );
     }
 
 

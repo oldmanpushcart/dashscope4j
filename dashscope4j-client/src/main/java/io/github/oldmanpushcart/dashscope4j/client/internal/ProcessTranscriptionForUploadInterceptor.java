@@ -7,7 +7,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import static io.github.oldmanpushcart.dashscope4j.client.internal.util.CompletableFutureUtils.thenIterateCompose;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.thenIterateCompose;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 class ProcessTranscriptionForUploadInterceptor implements Interceptor {

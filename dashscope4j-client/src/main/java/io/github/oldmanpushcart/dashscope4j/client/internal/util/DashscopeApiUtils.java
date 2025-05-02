@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.util;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
 
-import static io.github.oldmanpushcart.dashscope4j.client.internal.util.CompletableFutureUtils.unwrapEx;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.unwrapEx;
 
 public class DashscopeApiUtils {
 

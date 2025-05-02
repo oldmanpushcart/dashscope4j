@@ -42,7 +42,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
-import static io.github.oldmanpushcart.dashscope4j.client.internal.util.CompletableFutureUtils.failedStage;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.failedStage;
 import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
 

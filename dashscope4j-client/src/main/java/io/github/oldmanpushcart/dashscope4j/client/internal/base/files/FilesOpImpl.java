@@ -5,7 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.CompletableFutureUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.ProgressListener;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.AllArgsConstructor;

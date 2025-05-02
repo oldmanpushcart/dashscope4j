@@ -18,6 +18,9 @@ import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel.Mode.MULTIMODAL;
 
+/**
+ * TreeSet 记忆体
+ */
 public class TreeSetMemory implements Memory {
 
     private final AtomicLong fragmentIdGen = new AtomicLong(1000);

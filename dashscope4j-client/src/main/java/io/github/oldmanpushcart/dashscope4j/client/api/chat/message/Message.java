@@ -137,6 +137,10 @@ public class Message {
         return new Message(role, contents);
     }
 
+    public static Message of(Role role, Content<?> content) {
+        return new Message(role, content);
+    }
+
     /**
      * 系统消息(文本)
      *

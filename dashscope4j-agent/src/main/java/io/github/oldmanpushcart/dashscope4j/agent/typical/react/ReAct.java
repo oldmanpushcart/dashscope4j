@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
 class ReAct {
 
     public static final String NAME_OBSERVATION = "Observation";
+    public static final String NAME_FINAL_ANSWER = "Final Answer";
 
     private static final Set<State> waitingParseStates = new HashSet<>(Arrays.asList(
             State.THOUGHT,

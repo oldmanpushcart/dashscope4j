@@ -7,6 +7,9 @@ import io.reactivex.rxjava3.core.Flowable;
 
 import java.util.concurrent.CompletionStage;
 
+/**
+ * DashScope 智能体
+ */
 public class DashscopeChatAgent extends BaseChatAgent {
 
     private DashscopeChatAgent(Builder builder) {

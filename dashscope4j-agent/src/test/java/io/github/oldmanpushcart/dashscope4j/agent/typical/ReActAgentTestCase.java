@@ -31,7 +31,7 @@ public class ReActAgentTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        System.out.println(response);
+        System.out.println(response.output().best().message().text());
 
     }
 
@@ -47,12 +47,13 @@ public class ReActAgentTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
-                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, false)
                 .addMessage(Message.ofUser("现在几点了?"))
                 .build();
 
         agent.directFlow(request)
                 .reduce(new StringBuilder(), (stringBuf, response) -> {
+                    stringBuf.setLength(0);
                     stringBuf.append(response.output().best().message().text());
                     return stringBuf;
                 })
