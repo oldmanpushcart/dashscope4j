@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_X_DASHSCOPE_PLUGIN;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.CommonUtils.requireNonEmptyCollection;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
@@ -133,15 +134,10 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         return builder.build();
     }
 
-    /**
-     * @return 请求选项
-     * <p>
-     * 一些对话场景强制要求设置一些选项，比如工具列表等。
-     * </p>
-     */
     @Override
-    public Option option() {
-        final Option option = new Option();
+    protected Option parameters() {
+
+        final Option option = super.parameters().clone();
 
         // 插件必选参数
         if (!plugins.isEmpty()) {
@@ -157,11 +153,74 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
             option.option("tools", enabledTools);
         }
 
-        return new Option()
-                .merge(super.option())
-                .merge(option)
+        return option
                 .unmodifiable();
+
     }
+
+    /**
+     * 从消息列表中获取指定角色的消息列表
+     *
+     * @param roles 角色列表
+     * @return 消息列表
+     */
+    public List<Message> messagesFromRoles(Message.Role... roles) {
+        if (null == messages || messages.isEmpty() || null == roles) {
+            return emptyList();
+        }
+        final Set<Message.Role> roleSet = new HashSet<>(Arrays.asList(roles));
+        return messages()
+                .stream()
+                .filter(message -> roleSet.contains(message.role()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 判断最后一个消息是否是用户消息
+     *
+     * @return TRUE | FALSE
+     */
+    public boolean isLastMessageFromUser() {
+        if (null == messages || messages.isEmpty()) {
+            return false;
+        }
+        final Message lastMessage = messages.get(messages.size() - 1);
+        return null != lastMessage
+               && lastMessage.role() == Message.Role.USER;
+    }
+
+    /**
+     * 获取最后一个用户消息
+     *
+     * @return 最后一个用户消息
+     * @throws IllegalArgumentException 如果没有消息或最后一个消息不是USER消息则抛出此异常
+     */
+    public Message requireLastMessageFromUser() {
+        if (null == messages || messages.isEmpty()) {
+            throw new IllegalArgumentException("Last message not existed!");
+        }
+        final Message lastMessage = messages.get(messages.size() - 1);
+        if (null == lastMessage
+            || lastMessage.role() != Message.Role.USER) {
+            throw new IllegalArgumentException("Last message not user message!");
+        }
+        return lastMessage;
+    }
+
+    /**
+     * 提取历史信息
+     * <p>
+     * 消息列表中下标范围[0,n-1)信息为历史信息
+     * </p>
+     *
+     * @return 历史信息
+     */
+    public List<Message> historyMessages() {
+        return null == messages || messages.isEmpty()
+                ? emptyList()
+                : messages.subList(0, messages.size() - 1);
+    }
+
 
     /**
      * @return 新建对话请求构建器

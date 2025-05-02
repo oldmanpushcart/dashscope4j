@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.agent.memory;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -47,14 +46,6 @@ public interface Memory {
     default List<Fragment> recall(String sessionId, long olderThenFragmentId) {
         return recall(sessionId, olderThenFragmentId, Long.MAX_VALUE);
     }
-
-    /**
-     * 回忆
-     *
-     * @param request 对话请求
-     * @return 回忆后的对话请求
-     */
-    ChatRequest recall(ChatRequest request);
 
     /**
      * 存储记忆片段
@@ -127,6 +118,10 @@ public interface Memory {
             return olderThenFragmentId == null
                     ? -1L
                     : olderThenFragmentId;
+        }
+
+        public static boolean isInvalid(Context context) {
+            return context == null || context.sessionId() == null;
         }
 
     }

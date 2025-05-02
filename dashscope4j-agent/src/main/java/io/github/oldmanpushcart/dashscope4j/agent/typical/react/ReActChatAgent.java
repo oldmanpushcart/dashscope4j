@@ -9,16 +9,14 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 import io.reactivex.rxjava3.core.Flowable;
+import lombok.Data;
+import lombok.experimental.Accessors;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.agent.util.ChatFunctionToolHelper.*;
-import static io.github.oldmanpushcart.dashscope4j.agent.util.DashscopeUtils.requireHistoryMessages;
-import static io.github.oldmanpushcart.dashscope4j.agent.util.DashscopeUtils.requireLastMessageFromUser;
+import static io.github.oldmanpushcart.dashscope4j.agent.internal.util.ChatFunctionToolUtils.*;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -33,13 +31,13 @@ public class ReActChatAgent extends BaseChatAgent {
     }
 
     @Override
-    public CompletionStage<ChatResponse> async(ChatRequest request) {
+    protected CompletionStage<ChatResponse> baseAsync(ChatRequest request) {
         final ChatRequest newRequest = newReActChatRequest(request);
-        return dashscope().chat().async(newRequest)
-                .thenCompose(response -> asyncReAct(functionTools, response));
+        return client().chat().async(newRequest)
+                .thenCompose(this::asyncReAct);
     }
 
-    private CompletionStage<ChatResponse> asyncReAct(List<ChatFunctionTool> functionTools, ChatResponse previousResponse) {
+    private CompletionStage<ChatResponse> asyncReAct(ChatResponse previousResponse) {
 
         final Message previousResponseMessage = previousResponse.output().best().message();
         final ReAct reAct = ReAct.valueOf(previousResponseMessage.text());
@@ -51,15 +49,16 @@ public class ReActChatAgent extends BaseChatAgent {
 
         // 如果没有动作，则抛出异常
         if (!reAct.hasAction()) {
-            throw new IllegalArgumentException("Action is required!");
+            throw new IllegalStateException("Action is required!");
         }
 
         final ChatRequest request = (ChatRequest) previousResponse.request();
+        final Context context = request.context(Context.class);
 
         final String functionName = reAct.getAction();
         final String argumentJson = reAct.getActionInput();
-        final ChatFunctionTool functionTool = requireFunctionTool(functionTools, functionName);
-        final ChatFunction.Caller functionCaller = newFunctionCaller(dashscope(), request);
+        final ChatFunctionTool functionTool = requireFunctionTool(context.functionTools(), functionName);
+        final ChatFunction.Caller functionCaller = newFunctionCaller(client(), request);
 
         return callingFunctionTool(functionCaller, functionTool, argumentJson)
                 .thenCompose(resultJson -> {
@@ -67,47 +66,150 @@ public class ReActChatAgent extends BaseChatAgent {
                             .addMessage(previousResponseMessage)
                             .addMessage(Message.ofUser(String.format("%s:%s", ReAct.NAME_OBSERVATION, resultJson)))
                             .build();
-                    return dashscope().chat().async(nextRequest);
+                    return client().chat().async(nextRequest);
                 })
-                .thenCompose(response -> asyncReAct(functionTools, response));
+                .thenCompose(this::asyncReAct);
     }
 
     @Override
-    public CompletionStage<Flowable<ChatResponse>> flow(ChatRequest request) {
-        return null;
+    protected CompletionStage<Flowable<ChatResponse>> baseFlow(ChatRequest request) {
+        final ChatRequest newRequest = newReActChatRequest(request);
+        return client().chat().flow(newRequest)
+                .thenApply(this::flowReAct);
+    }
+
+    private Flowable<ChatResponse> flowReAct(Flowable<ChatResponse> responseFlow) {
+        final StringBuilder stringBuf = new StringBuilder();
+        return responseFlow.concatMap(response -> {
+
+            final ChatResponse.Choice choice = response.output().best();
+            final ChatRequest request = (ChatRequest) response.request();
+            final Context context = request.context(Context.class);
+
+            /*
+             * 如果不是增量输出，则清空缓存
+             */
+            if (!request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)) {
+                stringBuf.setLength(0);
+            }
+            stringBuf.append(choice.message().text());
+
+
+            /*
+             * 如果不是最后一个消息，则直接返回当前对话流
+             */
+            if (choice.finish() == ChatResponse.Finish.NONE) {
+                return Flowable.just(response);
+            }
+
+            final String responseText = stringBuf.toString();
+            final ReAct reAct = ReAct.valueOf(responseText);
+
+            // 如果有最终的答案，则直接返回
+            if (reAct.hasFinalAnswer()) {
+                return Flowable.just(response);
+            }
+
+            // 如果没有动作，则抛出异常
+            if (!reAct.hasAction()) {
+                throw new IllegalArgumentException("Action is required!");
+            }
+
+            final String functionName = reAct.getAction();
+            final String argumentJson = reAct.getActionInput();
+            final ChatFunctionTool functionTool = requireFunctionTool(context.functionTools(), functionName);
+            final ChatFunction.Caller functionCaller = newFunctionCaller(client(), request);
+
+            return Flowable
+                    .just(response)
+                    .concatWith(Flowable.defer(() -> {
+                        final CompletionStage<Flowable<ChatResponse>> nextFlow = completedFuture(null)
+                                .thenCompose(unused -> callingFunctionTool(functionCaller, functionTool, argumentJson))
+                                .thenCompose(resultJson -> {
+                                    final ChatRequest nextRequest = ChatRequest.newBuilder(request)
+                                            .addMessage(Message.ofAi(responseText))
+                                            .addMessage(Message.ofAi(String.format("%s:%s", ReAct.NAME_OBSERVATION, resultJson)))
+                                            .build();
+                                    return client().chat().flow(nextRequest);
+                                })
+                                .thenApply(this::flowReAct);
+                        return Flowable
+                                .fromCompletionStage(nextFlow)
+                                .flatMap(Flowable::fromPublisher);
+                    }));
+
+        });
+    }
+
+
+    private List<ChatFunctionTool> mergeFunctionTools(ChatRequest request) {
+
+        final Map<String, ChatFunctionTool> requestFunctionToolMap = request.tools()
+                .stream()
+                .filter(v -> v instanceof ChatFunctionTool)
+                .map(ChatFunctionTool.class::cast)
+                .collect(Collectors.toMap(
+                        tool -> tool.meta().name(),
+                        tool -> tool,
+                        (v1, v2) -> v2
+                ));
+
+        final Map<String, ChatFunctionTool> functionToolMap = functionTools
+                .stream()
+                .collect(Collectors.toMap(
+                        tool -> tool.meta().name(),
+                        tool -> tool,
+                        (v1, v2) -> v2
+                ));
+
+        final Map<String, ChatFunctionTool> mergeFunctionToolMap = new HashMap<>();
+        mergeFunctionToolMap.putAll(functionToolMap);
+        mergeFunctionToolMap.putAll(requestFunctionToolMap);
+
+        return new ArrayList<>(mergeFunctionToolMap.values());
+    }
+
+    private Message rewriteUserMessage(Message message, List<ChatFunctionTool> functionTools) {
+
+        final List<Content<?>> nonTextContents = message.contents()
+                .stream()
+                .filter(v -> v.type() != Content.Type.TEXT)
+                .collect(Collectors.toList());
+        final Content<?> textContent = new ReActPromptTemplate()
+                .tools(functionTools)
+                .question(message.text())
+                .renderTo(Content::ofText);
+
+        final List<Content<?>> newContents = new ArrayList<>();
+        newContents.add(textContent);
+        newContents.addAll(nonTextContents);
+
+        return Message.ofUser(newContents);
     }
 
     private ChatRequest newReActChatRequest(ChatRequest request) {
         return ChatRequest.newBuilder(request)
                 .option(ChatOptions.STOP_WORDS, new String[]{ReAct.NAME_OBSERVATION + ":"})
-                .messages(requireHistoryMessages(request))
+                .messages(request.historyMessages())
                 .building(builder -> {
-                    final Message userMessage = requireLastMessageFromUser(request);
-                    final List<Content<?>> nonTextContents = userMessage.contents()
-                            .stream()
-                            .filter(v -> v.type() != Content.Type.TEXT)
-                            .collect(Collectors.toList());
-                    final Content<?> textContent = new ReActPromptTemplate()
-                            .tools(new ArrayList<ChatFunctionTool>() {{
-                                final List<ChatFunctionTool> requestFunctionTools = request.tools()
-                                        .stream()
-                                        .filter(v -> v instanceof ChatFunctionTool)
-                                        .map(ChatFunctionTool.class::cast)
-                                        .collect(Collectors.toList());
-                                addAll(functionTools);
-                                addAll(requestFunctionTools);
-                            }})
-                            .question(requireLastMessageFromUser(request).text())
-                            .renderTo(Content::ofText);
-                    final Message newUserMessage = Message.ofUser(new ArrayList<Content<?>>() {{
-                        add(textContent);
-                        addAll(nonTextContents);
-                    }});
-                    builder.addMessage(newUserMessage);
+                    final List<ChatFunctionTool> functionTools = mergeFunctionTools(request);
+                    final Message message = request.requireLastMessageFromUser();
+                    final Context context = new Context().functionTools(functionTools);
+                    builder.self()
+                            .context(Context.class, context)
+                            .addMessage(rewriteUserMessage(message, functionTools));
                 })
                 .tools(emptyList())
                 .build();
     }
+
+    @Data
+    @Accessors(fluent = true, chain = true)
+    private static class Context {
+        private List<ChatFunctionTool> functionTools = new ArrayList<>();
+    }
+
+    // ------------------------- BUILDER -------------------------
 
     public static Builder newBuilder() {
         return new Builder();

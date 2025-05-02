@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.util;
+package io.github.oldmanpushcart.dashscope4j.agent.internal.util;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
@@ -10,7 +10,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-public abstract class ChatFunctionToolHelper {
+public abstract class ChatFunctionToolUtils {
 
     public static CompletionStage<String> callingFunctionTool(ChatFunction.Caller caller, ChatFunctionTool functionTool, String argumentJson) {
         final Type parameterType = functionTool.meta().parameterTs().type();
@@ -26,12 +26,12 @@ public abstract class ChatFunctionToolHelper {
                 .orElseThrow(() -> new FunctionToolNotFoundException(functionName));
     }
 
-    public static ChatFunction.Caller newFunctionCaller(DashscopeClient dashscope, ChatRequest request) {
+    public static ChatFunction.Caller newFunctionCaller(DashscopeClient client, ChatRequest request) {
         return new ChatFunction.Caller() {
 
             @Override
             public DashscopeClient client() {
-                return dashscope;
+                return client;
             }
 
             @Override

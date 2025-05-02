@@ -41,5 +41,4 @@ open module dashscope4j.client {
     exports io.github.oldmanpushcart.dashscope4j.client.base.files;
     exports io.github.oldmanpushcart.dashscope4j.client.task;
 
-
 }

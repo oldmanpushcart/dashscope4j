@@ -1,13 +1,13 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
+import io.github.oldmanpushcart.dashscope4j.agent.internal.util.JacksonUtils;
 import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
-import io.github.oldmanpushcart.dashscope4j.agent.util.JacksonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.agent.util.IOUtils.resourceToString;
+import static io.github.oldmanpushcart.dashscope4j.agent.internal.util.IOUtils.resourceToString;
 
 public class ReActPromptTemplate extends PromptTemplate {
 

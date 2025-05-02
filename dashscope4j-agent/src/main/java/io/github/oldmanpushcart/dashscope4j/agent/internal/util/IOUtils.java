@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.util;
+package io.github.oldmanpushcart.dashscope4j.agent.internal.util;
 
 import lombok.Getter;
 

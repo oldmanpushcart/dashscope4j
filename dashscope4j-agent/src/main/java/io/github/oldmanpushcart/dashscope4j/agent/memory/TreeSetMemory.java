@@ -1,9 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.agent.memory;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.LocalTokenizerUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.MessageCodec;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -17,8 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.agent.util.JacksonUtils.toJson;
-import static io.github.oldmanpushcart.dashscope4j.agent.util.JacksonUtils.toObject;
+import static io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel.Mode.MULTIMODAL;
 
 public class TreeSetMemory implements Memory {
 
@@ -51,44 +49,6 @@ public class TreeSetMemory implements Memory {
                 .filter(this::filterByCondition)
                 .map(FragmentDO::toFragment)
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public ChatRequest recall(ChatRequest request) {
-
-        final Memory.Context context = request.context(Memory.Context.class);
-        if (null == context || null == context.sessionId()) {
-            return request;
-        }
-
-        return ChatRequest.newBuilder(request)
-                .building(builder -> {
-
-                    final List<Message> newMessages = new ArrayList<>();
-
-                    // 先添加SYSTEM
-                    request.messages()
-                            .stream()
-                            .filter(message -> message.role() == Message.Role.SYSTEM)
-                            .forEach(newMessages::add);
-
-                    // 然后添加回忆
-                    recall(context.sessionId(), context.olderThenFragmentId(), context.newerThenFragmentId())
-                            .forEach(fragment -> {
-                                newMessages.add(fragment.requestMessage());
-                                newMessages.add(fragment.responseMessage());
-                            });
-
-                    // 最后添加请求原有的对话信息
-                    request.messages()
-                            .stream()
-                            .filter(message -> message.role() != Message.Role.SYSTEM)
-                            .forEach(newMessages::add);
-
-                    // 替换原有的消息列表
-                    builder.messages(newMessages);
-                })
-                .build();
     }
 
     private boolean filterByFragmentIdRange(FragmentDO fragmentDO, long older, long newer) {
@@ -153,8 +113,8 @@ public class TreeSetMemory implements Memory {
             return new Memory.Fragment()
                     .fragmentId(this.fragmentId)
                     .sessionId(this.sessionId)
-                    .requestMessage(toObject(this.requestMessageJson, Message.class))
-                    .responseMessage(toObject(this.responseMessageJson, Message.class))
+                    .requestMessage(MessageCodec.decode(this.requestMessageJson))
+                    .responseMessage(MessageCodec.decode(this.responseMessageJson))
                     .createdAt(this.createdAt)
                     .updatedAt(this.updatedAt);
         }
@@ -166,16 +126,23 @@ public class TreeSetMemory implements Memory {
                             fragment.responseMessage()
                     ))
                     .size();
+            final String requestMessageJson = MessageCodec.encodeToJson(MULTIMODAL, fragment.requestMessage());
+            final String responseMessageJson = MessageCodec.encodeToJson(MULTIMODAL, fragment.responseMessage());
             return new FragmentDO()
                     .setFragmentId(fragment.fragmentId())
                     .setSessionId(fragment.sessionId())
                     .setTokens(tokens)
-                    .setRequestMessageJson(toJson(fragment.requestMessage()))
-                    .setResponseMessageJson(toJson(fragment.responseMessage()))
+                    .setRequestMessageJson(requestMessageJson)
+                    .setResponseMessageJson(responseMessageJson)
                     .setCreatedAt(fragment.createdAt())
                     .setUpdatedAt(fragment.updatedAt());
         }
 
+    }
+
+
+    public static Builder newBuilder() {
+        return new Builder();
     }
 
     public static class Builder implements Buildable<TreeSetMemory, Builder> {
