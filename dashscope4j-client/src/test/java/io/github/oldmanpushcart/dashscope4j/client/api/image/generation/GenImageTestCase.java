@@ -1,12 +1,16 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.image.generation;
 
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.Ret;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.io.File;
+import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -63,6 +67,29 @@ public class GenImageTestCase extends ClientSupport {
             }
 
         });
+
+    }
+
+    @Test
+    public void test$image$genByReference() {
+
+        final GenImageRequest request = GenImageRequest.newBuilder()
+                .model(GenImageModel.WANX_V1)
+                .enableAutoUpload(true)
+                .prompt("将图片转为卡通风格")
+                .reference(new File("./test-data/image-002.jpeg").toURI())
+                .option(GenImageOptions.NUMBER, 1)
+                .option(GenImageOptions.SIZE, GenImageOptions.Size.S_1024_1024)
+                .option(GenImageOptions.STYLE, GenImageOptions.Style.CARTOON_3D)
+                .build();
+
+        final URI genImageURI = client.image().generation().task(request)
+                .thenCompose(half -> half.waitingFor(Task.WaitStrategies.always(Duration.ofSeconds(1))))
+                .thenApply(response -> response.output().results().get(0).image())
+                .toCompletableFuture()
+                .join();
+
+        DashscopeAssertions.assertByDashscope(client, "有两辆自行车", genImageURI);
 
     }
 

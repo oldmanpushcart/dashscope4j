@@ -1,8 +1,7 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal;
+package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 

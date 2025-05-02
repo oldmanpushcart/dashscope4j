@@ -23,6 +23,7 @@ public class ChatVisionTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
+                .enableAutoUpload(true)
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofImage(new File("./test-data/IMG_0942.JPG").toURI()),
                         Content.ofText("图片中一共多少个男孩?")
@@ -50,6 +51,7 @@ public class ChatVisionTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
+                .enableAutoUpload(true)
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofVideo(images),
                         Content.ofText("请根据视频内容来判断我的描述是否正确，如果正确请返回TRUE，否则返回FALSE，不需要说多余的话。\n" +

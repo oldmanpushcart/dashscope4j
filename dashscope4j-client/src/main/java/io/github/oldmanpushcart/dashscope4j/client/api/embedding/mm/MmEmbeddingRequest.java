@@ -104,6 +104,21 @@ public class MmEmbeddingRequest extends AlgoRequest<MmEmbeddingModel, MmEmbeddin
             return this;
         }
 
+        /**
+         * 启用自动上传
+         *
+         * @param enabled 是否启用自动上传
+         * @return this
+         * @since 3.2.0
+         */
+        public Builder enableAutoUpload(boolean enabled) {
+            removeInterceptorByType(ProcessMmEmbeddingContentForUploadInterceptor.class);
+            if (enabled) {
+                addInterceptor(new ProcessMmEmbeddingContentForUploadInterceptor());
+            }
+            return this;
+        }
+
         @Override
         public MmEmbeddingRequest build() {
             return new MmEmbeddingRequest(this);

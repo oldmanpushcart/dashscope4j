@@ -1,9 +1,7 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal;
+package io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.voice;
 
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoRequest;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.voice.VoiceCreateRequest;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.voice.VoiceUpdateRequest;
 
 import java.net.URI;
 import java.util.concurrent.CompletionStage;

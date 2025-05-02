@@ -30,6 +30,7 @@ public class VoiceOpImpl implements VoiceOp {
                 .group(group)
                 .targetModel(targetModel)
                 .resource(resource)
+                .addInterceptor(new ProcessVoiceForUploadInterceptor())
                 .build();
         return apiOp.executeAsync(request)
                 .thenCompose(response -> detail(response.output().voiceId()));
@@ -69,6 +70,7 @@ public class VoiceOpImpl implements VoiceOp {
     public CompletionStage<?> update(String voiceId, URI resource) {
         final VoiceUpdateRequest request = VoiceUpdateRequest.newBuilder()
                 .model(VoiceModel.VOICE_ENROLLMENT)
+                .addInterceptor(new ProcessVoiceForUploadInterceptor())
                 .voiceId(voiceId)
                 .resource(resource)
                 .build();

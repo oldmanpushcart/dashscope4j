@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.video.generation;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -83,6 +84,21 @@ public class ImageGenVideoRequest extends AlgoRequest<ImageGenVideoModel, ImageG
          */
         public Builder image(URI image) {
             this.image = image;
+            return this;
+        }
+
+        /**
+         * 启用自动上传
+         *
+         * @param enabled 是否启用自动上传
+         * @return this
+         * @since 3.2.0
+         */
+        public Builder enableAutoUpload(boolean enabled) {
+            removeInterceptorByType(ProcessImageGenVideoForUploadInterceptor.class);
+            if (enabled) {
+                addInterceptor(new ProcessImageGenVideoForUploadInterceptor());
+            }
             return this;
         }
 

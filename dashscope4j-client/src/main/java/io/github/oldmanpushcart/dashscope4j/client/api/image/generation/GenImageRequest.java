@@ -79,6 +79,21 @@ public class GenImageRequest extends AlgoRequest<GenImageModel, GenImageResponse
             return this;
         }
 
+        /**
+         * 启用自动上传
+         *
+         * @param enabled 是否启用自动上传
+         * @return this
+         * @since 3.2.0
+         */
+        public Builder enableAutoUpload(boolean enabled) {
+            removeInterceptorByType(ProcessImageGenImageForUploadInterceptor.class);
+            if (enabled) {
+                addInterceptor(new ProcessImageGenImageForUploadInterceptor());
+            }
+            return this;
+        }
+
         @Override
         public GenImageRequest build() {
             return new GenImageRequest(this);

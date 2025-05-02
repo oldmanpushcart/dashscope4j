@@ -26,7 +26,7 @@ public final class Option {
      * @param map 选项KV集合
      */
     public Option(Map<String, Object> map) {
-        this.map = map;
+        this.map = new HashMap<>(map);
     }
 
     /**

@@ -73,6 +73,7 @@ public class ChatLongTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_LONG)
+                .enableAutoUpload(true)
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("总结两篇文章内容"),
                         Content.ofFile(meta1.toURI()),

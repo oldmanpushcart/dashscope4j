@@ -126,6 +126,19 @@ public abstract class ApiRequest<R extends ApiResponse<?>> extends Request {
             return self();
         }
 
+        /**
+         * 根据拦截器类型移除
+         *
+         * @param interceptorType 拦截器类型
+         * @return this
+         * @since 3.2.0
+         */
+        public B removeInterceptorByType(Class<? extends Interceptor> interceptorType) {
+            requireNonNull(interceptorType);
+            this.interceptors.removeIf(interceptorType::isInstance);
+            return self();
+        }
+
     }
 
 }

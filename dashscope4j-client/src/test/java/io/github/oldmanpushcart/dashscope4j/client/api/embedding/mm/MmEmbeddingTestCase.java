@@ -17,6 +17,7 @@ public class MmEmbeddingTestCase extends ClientSupport {
 
         final MmEmbeddingRequest request = MmEmbeddingRequest.newBuilder()
                 .model(MmEmbeddingModel.MM_EMBEDDING_V1)
+                .enableAutoUpload(true)
                 .contents(Arrays.asList(
                         Content.ofImage(new File("./test-data/image-002.jpeg").toURI()),
                         Content.ofText("一个帅哥在骑自行车念经"),

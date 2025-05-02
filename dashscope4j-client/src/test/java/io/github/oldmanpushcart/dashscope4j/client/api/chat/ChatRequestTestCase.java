@@ -76,6 +76,7 @@ public class ChatRequestTestCase {
     public void test$chat$request$tool() {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
+                .enableAutoUpload(true)
                 .addFunction(new EchoFunction())
                 .addMessage(Message.ofUser("Hello!"))
                 .build();

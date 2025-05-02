@@ -1,8 +1,7 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal;
+package io.github.oldmanpushcart.dashscope4j.client.api.embedding.mm;
 
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
-import io.github.oldmanpushcart.dashscope4j.client.api.embedding.mm.MmEmbeddingRequest;
 
 import java.net.URI;
 import java.util.concurrent.CompletionStage;

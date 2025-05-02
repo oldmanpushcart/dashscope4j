@@ -57,6 +57,7 @@ public class TranscriptionTestCase extends ClientSupport {
 
         final TranscriptionRequest request = TranscriptionRequest.newBuilder()
                 .model(TranscriptionModel.PARAFORMER_V2)
+                .enableAutoUpload(true)
                 .addResource(new File("./test-data/poetry-DengHuangHeLou.wav").toURI())
                 .build();
 

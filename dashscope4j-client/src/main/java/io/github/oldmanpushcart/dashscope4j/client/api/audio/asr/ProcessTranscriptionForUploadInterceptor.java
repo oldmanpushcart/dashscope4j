@@ -1,7 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal;
+package io.github.oldmanpushcart.dashscope4j.client.api.audio.asr;
 
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.api.audio.asr.TranscriptionRequest;
 
 import java.net.URI;
 import java.util.List;

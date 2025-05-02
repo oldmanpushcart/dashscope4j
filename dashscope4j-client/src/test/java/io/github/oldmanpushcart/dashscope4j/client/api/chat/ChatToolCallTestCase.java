@@ -14,8 +14,9 @@ public class ChatToolCallTestCase extends ClientSupport {
     public void test$chat$tool$function$async() {
 
         final ChatRequest request = ChatRequest.newBuilder()
-                .option(ENABLE_PARALLEL_TOOL_CALLS, true)
                 .model(ChatModel.QWEN_TURBO)
+                .enableAutoUpload(true)
+                .option(ENABLE_PARALLEL_TOOL_CALLS, true)
                 .addFunction(new QueryScoreFunction())
                 .addMessage(Message.ofUser("查询数学和语文的成绩"))
                 .build();
@@ -32,8 +33,9 @@ public class ChatToolCallTestCase extends ClientSupport {
     public void test$chat$tool$function$flow() {
 
         final ChatRequest request = ChatRequest.newBuilder()
-                .option(ENABLE_PARALLEL_TOOL_CALLS, true)
                 .model(ChatModel.QWEN_TURBO)
+                .enableAutoUpload(true)
+                .option(ENABLE_PARALLEL_TOOL_CALLS, true)
                 .addFunction(new QueryScoreFunction())
                 .addMessage(Message.ofUser("查询数学和语文的成绩"))
                 .build();
@@ -52,9 +54,10 @@ public class ChatToolCallTestCase extends ClientSupport {
     public void test$chat$tool$function$flow$incremental() {
 
         final ChatRequest request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_TURBO)
+                .enableAutoUpload(true)
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .option(ChatOptions.ENABLE_PARALLEL_TOOL_CALLS, true)
-                .model(ChatModel.QWEN_TURBO)
                 .addFunction(new QueryScoreFunction())
                 .addMessage(Message.ofUser("查询数学和语文的成绩"))
                 .build();

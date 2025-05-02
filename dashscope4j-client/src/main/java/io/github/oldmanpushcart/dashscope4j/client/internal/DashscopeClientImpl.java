@@ -63,13 +63,6 @@ class DashscopeClientImpl implements DashscopeClient {
          *
          */
         final List<Interceptor> merged = new ArrayList<>(interceptors);
-
-        merged.add(new ProcessMmEmbeddingContentForUploadInterceptor());
-        merged.add(new ProcessTranscriptionForUploadInterceptor());
-        merged.add(new ProcessVoiceForUploadInterceptor());
-        merged.add(new ProcessImageGenVideoForUploadInterceptor());
-        merged.add(new ProcessChatMessageContentForUploadInterceptor());
-        merged.add(new ProcessChatMessageContentForQwenLongInterceptor());
         merged.add(new ProcessToolCallForChatInterceptor());
 
         // 生成拦截器组

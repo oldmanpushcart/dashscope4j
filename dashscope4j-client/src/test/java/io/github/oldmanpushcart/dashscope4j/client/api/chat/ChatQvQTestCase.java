@@ -18,6 +18,7 @@ public class ChatQvQTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QVQ_MAX)
+                .enableAutoUpload(true)
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofImage(new File("./test-data/IMG_0942.JPG").toURI()),
