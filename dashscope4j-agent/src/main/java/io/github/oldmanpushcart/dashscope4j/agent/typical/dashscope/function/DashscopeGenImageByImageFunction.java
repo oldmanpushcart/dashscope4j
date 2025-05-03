@@ -22,14 +22,14 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-@ChatFnName("dashscope_gen_image_by_text")
-@ChatFnDescription("根据文本提示生成图片")
+@ChatFnName("dashscope_gen_image_by_image")
+@ChatFnDescription("根据参考图片和文本提示生成图片")
 @Setter
 @Accessors(fluent = true, chain = true)
-public class DashscopeGenImageByTextFunction implements ChatFunction<DashscopeGenImageByTextFunction.Parameter, DashscopeGenImageByTextFunction.Result> {
+public class DashscopeGenImageByImageFunction
+        implements ChatFunction<DashscopeGenImageByImageFunction.Parameter, DashscopeGenImageByImageFunction.Result> {
 
     private boolean autoUploadEnabled;
-
     private Task.WaitStrategy waitStrategy = Task.WaitStrategies.until(
             Duration.ofSeconds(5),
             Duration.ofMinutes(1)
@@ -39,13 +39,19 @@ public class DashscopeGenImageByTextFunction implements ChatFunction<DashscopeGe
     public CompletionStage<Result> call(Caller caller, Parameter parameter) {
 
         final GenImageRequest request = GenImageRequest.newBuilder()
-                .model(GenImageModel.WANX_V2_1_PLUS)
+                .model(GenImageModel.WANX_V1)
                 .enableAutoUpload(autoUploadEnabled)
                 .option(GenImageOptions.NUMBER, 1)
                 .prompt(parameter.prompt())
                 .building(builder -> {
                     if (null != parameter.negative()) {
                         builder.negative(parameter.negative());
+                    }
+                    if (null != parameter.refMode()) {
+                        builder.option(GenImageOptions.REF_MODE, parameter.refMode());
+                    }
+                    if (null != parameter.refStrength()) {
+                        builder.option(GenImageOptions.REF_STRENGTH, parameter.refStrength());
                     }
                 })
                 .build();
@@ -73,6 +79,10 @@ public class DashscopeGenImageByTextFunction implements ChatFunction<DashscopeGe
     @Builder
     public static class Parameter {
 
+        @JsonPropertyDescription("参考图像的URI")
+        @JsonProperty(required = true)
+        URI referenceImage;
+
         @JsonPropertyDescription("正向提示，描述期望图像包含的内容")
         @JsonProperty(required = true)
         String prompt;
@@ -80,6 +90,15 @@ public class DashscopeGenImageByTextFunction implements ChatFunction<DashscopeGe
         @JsonPropertyDescription("负向提示，描述不期望图像包含的内容")
         @JsonProperty
         String negative;
+
+        @JsonPropertyDescription("参考图像的匹配模式")
+        @JsonProperty
+        GenImageOptions.RefMode refMode;
+
+        @JsonPropertyDescription("参考图像的匹配强度。" +
+                                 "取值范围为[0.0, 1.0]。取值越大，代表生成的图像与参考图越相似。")
+        @JsonProperty
+        Float refStrength;
 
     }
 

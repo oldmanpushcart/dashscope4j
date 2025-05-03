@@ -5,9 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
-import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenVideoModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenVideoOptions;
-import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenVideoRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.*;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
 import lombok.Builder;
 import lombok.Setter;
@@ -19,12 +17,14 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 
-@ChatFnName("dashscope_gen_video_by_text")
-@ChatFnDescription("根据文本提示生成视频")
+@ChatFnName("dashscope_gen_video_by_image")
+@ChatFnDescription("根据参考图片和文本提示生成视频")
 @Setter
 @Accessors(fluent = true, chain = true)
-public class DashscopeGenVideoByTextFunction implements ChatFunction<DashscopeGenVideoByTextFunction.Parameter, DashscopeGenVideoByTextFunction.Result> {
+public class DashscopeGenVideoByImageFunction
+        implements ChatFunction<DashscopeGenVideoByImageFunction.Parameter, DashscopeGenVideoByImageFunction.Result> {
 
+    private boolean autoUploadEnabled;
     private Task.WaitStrategy waitStrategy = Task.WaitStrategies.until(
             Duration.ofMinutes(1),
             Duration.ofMinutes(5)
@@ -33,17 +33,20 @@ public class DashscopeGenVideoByTextFunction implements ChatFunction<DashscopeGe
     @Override
     public CompletionStage<Result> call(Caller caller, Parameter parameter) {
 
-        final TextGenVideoRequest request = TextGenVideoRequest.newBuilder()
-                .model(TextGenVideoModel.WANX_V2_1_T2V_TURBO)
-                .option(TextGenVideoOptions.ENABLE_PROMPT_EXTEND, true)
+        final ImageGenVideoRequest request = ImageGenVideoRequest.newBuilder()
+                .model(ImageGenVideoModel.WANX_V2_1_I2V_TURBO)
+                .enableAutoUpload(autoUploadEnabled)
+                .option(ImageGenVideoOptions.ENABLE_PROMPT_EXTEND, true)
                 .prompt(parameter.prompt())
+                .image(parameter.referenceImage())
                 .build();
 
-        return caller.client().video().genByText()
+        return caller.client().video().genByImage()
                 .task(request)
                 .thenCompose(this::waitingFor)
                 .thenApply(response -> response.output().video())
                 .thenApply(Result::new);
+
     }
 
     private <T> CompletionStage<T> waitingFor(Task.Half<T> half) {
@@ -56,8 +59,12 @@ public class DashscopeGenVideoByTextFunction implements ChatFunction<DashscopeGe
     @Builder
     public static class Parameter {
 
-        @JsonPropertyDescription("描述生成视频所期待的内容")
         @JsonProperty(required = true)
+        @JsonPropertyDescription("参考图像的URI")
+        URI referenceImage;
+
+        @JsonProperty(required = true)
+        @JsonPropertyDescription("描述生成视频所期待的内容")
         String prompt;
 
     }
@@ -65,8 +72,8 @@ public class DashscopeGenVideoByTextFunction implements ChatFunction<DashscopeGe
     @Value
     public static class Result {
 
-        @JsonPropertyDescription("生成视频的URI")
         @JsonProperty
+        @JsonPropertyDescription("生成视频的URI")
         URI videoURI;
 
     }

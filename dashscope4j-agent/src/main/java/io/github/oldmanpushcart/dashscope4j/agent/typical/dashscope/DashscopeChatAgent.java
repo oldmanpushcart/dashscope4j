@@ -57,8 +57,16 @@ public class DashscopeChatAgent extends BaseChatAgent {
         public DashscopeChatAgent build() {
             addFunctions(Arrays.asList(
 
+                    // 图生图
+                    new DashscopeGenImageByImageFunction()
+                            .autoUploadEnabled(autoUploadEnabled),
+
                     // 文生图
                     new DashscopeGenImageByTextFunction()
+                            .autoUploadEnabled(autoUploadEnabled),
+
+                    // 图生视频
+                    new DashscopeGenVideoByImageFunction()
                             .autoUploadEnabled(autoUploadEnabled),
 
                     // 文生视频
