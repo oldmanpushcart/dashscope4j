@@ -46,6 +46,18 @@ public class Content<T> {
      * @return 新内容
      */
     public <U> Content<U> newData(U data) {
+
+        /*
+         * 这里作为唯一一个开放性的构造入口，需要对传入的参数进行检查
+         * 1. type为TEXT时，data为字符串
+         * 2. type为IMAGE、AUDIO、FILE、VIDEO以及后续其他时，data为URI
+         */
+        if (type == Type.TEXT && !(data instanceof String)) {
+            throw new IllegalArgumentException("Data type must be String with " + Type.TEXT.name());
+        } else if (type != Type.TEXT && !(data instanceof URI)) {
+            throw new IllegalArgumentException("Data type must be URI with " + type.name());
+        }
+
         return new Content<>(type, data);
     }
 

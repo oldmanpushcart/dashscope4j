@@ -17,10 +17,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -74,7 +71,27 @@ public abstract class BaseChatAgent implements ChatAgent {
                 .addTools(functionTools)
 
                 /*
+                 * 重写用户输入部分
+                 *
+                 * 将多模态部分作为附件形式存放，便于智能体做更好的处理
+                 */
+                .building(builder -> {
+
+                    final BaseRewriteUserMessagePromptTemplate template = new BaseRewriteUserMessagePromptTemplate()
+                            .message(request.requireLastMessageFromUser());
+
+                    builder.self()
+                            .messages(Collections.emptyList())
+                            .addMessages(request.historyMessages())
+                            .addMessage(Message.ofUser(template.render()));
+
+                })
+
+                /*
                  * 在对话列表中添加回忆部分
+                 * SYSTEM
+                 * HISTORY
+                 * LAST_USER_INPUT
                  */
                 .building(builder -> {
 
@@ -109,6 +126,7 @@ public abstract class BaseChatAgent implements ChatAgent {
                     builder.messages(newMessages);
 
                 })
+
                 .build();
     }
 

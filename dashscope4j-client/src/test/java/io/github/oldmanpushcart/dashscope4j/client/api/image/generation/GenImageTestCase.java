@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.api.image.generation;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.Ret;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

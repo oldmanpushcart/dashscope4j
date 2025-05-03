@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.function;
+package io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.function;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -9,8 +9,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenV
 import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenVideoOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenVideoRequest;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
+import lombok.Builder;
+import lombok.Setter;
 import lombok.Value;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.net.URI;
 import java.time.Duration;
@@ -18,11 +21,18 @@ import java.util.concurrent.CompletionStage;
 
 @ChatFnName("dashscope_text2video")
 @ChatFnDescription("根据文本提示生成视频")
+@Setter
+@Accessors(fluent = true, chain = true)
 public class DashscopeGenVideoByTextFunction implements ChatFunction<DashscopeGenVideoByTextFunction.Parameter, DashscopeGenVideoByTextFunction.Result> {
+
+    private Task.WaitStrategy waitStrategy = Task.WaitStrategies.until(
+            Duration.ofMinutes(1),
+            Duration.ofMinutes(5)
+    );
 
     @Override
     public CompletionStage<Result> call(Caller caller, Parameter parameter) {
-        
+
         final TextGenVideoRequest request = TextGenVideoRequest.newBuilder()
                 .model(TextGenVideoModel.WANX_V2_1_T2V_TURBO)
                 .option(TextGenVideoOptions.ENABLE_PROMPT_EXTEND, true)
@@ -37,14 +47,13 @@ public class DashscopeGenVideoByTextFunction implements ChatFunction<DashscopeGe
     }
 
     private <T> CompletionStage<T> waitingFor(Task.Half<T> half) {
-        return half.waitingFor(Task.WaitStrategies.until(
-                Duration.ofMinutes(1),
-                Duration.ofMinutes(5)
-        ));
+        return half.waitingFor(waitStrategy);
     }
 
     @Value
     @Accessors(fluent = true)
+    @Jacksonized
+    @Builder
     public static class Parameter {
 
         @JsonPropertyDescription("描述生成视频所期待的内容")

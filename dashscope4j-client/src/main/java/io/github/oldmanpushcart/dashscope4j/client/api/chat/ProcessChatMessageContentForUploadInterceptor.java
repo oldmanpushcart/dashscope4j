@@ -90,8 +90,7 @@ class ProcessChatMessageContentForUploadInterceptor implements Interceptor {
             return chain.client().base().files().create(resource, resource.getPath(), Purpose.FILE_EXTRACT)
                     .thenApply(FileMeta::toURI);
         } else {
-            return chain.client().base().store().upload(resource, model)
-                    .thenApply(URI::toString);
+            return chain.client().base().store().upload(resource, model);
         }
 
     }

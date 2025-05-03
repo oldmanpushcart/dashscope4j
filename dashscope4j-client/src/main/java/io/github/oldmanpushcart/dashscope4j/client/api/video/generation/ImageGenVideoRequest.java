@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.video.generation;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

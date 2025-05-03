@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.embedding.text;
 
-import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.ObjectMap;
 import lombok.EqualsAndHashCode;

@@ -1,10 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope;
 
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseChatAgent;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.function.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.reactivex.rxjava3.core.Flowable;
 
+import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -12,8 +14,11 @@ import java.util.concurrent.CompletionStage;
  */
 public class DashscopeChatAgent extends BaseChatAgent {
 
+    private final boolean autoUploadEnabled;
+
     private DashscopeChatAgent(Builder builder) {
         super(builder);
+        this.autoUploadEnabled = builder.autoUploadEnabled;
     }
 
     @Override
@@ -32,8 +37,45 @@ public class DashscopeChatAgent extends BaseChatAgent {
 
     public static class Builder extends BaseChatAgent.Builder<DashscopeChatAgent, Builder> {
 
+        private boolean autoUploadEnabled;
+
+        public Builder() {
+
+        }
+
+        public Builder(DashscopeChatAgent agent) {
+            super(agent);
+            this.autoUploadEnabled = agent.autoUploadEnabled;
+        }
+
+        public Builder autoUploadEnabled(boolean enabled) {
+            this.autoUploadEnabled = enabled;
+            return self();
+        }
+
         @Override
         public DashscopeChatAgent build() {
+            addFunctions(Arrays.asList(
+
+                    // 文生图
+                    new DashscopeGenImageByTextFunction()
+                            .autoUploadEnabled(autoUploadEnabled),
+
+                    // 文生视频
+                    new DashscopeGenVideoByTextFunction(),
+
+                    // 文档解析
+                    new DashscopeUnderstandingForDocumentFunction()
+                            .autoUploadEnabled(autoUploadEnabled),
+
+                    // 视觉解析
+                    new DashscopeUnderstandingForVisualFunction()
+                            .autoUploadEnabled(autoUploadEnabled),
+
+                    // 网络搜索
+                    new DashscopeWebSearchFunction()
+
+            ));
             return new DashscopeChatAgent(this);
         }
 

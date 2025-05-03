@@ -14,7 +14,7 @@ import static io.github.oldmanpushcart.dashscope4j.agent.internal.util.ResourceU
  */
 class ReActPromptTemplate extends PromptTemplate {
 
-    private static final String REACT_TEMPLATE_RES_NAME = "dashscope4j/agent/typical/react/react-prompt-template.md";
+    private static final String PROMPT_RES_NAME = "dashscope4j/agent/prompt/react-prompt.md";
 
     public static final String NAME_TOOLS = "tools";
     public static final String NAME_TOOL_NAMES = "tool_names";
@@ -24,7 +24,7 @@ class ReActPromptTemplate extends PromptTemplate {
      * 构造提示语模板
      */
     public ReActPromptTemplate() {
-        super(resourceToString(REACT_TEMPLATE_RES_NAME));
+        super(resourceToString(PROMPT_RES_NAME));
     }
 
     /**

@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.function;
+package io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.function;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -10,8 +10,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.image.generation.GenImage
 import io.github.oldmanpushcart.dashscope4j.client.api.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
+import lombok.Builder;
+import lombok.Setter;
 import lombok.Value;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.net.URI;
 import java.time.Duration;
@@ -21,13 +24,23 @@ import java.util.stream.Collectors;
 
 @ChatFnName("dashscope_text2image")
 @ChatFnDescription("根据文本提示生成图片")
+@Setter
+@Accessors(fluent = true, chain = true)
 public class DashscopeGenImageByTextFunction implements ChatFunction<DashscopeGenImageByTextFunction.Parameter, DashscopeGenImageByTextFunction.Result> {
+
+    private boolean autoUploadEnabled;
+
+    private Task.WaitStrategy waitStrategy = Task.WaitStrategies.until(
+            Duration.ofSeconds(5),
+            Duration.ofMinutes(1)
+    );
 
     @Override
     public CompletionStage<Result> call(Caller caller, Parameter parameter) {
 
         final GenImageRequest request = GenImageRequest.newBuilder()
                 .model(GenImageModel.WANX_V2_1_PLUS)
+                .enableAutoUpload(autoUploadEnabled)
                 .option(GenImageOptions.NUMBER, 1)
                 .prompt(parameter.prompt())
                 .building(builder -> {
@@ -44,10 +57,7 @@ public class DashscopeGenImageByTextFunction implements ChatFunction<DashscopeGe
     }
 
     private <T> CompletionStage<T> waitingFor(Task.Half<T> half) {
-        return half.waitingFor(Task.WaitStrategies.until(
-                Duration.ofSeconds(5),
-                Duration.ofMinutes(1)
-        ));
+        return half.waitingFor(waitStrategy);
     }
 
     private List<URI> responseToImageURIs(GenImageResponse response) {
@@ -59,6 +69,8 @@ public class DashscopeGenImageByTextFunction implements ChatFunction<DashscopeGe
 
     @Value
     @Accessors(fluent = true)
+    @Jacksonized
+    @Builder
     public static class Parameter {
 
         @JsonPropertyDescription("正向提示，描述期望图像包含的内容")
