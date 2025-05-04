@@ -43,6 +43,7 @@ public class DashscopeGenImageByImageFunction
                 .enableAutoUpload(autoUploadEnabled)
                 .option(GenImageOptions.NUMBER, 1)
                 .prompt(parameter.prompt())
+                .reference(parameter.referenceImage())
                 .building(builder -> {
                     if (null != parameter.negative()) {
                         builder.negative(parameter.negative());

@@ -16,22 +16,23 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.HashMap;
 import java.util.concurrent.CompletionStage;
-
-import static io.github.oldmanpushcart.dashscope4j.agent.internal.util.ResourceUtils.resourceToString;
 
 @ChatFnName("dashscope_web_search")
 @ChatFnDescription("通过关键词搜索互联网。当需要资料而没有找到合适的工具时，可以通过此工具搜索查询互联网公开资料。")
 public class DashscopeWebSearchFunction implements ChatFunction<DashscopeWebSearchFunction.Parameter, DashscopeWebSearchFunction.Result> {
 
-    private static final PromptTemplate template = new PromptTemplate(resourceToString("dashscope4j/agent/prompt/web-search-prompt.md"));
-
     @Override
     public CompletionStage<Result> call(Caller caller, Parameter parameter) {
-        final String prompt = template.render(new HashMap<String, Object>() {{
-            put("keywords", parameter.keywords());
-        }});
+        final String prompt = PromptTemplate.newBuilder()
+                .template("## 根据关键词搜索\n" +
+                          "请使用以下关键词执行网络搜索，并按照指示的方式简洁回答。\n" +
+                          "\n" +
+                          "## 搜索关键词\n" +
+                          "${keywords}")
+                .parameter("keywords", parameter.keywords())
+                .build()
+                .render();
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
                 .option(ChatOptions.ENABLE_WEB_SEARCH, true)

@@ -207,9 +207,11 @@ public class ReActChatAgent extends BaseChatAgent {
                 .stream()
                 .filter(v -> v.type() != Content.Type.TEXT)
                 .collect(Collectors.toList());
-        final Content<?> textContent = new ReActPromptTemplate()
+
+        final Content<?> textContent = ReActPromptTemplate.newBuilder()
                 .tools(functionTools)
                 .question(message.text())
+                .build()
                 .renderTo(Content::ofText);
 
         final List<Content<?>> newContents = new ArrayList<>();

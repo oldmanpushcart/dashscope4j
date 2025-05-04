@@ -27,33 +27,41 @@ class ReActPromptTemplate extends PromptTemplate {
         super(resourceToString(PROMPT_RES_NAME));
     }
 
-    /**
-     * 设置工具列表
-     *
-     * @param tools 工具列表
-     * @return this
-     */
-    public ReActPromptTemplate tools(List<ChatFunctionTool> tools) {
-        parameter(NAME_TOOLS, tools.stream()
-                .map(ChatFunctionTool::meta)
-                .map(JacksonUtils::toJson)
-                .collect(Collectors.toList()));
-        parameter(NAME_TOOL_NAMES, tools.stream()
-                .map(ChatFunctionTool::meta)
-                .map(ChatFunctionTool.Meta::name)
-                .collect(Collectors.toList()));
-        return this;
+    public static Builder newBuilder() {
+        return new Builder();
     }
 
-    /**
-     * 设置问题
-     *
-     * @param question 问题
-     * @return this
-     */
-    public ReActPromptTemplate question(String question) {
-        parameter(NAME_QUESTION, question);
-        return this;
+    public static class Builder extends PromptTemplate.Builder {
+
+        /**
+         * 设置工具列表
+         *
+         * @param tools 工具列表
+         * @return this
+         */
+        public Builder tools(List<ChatFunctionTool> tools) {
+            parameter(NAME_TOOLS, tools.stream()
+                    .map(ChatFunctionTool::meta)
+                    .map(JacksonUtils::toJson)
+                    .collect(Collectors.toList()));
+            parameter(NAME_TOOL_NAMES, tools.stream()
+                    .map(ChatFunctionTool::meta)
+                    .map(ChatFunctionTool.Meta::name)
+                    .collect(Collectors.toList()));
+            return this;
+        }
+
+        /**
+         * 设置问题
+         *
+         * @param question 问题
+         * @return this
+         */
+        public Builder question(String question) {
+            parameter(NAME_QUESTION, question);
+            return this;
+        }
+
     }
 
 }

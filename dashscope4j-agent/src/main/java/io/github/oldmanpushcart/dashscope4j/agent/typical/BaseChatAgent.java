@@ -1,12 +1,16 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
+import io.github.oldmanpushcart.dashscope4j.agent.internal.util.JacksonUtils;
 import io.github.oldmanpushcart.dashscope4j.agent.memory.Memory;
+import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
@@ -17,10 +21,14 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
@@ -33,14 +41,21 @@ public abstract class BaseChatAgent implements ChatAgent {
 
     private final DashscopeClient client;
     private final Memory memory;
+    private final ChatModel model;
     private final List<Interceptor> interceptors;
     private final List<ChatFunctionTool> functionTools;
 
     protected BaseChatAgent(Builder<?, ?> builder) {
         this.memory = builder.memory;
         this.client = builder.client;
+        this.model = builder.model;
         this.interceptors = unmodifiableList(builder.interceptors);
         this.functionTools = unmodifiableList(builder.functionTools);
+    }
+
+    @Override
+    public ChatAgent.FunctionToolBuilder newFunctionToolBuilder() {
+        return new BaseChatAgentFunctionToolBuilder(this);
     }
 
     @Override
@@ -71,20 +86,45 @@ public abstract class BaseChatAgent implements ChatAgent {
                 .addTools(functionTools)
 
                 /*
+                 * 重新设置对话模型
+                 */
+                .building(builder -> {
+                    if (null != model) {
+                        builder.model(model);
+                    }
+                })
+
+                /*
                  * 重写用户输入部分
                  *
                  * 将多模态部分作为附件形式存放，便于智能体做更好的处理
                  */
                 .building(builder -> {
 
-                    final BaseRewriteUserMessagePromptTemplate template = new BaseRewriteUserMessagePromptTemplate()
-                            .message(request.requireLastMessageFromUser());
+                    final String prompt = PromptTemplate.newBuilder()
+                            .template("请根据用户输入作答\n" +
+                                      "### 输入附件\n" +
+                                      "${attachments}\n" +
+                                      "\n" +
+                                      "### 输入问题\n" +
+                                      "${question}")
+                            .building(ptBuilder -> {
+                                final Message message = request.requireLastMessageFromUser();
+                                final List<Content<?>> nonTextContents = message.contents()
+                                        .stream()
+                                        .filter(v -> v.type() != Content.Type.TEXT)
+                                        .collect(Collectors.toList());
+                                ptBuilder.self()
+                                        .parameter("attachments", JacksonUtils.toJson(nonTextContents))
+                                        .parameter("question", message.text());
+                            })
+                            .build()
+                            .render();
 
                     builder.self()
-                            .messages(Collections.emptyList())
+                            .messages(emptyList())
                             .addMessages(request.historyMessages())
-                            .addMessage(Message.ofUser(template.render()));
-
+                            .addMessage(Message.ofUser(prompt));
                 })
 
                 /*
@@ -223,7 +263,7 @@ public abstract class BaseChatAgent implements ChatAgent {
     abstract protected CompletionStage<Flowable<ChatResponse>> baseFlow(ChatRequest request);
 
 
-    // ------------------------- BUILDER -------------------------
+    // ------------------------- BUILDER : BASE_CHAT_AGENT -------------------------
 
     /**
      * 基础智能体构造器
@@ -235,6 +275,7 @@ public abstract class BaseChatAgent implements ChatAgent {
 
         private DashscopeClient client;
         private Memory memory;
+        private ChatModel model;
         private final List<Interceptor> interceptors = new ArrayList<>();
         private final List<ChatFunctionTool> functionTools = new ArrayList<>();
 
@@ -245,6 +286,7 @@ public abstract class BaseChatAgent implements ChatAgent {
         public Builder(BaseChatAgent agent) {
             this.client = agent.client;
             this.memory = agent.memory;
+            this.model = agent.model;
             this.interceptors.addAll(agent.interceptors);
             this.functionTools.addAll(agent.functionTools);
         }
@@ -268,6 +310,18 @@ public abstract class BaseChatAgent implements ChatAgent {
          */
         public B memory(Memory memory) {
             this.memory = memory;
+            return self();
+        }
+
+
+        /**
+         * 设置对话模型
+         *
+         * @param model 对话模型
+         * @return this
+         */
+        public B model(ChatModel model) {
+            this.model = model;
             return self();
         }
 

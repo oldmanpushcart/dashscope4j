@@ -48,7 +48,7 @@ public class DashscopeChatAgent extends BaseChatAgent {
             this.autoUploadEnabled = agent.autoUploadEnabled;
         }
 
-        public Builder autoUploadEnabled(boolean enabled) {
+        public Builder enableAutoUpload(boolean enabled) {
             this.autoUploadEnabled = enabled;
             return self();
         }

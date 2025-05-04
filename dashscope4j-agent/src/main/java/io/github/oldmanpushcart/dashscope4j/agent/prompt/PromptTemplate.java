@@ -1,8 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.agent.prompt;
 
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -18,40 +20,17 @@ import static java.util.Collections.emptyMap;
 public class PromptTemplate {
 
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{([^}]+)}");
-    private final Map<String, Object> parameterMap = new HashMap<>();
     private final String template;
+    private final Map<String, Object> parameterMap;
 
-    /**
-     * 构造提示语模板
-     *
-     * @param template 模板字符串
-     */
     public PromptTemplate(String template) {
         this.template = template;
+        this.parameterMap = new HashMap<>();
     }
 
-    /**
-     * 添加参数
-     *
-     * @param name  参数名
-     * @param value 参数值
-     * @return this
-     */
-    public PromptTemplate parameter(String name, Object value) {
-        parameterMap.put(name, value);
-        return this;
-    }
-
-    /**
-     * 延迟添加参数
-     *
-     * @param name   参数名
-     * @param getter 延迟获取参数值函数
-     * @return this
-     */
-    public PromptTemplate parameter(String name, Supplier<Object> getter) {
-        parameterMap.put(name, new LazyGet(getter));
-        return this;
+    private PromptTemplate(Builder builder) {
+        this.template = builder.template;
+        this.parameterMap = Collections.unmodifiableMap(builder.parameterMap);
     }
 
     /**
@@ -61,10 +40,10 @@ public class PromptTemplate {
      * @return 提示词字符串
      */
     public String render(Map<String, Object> parameterMap) {
-        return resolve(template, new HashMap<String, Object>() {{
-            putAll(PromptTemplate.this.parameterMap);
-            putAll(parameterMap);
-        }});
+        final Map<String, Object> merged = new HashMap<>();
+        merged.putAll(this.parameterMap);
+        merged.putAll(parameterMap);
+        return resolve(template, merged);
     }
 
     /**
@@ -105,15 +84,6 @@ public class PromptTemplate {
     }
 
     /**
-     * 获取当前对象
-     *
-     * @return 当前对象
-     */
-    public PromptTemplate self() {
-        return this;
-    }
-
-    /**
      * 替换字符串中的占位符，支持转义字符（\${name}）。
      *
      * @param template     模板字符串
@@ -136,6 +106,65 @@ public class PromptTemplate {
         }
         matcher.appendTail(stringBuf);
         return stringBuf.toString();
+    }
+
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static Builder newBuilder(PromptTemplate template) {
+        return new Builder(template);
+    }
+
+    public static class Builder implements Buildable<PromptTemplate, Builder> {
+
+        private String template;
+        private final Map<String, Object> parameterMap = new HashMap<>();
+
+        public Builder() {
+
+        }
+
+        public Builder(PromptTemplate template) {
+            this.template = template.template;
+            this.parameterMap.putAll(template.parameterMap);
+        }
+
+        public Builder template(String template) {
+            this.template = template;
+            return this;
+        }
+
+        /**
+         * 添加参数
+         *
+         * @param name  参数名
+         * @param value 参数值
+         * @return this
+         */
+        public Builder parameter(String name, Object value) {
+            parameterMap.put(name, value);
+            return this;
+        }
+
+        /**
+         * 延迟添加参数
+         *
+         * @param name   参数名
+         * @param getter 延迟获取参数值函数
+         * @return this
+         */
+        public Builder parameter(String name, Supplier<Object> getter) {
+            parameterMap.put(name, new LazyGet(getter));
+            return this;
+        }
+
+        @Override
+        public PromptTemplate build() {
+            return new PromptTemplate(this);
+        }
+
     }
 
     /**

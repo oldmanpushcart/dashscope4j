@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.client.Option;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoRequest;
@@ -180,6 +181,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
      *
      * @return TRUE | FALSE
      */
+    @JsonIgnore
     public boolean isLastMessageFromUser() {
         if (null == messages || messages.isEmpty()) {
             return false;

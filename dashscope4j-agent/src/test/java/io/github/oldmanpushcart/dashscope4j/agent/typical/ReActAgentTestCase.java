@@ -47,13 +47,12 @@ public class ReActAgentTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
-                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, false)
+                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .addMessage(Message.ofUser("现在几点了?"))
                 .build();
 
         agent.directFlow(request)
                 .reduce(new StringBuilder(), (stringBuf, response) -> {
-                    stringBuf.setLength(0);
                     stringBuf.append(response.output().best().message().text());
                     return stringBuf;
                 })
