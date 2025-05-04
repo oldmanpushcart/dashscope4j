@@ -19,7 +19,7 @@ public class DebugTestCase extends ClientSupport {
     @Test
     public void test$debug() {
 
-        final ChatAgent reActAgent = DashscopeChatAgent.newBuilder()
+        final ChatAgent agent = ReActChatAgent.newBuilder()
                 .client(client)
                 .addFunction(new SystemDateTimeFunction())
                 .addFunctionTool(DashscopeChatAgent.newBuilder()
@@ -32,14 +32,14 @@ public class DebugTestCase extends ClientSupport {
                 .build();
 
         final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_MAX)
+                .model(ChatModel.QWEN_TURBO)
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("根据杭州明天天气并参考附件照片，生成一个卡通风格照片。"),
                         Content.ofImage(new File("./test-data/image-002.jpeg").toURI())
                 )))
                 .build();
 
-        final ChatResponse response = reActAgent.async(request)
+        final ChatResponse response = agent.async(request)
                 .toCompletableFuture()
                 .join();
 
@@ -50,7 +50,7 @@ public class DebugTestCase extends ClientSupport {
     @Test
     public void test$debug2() {
 
-        final ChatAgent reActAgent = DashscopeChatAgent.newBuilder()
+        final ChatAgent reActAgent = ReActChatAgent.newBuilder()
                 .client(client)
                 .addFunction(new SystemDateTimeFunction())
                 .enableFlowBridge(true)

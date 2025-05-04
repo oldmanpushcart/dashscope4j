@@ -13,6 +13,9 @@ import java.util.concurrent.CompletionStage;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
+/**
+ * 系统当前时间函数
+ */
 @ChatFnName("system_date_time")
 @ChatFnDescription("获取系统当前时间。在处理涉及时间相关问题时，需调用此函数获取系统当前时间以作校准")
 public class SystemDateTimeFunction implements ChatFunction<SystemDateTimeFunction.Parameter, SystemDateTimeFunction.Result> {

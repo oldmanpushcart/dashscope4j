@@ -127,6 +127,18 @@ public class Message {
     }
 
     /**
+     * 获取非文本内容
+     *
+     * @return 非文本内容
+     * @since 3.2.0
+     */
+    public List<Content<?>> nonTextContents() {
+        return contents.stream()
+                .filter(content -> content.type() != Content.Type.TEXT)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * 创建消息
      *
      * @param role     角色

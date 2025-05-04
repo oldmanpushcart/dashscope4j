@@ -92,6 +92,9 @@ public class TreeSetMemory implements Memory {
 
     }
 
+    /**
+     * 记忆片段实体
+     */
     @Data
     @EqualsAndHashCode(onlyExplicitlyIncluded = true)
     @Accessors(chain = true)
@@ -112,6 +115,9 @@ public class TreeSetMemory implements Memory {
             return Long.compare(this.fragmentId, o.fragmentId);
         }
 
+        /**
+         * @return 转换为记忆片段
+         */
         public Memory.Fragment toFragment() {
             return new Memory.Fragment()
                     .fragmentId(this.fragmentId)
@@ -122,6 +128,12 @@ public class TreeSetMemory implements Memory {
                     .updatedAt(this.updatedAt);
         }
 
+        /**
+         * 从记忆片段转换为实体
+         *
+         * @param fragment 记忆片段
+         * @return 记忆片段实体
+         */
         public static FragmentDO fromFragment(Memory.Fragment fragment) {
             final int tokens = LocalTokenizerUtils
                     .encode(Arrays.asList(
@@ -143,7 +155,6 @@ public class TreeSetMemory implements Memory {
 
     }
 
-
     public static Builder newBuilder() {
         return new Builder();
     }
@@ -154,16 +165,34 @@ public class TreeSetMemory implements Memory {
         private Integer maxCount = 1024;
         private Duration maxDuration = Duration.ofHours(1);
 
+        /**
+         * 设置最大token数，超过则丢弃
+         *
+         * @param maxTokens 最大token数
+         * @return this
+         */
         public Builder maxTokens(Integer maxTokens) {
             this.maxTokens = maxTokens;
             return this;
         }
 
+        /**
+         * 设置最大数量，超过则丢弃
+         *
+         * @param maxCount 最大数量
+         * @return this
+         */
         public Builder maxCount(Integer maxCount) {
             this.maxCount = maxCount;
             return this;
         }
 
+        /**
+         * 设置最大时长，超过则丢弃
+         *
+         * @param maxDuration 最大时长
+         * @return this
+         */
         public Builder maxDuration(Duration maxDuration) {
             this.maxDuration = maxDuration;
             return this;

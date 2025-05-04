@@ -14,6 +14,9 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.concurrent.CompletionStage;
 
+/**
+ * 基础智能体函数
+ */
 class BaseChatAgentFunction
         implements ChatFunction<BaseChatAgentFunction.Parameter, BaseChatAgentFunction.Result> {
 
@@ -31,12 +34,7 @@ class BaseChatAgentFunction
                 .build();
         return agent.async(request)
                 .thenApply(response -> response.output().best().message().text())
-                .thenApply(Result::new)
-                .exceptionally(ex -> {
-                    final Result result = new Result("执行出错!")
-                            .prompt(ex.getLocalizedMessage());
-                    return result;
-                });
+                .thenApply(Result::new);
     }
 
     @Value

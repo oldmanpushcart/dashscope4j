@@ -12,6 +12,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.CommonUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 记忆体函数工具构建器
+ */
 @Getter(AccessLevel.PACKAGE)
 @Accessors(fluent = true)
 class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder {

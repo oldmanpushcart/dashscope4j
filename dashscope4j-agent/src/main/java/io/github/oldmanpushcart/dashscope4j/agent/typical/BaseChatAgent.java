@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -62,16 +63,21 @@ public abstract class BaseChatAgent implements ChatAgent {
 
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
-        return _async(newChatRequest(request))
+        return CompletableFuture.completedFuture(request)
+                .thenApply(this::newChatRequest)
+
+                /*
+                 * 根据流控开关选择不同的执行方式
+                 */
+                .thenCompose(newRequest -> flowBridgeEnabled
+                        ? baseAsyncByFlowBridge(newRequest)
+                        : baseAsync(newRequest))
+
+                // 结果存储到记忆体
                 .thenApply(response -> processPersistMemoryFragmentForAsync(request, response));
     }
 
-    private CompletionStage<ChatResponse> _async(ChatRequest request) {
-        return flowBridgeEnabled
-                ? baseAsyncByFlowBridge(request)
-                : baseAsync(request);
-    }
-
+    // 流式桥接异步
     private CompletionStage<ChatResponse> baseAsyncByFlowBridge(ChatRequest request) {
         return baseFlow(request)
                 .thenCompose(responseFlow -> {
@@ -97,7 +103,9 @@ public abstract class BaseChatAgent implements ChatAgent {
 
     @Override
     public CompletionStage<Flowable<ChatResponse>> flow(ChatRequest request) {
-        return baseFlow(newChatRequest(request))
+        return CompletableFuture.completedFuture(request)
+                .thenApply(this::newChatRequest)
+                .thenCompose(this::baseFlow)
                 .thenApply(responseFlow -> processPersistMemoryFragmentForFlow(request, responseFlow));
     }
 
@@ -141,10 +149,7 @@ public abstract class BaseChatAgent implements ChatAgent {
                                       "${question}")
                             .building(ptBuilder -> {
                                 final Message message = request.requireLastMessageFromUser();
-                                final List<Content<?>> nonTextContents = message.contents()
-                                        .stream()
-                                        .filter(v -> v.type() != Content.Type.TEXT)
-                                        .collect(Collectors.toList());
+                                final List<Content<?>> nonTextContents = message.nonTextContents();
                                 ptBuilder.self()
                                         .variable("attachments", JacksonUtils.toJson(nonTextContents))
                                         .variable("question", message.text());
@@ -240,6 +245,10 @@ public abstract class BaseChatAgent implements ChatAgent {
          */
         final StringBuilder stringBuf = new StringBuilder();
 
+        /*
+         * 从流式回复中截留应答文本
+         * 将应答文本存储到记忆体中
+         */
         return responseFlow
                 .doOnNext(response -> {
 
