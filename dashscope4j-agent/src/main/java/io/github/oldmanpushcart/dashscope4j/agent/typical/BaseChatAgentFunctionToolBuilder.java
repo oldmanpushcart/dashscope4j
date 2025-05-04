@@ -20,7 +20,6 @@ class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder 
     private final BaseChatAgent agent;
     private String name = String.format("base_chat_agent_function_" + identityGen.getAndIncrement());
     private String summary = "具备以下能力";
-    private boolean flowBridgeEnabled;
 
     public BaseChatAgentFunctionToolBuilder(BaseChatAgent agent) {
         requireNonNull(agent, "agent is required!");
@@ -41,18 +40,12 @@ class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder 
         return this;
     }
 
-    @Override
-    public BaseChatAgentFunctionToolBuilder enableFlowBridge(boolean enabled) {
-        this.flowBridgeEnabled = enabled;
-        return this;
-    }
-
     private String buildingDescription() {
         return PromptTemplate.newBuilder()
                 .template("## ${summary}\n" +
                           "${detail}")
-                .parameter("summary", summary)
-                .parameter("detail", () -> {
+                .variable("summary", summary)
+                .variable("detail", () -> {
                     final StringBuilder stringBuf = new StringBuilder();
                     for (final ChatFunctionTool tool : agent.functionTools()) {
                         stringBuf
@@ -77,10 +70,7 @@ class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder 
                 .name(name)
                 .description(buildingDescription())
                 .parameterType(BaseChatAgentFunction.Parameter.class)
-                .function(new BaseChatAgentFunction(
-                        agent,
-                        flowBridgeEnabled
-                ))
+                .function(new BaseChatAgentFunction(agent))
                 .build();
     }
 

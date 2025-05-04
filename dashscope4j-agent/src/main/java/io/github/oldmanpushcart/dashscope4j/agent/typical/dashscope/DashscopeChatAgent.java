@@ -38,6 +38,7 @@ public class DashscopeChatAgent extends BaseChatAgent {
     public static class Builder extends BaseChatAgent.Builder<DashscopeChatAgent, Builder> {
 
         private boolean autoUploadEnabled;
+        private boolean multimodalEnabled;
 
         public Builder() {
 
@@ -53,9 +54,21 @@ public class DashscopeChatAgent extends BaseChatAgent {
             return self();
         }
 
+        public Builder enableMultimodal(boolean enabled) {
+            this.multimodalEnabled = enabled;
+            return self();
+        }
+
         @Override
         public DashscopeChatAgent build() {
-            addFunctions(Arrays.asList(
+            final Builder builder = buildingForMultimodal();
+            return new DashscopeChatAgent(builder);
+        }
+
+        private Builder buildingForMultimodal() {
+            return !multimodalEnabled
+                    ? self()
+                    : addFunctions(Arrays.asList(
 
                     // 图生图
                     new DashscopeGenImageByImageFunction()
@@ -84,7 +97,6 @@ public class DashscopeChatAgent extends BaseChatAgent {
                     new DashscopeWebSearchFunction()
 
             ));
-            return new DashscopeChatAgent(this);
         }
 
     }

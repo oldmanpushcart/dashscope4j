@@ -20,8 +20,6 @@ public interface ChatAgent extends OpAsync<ChatRequest, ChatResponse>, OpFlow<Ch
 
         FunctionToolBuilder summary(String summary);
 
-        FunctionToolBuilder enableFlowBridge(boolean enabled);
-
     }
 
 }

@@ -44,11 +44,13 @@ public abstract class BaseChatAgent implements ChatAgent {
     private final ChatModel model;
     private final List<Interceptor> interceptors;
     private final List<ChatFunctionTool> functionTools;
+    private final boolean flowBridgeEnabled;
 
     protected BaseChatAgent(Builder<?, ?> builder) {
         this.memory = builder.memory;
         this.client = builder.client;
         this.model = builder.model;
+        this.flowBridgeEnabled = builder.flowBridgeEnabled;
         this.interceptors = unmodifiableList(builder.interceptors);
         this.functionTools = unmodifiableList(builder.functionTools);
     }
@@ -60,8 +62,37 @@ public abstract class BaseChatAgent implements ChatAgent {
 
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
-        return baseAsync(newChatRequest(request))
+        return _async(newChatRequest(request))
                 .thenApply(response -> processPersistMemoryFragmentForAsync(request, response));
+    }
+
+    private CompletionStage<ChatResponse> _async(ChatRequest request) {
+        return flowBridgeEnabled
+                ? baseAsyncByFlowBridge(request)
+                : baseAsync(request);
+    }
+
+    private CompletionStage<ChatResponse> baseAsyncByFlowBridge(ChatRequest request) {
+        return baseFlow(request)
+                .thenCompose(responseFlow -> {
+                    final boolean isIncrementalOutput = request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true);
+                    return responseFlow
+                            .reduce((response1, response2) -> {
+                                if (!isIncrementalOutput) {
+                                    return response2;
+                                }
+                                return response2
+                                        .changeMessages(message2 -> {
+                                            final Message message1 = response1.output().best().message();
+                                            return new Message(
+                                                    message2.role(),
+                                                    Content.ofText(message1.text() + message2.text()),
+                                                    message1.reasoningContent() + message2.reasoningContent()
+                                            );
+                                        });
+                            })
+                            .toCompletionStage();
+                });
     }
 
     @Override
@@ -115,8 +146,8 @@ public abstract class BaseChatAgent implements ChatAgent {
                                         .filter(v -> v.type() != Content.Type.TEXT)
                                         .collect(Collectors.toList());
                                 ptBuilder.self()
-                                        .parameter("attachments", JacksonUtils.toJson(nonTextContents))
-                                        .parameter("question", message.text());
+                                        .variable("attachments", JacksonUtils.toJson(nonTextContents))
+                                        .variable("question", message.text());
                             })
                             .build()
                             .render();
@@ -276,6 +307,7 @@ public abstract class BaseChatAgent implements ChatAgent {
         private DashscopeClient client;
         private Memory memory;
         private ChatModel model;
+        private boolean flowBridgeEnabled;
         private final List<Interceptor> interceptors = new ArrayList<>();
         private final List<ChatFunctionTool> functionTools = new ArrayList<>();
 
@@ -322,6 +354,11 @@ public abstract class BaseChatAgent implements ChatAgent {
          */
         public B model(ChatModel model) {
             this.model = model;
+            return self();
+        }
+
+        public B enableFlowBridge(boolean enabled) {
+            this.flowBridgeEnabled = enabled;
             return self();
         }
 

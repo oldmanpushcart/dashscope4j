@@ -30,7 +30,7 @@ public class DashscopeWebSearchFunction implements ChatFunction<DashscopeWebSear
                           "\n" +
                           "## 搜索关键词\n" +
                           "${keywords}")
-                .parameter("keywords", parameter.keywords())
+                .variable("keywords", parameter.keywords())
                 .build()
                 .render();
         final ChatRequest request = ChatRequest.newBuilder()

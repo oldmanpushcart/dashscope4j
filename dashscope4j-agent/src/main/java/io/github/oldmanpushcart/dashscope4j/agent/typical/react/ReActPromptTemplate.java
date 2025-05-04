@@ -20,11 +20,8 @@ class ReActPromptTemplate extends PromptTemplate {
     public static final String NAME_TOOL_NAMES = "tool_names";
     public static final String NAME_QUESTION = "question";
 
-    /**
-     * 构造提示语模板
-     */
-    public ReActPromptTemplate() {
-        super(resourceToString(PROMPT_RES_NAME));
+    protected ReActPromptTemplate(Builder builder) {
+        super(builder);
     }
 
     public static Builder newBuilder() {
@@ -33,6 +30,14 @@ class ReActPromptTemplate extends PromptTemplate {
 
     public static class Builder extends PromptTemplate.Builder {
 
+        public Builder() {
+            template(resourceToString(PROMPT_RES_NAME));
+        }
+
+        public Builder(PromptTemplate template) {
+            super(template);
+        }
+
         /**
          * 设置工具列表
          *
@@ -40,11 +45,11 @@ class ReActPromptTemplate extends PromptTemplate {
          * @return this
          */
         public Builder tools(List<ChatFunctionTool> tools) {
-            parameter(NAME_TOOLS, tools.stream()
+            variable(NAME_TOOLS, tools.stream()
                     .map(ChatFunctionTool::meta)
                     .map(JacksonUtils::toJson)
                     .collect(Collectors.toList()));
-            parameter(NAME_TOOL_NAMES, tools.stream()
+            variable(NAME_TOOL_NAMES, tools.stream()
                     .map(ChatFunctionTool::meta)
                     .map(ChatFunctionTool.Meta::name)
                     .collect(Collectors.toList()));
@@ -58,7 +63,7 @@ class ReActPromptTemplate extends PromptTemplate {
          * @return this
          */
         public Builder question(String question) {
-            parameter(NAME_QUESTION, question);
+            variable(NAME_QUESTION, question);
             return this;
         }
 
