@@ -16,7 +16,7 @@ public class DashscopeAssertions {
                             + "预期\n"
                             + condition
                             + "\n\n"
-                            + "如果与预期内容相关，请返回TRUE，否则反回FALSE。不要返回其他多余信息。";
+                            + "如果预期判断实际内容准确，请返回TRUE，否则反回FALSE。不要返回其他多余信息。";
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
                 .addMessage(Message.ofUser(text))

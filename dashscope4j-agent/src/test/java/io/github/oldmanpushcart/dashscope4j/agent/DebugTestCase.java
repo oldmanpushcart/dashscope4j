@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 import io.github.oldmanpushcart.dashscope4j.agent.function.SystemDateTimeFunction;
 import io.github.oldmanpushcart.dashscope4j.agent.function.dashscope.*;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeChatAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.Option;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
@@ -90,23 +89,7 @@ public class DebugTestCase extends ClientSupport {
     @Test
     public void test$debug2() {
 
-        final ChatAgent reActAgent = ReActChatAgent.newBuilder()
-                .client(client)
-                .addFunction(new SystemDateTimeFunction())
-                .enableFlowBridge(true)
-                .build();
-
-        final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_TURBO)
-                .addMessage(Message.ofUser("现在几点了?"))
-                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, false)
-                .build();
-
-        final ChatResponse response = reActAgent.async(request)
-                .toCompletableFuture()
-                .join();
-
-        System.out.println(response.output().best().message().text());
+        DashscopeAssertions.assertByDashscope(client, "有两辆自行车", "图片中看到有一辆黑色的自行车和一辆白色的自行车");
 
     }
 
