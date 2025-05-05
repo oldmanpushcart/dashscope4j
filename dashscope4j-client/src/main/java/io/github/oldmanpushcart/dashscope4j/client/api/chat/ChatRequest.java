@@ -136,9 +136,9 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     }
 
     @Override
-    protected Option parameters() {
+    public Option option() {
 
-        final Option option = super.parameters().clone();
+        final Option option = super.option().clone();
 
         // 插件必选参数
         if (!plugins.isEmpty()) {

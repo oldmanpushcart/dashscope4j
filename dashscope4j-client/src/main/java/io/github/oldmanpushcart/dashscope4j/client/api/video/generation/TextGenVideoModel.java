@@ -13,21 +13,23 @@ import java.net.URI;
  *
  * @since 3.1.0
  */
-@Value
-@Accessors(fluent = true)
-@ToString
-@EqualsAndHashCode
-public class TextGenVideoModel implements Model {
+public interface TextGenVideoModel extends Model {
 
-    String name;
-    URI remote;
+    @Value
+    @Accessors(fluent = true)
+    @ToString
+    @EqualsAndHashCode
+    class DefaultTextGenVideoModel implements TextGenVideoModel {
+        String name;
+        URI remote;
+    }
 
-    public static final TextGenVideoModel WANX_V2_1_T2V_TURBO = new TextGenVideoModel(
+    TextGenVideoModel WANX_V2_1_T2V_TURBO = new DefaultTextGenVideoModel(
             "wanx2.1-t2v-turbo",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis")
     );
 
-    public static final TextGenVideoModel WANX_V2_1_T2V_PLUS = new TextGenVideoModel(
+    TextGenVideoModel WANX_V2_1_T2V_PLUS = new DefaultTextGenVideoModel(
             "wanx2.1-t2v-plus",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis")
     );

@@ -1,8 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.prompt;
 
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
-import lombok.Value;
-import lombok.experimental.Accessors;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -157,29 +155,13 @@ public class PromptTemplate {
          * @return this
          */
         public Builder variable(String name, Supplier<Object> getter) {
-            variables.put(name, new LazyGet(getter));
+            variables.put(name, getter.get());
             return this;
         }
 
         @Override
         public PromptTemplate build() {
             return new PromptTemplate(this);
-        }
-
-    }
-
-    /**
-     * 延迟获取参数值
-     */
-    @Value
-    @Accessors(fluent = true)
-    private static class LazyGet {
-
-        Supplier<Object> getter;
-
-        @Override
-        public String toString() {
-            return String.valueOf(getter.get());
         }
 
     }

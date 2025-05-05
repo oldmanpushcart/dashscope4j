@@ -8,10 +8,8 @@ import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * 消息内容
@@ -94,16 +92,7 @@ public class Content<T> {
 
                     // 多模态的数据内容为URI
                     if (type == Type.IMAGE || type == Type.AUDIO || type == Type.FILE || type == Type.VIDEO) {
-                        if (data instanceof Collection) {
-                            final Collection<?> collection = (Collection<?>) data;
-                            final Collection<URI> URIs = collection
-                                    .stream()
-                                    .map(item -> URI.create(item.toString()))
-                                    .collect(Collectors.toList());
-                            return new Content<>(type, URIs);
-                        } else {
-                            return new Content<>(type, URI.create(data.toString()));
-                        }
+                        return new Content<>(type, URI.create(data.toString()));
                     }
 
                     // 其他类型不做反序列化支持
@@ -164,20 +153,6 @@ public class Content<T> {
      */
     public static Content<URI> ofFile(URI resource) {
         return new Content<>(Type.FILE, resource);
-    }
-
-    /**
-     * 视频
-     * <p>
-     * 通义千问可以将多个图片资源标识合并为一个视频内容,
-     * 最少传入4张图片，最多可传入768张图片。
-     * </p>
-     *
-     * @param resources 图片资源标识集合
-     * @return 视频内容
-     */
-    public static Content<Collection<URI>> ofVideo(Collection<URI> resources) {
-        return new Content<>(Type.VIDEO, resources);
     }
 
     /**

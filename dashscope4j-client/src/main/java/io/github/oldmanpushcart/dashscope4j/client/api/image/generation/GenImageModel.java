@@ -8,14 +8,16 @@ import lombok.experimental.Accessors;
 
 import java.net.URI;
 
-@Value
-@Accessors(fluent = true)
-@ToString
-@EqualsAndHashCode
-public class GenImageModel implements Model {
+public interface GenImageModel extends Model {
 
-    String name;
-    URI remote;
+    @Value
+    @Accessors(fluent = true)
+    @ToString
+    @EqualsAndHashCode
+    class DefaultGenImageModel implements GenImageModel {
+        String name;
+        URI remote;
+    }
 
     /**
      * WANX-V1
@@ -25,7 +27,7 @@ public class GenImageModel implements Model {
      * 通过知识重组与可变维度扩散模型，加速收敛并提升最终生成图片的效果, 结果自然、细节丰富。支持中英文双语输入。
      * </p>
      */
-    public static final GenImageModel WANX_V1 = new GenImageModel(
+    GenImageModel WANX_V1 = new DefaultGenImageModel(
             "wanx-v1",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis")
     );
@@ -36,7 +38,7 @@ public class GenImageModel implements Model {
      *
      * @since 3.1.0
      */
-    public static final GenImageModel WANX_V2_1_TURBO = new GenImageModel(
+    GenImageModel WANX_V2_1_TURBO = new DefaultGenImageModel(
             "wanx2.1-t2i-turbo",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis")
     );
@@ -47,7 +49,7 @@ public class GenImageModel implements Model {
      *
      * @since 3.1.0
      */
-    public static final GenImageModel WANX_V2_1_PLUS = new GenImageModel(
+    GenImageModel WANX_V2_1_PLUS = new DefaultGenImageModel(
             "wanx2.1-t2i-turbo",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis")
     );

@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.function;
+package io.github.oldmanpushcart.dashscope4j.agent.function.dashscope;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -53,7 +53,7 @@ public class DashscopeGenVideoByTextFunction implements ChatFunction<DashscopeGe
     @Value
     @Accessors(fluent = true)
     @Jacksonized
-    @Builder
+    @Builder(builderMethodName = "newBuilder")
     public static class Parameter {
 
         @JsonPropertyDescription("描述生成视频所期待的内容")
@@ -63,6 +63,7 @@ public class DashscopeGenVideoByTextFunction implements ChatFunction<DashscopeGe
     }
 
     @Value
+    @Accessors(fluent = true)
     public static class Result {
 
         @JsonPropertyDescription("生成视频的URI")

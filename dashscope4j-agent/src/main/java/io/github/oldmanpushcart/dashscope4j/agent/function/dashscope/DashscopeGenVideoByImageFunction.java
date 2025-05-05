@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.function;
+package io.github.oldmanpushcart.dashscope4j.agent.function.dashscope;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -24,7 +24,7 @@ import java.util.concurrent.CompletionStage;
 public class DashscopeGenVideoByImageFunction
         implements ChatFunction<DashscopeGenVideoByImageFunction.Parameter, DashscopeGenVideoByImageFunction.Result> {
 
-    private boolean autoUploadEnabled;
+    private boolean autoUpload;
     private Task.WaitStrategy waitStrategy = Task.WaitStrategies.until(
             Duration.ofMinutes(1),
             Duration.ofMinutes(5)
@@ -35,7 +35,7 @@ public class DashscopeGenVideoByImageFunction
 
         final ImageGenVideoRequest request = ImageGenVideoRequest.newBuilder()
                 .model(ImageGenVideoModel.WANX_V2_1_I2V_TURBO)
-                .enableAutoUpload(autoUploadEnabled)
+                .enableAutoUpload(autoUpload)
                 .option(ImageGenVideoOptions.ENABLE_PROMPT_EXTEND, true)
                 .prompt(parameter.prompt())
                 .image(parameter.referenceImage())
@@ -56,7 +56,7 @@ public class DashscopeGenVideoByImageFunction
     @Value
     @Accessors(fluent = true)
     @Jacksonized
-    @Builder
+    @Builder(builderMethodName = "newBuilder")
     public static class Parameter {
 
         @JsonProperty(required = true)
@@ -70,6 +70,7 @@ public class DashscopeGenVideoByImageFunction
     }
 
     @Value
+    @Accessors(fluent = true)
     public static class Result {
 
         @JsonProperty

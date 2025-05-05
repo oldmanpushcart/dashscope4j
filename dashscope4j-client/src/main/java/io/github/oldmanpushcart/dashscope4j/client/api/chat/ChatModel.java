@@ -8,20 +8,20 @@ import lombok.experimental.Accessors;
 
 import java.net.URI;
 
-@Value
-@Accessors(fluent = true)
-@ToString
-@EqualsAndHashCode
-public class ChatModel implements Model {
+/**
+ * 对话模型
+ */
+public interface ChatModel extends Model {
 
-    Mode mode;
-    String name;
-    URI remote;
+    /**
+     * @return 对话模型模式
+     */
+    Mode mode();
 
     /**
      * 对话模型模式
      */
-    public enum Mode {
+    enum Mode {
 
         /**
          * 文本模式
@@ -34,14 +34,26 @@ public class ChatModel implements Model {
         MULTIMODAL
     }
 
+    @Value
+    @Accessors(fluent = true)
+    @ToString
+    @EqualsAndHashCode
+    class DefaultChatModel implements ChatModel {
+
+        Mode mode;
+        String name;
+        URI remote;
+
+    }
+
     /**
      * 构建文本模型
      *
      * @param name 模型名称
      * @return 文本模型
      */
-    public static ChatModel ofText(String name) {
-        return new ChatModel(
+    static ChatModel ofText(String name) {
+        return new DefaultChatModel(
                 Mode.TEXT,
                 name,
                 URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation")
@@ -54,8 +66,8 @@ public class ChatModel implements Model {
      * @param name 模型名称
      * @return 多模态模型
      */
-    public static ChatModel ofMultimodal(String name) {
-        return new ChatModel(
+    static ChatModel ofMultimodal(String name) {
+        return new DefaultChatModel(
                 Mode.MULTIMODAL,
                 name,
                 URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation")
@@ -141,7 +153,6 @@ public class ChatModel implements Model {
      * <p>是视觉推理模型，支持视觉输入及思维链输出，在数学、编程、视觉分析、创作以及通用任务上都表现了更强的能力。</p>
      */
     public static final ChatModel QVQ_MAX = ofMultimodal("qvq-max");
-
 
 
 }

@@ -14,17 +14,15 @@ import static io.github.oldmanpushcart.dashscope4j.client.api.audio.asr.Recognit
 /**
  * 语音识别模型
  */
-@Value
-@Accessors(fluent = true)
-@AllArgsConstructor
-public class RecognitionModel implements Model {
+public interface RecognitionModel extends Model {
 
-    String name;
-    URI remote;
-    Option option;
-
-    public RecognitionModel(String name, URI remote) {
-        this(name, remote, new Option().unmodifiable());
+    @Value
+    @Accessors(fluent = true)
+    @AllArgsConstructor
+    class DefaultRecognitionModel implements RecognitionModel {
+        String name;
+        URI remote;
+        Option option;
     }
 
     /**
@@ -38,7 +36,7 @@ public class RecognitionModel implements Model {
      * </p>
      * <p>暂不支持热词</p>
      */
-    public static final RecognitionModel PARAFORMER_REALTIME_V2 = new RecognitionModel(
+    RecognitionModel PARAFORMER_REALTIME_V2 = new DefaultRecognitionModel(
             "paraformer-realtime-v2",
             WSS_REMOTE,
             new Option().option(SAMPLE_RATE, 16000).unmodifiable()
@@ -48,7 +46,7 @@ public class RecognitionModel implements Model {
      * PARAFORMER_REALTIME_V1
      * <p>中文实时语音识别模型，支持16kHz及以上采样率的视频直播、会议等实时场景下的语音识别</p>
      */
-    public static final RecognitionModel PARAFORMER_REALTIME_V1 = new RecognitionModel(
+    RecognitionModel PARAFORMER_REALTIME_V1 = new DefaultRecognitionModel(
             "paraformer-realtime-v1",
             WSS_REMOTE,
             new Option().option(SAMPLE_RATE, 16000).unmodifiable()
@@ -58,7 +56,7 @@ public class RecognitionModel implements Model {
      * PARAFORMER_REALTIME_8K_V1
      * <p>中文实时语音识别模型，支持8kHz电话客服等场景下的实时语音识别</p>
      */
-    public static final RecognitionModel PARAFORMER_REALTIME_8K_V1 = new RecognitionModel(
+    RecognitionModel PARAFORMER_REALTIME_8K_V1 = new DefaultRecognitionModel(
             "paraformer-realtime-8k-v1",
             WSS_REMOTE,
             new Option().option(SAMPLE_RATE, 8000).unmodifiable()

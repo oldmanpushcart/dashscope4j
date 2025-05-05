@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.function;
+package io.github.oldmanpushcart.dashscope4j.agent.function.dashscope;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
+import static java.util.Optional.ofNullable;
+
 @ChatFnName("dashscope_gen_image_by_image")
 @ChatFnDescription("根据参考图片和文本提示生成图片")
 @Setter
@@ -29,7 +31,7 @@ import java.util.stream.Collectors;
 public class DashscopeGenImageByImageFunction
         implements ChatFunction<DashscopeGenImageByImageFunction.Parameter, DashscopeGenImageByImageFunction.Result> {
 
-    private boolean autoUploadEnabled;
+    private boolean autoUpload;
     private Task.WaitStrategy waitStrategy = Task.WaitStrategies.until(
             Duration.ofSeconds(5),
             Duration.ofMinutes(1)
@@ -40,20 +42,14 @@ public class DashscopeGenImageByImageFunction
 
         final GenImageRequest request = GenImageRequest.newBuilder()
                 .model(GenImageModel.WANX_V1)
-                .enableAutoUpload(autoUploadEnabled)
+                .enableAutoUpload(autoUpload)
                 .option(GenImageOptions.NUMBER, 1)
                 .prompt(parameter.prompt())
                 .reference(parameter.referenceImage())
                 .building(builder -> {
-                    if (null != parameter.negative()) {
-                        builder.negative(parameter.negative());
-                    }
-                    if (null != parameter.refMode()) {
-                        builder.option(GenImageOptions.REF_MODE, parameter.refMode());
-                    }
-                    if (null != parameter.refStrength()) {
-                        builder.option(GenImageOptions.REF_STRENGTH, parameter.refStrength());
-                    }
+                    ofNullable(parameter.negative()).ifPresent(builder::negative);
+                    builder.optionIfNotNull(GenImageOptions.REF_MODE, parameter.refMode());
+                    builder.optionIfNotNull(GenImageOptions.REF_STRENGTH, parameter.refStrength());
                 })
                 .build();
 
@@ -77,7 +73,7 @@ public class DashscopeGenImageByImageFunction
     @Value
     @Accessors(fluent = true)
     @Jacksonized
-    @Builder
+    @Builder(builderMethodName = "newBuilder")
     public static class Parameter {
 
         @JsonPropertyDescription("参考图像的URI")
@@ -104,6 +100,7 @@ public class DashscopeGenImageByImageFunction
     }
 
     @Value
+    @Accessors(fluent = true)
     public static class Result {
 
         @JsonPropertyDescription("生成图像的URI列表")

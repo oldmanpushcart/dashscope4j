@@ -52,9 +52,9 @@ class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder 
                     final StringBuilder stringBuf = new StringBuilder();
                     for (final ChatFunctionTool tool : agent.functionTools()) {
                         stringBuf
-                                .append("- ")
+                                .append("### ")
                                 .append(tool.meta().name())
-                                .append(";")
+                                .append("\n")
                                 .append(tool.meta().description())
                                 .append("\n");
                     }

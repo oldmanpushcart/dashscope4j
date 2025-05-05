@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.function;
+package io.github.oldmanpushcart.dashscope4j.agent.function.dashscope;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -20,7 +20,8 @@ import java.util.concurrent.CompletionStage;
 
 @ChatFnName("dashscope_web_search")
 @ChatFnDescription("通过关键词搜索互联网。当需要资料而没有找到合适的工具时，可以通过此工具搜索查询互联网公开资料。")
-public class DashscopeWebSearchFunction implements ChatFunction<DashscopeWebSearchFunction.Parameter, DashscopeWebSearchFunction.Result> {
+public class DashscopeWebSearchFunction
+        implements ChatFunction<DashscopeWebSearchFunction.Parameter, DashscopeWebSearchFunction.Result> {
 
     @Override
     public CompletionStage<Result> call(Caller caller, Parameter parameter) {
@@ -49,7 +50,7 @@ public class DashscopeWebSearchFunction implements ChatFunction<DashscopeWebSear
     @Value
     @Accessors(fluent = true)
     @Jacksonized
-    @Builder
+    @Builder(builderMethodName = "newBuilder")
     public static class Parameter {
 
         @JsonProperty(required = true)
@@ -59,6 +60,7 @@ public class DashscopeWebSearchFunction implements ChatFunction<DashscopeWebSear
     }
 
     @Value
+    @Accessors(fluent = true)
     public static class Result {
 
         @JsonPropertyDescription("搜索结果")

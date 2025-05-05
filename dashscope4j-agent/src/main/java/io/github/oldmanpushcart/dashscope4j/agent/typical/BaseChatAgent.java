@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.ofNullable;
 
 /**
  * 基础智能体
@@ -79,26 +80,24 @@ public abstract class BaseChatAgent implements ChatAgent {
 
     // 流式桥接异步
     private CompletionStage<ChatResponse> baseAsyncByFlowBridge(ChatRequest request) {
-        return baseFlow(request)
-                .thenCompose(responseFlow -> {
-                    final boolean isIncrementalOutput = request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true);
-                    return responseFlow
-                            .reduce((response1, response2) -> {
-                                if (!isIncrementalOutput) {
-                                    return response2;
-                                }
-                                return response2
-                                        .changeMessages(message2 -> {
+
+        final ChatRequest newRequest = ChatRequest.newBuilder(request)
+                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .build();
+
+        return baseFlow(newRequest)
+                .thenCompose(responseFlow ->
+                        responseFlow
+                                .reduce((response1, response2) ->
+                                        response2.changeMessages(message2 -> {
                                             final Message message1 = response1.output().best().message();
                                             return new Message(
                                                     message2.role(),
                                                     Content.ofText(message1.text() + message2.text()),
                                                     message1.reasoningContent() + message2.reasoningContent()
                                             );
-                                        });
-                            })
-                            .toCompletionStage();
-                });
+                                        }))
+                                .toCompletionStage());
     }
 
     @Override
@@ -127,11 +126,7 @@ public abstract class BaseChatAgent implements ChatAgent {
                 /*
                  * 重新设置对话模型
                  */
-                .building(builder -> {
-                    if (null != model) {
-                        builder.model(model);
-                    }
-                })
+                .building(builder -> ofNullable(model).ifPresent(builder::model))
 
                 /*
                  * 重写用户输入部分
@@ -141,12 +136,9 @@ public abstract class BaseChatAgent implements ChatAgent {
                 .building(builder -> {
 
                     final String prompt = PromptTemplate.newBuilder()
-                            .template("请根据用户输入作答\n" +
-                                      "### 输入附件\n" +
-                                      "${attachments}\n" +
-                                      "\n" +
-                                      "### 输入问题\n" +
-                                      "${question}")
+                            .template("请根据用户问题作答:\n" +
+                                      "${question}\n" +
+                                      "${attachments}")
                             .building(ptBuilder -> {
                                 final Message message = request.requireLastMessageFromUser();
                                 final List<Content<?>> nonTextContents = message.nonTextContents();

@@ -56,8 +56,7 @@ class ProcessMmEmbeddingContentForUploadInterceptor implements Interceptor {
             return completedFuture(data);
         }
 
-        return chain.client().base().store().upload(resource, request.model())
-                .thenApply(URI::toString);
+        return chain.client().base().store().upload(resource, request.model());
     }
 
 }

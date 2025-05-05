@@ -2,11 +2,12 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
+import lombok.Builder;
 import lombok.Data;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -20,7 +21,7 @@ import java.util.concurrent.CompletionStage;
 class BaseChatAgentFunction
         implements ChatFunction<BaseChatAgentFunction.Parameter, BaseChatAgentFunction.Result> {
 
-    private final ChatAgent agent;
+    private final BaseChatAgent agent;
 
     public BaseChatAgentFunction(BaseChatAgent agent) {
         this.agent = agent;
@@ -29,18 +30,23 @@ class BaseChatAgentFunction
     @Override
     public CompletionStage<Result> call(Caller caller, Parameter parameter) {
         final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_TURBO)
+                .model(caller.request().model())
                 .addMessage(Message.ofUser(parameter.input()))
                 .build();
         return agent.async(request)
                 .thenApply(response -> response.output().best().message().text())
-                .thenApply(Result::new);
+                .thenApply(Result::new)
+                .exceptionally(ex ->
+                        new Result("智能体函数执行失败：" + ex.getLocalizedMessage())
+                                .prompt("请检查以下几点：\n" +
+                                        "- 输入的内容使用了完整的、正确的附件信息\n" +
+                                        "- 输入的内容不存在假设内容"));
     }
 
     @Value
     @Accessors(fluent = true)
     @Jacksonized
-    @lombok.Builder
+    @Builder
     public static class Parameter {
 
         @JsonProperty(required = true)

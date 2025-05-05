@@ -11,32 +11,28 @@ import java.net.URI;
 /**
  * 多模态向量计算模型
  */
-@Value
-@Accessors(fluent = true)
-@ToString
-@EqualsAndHashCode
-public class MmEmbeddingModel implements Model {
+public interface MmEmbeddingModel extends Model {
 
     /**
      * 向量维度
      */
-    int dimension;
+    int dimension();
 
-    /**
-     * 模型名称
-     */
-    String name;
-
-    /**
-     * 远程地址
-     */
-    URI remote;
+    @Value
+    @Accessors(fluent = true)
+    @ToString
+    @EqualsAndHashCode
+    class DefaultMmEmbeddingModel implements MmEmbeddingModel {
+        int dimension;
+        String name;
+        URI remote;
+    }
 
     /**
      * MM_EMBEDDING_V1
      * <p>图音文多模态向量计算模型V1版</p>
      */
-    public static final MmEmbeddingModel MM_EMBEDDING_V1 = new MmEmbeddingModel(
+    MmEmbeddingModel MM_EMBEDDING_V1 = new DefaultMmEmbeddingModel(
             1024,
             "multimodal-embedding-v1",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/embeddings/multimodal-embedding/multimodal-embedding")

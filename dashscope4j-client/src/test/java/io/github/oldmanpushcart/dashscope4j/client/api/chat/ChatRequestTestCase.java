@@ -99,15 +99,6 @@ public class ChatRequestTestCase {
                     Content.ofImage(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav")),
                     Content.ofVideo(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav")),
                     Content.ofFile(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav"))
-            )),
-            Message.ofUser(Arrays.asList(
-                    Content.ofText("Hello!"),
-                    Content.ofVideo(Arrays.asList(
-                            URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav"),
-                            URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav"),
-                            URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav"),
-                            URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/2channel_16K.wav")
-                    ))
             ))
     );
 

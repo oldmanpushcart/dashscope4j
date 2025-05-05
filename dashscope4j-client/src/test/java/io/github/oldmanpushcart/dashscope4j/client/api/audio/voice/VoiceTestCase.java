@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.api.audio.voice;
 
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.client.Constants;
+import io.github.oldmanpushcart.dashscope4j.client.Option;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.api.audio.tts.SpeechSynthesisModel;
 import org.junit.jupiter.api.Assertions;
@@ -20,11 +21,13 @@ public class VoiceTestCase extends ClientSupport {
 
     private static final String GROUP = "test";
 
-    private static final SpeechSynthesisModel TARGET_MODEL = SpeechSynthesisModel.newBuilder()
-            .name(SpeechSynthesisModel.MODEL_NAME_COSYVOICE_V1)
-            .remote(Constants.WSS_REMOTE)
-            .option(SAMPLE_RATE, Constants.SAMPLE_RATE_48K)
-            .build();
+    private static final SpeechSynthesisModel TARGET_MODEL = new SpeechSynthesisModel.DefaultSpeechSynthesisModel(
+            SpeechSynthesisModel.MODEL_NAME_COSYVOICE_V1,
+            Constants.WSS_REMOTE,
+            new Option()
+                    .option(SAMPLE_RATE, Constants.SAMPLE_RATE_48K)
+                    .unmodifiable()
+    );
 
     private static final URI RESOURCE = new File("./test-data/sc2-human.mp3").toURI();
 

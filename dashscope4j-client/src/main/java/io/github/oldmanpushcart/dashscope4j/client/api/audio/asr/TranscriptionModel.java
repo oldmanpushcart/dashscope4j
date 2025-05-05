@@ -14,15 +14,17 @@ import static io.github.oldmanpushcart.dashscope4j.client.api.audio.asr.Transcri
 /**
  * 语音转录模型
  */
-@Value
-@Accessors(fluent = true)
-@ToString
-@EqualsAndHashCode
-public class TranscriptionModel implements Model {
+public interface TranscriptionModel extends Model {
 
-    String name;
-    URI remote;
-    Option option;
+    @Value
+    @Accessors(fluent = true)
+    @ToString
+    @EqualsAndHashCode
+    class DefaultTranscriptionModel implements TranscriptionModel {
+        String name;
+        URI remote;
+        Option option;
+    }
 
     /**
      * PARAFORMER_V2
@@ -32,7 +34,7 @@ public class TranscriptionModel implements Model {
      * 暂不支持热词。
      * </p>
      */
-    public static TranscriptionModel PARAFORMER_V2 = new TranscriptionModel(
+    TranscriptionModel PARAFORMER_V2 = new DefaultTranscriptionModel(
             "paraformer-v2",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription"),
             new Option().unmodifiable()
@@ -42,7 +44,7 @@ public class TranscriptionModel implements Model {
      * PARAFORMER_V1
      * <p>中英文语音识别模型，支持16kHz及以上采样率的音频或视频语音识别。</p>
      */
-    public static TranscriptionModel PARAFORMER_V1 = new TranscriptionModel(
+    TranscriptionModel PARAFORMER_V1 = new DefaultTranscriptionModel(
             "paraformer-v1",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription"),
             new Option().option(SAMPLE_RATE, 16000).unmodifiable()
@@ -52,7 +54,7 @@ public class TranscriptionModel implements Model {
      * PARAFORMER_8K_V1
      * <p>中文语音识别模型，支持8kHz电话语音识别。</p>
      */
-    public static TranscriptionModel PARAFORMER_8K_V1 = new TranscriptionModel(
+    TranscriptionModel PARAFORMER_8K_V1 = new DefaultTranscriptionModel(
             "paraformer-8k-v1",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription"),
             new Option().option(SAMPLE_RATE, 8000).unmodifiable()
@@ -67,7 +69,7 @@ public class TranscriptionModel implements Model {
      * 英语、日语、韩语、西班牙语、印尼语、法语、德语、意大利语、马来语。
      * </p>
      */
-    public static TranscriptionModel PARAFORMER_MTL_V1 = new TranscriptionModel(
+    TranscriptionModel PARAFORMER_MTL_V1 = new DefaultTranscriptionModel(
             "paraformer-mtl-v1",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription"),
             new Option().option(SAMPLE_RATE, 16000).unmodifiable()

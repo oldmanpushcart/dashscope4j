@@ -73,7 +73,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
      * @return Parameters
      */
     @JsonProperty("parameters")
-    protected Option parameters() {
+    public Option option() {
         /*
          * 由请求中的model和option属性先后拼接而成
          * 后者优先级最高
@@ -146,7 +146,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
 
         }
 
-        protected Builder(AlgoRequest<M,?> request) {
+        protected Builder(AlgoRequest<M, ?> request) {
             super(request);
             this.model = request.model;
             this.option.merge(request.option);
@@ -179,6 +179,22 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
         }
 
         /**
+         * 如果选项值不为空，则设置选项
+         *
+         * @param opt   选项类型
+         * @param value 选项值
+         * @param <OT>  选项值类型
+         * @param <OR>  选项值类型（转换后）
+         * @return this
+         * @since 3.2.0
+         */
+        public <OT, OR> B optionIfNotNull(Option.Opt<OT, OR> opt, OT value) {
+            return null != value
+                    ? option(opt, value)
+                    : self();
+        }
+
+        /**
          * 设置选项
          *
          * @param name  选项名
@@ -188,6 +204,20 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
         public B option(String name, Object value) {
             this.option.option(name, value);
             return self();
+        }
+
+        /**
+         * 如果选项值不为空，则设置选项
+         *
+         * @param name  选项名
+         * @param value 选项值
+         * @return this
+         * @since 3.2.0
+         */
+        public B optionIfNotNull(String name, Object value) {
+            return null != value
+                    ? option(name, value)
+                    : self();
         }
 
     }
