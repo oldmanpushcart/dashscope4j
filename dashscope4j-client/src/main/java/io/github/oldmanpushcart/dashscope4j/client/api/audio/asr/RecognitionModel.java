@@ -2,9 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.client.api.audio.asr;
 
 import io.github.oldmanpushcart.dashscope4j.client.Model;
 import io.github.oldmanpushcart.dashscope4j.client.Option;
-import lombok.AllArgsConstructor;
-import lombok.Value;
-import lombok.experimental.Accessors;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.net.URI;
 
@@ -16,13 +15,18 @@ import static io.github.oldmanpushcart.dashscope4j.client.api.audio.asr.Recognit
  */
 public interface RecognitionModel extends Model {
 
-    @Value
-    @Accessors(fluent = true)
-    @AllArgsConstructor
-    class DefaultRecognitionModel implements RecognitionModel {
-        String name;
-        URI remote;
-        Option option;
+    @ToString(callSuper = true)
+    @EqualsAndHashCode(callSuper = true)
+    class BaseRecognitionModel extends BaseModel implements RecognitionModel {
+
+        public BaseRecognitionModel(String name, URI remote, Option option) {
+            super(name, remote, option);
+        }
+
+        public BaseRecognitionModel(String name, URI remote) {
+            super(name, remote);
+        }
+
     }
 
     /**
@@ -36,7 +40,7 @@ public interface RecognitionModel extends Model {
      * </p>
      * <p>暂不支持热词</p>
      */
-    RecognitionModel PARAFORMER_REALTIME_V2 = new DefaultRecognitionModel(
+    RecognitionModel PARAFORMER_REALTIME_V2 = new BaseRecognitionModel(
             "paraformer-realtime-v2",
             WSS_REMOTE,
             new Option().option(SAMPLE_RATE, 16000).unmodifiable()
@@ -46,7 +50,7 @@ public interface RecognitionModel extends Model {
      * PARAFORMER_REALTIME_V1
      * <p>中文实时语音识别模型，支持16kHz及以上采样率的视频直播、会议等实时场景下的语音识别</p>
      */
-    RecognitionModel PARAFORMER_REALTIME_V1 = new DefaultRecognitionModel(
+    RecognitionModel PARAFORMER_REALTIME_V1 = new BaseRecognitionModel(
             "paraformer-realtime-v1",
             WSS_REMOTE,
             new Option().option(SAMPLE_RATE, 16000).unmodifiable()
@@ -56,7 +60,7 @@ public interface RecognitionModel extends Model {
      * PARAFORMER_REALTIME_8K_V1
      * <p>中文实时语音识别模型，支持8kHz电话客服等场景下的实时语音识别</p>
      */
-    RecognitionModel PARAFORMER_REALTIME_8K_V1 = new DefaultRecognitionModel(
+    RecognitionModel PARAFORMER_REALTIME_8K_V1 = new BaseRecognitionModel(
             "paraformer-realtime-8k-v1",
             WSS_REMOTE,
             new Option().option(SAMPLE_RATE, 8000).unmodifiable()

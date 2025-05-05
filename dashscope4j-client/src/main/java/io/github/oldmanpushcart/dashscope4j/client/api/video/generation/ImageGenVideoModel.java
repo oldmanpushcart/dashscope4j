@@ -1,10 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.video.generation;
 
 import io.github.oldmanpushcart.dashscope4j.client.Model;
+import io.github.oldmanpushcart.dashscope4j.client.Option;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.Value;
-import lombok.experimental.Accessors;
 
 import java.net.URI;
 
@@ -15,21 +14,26 @@ import java.net.URI;
  */
 public interface ImageGenVideoModel extends Model {
 
-    @Value
-    @Accessors(fluent = true)
-    @ToString
-    @EqualsAndHashCode
-    class DefaultImageGenVideoModel implements ImageGenVideoModel {
-        String name;
-        URI remote;
+    @ToString(callSuper = true)
+    @EqualsAndHashCode(callSuper = true)
+    class BaseImageGenVideoModel extends BaseModel implements ImageGenVideoModel {
+
+        public BaseImageGenVideoModel(String name, URI remote, Option option) {
+            super(name, remote, option);
+        }
+
+        public BaseImageGenVideoModel(String name, URI remote) {
+            super(name, remote);
+        }
+
     }
 
-    ImageGenVideoModel WANX_V2_1_I2V_TURBO = new DefaultImageGenVideoModel(
+    ImageGenVideoModel WANX_V2_1_I2V_TURBO = new BaseImageGenVideoModel(
             "wanx2.1-i2v-turbo",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis")
     );
 
-    ImageGenVideoModel WANX_V2_1_I2V_PLUS = new DefaultImageGenVideoModel(
+    ImageGenVideoModel WANX_V2_1_I2V_PLUS = new BaseImageGenVideoModel(
             "wanx2.1-i2v-plus",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis")
     );

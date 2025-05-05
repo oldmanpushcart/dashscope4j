@@ -1,19 +1,29 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.vocabulary;
 
 import io.github.oldmanpushcart.dashscope4j.client.Model;
-import lombok.Value;
-import lombok.experimental.Accessors;
+import io.github.oldmanpushcart.dashscope4j.client.Option;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.net.URI;
 
-@Value
-@Accessors(fluent = true)
-public class VocabularyModel implements Model {
+public interface VocabularyModel extends Model {
 
-    String name;
-    URI remote;
+    @ToString(callSuper = true)
+    @EqualsAndHashCode(callSuper = true)
+    class BaseVocabularyModel extends BaseModel implements VocabularyModel {
 
-    public static final VocabularyModel SPEECH_BIASING = new VocabularyModel(
+        public BaseVocabularyModel(String name, URI remote, Option option) {
+            super(name, remote, option);
+        }
+
+        public BaseVocabularyModel(String name, URI remote) {
+            super(name, remote);
+        }
+
+    }
+
+    VocabularyModel SPEECH_BIASING = new BaseVocabularyModel(
             "speech-biasing",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/audio/asr/customization")
     );

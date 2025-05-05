@@ -1,7 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.embedding.mm;
 
 import io.github.oldmanpushcart.dashscope4j.client.Model;
+import io.github.oldmanpushcart.dashscope4j.client.Option;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -18,14 +20,24 @@ public interface MmEmbeddingModel extends Model {
      */
     int dimension();
 
-    @Value
+    @Getter
     @Accessors(fluent = true)
-    @ToString
-    @EqualsAndHashCode
-    class DefaultMmEmbeddingModel implements MmEmbeddingModel {
-        int dimension;
-        String name;
-        URI remote;
+    @ToString(callSuper = true)
+    @EqualsAndHashCode(callSuper = true)
+    class DefaultMmEmbeddingModel extends BaseModel implements MmEmbeddingModel {
+
+        private final int dimension;
+
+        public DefaultMmEmbeddingModel(int dimension, String name, URI remote, Option option) {
+            super(name, remote, option);
+            this.dimension = dimension;
+        }
+
+        public DefaultMmEmbeddingModel(int dimension, String name, URI remote) {
+            super(name, remote);
+            this.dimension = dimension;
+        }
+
     }
 
     /**

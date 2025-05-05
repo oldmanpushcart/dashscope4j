@@ -1,22 +1,26 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.image.generation;
 
 import io.github.oldmanpushcart.dashscope4j.client.Model;
+import io.github.oldmanpushcart.dashscope4j.client.Option;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.Value;
-import lombok.experimental.Accessors;
 
 import java.net.URI;
 
 public interface GenImageModel extends Model {
 
-    @Value
-    @Accessors(fluent = true)
-    @ToString
-    @EqualsAndHashCode
-    class DefaultGenImageModel implements GenImageModel {
-        String name;
-        URI remote;
+    @ToString(callSuper = true)
+    @EqualsAndHashCode(callSuper = true)
+    class BaseGenImageModel extends BaseModel implements GenImageModel {
+
+        public BaseGenImageModel(String name, URI remote, Option option) {
+            super(name, remote, option);
+        }
+
+        public BaseGenImageModel(String name, URI remote) {
+            super(name, remote);
+        }
+
     }
 
     /**
@@ -27,7 +31,7 @@ public interface GenImageModel extends Model {
      * 通过知识重组与可变维度扩散模型，加速收敛并提升最终生成图片的效果, 结果自然、细节丰富。支持中英文双语输入。
      * </p>
      */
-    GenImageModel WANX_V1 = new DefaultGenImageModel(
+    GenImageModel WANX_V1 = new BaseGenImageModel(
             "wanx-v1",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis")
     );
@@ -38,7 +42,7 @@ public interface GenImageModel extends Model {
      *
      * @since 3.1.0
      */
-    GenImageModel WANX_V2_1_TURBO = new DefaultGenImageModel(
+    GenImageModel WANX_V2_1_TURBO = new BaseGenImageModel(
             "wanx2.1-t2i-turbo",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis")
     );
@@ -49,7 +53,7 @@ public interface GenImageModel extends Model {
      *
      * @since 3.1.0
      */
-    GenImageModel WANX_V2_1_PLUS = new DefaultGenImageModel(
+    GenImageModel WANX_V2_1_PLUS = new BaseGenImageModel(
             "wanx2.1-t2i-turbo",
             URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis")
     );

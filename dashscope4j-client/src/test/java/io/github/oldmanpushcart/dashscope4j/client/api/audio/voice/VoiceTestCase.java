@@ -21,7 +21,7 @@ public class VoiceTestCase extends ClientSupport {
 
     private static final String GROUP = "test";
 
-    private static final SpeechSynthesisModel TARGET_MODEL = new SpeechSynthesisModel.DefaultSpeechSynthesisModel(
+    private static final SpeechSynthesisModel TARGET_MODEL = new SpeechSynthesisModel.BaseSpeechSynthesisModel(
             SpeechSynthesisModel.MODEL_NAME_COSYVOICE_V1,
             Constants.WSS_REMOTE,
             new Option()

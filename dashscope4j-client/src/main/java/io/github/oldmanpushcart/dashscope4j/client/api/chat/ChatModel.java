@@ -1,9 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.client.Model;
+import io.github.oldmanpushcart.dashscope4j.client.Option;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.ToString;
-import lombok.Value;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
@@ -34,15 +35,23 @@ public interface ChatModel extends Model {
         MULTIMODAL
     }
 
-    @Value
+    @Getter
     @Accessors(fluent = true)
-    @ToString
-    @EqualsAndHashCode
-    class DefaultChatModel implements ChatModel {
+    @ToString(callSuper = true)
+    @EqualsAndHashCode(callSuper = true)
+    class BaseChatModel extends BaseModel implements ChatModel {
 
-        Mode mode;
-        String name;
-        URI remote;
+        private final Mode mode;
+
+        public BaseChatModel(Mode mode, String name, URI remote, Option option) {
+            super(name, remote, option);
+            this.mode = mode;
+        }
+
+        public BaseChatModel(Mode mode, String name, URI remote) {
+            super(name, remote);
+            this.mode = mode;
+        }
 
     }
 
@@ -53,7 +62,7 @@ public interface ChatModel extends Model {
      * @return 文本模型
      */
     static ChatModel ofText(String name) {
-        return new DefaultChatModel(
+        return new BaseChatModel(
                 Mode.TEXT,
                 name,
                 URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation")
@@ -67,7 +76,7 @@ public interface ChatModel extends Model {
      * @return 多模态模型
      */
     static ChatModel ofMultimodal(String name) {
-        return new DefaultChatModel(
+        return new BaseChatModel(
                 Mode.MULTIMODAL,
                 name,
                 URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation")
