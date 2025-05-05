@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.audio.asr;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.Ret;
@@ -34,6 +35,9 @@ public class TranscriptionResponse extends AlgoResponse<TranscriptionResponse.Ou
     @JsonCreator
     private TranscriptionResponse(
 
+            @JacksonInject("dashscope/request")
+            TranscriptionRequest request,
+
             @JsonProperty("request_id")
             String uuid,
 
@@ -50,7 +54,7 @@ public class TranscriptionResponse extends AlgoResponse<TranscriptionResponse.Ou
             Output output
 
     ) {
-        super(uuid, code, desc, usage);
+        super(request, uuid, code, desc, usage);
         this.output = output;
     }
 

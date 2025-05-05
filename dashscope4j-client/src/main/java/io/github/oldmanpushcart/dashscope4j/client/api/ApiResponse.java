@@ -29,12 +29,13 @@ public abstract class ApiResponse<D> extends Response {
     /**
      * 构建API应答
      *
-     * @param uuid 唯一编号
-     * @param code 应答编码
-     * @param desc 应答信息
+     * @param request 请求
+     * @param uuid    唯一编号
+     * @param code    应答编码
+     * @param desc    应答信息
      */
-    protected ApiResponse(String uuid, String code, String desc) {
-        super(code, desc);
+    protected ApiResponse(ApiRequest<?> request, String uuid, String code, String desc) {
+        super(request, code, desc);
         this.uuid = uuid;
     }
 

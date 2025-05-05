@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
@@ -32,12 +33,15 @@ class PostUploadResponse extends ApiResponse<URI> {
     @Setter(AccessLevel.PACKAGE)
     private URI output;
 
-    public PostUploadResponse(String uuid) {
-        super(uuid, null, null);
+    public PostUploadResponse(PostUploadRequest request, String uuid) {
+        super(request, uuid, null, null);
     }
 
     @JsonCreator
     private PostUploadResponse(
+
+            @JacksonInject("dashscope/request")
+            PostUploadRequest request,
 
             @JsonProperty("RequestId")
             String uuid,
@@ -49,7 +53,7 @@ class PostUploadResponse extends ApiResponse<URI> {
             String message
 
     ) {
-        super(uuid, code, message);
+        super(request, uuid, code, message);
     }
 
 }

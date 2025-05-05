@@ -40,7 +40,7 @@ class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {
     public BiFunction<okhttp3.Response, String, GetPolicyResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
             log.debug("dashscope://base/store/get-policy <<< {}", bodyJson);
-            return JacksonJsonUtils.toObject(bodyJson, GetPolicyResponse.class);
+            return JacksonJsonUtils.toObject(bodyJson, GetPolicyResponse.class, this, httpResponse);
         };
     }
 

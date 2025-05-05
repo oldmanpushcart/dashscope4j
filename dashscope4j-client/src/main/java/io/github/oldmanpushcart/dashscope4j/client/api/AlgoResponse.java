@@ -35,13 +35,14 @@ public abstract class AlgoResponse<D> extends ApiResponse<D> {
     /**
      * 构建算法应答结果
      *
-     * @param uuid  唯一编号
-     * @param code  应答编码
-     * @param desc  应答信息
-     * @param usage 用量
+     * @param request 请求
+     * @param uuid    唯一编号
+     * @param code    应答编码
+     * @param desc    应答信息
+     * @param usage   用量
      */
-    protected AlgoResponse(String uuid, String code, String desc, Usage usage) {
-        super(uuid, code, desc);
+    protected AlgoResponse(AlgoRequest<?, ?> request, String uuid, String code, String desc, Usage usage) {
+        super(request, uuid, code, desc);
         this.usage = null != usage ? usage : Usage.empty();
     }
 

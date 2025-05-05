@@ -57,7 +57,7 @@ class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
     public BiFunction<okhttp3.Response, String, FileCreateResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
             log.debug("dashscope://base/files/create <<< {}", bodyJson);
-            return JacksonJsonUtils.toObject(bodyJson, FileCreateResponse.class, httpResponse);
+            return JacksonJsonUtils.toObject(bodyJson, FileCreateResponse.class, this, httpResponse);
         };
     }
 

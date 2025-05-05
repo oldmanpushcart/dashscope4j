@@ -16,6 +16,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFu
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.functions.BiFunction;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -67,9 +68,7 @@ public abstract class BaseChatAgent implements ChatAgent {
         return CompletableFuture.completedFuture(request)
                 .thenApply(this::newChatRequest)
 
-                /*
-                 * 根据流控开关选择不同的执行方式
-                 */
+                // 根据流控开关选择不同的执行方式
                 .thenCompose(newRequest -> flowBridgeEnabled
                         ? baseAsyncByFlowBridge(newRequest)
                         : baseAsync(newRequest))
@@ -78,25 +77,34 @@ public abstract class BaseChatAgent implements ChatAgent {
                 .thenApply(response -> processPersistMemoryFragmentForAsync(request, response));
     }
 
-    // 流式桥接异步
+    /*
+     * 流式桥接异步
+     *
+     * 这里强制采用增量输出模式，减少网络传输和处理开销负担
+     */
     private CompletionStage<ChatResponse> baseAsyncByFlowBridge(ChatRequest request) {
 
+        // 强制开启增量输出模式
         final ChatRequest newRequest = ChatRequest.newBuilder(request)
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .build();
 
+        // 对话应答合并操作
+        final BiFunction<ChatResponse, ChatResponse, ChatResponse> mergeOperator = (response1, response2) ->
+                response2.changeMessages(message2 -> {
+                    final Message message1 = response1.output().best().message();
+                    return new Message(
+                            message2.role(),
+                            Content.ofText(message1.text() + message2.text()),
+                            message1.reasoningContent() + message2.reasoningContent()
+                    );
+                });
+
+        // 将增量流式输出的ChatResponse合并为一个ChatResponse，并返回
         return baseFlow(newRequest)
                 .thenCompose(responseFlow ->
                         responseFlow
-                                .reduce((response1, response2) ->
-                                        response2.changeMessages(message2 -> {
-                                            final Message message1 = response1.output().best().message();
-                                            return new Message(
-                                                    message2.role(),
-                                                    Content.ofText(message1.text() + message2.text()),
-                                                    message1.reasoningContent() + message2.reasoningContent()
-                                            );
-                                        }))
+                                .reduce(mergeOperator)
                                 .toCompletionStage());
     }
 
@@ -116,86 +124,79 @@ public abstract class BaseChatAgent implements ChatAgent {
      */
     private ChatRequest newChatRequest(ChatRequest request) {
         return ChatRequest.newBuilder(request)
-
-                // 添加Agent拦截器
                 .addInterceptors(interceptors)
-
-                // 添加Agent工具
                 .addTools(functionTools)
-
-                /*
-                 * 重新设置对话模型
-                 */
                 .building(builder -> ofNullable(model).ifPresent(builder::model))
-
-                /*
-                 * 重写用户输入部分
-                 *
-                 * 将多模态部分作为附件形式存放，便于智能体做更好的处理
-                 */
-                .building(builder -> {
-
-                    final String prompt = PromptTemplate.newBuilder()
-                            .template("请根据用户问题作答:\n" +
-                                      "${question}\n" +
-                                      "${attachments}")
-                            .building(ptBuilder -> {
-                                final Message message = request.requireLastMessageFromUser();
-                                final List<Content<?>> nonTextContents = message.nonTextContents();
-                                ptBuilder.self()
-                                        .variable("attachments", JacksonUtils.toJson(nonTextContents))
-                                        .variable("question", message.text());
-                            })
-                            .build()
-                            .render();
-
-                    builder.self()
-                            .messages(emptyList())
-                            .addMessages(request.historyMessages())
-                            .addMessage(Message.ofUser(prompt));
-                })
-
-                /*
-                 * 在对话列表中添加回忆部分
-                 * SYSTEM
-                 * HISTORY
-                 * LAST_USER_INPUT
-                 */
-                .building(builder -> {
-
-                    final Memory.Context context = request.context(Memory.Context.class);
-                    if (Objects.isNull(memory)
-                        || Memory.Context.isInvalid(context)) {
-                        return;
-                    }
-
-                    final List<Message> newMessages = new ArrayList<>();
-
-                    // 先添加SYSTEM
-                    request.messages()
-                            .stream()
-                            .filter(message -> message.role() == Message.Role.SYSTEM)
-                            .forEach(newMessages::add);
-
-                    // 然后添加回忆
-                    memory.recall(context.sessionId(), context.olderThenFragmentId(), context.newerThenFragmentId())
-                            .forEach(fragment -> {
-                                newMessages.add(fragment.requestMessage());
-                                newMessages.add(fragment.responseMessage());
-                            });
-
-                    // 最后添加请求原有的对话信息
-                    request.messages()
-                            .stream()
-                            .filter(message -> message.role() != Message.Role.SYSTEM)
-                            .forEach(newMessages::add);
-
-                    // 替换原有的消息列表
-                    builder.messages(newMessages);
-
-                })
-
+                .building(builder -> buildingForRewriteUserMessage(builder, request))
+                .building(builder -> buildingForMemoryRecall(builder, request))
                 .build();
+    }
+
+    /*
+     * 重写用户输入部分
+     *
+     * 将多模态部分作为附件形式存放，便于智能体做更好的处理
+     */
+    private void buildingForRewriteUserMessage(ChatRequest.Builder builder, ChatRequest request) {
+
+        final String prompt = PromptTemplate.newBuilder()
+                .template("请根据用户问题作答:\n" +
+                          "${question}\n" +
+                          "${attachments}")
+                .building(ptBuilder -> {
+                    final Message message = request.requireLastMessageFromUser();
+                    final List<Content<?>> nonTextContents = message.nonTextContents();
+                    ptBuilder.self()
+                            .variable("attachments", JacksonUtils.toJson(nonTextContents))
+                            .variable("question", message.text());
+                })
+                .build()
+                .render();
+
+        builder.self()
+                .messages(emptyList())
+                .addMessages(request.historyMessages())
+                .addMessage(Message.ofUser(prompt));
+    }
+
+    /*
+     * 在对话列表中添加回忆部分
+     * SYSTEM
+     * HISTORY
+     * LAST_USER_INPUT
+     */
+    private void buildingForMemoryRecall(ChatRequest.Builder builder, ChatRequest request) {
+
+        final Memory.Context context = request.context(Memory.Context.class);
+        if (Objects.isNull(memory)
+            || Memory.Context.isInvalid(context)) {
+            return;
+        }
+
+        final List<Message> newMessages = new ArrayList<>();
+
+        // 先添加SYSTEM
+        request.messages()
+                .stream()
+                .filter(message -> message.role() == Message.Role.SYSTEM)
+                .forEach(newMessages::add);
+
+        // 然后添加回忆
+        memory.recall(context.sessionId(), context.olderThenFragmentId(), context.newerThenFragmentId())
+                .forEach(fragment -> {
+                    newMessages.add(fragment.requestMessage());
+                    newMessages.add(fragment.responseMessage());
+                });
+
+        // 最后添加请求原有的对话信息
+        request.messages()
+                .stream()
+                .filter(message -> message.role() != Message.Role.SYSTEM)
+                .forEach(newMessages::add);
+
+        // 替换原有的消息列表
+        builder.messages(newMessages);
+
     }
 
     // 处理异步请求的记忆片段存储

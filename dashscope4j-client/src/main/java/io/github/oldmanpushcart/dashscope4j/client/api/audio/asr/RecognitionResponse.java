@@ -24,7 +24,10 @@ public class RecognitionResponse extends AlgoResponse<RecognitionResponse.Output
     @JsonCreator
     private RecognitionResponse(
 
-            @JacksonInject("header/x-request-id")
+            @JacksonInject("dashscope/request")
+            RecognitionRequest request,
+
+            @JacksonInject("http/header/x-request-id")
             String uuid,
 
             @JsonProperty("code")
@@ -40,7 +43,7 @@ public class RecognitionResponse extends AlgoResponse<RecognitionResponse.Output
             Output output
 
     ) {
-        super(uuid, code, desc, usage);
+        super(request, uuid, code, desc, usage);
         this.output = output;
     }
 

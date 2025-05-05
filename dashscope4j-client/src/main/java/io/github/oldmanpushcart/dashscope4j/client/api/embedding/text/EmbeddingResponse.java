@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.embedding.text;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.Usage;
@@ -24,6 +25,9 @@ public class EmbeddingResponse extends AlgoResponse<EmbeddingResponse.Output> {
     @JsonCreator
     private EmbeddingResponse(
 
+            @JacksonInject("dashscope/request")
+            EmbeddingRequest request,
+
             @JsonProperty("request_id")
             String uuid,
 
@@ -40,7 +44,7 @@ public class EmbeddingResponse extends AlgoResponse<EmbeddingResponse.Output> {
             Output output
 
     ) {
-        super(uuid, code, desc, usage);
+        super(request, uuid, code, desc, usage);
         this.output = output;
     }
 

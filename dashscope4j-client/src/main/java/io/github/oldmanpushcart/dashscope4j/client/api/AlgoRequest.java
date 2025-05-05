@@ -125,7 +125,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
     public BiFunction<Response, String, R> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
             log.debug("dashscope://algo/{} <<< {}", model.name(), bodyJson);
-            return JacksonJsonUtils.toObject(bodyJson, responseType(), httpResponse);
+            return JacksonJsonUtils.toObject(bodyJson, responseType(), this, httpResponse);
         };
     }
 

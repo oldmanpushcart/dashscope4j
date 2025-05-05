@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.vocabulary;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.Usage;
@@ -20,6 +21,9 @@ public class VocabularyDeleteResponse extends AlgoResponse<Void> {
     @JsonCreator
     private VocabularyDeleteResponse(
 
+            @JacksonInject("dashscope/request")
+            VocabularyDeleteRequest request,
+
             @JsonProperty("request_id")
             String uuid,
 
@@ -33,7 +37,7 @@ public class VocabularyDeleteResponse extends AlgoResponse<Void> {
             Usage usage
 
     ) {
-        super(uuid, code, desc, usage);
+        super(request, uuid, code, desc, usage);
         this.output = null;
     }
 

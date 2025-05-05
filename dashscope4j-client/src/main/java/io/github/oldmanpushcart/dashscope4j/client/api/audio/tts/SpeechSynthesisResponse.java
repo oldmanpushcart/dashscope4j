@@ -23,7 +23,10 @@ public final class SpeechSynthesisResponse extends AlgoResponse<SpeechSynthesisR
     @JsonCreator
     private SpeechSynthesisResponse(
 
-            @JacksonInject("header/x-request-id")
+            @JacksonInject("dashscope/request")
+            SpeechSynthesisRequest request,
+
+            @JacksonInject("http/header/x-request-id")
             String uuid,
 
             @JsonProperty("code")
@@ -39,7 +42,7 @@ public final class SpeechSynthesisResponse extends AlgoResponse<SpeechSynthesisR
             Output output
 
     ) {
-        super(uuid, code, desc, usage);
+        super(request, uuid, code, desc, usage);
         this.output = output;
     }
 

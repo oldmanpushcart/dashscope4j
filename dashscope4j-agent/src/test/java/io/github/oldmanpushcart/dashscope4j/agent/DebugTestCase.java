@@ -14,7 +14,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.net.URI;
 import java.util.Arrays;
 
 public class DebugTestCase extends ClientSupport {
@@ -22,32 +21,10 @@ public class DebugTestCase extends ClientSupport {
     @Test
     public void test$debug() {
 
-        final ChatModel model = new ChatModel() {
-
-            @Override
-            public Mode mode() {
-                return Mode.TEXT;
-            }
-
-            @Override
-            public String name() {
-                return "qwen3-235b-a22b";
-            }
-
-            @Override
-            public URI remote() {
-                return URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation");
-            }
-
-            @Override
-            public Option option() {
-                return new Option()
-                        .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                        .option("enable_thinking", false)
-                        .unmodifiable();
-            }
-
-        };
+        final ChatModel model = ChatModel.BaseChatModel.ofText("qwen3-235b-a22b", new Option()
+                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .option("enable_thinking", false)
+                .unmodifiable());
 
         final ChatAgent agent = DashscopeChatAgent.newBuilder()
                 .client(client)
@@ -76,28 +53,30 @@ public class DebugTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 //.model(model)
-                .model(ChatModel.QWEN_MAX)
-
-//                .addMessage(Message.ofUser(Arrays.asList(
-//                        Content.ofText("请描述图片内容"),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-01.jpg").toURI())
-//                )))
+                //.model(ChatModel.QWEN_MAX)
+                .model(ChatModel.QWEN_PLUS)
 
                 .addMessage(Message.ofUser(Arrays.asList(
-                        Content.ofText("这是我老婆和女儿外出游玩的照片，请根据照片内容帮我写一篇出行游记"),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-01.jpg").toURI()),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-02.jpg").toURI()),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-03.jpg").toURI()),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-04.jpg").toURI()),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-05.jpg").toURI()),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-06.jpg").toURI()),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-07.jpg").toURI()),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-08.jpg").toURI()),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-09.jpg").toURI()),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-10.jpg").toURI()),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-11.jpg").toURI()),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-12.jpg").toURI())
+                        Content.ofText("请描述图片内容"),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-01.jpg").toURI())
                 )))
+
+//                .addMessage(Message.ofUser(Arrays.asList(
+//                        Content.ofText("这是我老婆和女儿外出游玩的照片，请根据照片内容帮我写一篇出行游记"),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-01.jpg").toURI()),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-02.jpg").toURI()),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-03.jpg").toURI()),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-04.jpg").toURI()),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-05.jpg").toURI()),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-06.jpg").toURI()),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-07.jpg").toURI()),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-08.jpg").toURI()),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-09.jpg").toURI()),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-10.jpg").toURI()),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-11.jpg").toURI()),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-12.jpg").toURI())
+//                )))
+
                 .build();
 
         final ChatResponse response = agent.async(request)

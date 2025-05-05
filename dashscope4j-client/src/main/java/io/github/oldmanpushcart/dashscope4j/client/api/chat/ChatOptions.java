@@ -86,6 +86,21 @@ public interface ChatOptions {
             }});
 
     /**
+     * 是否开启思考模式
+     * <p>
+     * 适用于 Qwen3 模型
+     * </p>
+     *
+     * @since 3.2.0
+     */
+    Option.SimpleOpt<Boolean> ENABLE_THINKING = new Option.SimpleOpt<>("enable_thinking", Boolean.class);
+
+    /**
+     * 思考模式下的最大生成长度
+     */
+    Option.SimpleOpt<Integer> THINKING_BUDGET = new Option.SimpleOpt<>("thinking_budget", Integer.class);
+
+    /**
      * 返回格式
      *
      * @since 3.1.0

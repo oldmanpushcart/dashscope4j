@@ -37,8 +37,8 @@ public class ContextTestCase extends ClientSupport {
         final ChatResponse response = client.chat().async(request)
                 .toCompletableFuture()
                 .join();
-        Assertions.assertEquals(context, response.context());
-        Assertions.assertEquals(stringCtx, response.context(String.class));
+        Assertions.assertEquals(context, response.request().context());
+        Assertions.assertEquals(stringCtx, response.request().context(String.class));
     }
 
     @Test
@@ -53,7 +53,7 @@ public class ContextTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
         responseFlow
-                .doOnNext(response -> Assertions.assertEquals(context, response.context()))
+                .doOnNext(response -> Assertions.assertEquals(context, response.request().context()))
                 .doOnError(Assertions::fail)
                 .blockingSubscribe();
     }
@@ -86,7 +86,7 @@ public class ContextTestCase extends ClientSupport {
 
                     @Override
                     public void onData(SpeechSynthesisResponse response) {
-                        Assertions.assertEquals(context, response.context());
+                        Assertions.assertEquals(context, response.request().context());
                         super.onData(response);
                     }
 
@@ -119,7 +119,7 @@ public class ContextTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        Assertions.assertEquals(context, response.context());
+        Assertions.assertEquals(context, response.request().context());
 
     }
 

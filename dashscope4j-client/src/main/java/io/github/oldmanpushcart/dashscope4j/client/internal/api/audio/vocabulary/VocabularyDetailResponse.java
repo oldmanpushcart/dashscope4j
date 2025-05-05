@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.vocabulary;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -28,6 +29,9 @@ public class VocabularyDetailResponse extends AlgoResponse<VocabularyDetailRespo
     @JsonCreator
     private VocabularyDetailResponse(
 
+            @JacksonInject("dashscope/request")
+            VocabularyDetailRequest request,
+
             @JsonProperty("request_id")
             String uuid,
 
@@ -44,7 +48,7 @@ public class VocabularyDetailResponse extends AlgoResponse<VocabularyDetailRespo
             Output output
 
     ) {
-        super(uuid, code, desc, usage);
+        super(request, uuid, code, desc, usage);
         this.output = output;
     }
 

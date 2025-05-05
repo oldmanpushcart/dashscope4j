@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.failedStage;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.unwrapEx;
 import static java.util.Collections.unmodifiableList;
 
 @Slf4j
@@ -117,6 +118,7 @@ class ToolCaller implements ChatFunction.Caller {
                 unmodifiableList(choices)
         );
         return new ChatResponse(
+                (ChatRequest) response.request(),
                 response.uuid(),
                 response.code(),
                 response.desc(),
@@ -138,7 +140,23 @@ class ToolCaller implements ChatFunction.Caller {
                     } catch (Throwable ex) {
                         future = failedStage(ex);
                     }
-                    futureMap.put(call.id(), future.toCompletableFuture());
+                    futureMap.put(
+                            call.id(),
+                            future.handle((result, ex) -> {
+                                        if (null != ex) {
+                                            log.debug("dashscope://chat/function/{} calling failed!",
+                                                    call.stub().name(),
+                                                    ex
+                                            );
+                                            return String.format("calling failed, please fix your arguments and retry!\n" +
+                                                                 "error-message: %s",
+                                                    unwrapEx(ex).getLocalizedMessage()
+                                            );
+                                        }
+                                        return result;
+                                    })
+                                    .toCompletableFuture()
+                    );
                 });
         return futureMap;
     }

@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.video.generation;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.Usage;
@@ -26,6 +27,9 @@ public class ImageGenVideoResponse extends AlgoResponse<ImageGenVideoResponse.Ou
     @JsonCreator
     private ImageGenVideoResponse(
 
+            @JacksonInject("dashscope/request")
+            ImageGenVideoRequest request,
+
             @JsonProperty("request_id")
             String uuid,
 
@@ -42,7 +46,7 @@ public class ImageGenVideoResponse extends AlgoResponse<ImageGenVideoResponse.Ou
             Output output
 
     ) {
-        super(uuid, code, message, usage);
+        super(request, uuid, code, message, usage);
         this.output = output;
     }
 

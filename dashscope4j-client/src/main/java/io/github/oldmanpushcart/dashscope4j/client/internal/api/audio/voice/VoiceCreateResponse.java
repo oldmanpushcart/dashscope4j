@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.voice;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.Usage;
@@ -19,6 +20,9 @@ public class VoiceCreateResponse extends AlgoResponse<VoiceCreateResponse.Output
     @JsonCreator
     private VoiceCreateResponse(
 
+            @JacksonInject("dashscope/request")
+            VoiceCreateRequest request,
+
             @JsonProperty("request_id")
             String uuid,
 
@@ -35,7 +39,7 @@ public class VoiceCreateResponse extends AlgoResponse<VoiceCreateResponse.Output
             Output output
 
     ){
-        super(uuid, code, desc, usage);
+        super(request, uuid, code, desc, usage);
         this.output = output;
     }
 

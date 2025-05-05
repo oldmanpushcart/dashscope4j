@@ -43,7 +43,7 @@ public class TaskCancelRequest extends ApiRequest<TaskCancelResponse> {
     public BiFunction<Response, String, TaskCancelResponse> newResponseDecoder() {
         return (httpResponse, bodyJson)-> {
             log.debug("dashscope://base/task/cancel/{} <<< {}", taskId, bodyJson);
-            return JacksonJsonUtils.toObject(bodyJson, TaskCancelResponse.class, httpResponse);
+            return JacksonJsonUtils.toObject(bodyJson, TaskCancelResponse.class, this, httpResponse);
         };
     }
 

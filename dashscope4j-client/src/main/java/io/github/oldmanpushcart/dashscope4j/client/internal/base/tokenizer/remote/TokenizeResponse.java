@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.tokenizer.remote;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.Usage;
@@ -24,6 +25,9 @@ class TokenizeResponse extends AlgoResponse<TokenizeResponse.Output> {
     @JsonCreator
     public TokenizeResponse(
 
+            @JacksonInject("dashscope/request")
+            TokenizeRequest request,
+
             @JsonProperty("request_id")
             String uuid,
 
@@ -40,7 +44,7 @@ class TokenizeResponse extends AlgoResponse<TokenizeResponse.Output> {
             Output output
 
     ) {
-        super(uuid, code, desc, usage);
+        super(request, uuid, code, desc, usage);
         this.output = output;
     }
 

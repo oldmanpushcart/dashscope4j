@@ -15,6 +15,7 @@ public class ApiAssertions {
      */
     public static void assertApiResponseBase(ApiResponse<?> response) {
         assertNotNull(response, "Response is null");
+        assertNotNull(response.request(), "Response request is null");
         assertNotNull(response.uuid(), "Response uuid is null");
         assertNotNull(response.code(), "Response code is null");
         if (response instanceof AlgoResponse<?>) {

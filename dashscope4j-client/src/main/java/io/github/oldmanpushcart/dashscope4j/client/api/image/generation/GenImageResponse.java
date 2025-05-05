@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.image.generation;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.Ret;
@@ -23,6 +24,9 @@ public class GenImageResponse extends AlgoResponse<GenImageResponse.Output> {
     @JsonCreator
     private GenImageResponse(
 
+            @JacksonInject("dashscope/request")
+            GenImageRequest request,
+
             @JsonProperty("request_id")
             String uuid,
 
@@ -39,7 +43,7 @@ public class GenImageResponse extends AlgoResponse<GenImageResponse.Output> {
             Output output
 
     ) {
-        super(uuid, code, message, usage);
+        super(request, uuid, code, message, usage);
         this.output = output;
     }
 

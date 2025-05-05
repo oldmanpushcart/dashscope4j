@@ -55,7 +55,7 @@ class FileListRequest extends OpenAiRequest<FileListResponse> {
     public BiFunction<Response, String, FileListResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
             log.debug("dashscope://base/files/list <<< {}", bodyJson);
-            return JacksonJsonUtils.toObject(bodyJson, FileListResponse.class, httpResponse);
+            return JacksonJsonUtils.toObject(bodyJson, FileListResponse.class, this, httpResponse);
         };
     }
 

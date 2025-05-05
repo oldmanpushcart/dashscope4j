@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -41,6 +42,9 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
     @JsonCreator
     public ChatResponse(
 
+            @JacksonInject("dashscope/request")
+            ChatRequest request,
+
             @JsonProperty("request_id")
             String uuid,
 
@@ -57,7 +61,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
             Output output
 
     ) {
-        super(uuid, code, desc, cleanUsage(usage));
+        super(request, uuid, code, desc, cleanUsage(usage));
         this.output = output;
     }
 
@@ -93,6 +97,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
                 .map(choice -> new Choice(choice.finish(), operator.apply(choice.message())))
                 .collect(Collectors.toList());
         return new ChatResponse(
+                (ChatRequest) request(),
                 uuid(),
                 code(),
                 desc(),

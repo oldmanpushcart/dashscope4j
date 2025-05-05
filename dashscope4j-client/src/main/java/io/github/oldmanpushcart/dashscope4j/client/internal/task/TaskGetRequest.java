@@ -49,7 +49,7 @@ public class TaskGetRequest extends ApiRequest<TaskGetResponse> {
     public BiFunction<Response, String, TaskGetResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
             log.debug("dashscope://base/task/get/{} <<< {}", taskId, bodyJson);
-            return JacksonJsonUtils.toObject(bodyJson, TaskGetResponse.class, httpResponse);
+            return JacksonJsonUtils.toObject(bodyJson, TaskGetResponse.class, this, httpResponse);
         };
     }
 

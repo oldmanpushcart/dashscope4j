@@ -41,7 +41,7 @@ class FileDeleteRequest extends OpenAiRequest<FileDeleteResponse> {
     public BiFunction<Response, String, FileDeleteResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
             log.debug("dashscope://base/files/delete/{} <<< {}", identity, bodyJson);
-            return JacksonJsonUtils.toObject(bodyJson, FileDeleteResponse.class, httpResponse);
+            return JacksonJsonUtils.toObject(bodyJson, FileDeleteResponse.class, this, httpResponse);
         };
     }
 

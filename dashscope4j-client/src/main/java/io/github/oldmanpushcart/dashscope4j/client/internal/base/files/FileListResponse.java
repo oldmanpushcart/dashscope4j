@@ -29,7 +29,10 @@ class FileListResponse extends OpenAiResponse<List<FileMeta>> {
     @JsonCreator
     private FileListResponse(
 
-            @JacksonInject("header/x-request-id")
+            @JacksonInject("dashscope/request")
+            FileListRequest request,
+
+            @JacksonInject("http/header/x-request-id")
             String uuid,
 
             @JsonProperty("error")
@@ -42,7 +45,7 @@ class FileListResponse extends OpenAiResponse<List<FileMeta>> {
             boolean hasNext
 
     ) {
-        super(uuid, error);
+        super(request, uuid, error);
 
         final List<FileMeta> metas = list.stream()
                 .map(Data::toMeta)

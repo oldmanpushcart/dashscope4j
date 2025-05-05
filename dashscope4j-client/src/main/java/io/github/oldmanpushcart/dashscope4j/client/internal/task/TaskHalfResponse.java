@@ -1,7 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.task;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
 import lombok.*;
@@ -19,6 +21,9 @@ public class TaskHalfResponse extends ApiResponse<TaskHalfResponse.Output> {
     @JsonCreator
     private TaskHalfResponse(
 
+            @JacksonInject("dashscope/request")
+            ApiRequest<?> request,
+
             @JsonProperty("request_id")
             String uuid,
 
@@ -32,7 +37,7 @@ public class TaskHalfResponse extends ApiResponse<TaskHalfResponse.Output> {
             Output output
 
     ) {
-        super(uuid, code, message);
+        super(request, uuid, code, message);
         this.output = output;
     }
 

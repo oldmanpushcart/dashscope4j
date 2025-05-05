@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchemaGenerator;
+import io.github.oldmanpushcart.dashscope4j.client.internal.api.Request;
 
 import java.lang.reflect.Type;
 import java.util.*;
@@ -89,18 +90,20 @@ public class JacksonJsonUtils {
     /**
      * {@code json -> T}
      *
-     * @param json     json
-     * @param type     对象类型
-     * @param response HTTP响应
-     * @param <T>      对象类型
+     * @param json         json
+     * @param type         对象类型
+     * @param request      请求
+     * @param httpResponse HTTP响应
+     * @param <T>          对象类型
      * @return 对象
      */
-    public static <T> T toObject(String json, Class<T> type, okhttp3.Response response) {
+    public static <T> T toObject(String json, Class<T> type, Request request, okhttp3.Response httpResponse) {
         final Map<String, Object> variableMap = new HashMap<>();
-        response.headers().forEach(header -> variableMap.put(
-                String.format("header/%s", header.getFirst()),
+        httpResponse.headers().forEach(header -> variableMap.put(
+                String.format("http/header/%s", header.getFirst()),
                 header.getSecond()
         ));
+        variableMap.put("dashscope/request", request);
         try {
             return mapper.reader(new InjectableValues.Std(variableMap)).forType(type).readValue(json);
         } catch (JsonProcessingException cause) {

@@ -105,7 +105,7 @@ public class ApiOpImpl implements ApiOp {
         return callback
 
                 // 回填请求信息
-                .thenApply(response -> response.fill(request));
+                .thenApply(response -> response);
 
     }
 
@@ -137,8 +137,7 @@ public class ApiOpImpl implements ApiOp {
 
                             // 构造应答
                             final R response = request.newResponseDecoder()
-                                    .apply(httpResponse, data)
-                                    .fill(request);
+                                    .apply(httpResponse, data);
 
                             if (response.isSuccess()) {
                                 emitter.onNext(response);
@@ -267,8 +266,7 @@ public class ApiOpImpl implements ApiOp {
         // 应答解码器
         final BiFunction<okhttp3.Response, String, R> decoder = (response, responseJson) ->
                 request.newResponseDecoder()
-                        .apply(response, responseJson)
-                        .fill(request);
+                        .apply(response, responseJson);
 
         final WebSocketListener wsListener = new ExchangeWebSocketListenerImpl<>(
                 exchangeF,
@@ -297,8 +295,7 @@ public class ApiOpImpl implements ApiOp {
                 new CompletableFutureCallback<>((call, httpResponse) -> {
 
                     final TaskHalfResponse halfResponse = JacksonJsonUtils
-                            .toObject(requireNonNull(httpResponse.body()).string(), TaskHalfResponse.class)
-                            .fill(request);
+                            .toObject(requireNonNull(httpResponse.body()).string(), TaskHalfResponse.class,  request, httpResponse);
 
                     if (!halfResponse.isSuccess()) {
                         throw new ApiException(httpResponse.code(), halfResponse);
@@ -311,8 +308,7 @@ public class ApiOpImpl implements ApiOp {
 
                     final Function<String, R> decoder = json ->
                             request.newResponseDecoder()
-                                    .apply(httpResponse, json)
-                                    .fill(request);
+                                    .apply(httpResponse, json);
 
                     return strategy -> rollingTask(taskGetRequest, strategy, decoder);
                 });

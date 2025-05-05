@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
@@ -22,6 +23,9 @@ class GetPolicyResponse extends ApiResponse<GetPolicyResponse.Output> {
     @JsonCreator
     private GetPolicyResponse(
 
+            @JacksonInject("dashscope/request")
+            GetPolicyRequest request,
+
             @JsonProperty("request_id")
             String uuid,
 
@@ -35,7 +39,7 @@ class GetPolicyResponse extends ApiResponse<GetPolicyResponse.Output> {
             Output output
 
     ) {
-        super(uuid, code, message);
+        super(request, uuid, code, message);
         this.output = output;
     }
 

@@ -26,7 +26,10 @@ class FileCreateResponse extends OpenAiResponse<FileMeta> {
     @JsonCreator
     private FileCreateResponse(
 
-            @JacksonInject("header/x-request-id")
+            @JacksonInject("dashscope/request")
+            FileCreateRequest request,
+
+            @JacksonInject("http/header/x-request-id")
             String uuid,
 
             @JsonProperty("error")
@@ -48,7 +51,7 @@ class FileCreateResponse extends OpenAiResponse<FileMeta> {
             Purpose purpose
 
     ) {
-        super(uuid, error);
+        super(request, uuid, error);
         this.output = Objects.isNull(error)
                 ? new FileMeta(identity, name, size, Instant.ofEpochSecond(created), purpose)
                 : null;

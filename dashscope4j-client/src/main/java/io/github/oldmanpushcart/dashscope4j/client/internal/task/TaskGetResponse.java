@@ -33,6 +33,7 @@ public class TaskGetResponse extends ApiResponse<TaskGetResponse.Output> {
     String raw;
 
     private TaskGetResponse(
+            TaskGetRequest request,
             String uuid,
             String code,
             String message,
@@ -40,7 +41,7 @@ public class TaskGetResponse extends ApiResponse<TaskGetResponse.Output> {
             Usage usage,
             String raw
     ) {
-        super(uuid, code, message);
+        super(request, uuid, code, message);
         this.output = output;
         this.usage = usage;
         this.raw = raw;
@@ -52,7 +53,9 @@ public class TaskGetResponse extends ApiResponse<TaskGetResponse.Output> {
         public TaskGetResponse deserialize(JsonParser parser, DeserializationContext context) throws IOException {
             final JsonNode node = context.readTree(parser);
             final JsonNode outputNode = node.required("output");
+            final TaskGetRequest request = (TaskGetRequest) context.findInjectableValue("dashscope/request", null, null);
             return new TaskGetResponse(
+                    request,
                     node.required("request_id").asText(),
                     Optional.ofNullable(outputNode.get("code")).map(JsonNode::asText).orElse(null),
                     Optional.ofNullable(outputNode.get("message")).map(JsonNode::asText).orElse(null),

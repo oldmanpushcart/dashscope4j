@@ -41,7 +41,7 @@ class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
     public BiFunction<Response, String, FileDetailResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
             log.debug("dashscope://base/files/detail/{} <<< {}", identity, bodyJson);
-            return JacksonJsonUtils.toObject(bodyJson, FileDetailResponse.class, httpResponse);
+            return JacksonJsonUtils.toObject(bodyJson, FileDetailResponse.class, this, httpResponse);
         };
     }
 

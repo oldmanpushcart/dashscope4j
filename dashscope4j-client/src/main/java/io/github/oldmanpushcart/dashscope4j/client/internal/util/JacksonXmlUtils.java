@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import io.github.oldmanpushcart.dashscope4j.client.internal.api.Request;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,16 +36,17 @@ public class JacksonXmlUtils {
     /**
      * {@code xml -> T}
      *
-     * @param xml      xml
-     * @param type     对象类型
-     * @param response HTTP响应
-     * @param <T>      对象类型
+     * @param xml          xml
+     * @param type         对象类型
+     * @param request      请求
+     * @param httpResponse HTTP响应
+     * @param <T>          对象类型
      * @return 目标对象
      */
-    public static <T> T toObject(String xml, Class<T> type, okhttp3.Response response) {
+    public static <T> T toObject(String xml, Class<T> type, Request request, okhttp3.Response httpResponse) {
         final Map<String, Object> variableMap = new HashMap<>();
-        response.headers().forEach(header -> variableMap.put(
-                String.format("header/%s", header.getFirst()),
+        httpResponse.headers().forEach(header -> variableMap.put(
+                String.format("http/header/%s", header.getFirst()),
                 header.getSecond()
         ));
         try {

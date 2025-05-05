@@ -21,7 +21,10 @@ class FileDeleteResponse extends OpenAiResponse<Boolean> {
     @JsonCreator
     private FileDeleteResponse(
 
-            @JacksonInject("header/x-request-id")
+            @JacksonInject("dashscope/request")
+            FileDeleteRequest request,
+
+            @JacksonInject("http/header/x-request-id")
             String uuid,
 
             @JsonProperty("error")
@@ -31,7 +34,7 @@ class FileDeleteResponse extends OpenAiResponse<Boolean> {
             Boolean deleted
 
     ) {
-        super(uuid, error);
+        super(request, uuid, error);
         this.output = Boolean.TRUE.equals(deleted);
     }
 

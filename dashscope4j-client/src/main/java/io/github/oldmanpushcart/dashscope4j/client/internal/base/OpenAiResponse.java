@@ -6,8 +6,9 @@ import java.util.Objects;
 
 public abstract class OpenAiResponse<D> extends ApiResponse<D> {
 
-    protected OpenAiResponse(String uuid, OpenAiError error) {
+    protected OpenAiResponse(OpenAiRequest<?> request, String uuid, OpenAiError error) {
         super(
+                request,
                 uuid,
                 parseCode(error),
                 parseMessage(error)
