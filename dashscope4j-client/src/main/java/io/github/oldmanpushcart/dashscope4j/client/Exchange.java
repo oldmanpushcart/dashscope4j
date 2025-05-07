@@ -43,29 +43,9 @@ public interface Exchange<T> {
      *
      * @param data 数据
      * @return 是否成功
-     * @deprecated 请使用{@link #writeData(Object)}
-     */
-    @Deprecated
-    boolean write(T data);
-
-    /**
-     * 写入数据
-     *
-     * @param data 数据
-     * @return 是否成功
      * @since 3.1.0
      */
     boolean writeData(T data);
-
-    /**
-     * 写入ByteBuffer
-     *
-     * @param buf ByteBuffer
-     * @return 是否成功
-     * @deprecated 请使用{@link #writeByteBuffer(ByteBuffer)}
-     */
-    @Deprecated
-    boolean write(ByteBuffer buf);
 
     /**
      * 写入ByteBuffer

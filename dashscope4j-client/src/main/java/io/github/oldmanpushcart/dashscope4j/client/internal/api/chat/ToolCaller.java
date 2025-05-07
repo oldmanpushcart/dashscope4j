@@ -20,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.failedStage;
-import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.unwrapEx;
 import static java.util.Collections.unmodifiableList;
 
 @Slf4j
@@ -52,6 +51,11 @@ class ToolCaller implements ChatFunction.Caller {
 
     }
 
+    /**
+     * 异步调用函数工具
+     *
+     * @return 异步调用函数应答
+     */
     public CompletionStage<ChatResponse> asyncCall() {
 
         final Map<String, CompletableFuture<String>> futureMap = parallelCallFunction();
@@ -64,6 +68,11 @@ class ToolCaller implements ChatFunction.Caller {
                 });
     }
 
+    /**
+     * 流式调用函数工具
+     *
+     * @return 流式调用函数应答
+     */
     public CompletionStage<Flowable<ChatResponse>> flowCall() {
 
         final Map<String, CompletableFuture<String>> futureMap = parallelCallFunction();
@@ -76,6 +85,16 @@ class ToolCaller implements ChatFunction.Caller {
                 });
     }
 
+    /*
+     * 多个工具调用结果合并为历史消息
+     * [
+     *    message,
+     *    result_message1,
+     *    result_message2,
+     *    ...
+     *    result_messageN
+     * ]
+     */
     private List<Message> newHistory(Map<String, CompletableFuture<String>> futureMap) {
         final List<Message> history = new ArrayList<>();
         history.add(message);
@@ -99,32 +118,22 @@ class ToolCaller implements ChatFunction.Caller {
 
     // 找到返回的正常结束的选择，将历史消息添加到选择的历史消息中
     private ChatResponse newHistoryResponse(List<Message> history, ChatResponse response) {
-        final List<ChatResponse.Choice> choices = new ArrayList<>();
-        response.output().choices().forEach(choice -> {
-            if (choice.finish() == ChatResponse.Finish.NORMAL) {
-                final List<Message> historyInChoice = new ArrayList<>(choice.history());
-                historyInChoice.addAll(0, history);
-                choices.add(new ChatResponse.Choice(
-                        choice.finish(),
-                        unmodifiableList(historyInChoice)
-                ));
-            } else {
-                choices.add(choice);
+
+        return response.changeChoice(choice -> {
+
+            if (choice.finish() != ChatResponse.Finish.NORMAL) {
+                return choice;
             }
+
+            return choice.changeMessages(messages -> {
+                final List<Message> newMessages = new ArrayList<>();
+                newMessages.addAll(history);
+                newMessages.addAll(messages);
+                return unmodifiableList(newMessages);
+            });
+
         });
 
-        final ChatResponse.Output output = new ChatResponse.Output(
-                response.output().searchInfo(),
-                unmodifiableList(choices)
-        );
-        return new ChatResponse(
-                (ChatRequest) response.request(),
-                response.uuid(),
-                response.code(),
-                response.desc(),
-                response.usage(),
-                output
-        );
     }
 
     // 并行调用函数
@@ -142,20 +151,7 @@ class ToolCaller implements ChatFunction.Caller {
                     }
                     futureMap.put(
                             call.id(),
-                            future.handle((result, ex) -> {
-                                        if (null != ex) {
-                                            log.debug("dashscope://chat/function/{} calling failed!",
-                                                    call.stub().name(),
-                                                    ex
-                                            );
-                                            return String.format("calling failed, please fix your arguments and retry!\n" +
-                                                                 "error-message: %s",
-                                                    unwrapEx(ex).getLocalizedMessage()
-                                            );
-                                        }
-                                        return result;
-                                    })
-                                    .toCompletableFuture()
+                            future.toCompletableFuture()
                     );
                 });
         return futureMap;

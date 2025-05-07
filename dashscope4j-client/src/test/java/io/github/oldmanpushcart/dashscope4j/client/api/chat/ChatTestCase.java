@@ -86,10 +86,11 @@ public class ChatTestCase extends ClientSupport {
                 .addMessage(Message.ofUser("hello!"))
                 .build();
         client.chat().flow(request)
-                .thenAccept(flow -> flow
+                .thenCompose(flow -> flow
                         .doOnNext(ApiAssertions::assertApiResponseSuccessful)
                         .doOnError(Assertions::fail)
-                        .blockingSubscribe()
+                        .toList()
+                        .toCompletionStage()
                 )
                 .toCompletableFuture()
                 .join();
@@ -183,12 +184,14 @@ public class ChatTestCase extends ClientSupport {
                 .addFunction(new EchoFunction())
                 .addMessage(Message.ofUser("echo: HELLO!"))
                 .build();
+
         client.chat().flow(request)
-                .thenAccept(flow -> flow
+                .thenCompose(flow -> flow
                         .doOnNext(ApiAssertions::assertApiResponseSuccessful)
                         .doOnError(Assertions::fail)
                         .reduce((a, b) -> b)
-                        .blockingSubscribe(response -> {
+                        .toCompletionStage()
+                        .thenAccept(response -> {
                             assertApiResponseSuccessful(response);
                             final String text = response.output().best().message().text();
                             assertNotNull(text);
@@ -213,13 +216,14 @@ public class ChatTestCase extends ClientSupport {
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .build();
         client.chat().flow(request)
-                .thenAccept(flow -> flow
+                .thenCompose(flow -> flow
                         .doOnNext(ApiAssertions::assertApiResponseSuccessful)
                         .doOnError(Assertions::fail)
                         .doOnNext(ApiAssertions::assertApiResponseSuccessful)
                         .map(r -> r.output().best().message().text())
                         .reduce((a, b) -> a + b)
-                        .blockingSubscribe(text -> {
+                        .toCompletionStage()
+                        .thenAccept(text-> {
                             assertNotNull(text);
                             assertTrue(text.contains("HELLO!"));
                         }))

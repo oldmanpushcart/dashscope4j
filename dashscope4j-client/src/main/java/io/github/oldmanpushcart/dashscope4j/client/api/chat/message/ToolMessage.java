@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -18,6 +19,7 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
+@JsonDeserialize
 public class ToolMessage extends Message {
 
     /**
@@ -31,8 +33,8 @@ public class ToolMessage extends Message {
     /**
      * 构造工具应答消息
      *
-     * @param id   调用ID
-     * @param text 应答结果
+     * @param id      调用ID
+     * @param content 应答结果
      */
     @JsonCreator
     public ToolMessage(
@@ -41,10 +43,10 @@ public class ToolMessage extends Message {
             String id,
 
             @JsonProperty("content")
-            String text
+            String content
 
     ) {
-        super(Role.TOOL, Content.ofText(text));
+        super(Role.TOOL, content);
         this.id = id;
     }
 

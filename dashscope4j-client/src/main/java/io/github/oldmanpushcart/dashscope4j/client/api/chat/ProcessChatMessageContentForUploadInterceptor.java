@@ -7,26 +7,25 @@ import io.github.oldmanpushcart.dashscope4j.client.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
 
 import java.net.URI;
-import java.util.Collection;
 import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.thenIterateCompose;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
- * 处理聊天消息内容上传的拦截器
+ * 处理聊天消息附件上传的拦截器
  */
 class ProcessChatMessageContentForUploadInterceptor implements Interceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain) {
 
+        // 只处理对话消息
         if (!(chain.request() instanceof ChatRequest)) {
             return chain.process(chain.request());
         }
 
-        final ChatRequest request = (ChatRequest) chain.request();
-        return processRequest(chain, request)
+        return processRequest(chain, (ChatRequest) chain.request())
                 .thenCompose(chain::process);
     }
 
@@ -46,40 +45,30 @@ class ProcessChatMessageContentForUploadInterceptor implements Interceptor {
             return completedFuture(message);
         }
         return thenIterateCompose(message.contents(), content -> processContent(chain, request, content))
-                .thenApply(newContents ->
-                        new Message(message.role(), newContents));
+                .thenApply(newContents -> Message.of(message.role(), newContents));
     }
 
     private CompletionStage<Content<?>> processContent(Chain chain, ChatRequest request, Content<?> content) {
-        if (content.data() instanceof Collection<?>) {
-            return thenIterateCompose((Collection<?>) content.data(), data -> processUpload(chain, request, data))
-                    .thenApply(content::newData);
+
+        // 不是媒体内容就不需要处理
+        if (!(content instanceof Content.MediaContent)) {
+            return completedFuture(content);
         }
-        return processUpload(chain, request, content.data())
-                .thenApply(content::newData);
+
+        // 只处理媒体内容
+        final Content.MediaContent mediaContent = (Content.MediaContent) content;
+        return processUpload(chain, request, mediaContent.data())
+                .thenApply(mediaContent::changeData);
     }
 
-    private CompletionStage<?> processUpload(Chain chain, ChatRequest request, Object data) {
-
-        /*
-         * 只上传URI类型的数据
-         */
-        if (!(data instanceof URI)) {
-            return completedFuture(data);
-        }
+    private CompletionStage<URI> processUpload(Chain chain, ChatRequest request, URI data) {
 
         /*
          * 只上传file://协议的URI
          */
-        final URI resource = (URI) data;
-        if (!"file".equalsIgnoreCase(resource.getScheme())) {
+        if (!"file".equalsIgnoreCase(data.getScheme())) {
             return completedFuture(data);
         }
-
-        return upload(chain, request, resource);
-    }
-
-    private CompletionStage<?> upload(Chain chain, ChatRequest request, URI resource) {
 
         final Model model = request.model();
 
@@ -87,10 +76,10 @@ class ProcessChatMessageContentForUploadInterceptor implements Interceptor {
          * 这里做一个特殊处理，如果是QwenLong模型，则使用base接口上传文件，否则使用store接口上传文件
          */
         if (ChatModel.QWEN_LONG.name().equals(model.name())) {
-            return chain.client().base().files().create(resource, resource.getPath(), Purpose.FILE_EXTRACT)
+            return chain.client().base().files().create(data, data.getPath(), Purpose.FILE_EXTRACT)
                     .thenApply(FileMeta::toURI);
         } else {
-            return chain.client().base().store().upload(resource, model);
+            return chain.client().base().store().upload(data, model);
         }
 
     }

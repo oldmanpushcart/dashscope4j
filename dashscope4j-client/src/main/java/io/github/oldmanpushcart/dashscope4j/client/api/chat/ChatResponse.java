@@ -14,15 +14,13 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
+import static java.util.Objects.requireNonNull;
 
 /**
  * 对话应答
@@ -40,7 +38,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
     Output output;
 
     @JsonCreator
-    public ChatResponse(
+    private ChatResponse(
 
             @JacksonInject("dashscope/request")
             ChatRequest request,
@@ -91,10 +89,17 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
         return new Usage(unmodifiableList(items));
     }
 
-    public ChatResponse changeMessages(UnaryOperator<Message> operator) {
+
+    /**
+     * 修改候选结果
+     *
+     * @param operator 修改操作
+     * @return 修改后的对话应答
+     */
+    public ChatResponse changeChoice(UnaryOperator<Choice> operator) {
         final List<ChatResponse.Choice> newChoices = output().choices()
                 .stream()
-                .map(choice -> new Choice(choice.finish(), operator.apply(choice.message())))
+                .map(choice -> requireNonNull(operator.apply(choice)))
                 .collect(Collectors.toList());
         return new ChatResponse(
                 (ChatRequest) request(),
@@ -109,6 +114,53 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
         );
     }
 
+    /**
+     * 合并对话应答
+     *
+     * @param next 等待被合并的对话应答
+     * @return 合并后的应答
+     */
+    public ChatResponse accumulate(ChatResponse next) {
+
+        /*
+         * 检查等待合并的候选结果数量与当前对话应答的候选结果数量是否相等
+         * 如果不相等则说明无法合并
+         */
+        final List<Choice> currChoices = output().choices();
+        final List<Choice> nextChoices = next.output().choices();
+        if (currChoices.size() != nextChoices.size()) {
+            throw new IllegalArgumentException(String.format("The number of choices is not equal! expect:%s but %s",
+                    currChoices.size(),
+                    nextChoices.size()
+            ));
+        }
+
+        /*
+         * 合并所有的候选结果
+         * 多个候选结果的顺序应该要保持一致
+         */
+        final List<Choice> newChoices = new ArrayList<>();
+        final int length = currChoices.size();
+        for (int index = 0; index < length; index++) {
+            final Choice currChoice = currChoices.get(index);
+            final Choice nextChoice = nextChoices.get(index);
+            newChoices.add(currChoice.accumulate(nextChoice));
+        }
+
+        // 返回新的对话应答
+        return new ChatResponse(
+                (ChatRequest) next.request(),
+                next.uuid(),
+                next.code(),
+                next.desc(),
+                next.usage(),
+                new ChatResponse.Output(
+                        next.output().searchInfo(),
+                        newChoices
+                )
+        );
+
+    }
 
     /**
      * 输出
@@ -130,29 +182,11 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
         /**
          * 构造输出
          *
-         * @param choice 候选结果
-         */
-        public Output(Choice choice) {
-            this(new SearchInfo(Collections.emptyList()), singletonList(choice));
-        }
-
-        /**
-         * 构造输出
-         *
-         * @param choices 候选结果集
-         */
-        public Output(List<Choice> choices) {
-            this(new SearchInfo(Collections.emptyList()), choices);
-        }
-
-        /**
-         * 构造输出
-         *
          * @param search 搜索信息
          * @param choice 候选结果
          * @since 3.1.0
          */
-        public Output(SearchInfo search, Choice choice) {
+        Output(SearchInfo search, Choice choice) {
             this(search, singletonList(choice));
         }
 
@@ -163,11 +197,14 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
          * @param choices 候选结果集
          * @since 3.1.0
          */
-        public Output(SearchInfo search, List<Choice> choices) {
+        Output(SearchInfo search, List<Choice> choices) {
             this.searchInfo = search;
             this.choices = unmodifiableList(choices);
         }
 
+        /**
+         * @return 最佳候选结果
+         */
         public ChatResponse.Choice best() {
             return Optional.ofNullable(choices)
                     .flatMap(choices -> choices.stream().sorted().findFirst())
@@ -197,7 +234,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
     public static class Choice implements Comparable<Choice> {
 
         Finish finish;
-        List<Message> history;
+        List<Message> messages;
 
         /**
          * 构造候选结果
@@ -205,23 +242,23 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
          * @param finish  结束类型
          * @param message 结果消息
          */
-        public Choice(Finish finish, Message message) {
+        Choice(Finish finish, Message message) {
             this(finish, singletonList(message));
         }
 
         /**
          * 构造候选结果
          *
-         * @param finish  结束类型
-         * @param history 历史消息列表
-         *                <p>
-         *                部分场景中候选结果会带多个消息出现，其主要记录了本次请求历史上曾经出现过的消息。<br/>
-         *                比如Plugin、Tool的调用中会将PlugCallMessage/PlugMessage、ToolCallMessage/ToolMessage带入
-         *                </p>
+         * @param finish   结束类型
+         * @param messages 消息列表
+         *                 <p>
+         *                 部分场景中候选结果会带多个消息出现，其主要记录了本次请求历史上曾经出现过的消息。<br/>
+         *                 比如Plugin、Tool的调用中会将PlugCallMessage/PlugMessage、ToolCallMessage/ToolMessage带入
+         *                 </p>
          */
-        public Choice(Finish finish, List<Message> history) {
+        Choice(Finish finish, List<Message> messages) {
             this.finish = finish;
-            this.history = unmodifiableList(history);
+            this.messages = unmodifiableList(messages);
         }
 
         /**
@@ -230,11 +267,62 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
          * 在部分对话场景中会将历史上出现过的消息也一并传入，但只有最后一个消息（最新消息）才是调用方关心的。
          * 所以这里提供了一个方法，方便调用方获取到最新的消息。
          * </p>
+         * <p>
+         * 与最新消息对应的则是历史消息，可以参考 {@link #history()}
+         * </p>
          */
         public Message message() {
-            return Objects.nonNull(history) && !history.isEmpty()
-                    ? history.get(history.size() - 1)
+            return Objects.nonNull(messages) && !messages.isEmpty()
+                    ? messages.get(messages.size() - 1)
                     : null;
+        }
+
+        /**
+         * @return 历史消息
+         * {@link #message()}
+         */
+        public List<Message> history() {
+            return Objects.nonNull(messages) && !messages.isEmpty()
+                    ? messages.subList(0, messages.size() - 1)
+                    : Collections.emptyList();
+        }
+
+        /**
+         * 合并两个候选结果
+         *
+         * @param next 合并对象
+         * @return 合并后的候选结果
+         */
+        public Choice accumulate(Choice next) {
+            final List<Message> newMessage = new ArrayList<>();
+            newMessage.addAll(history());
+            newMessage.addAll(next.history());
+            newMessage.add(message().accumulate(next.message()));
+            return new Choice(next.finish(), newMessage);
+        }
+
+        /**
+         * 修改消息
+         *
+         * @param operator 修改操作
+         * @return 修改后的候选结果
+         */
+        public Choice changeMessages(UnaryOperator<List<Message>> operator) {
+            final List<Message> newMessages = operator.apply(messages);
+            requireNonNull(newMessages);
+            return new Choice(finish, newMessages);
+        }
+
+        /**
+         * 修改消息
+         *
+         * @param operator 修改操作
+         * @return 修改后的候选结果
+         */
+        public Choice changeMessage(UnaryOperator<Message> operator) {
+            final List<Message> newMessages = new ArrayList<>(history());
+            newMessages.add(requireNonNull(operator.apply(message())));
+            return new Choice(finish(), newMessages);
         }
 
         /**
@@ -308,7 +396,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
         private final List<SearchResult> results;
 
         @JsonCreator
-        public SearchInfo(
+        private SearchInfo(
 
                 @JsonProperty("search_results")
                 List<SearchResult> results
@@ -339,7 +427,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
         private final URI site;
 
         @JsonCreator
-        public SearchResult(
+        private SearchResult(
 
                 @JsonProperty("index")
                 int index,

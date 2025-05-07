@@ -31,22 +31,10 @@ public class DelegateExchange<T> implements Exchange<T> {
     public Mode mode() {
         return delegate.mode();
     }
-    
-    @Override
-    public boolean write(T data) {
-        //noinspection deprecation
-        return delegate.write(data);
-    }
 
     @Override
     public boolean writeData(T data) {
         return delegate.writeData(data);
-    }
-
-    @Override
-    public boolean write(ByteBuffer buf) {
-        //noinspection deprecation
-        return delegate.write(buf);
     }
 
     @Override

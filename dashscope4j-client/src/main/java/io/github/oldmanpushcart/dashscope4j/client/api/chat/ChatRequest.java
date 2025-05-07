@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.client.Option;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoRequest;
@@ -12,8 +13,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.ObjectMap;
-import io.github.oldmanpushcart.dashscope4j.client.util.MessageCodec;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -23,6 +22,7 @@ import okhttp3.Request;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static io.github.oldmanpushcart.dashscope4j.client.api.chat.message.MessageCodec.encodeToJsonNode;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_X_DASHSCOPE_PLUGIN;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.CommonUtils.requireNonEmptyCollection;
 import static java.util.Collections.emptyList;
@@ -66,56 +66,6 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     }
 
     @Override
-    protected Object input() {
-        return new ObjectMap() {{
-            put("messages", encodeMessages());
-        }};
-    }
-
-    /**
-     * @return 切换对话模型模式
-     */
-    private ChatModel.Mode switchMode() {
-
-        // 是否有PDFExtract插件
-        final boolean hasPdfExtractPlugin = plugins.stream()
-                .anyMatch(plugin -> plugin.name().equals(ChatPlugin.PDF_EXTRACTER.name()));
-
-        // 聊天消息列表中是否包含File类型的内容
-        final boolean hasFileContent = messages.stream()
-                .flatMap(message -> message.contents().stream())
-                .anyMatch(content -> content.type() == Content.Type.FILE);
-
-        /*
-         * PDFExtract插件比较特殊，
-         * 他在有File类型的内容时，消息列表格式为为多模态格式，否则则为文本格式
-         */
-        if (hasPdfExtractPlugin && hasFileContent) {
-            return ChatModel.Mode.MULTIMODAL;
-        }
-
-        // 否则返回模型的默认模式
-        return model().mode();
-
-    }
-
-    /**
-     * 根据模式编码消息列表
-     * <p>
-     * 对话模型模式有文本和多模态两种，不同模态对messages有不同的要求且无法兼容。
-     * 更有些Plugin会根据传的内容类型来决定是否启用哪一种模式，所以这里需要根据messages的内容来切换模式。
-     * </p>
-     *
-     * @return 编码后的消息列表
-     */
-    private List<JsonNode> encodeMessages() {
-        final ChatModel.Mode mode = switchMode();
-        return messages.stream()
-                .map(message -> MessageCodec.encodeToJsonNode(mode, message))
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public Request newHttpRequest() {
         final Request.Builder builder = new Request.Builder(super.newHttpRequest());
 
@@ -136,9 +86,14 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     }
 
     @Override
+    protected Object input() {
+        return new Input();
+    }
+
+    @Override
     public Option option() {
 
-        final Option option = super.option().clone();
+        final Option option = new Option();
 
         // 插件必选参数
         if (!plugins.isEmpty()) {
@@ -154,9 +109,10 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
             option.option("tools", enabledTools);
         }
 
-        return option
+        return new Option()
+                .merge(super.option())
+                .merge(option)
                 .unmodifiable();
-
     }
 
     /**
@@ -212,7 +168,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     /**
      * 提取历史信息
      * <p>
-     * 消息列表中下标范围[0,n-1)信息为历史信息
+     * 消息列表中下标范围[0,n-1]信息为历史信息
      * </p>
      *
      * @return 历史信息
@@ -221,6 +177,56 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         return null == messages || messages.isEmpty()
                 ? emptyList()
                 : messages.subList(0, messages.size() - 1);
+    }
+
+
+    private class Input {
+
+        @JsonValue
+        Object extract() {
+            return new HashMap<Object, Object>() {{
+
+                /*
+                 * 根据模式编码消息列表
+                 *
+                 * 对话模型模式有文本和多模态两种，不同模态对messages有不同的要求且无法兼容。
+                 * 更有些Plugin会根据传的内容类型来决定是否启用哪一种模式，所以这里需要根据messages的内容来切换模式。
+                 */
+                final ChatModel.Mode mode = decideMode();
+                final List<JsonNode> messageNodes = messages.stream()
+                        .map(message -> encodeToJsonNode(mode, message))
+                        .collect(Collectors.toList());
+                put("messages", messageNodes);
+
+            }};
+
+        }
+
+        // 决定使用哪种对话模式
+        private ChatModel.Mode decideMode() {
+
+            // 是否有PDFExtract插件
+            final boolean hasPdfExtractPlugin = plugins.stream()
+                    .anyMatch(plugin -> plugin.name().equals(ChatPlugin.PDF_EXTRACTER.name()));
+
+            // 聊天消息列表中是否包含File类型的内容
+            final boolean hasFileContent = messages.stream()
+                    .flatMap(message -> message.contents().stream())
+                    .anyMatch(content -> content.type() == Content.Type.FILE);
+
+            /*
+             * PDFExtract插件比较特殊，
+             * 他在有File类型的内容时，消息列表格式为为多模态格式，否则则为文本格式
+             */
+            if (hasPdfExtractPlugin && hasFileContent) {
+                return ChatModel.Mode.MULTIMODAL;
+            }
+
+            // 否则返回模型的默认模式
+            return model().mode();
+
+        }
+
     }
 
 
@@ -423,10 +429,8 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          * @since 3.2.0
          */
         public Builder enableAutoUpload(boolean enabled) {
-            removeInterceptorByType(ProcessChatMessageContentForQwenLongInterceptor.class);
             removeInterceptorByType(ProcessChatMessageContentForUploadInterceptor.class);
             if (enabled) {
-                addInterceptor(new ProcessChatMessageContentForQwenLongInterceptor());
                 addInterceptor(new ProcessChatMessageContentForUploadInterceptor());
             }
             return this;

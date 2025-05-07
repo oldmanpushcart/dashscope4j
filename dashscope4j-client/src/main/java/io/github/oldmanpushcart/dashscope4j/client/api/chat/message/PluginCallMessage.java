@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.plugin.Plugin;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -19,6 +20,7 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
+@JsonDeserialize
 public class PluginCallMessage extends Message {
 
     /**
@@ -30,21 +32,21 @@ public class PluginCallMessage extends Message {
     /**
      * 构建插件调用消息
      *
-     * @param text 消息文本
-     *             <p>在插件调用场景下通常为空，这里保留主要考虑是未来可能扩展</p>
-     * @param call 插件调用存根
+     * @param content 消息文本
+     *                <p>在插件调用场景下通常为空，这里保留主要考虑是未来可能扩展</p>
+     * @param call    插件调用存根
      */
     @JsonCreator
     public PluginCallMessage(
 
             @JsonProperty("content")
-            String text,
+            String content,
 
             @JsonProperty("plugin_call")
             Plugin.Call call
 
     ) {
-        super(Role.AI, Content.ofText(text));
+        super(Role.AI, content);
         this.call = call;
     }
 

@@ -1,12 +1,10 @@
-package io.github.oldmanpushcart.dashscope4j.client.util;
+package io.github.oldmanpushcart.dashscope4j.client.api.chat.message;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.*;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
 
-import java.util.Arrays;
 import java.util.function.Function;
 
 /**
@@ -72,47 +70,7 @@ public class MessageCodec {
      * @return 消息
      */
     public static Message decode(JsonNode messageNode) {
-
-        final JsonNode roleNode = messageNode.required("role");
-        final JsonNode contentNode = messageNode.required("content");
-        final Message.Role role = JacksonJsonUtils.toObject(roleNode, Message.Role.class);
-
-        // 处理多内容（一般是多模态）
-        if (contentNode.isArray()) {
-            final Content<?>[] contents = JacksonJsonUtils.toObject(contentNode, Content[].class);
-            return new Message(role, Arrays.asList(contents));
-        }
-
-        // 处理文本内容
-        else {
-
-            // 处理插件应答消息
-            if (role == Message.Role.PLUGIN) {
-                return JacksonJsonUtils.toObject(messageNode, PluginMessage.class);
-            }
-
-            // 处理插件请求消息
-            else if (role == Message.Role.AI && messageNode.hasNonNull("plugin_call")) {
-                return JacksonJsonUtils.toObject(messageNode, PluginCallMessage.class);
-            }
-
-            // 处理工具应答消息
-            else if (role == Message.Role.TOOL) {
-                return JacksonJsonUtils.toObject(messageNode, ToolMessage.class);
-            }
-
-            // 处理工具请求消息
-            else if (role == Message.Role.AI && messageNode.hasNonNull("tool_calls")) {
-                return JacksonJsonUtils.toObject(messageNode, ToolCallMessage.class);
-            }
-
-            // 处理普通消息
-            else {
-                return JacksonJsonUtils.toObject(messageNode, Message.class);
-            }
-
-        }
-
+        return JacksonJsonUtils.toObject(messageNode, Message.class);
     }
 
     /**
@@ -122,7 +80,7 @@ public class MessageCodec {
      * @return 消息
      */
     public static Message decode(String messageJson) {
-        return decode(JacksonJsonUtils.toNode(messageJson));
+        return JacksonJsonUtils.toObject(messageJson, Message.class);
     }
 
 }

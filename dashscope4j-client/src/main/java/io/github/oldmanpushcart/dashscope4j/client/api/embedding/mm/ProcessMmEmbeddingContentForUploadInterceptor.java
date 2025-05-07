@@ -21,8 +21,7 @@ class ProcessMmEmbeddingContentForUploadInterceptor implements Interceptor {
             return chain.process(chain.request());
         }
 
-        final MmEmbeddingRequest request = (MmEmbeddingRequest) chain.request();
-        return processRequest(chain, request)
+        return processRequest(chain,  (MmEmbeddingRequest) chain.request())
                 .thenCompose(chain::process);
     }
 
@@ -35,28 +34,28 @@ class ProcessMmEmbeddingContentForUploadInterceptor implements Interceptor {
     }
 
     private CompletionStage<Content<?>> processContent(Chain chain, MmEmbeddingRequest request, Content<?> content) {
-        return upload(chain, request, content.data())
-                .thenApply(content::newData);
+
+        // 不是媒体内容就不需要处理
+        if (!(content instanceof Content.MediaContent)) {
+            return completedFuture(content);
+        }
+
+        // 只处理媒体内容
+        final Content.MediaContent mediaContent = (Content.MediaContent) content;
+        return processUpload(chain, request, mediaContent.data())
+                .thenApply(mediaContent::changeData);
     }
 
-    private CompletionStage<?> upload(Chain chain, MmEmbeddingRequest request, Object data) {
-
-        /*
-         * 只上传URI类型的数据
-         */
-        if (!(data instanceof URI)) {
-            return completedFuture(data);
-        }
+    private CompletionStage<URI> processUpload(Chain chain, MmEmbeddingRequest request, URI data) {
 
         /*
          * 只上传file://协议的URI
          */
-        final URI resource = (URI) data;
-        if (!"file".equalsIgnoreCase(resource.getScheme())) {
+        if (!"file".equalsIgnoreCase(data.getScheme())) {
             return completedFuture(data);
         }
 
-        return chain.client().base().store().upload(resource, request.model());
+        return chain.client().base().store().upload(data, request.model());
     }
 
 }

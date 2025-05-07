@@ -58,6 +58,21 @@ public class JacksonJsonUtils {
     }
 
     /**
+     * {@code object -> (viewCt)json}
+     *
+     * @param viewCt 视图类型
+     * @param object 目标对象
+     * @return json
+     */
+    public static String toJson(Class<?> viewCt, Object object) {
+        try {
+            return mapper.writerWithView(viewCt).writeValueAsString(object);
+        } catch (JsonProcessingException cause) {
+            throw new IllegalArgumentException("parse object to json failed!", cause);
+        }
+    }
+
+    /**
      * {@code json -> node}
      *
      * @param json json

@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.MessageCodec;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.MessageCodec;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

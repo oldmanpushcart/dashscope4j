@@ -64,11 +64,6 @@ class ExchangeImpl<T> implements Exchange<T> {
     }
 
     @Override
-    public boolean write(T data) {
-        return writeData(data);
-    }
-
-    @Override
     public boolean writeData(T data) {
         final OutFrame.Type type = isFirstFrame() ? OutFrame.Type.RUN : OutFrame.Type.CONTINUE;
         final OutFrame frame = new OutFrame(new OutFrame.Header(uuid, type, mode), encoder.apply(data));
@@ -76,11 +71,6 @@ class ExchangeImpl<T> implements Exchange<T> {
         final boolean ret = socket.send(encoded);
         log.trace("WEBSOCKET://{} >>> DATA;ret={};payload={};", uuid, ret, encoded);
         return ret;
-    }
-
-    @Override
-    public boolean write(ByteBuffer buf) {
-        return writeByteBuffer(buf);
     }
 
     @Override

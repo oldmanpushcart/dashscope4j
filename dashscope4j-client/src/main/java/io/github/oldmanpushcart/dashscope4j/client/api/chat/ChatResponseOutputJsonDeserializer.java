@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse.Choice;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.util.MessageCodec;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.MessageCodec;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Value;
@@ -52,15 +52,15 @@ class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.O
         @Override
         public ChatResponse.Output deserialize(DeserializationContext context, JsonNode node) throws IOException {
 
-            final JsonNode searchNode = node.get("search_info");
-            final ChatResponse.SearchInfo search = context.readTreeAsValue(searchNode, ChatResponse.SearchInfo.class);
-
-            final JsonNode choicesNode = node.get("choices");
-
             // 如果没有 choices 节点，说明不是 message
+            final JsonNode choicesNode = node.get("choices");
             if (Objects.isNull(choicesNode)) {
                 return null;
             }
+
+            // 搜索结果信息
+            final JsonNode searchNode = node.get("search_info");
+            final ChatResponse.SearchInfo search = context.readTreeAsValue(searchNode, ChatResponse.SearchInfo.class);
 
             final List<Choice> choices = new ArrayList<>();
             for (final JsonNode choiceNode : choicesNode) {
@@ -100,19 +100,20 @@ class ChatResponseOutputJsonDeserializer extends JsonDeserializer<ChatResponse.O
         @Override
         public ChatResponse.Output deserialize(DeserializationContext context, JsonNode node) throws IOException {
 
-            final JsonNode searchNode = node.get("search_info");
-            final ChatResponse.SearchInfo search = context.readTreeAsValue(searchNode, ChatResponse.SearchInfo.class);
-
-            final JsonNode choicesNode = node.get("choices");
-
             // 如果有 choices 节点，说明不是 text only
+            final JsonNode choicesNode = node.get("choices");
             if (Objects.nonNull(choicesNode)) {
                 return null;
             }
 
+            // 搜索结果信息
+            final JsonNode searchNode = node.get("search_info");
+            final ChatResponse.SearchInfo search = context.readTreeAsValue(searchNode, ChatResponse.SearchInfo.class);
+
             final InnerOutput data = context.readTreeAsValue(node, InnerOutput.class);
             final Choice choice = new Choice(data.finish, Message.ofAi(data.text));
             return new ChatResponse.Output(search, choice);
+
         }
 
         @Value

@@ -3,156 +3,96 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.ObjectMap;
-import lombok.*;
+import lombok.Data;
+import lombok.Getter;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Map;
-import java.util.Objects;
 
 /**
- * 消息内容
+ * 多模态内容
  * <p>
- * 这个类的数据和类型必须严格控制，所以不想让任何人可以自定义构造，减少后续处理成本。
+ * 只有两个实现类
+ * <li>{@link TextContent} : 负责处理文本内容</li>
+ * <li>{@link MediaContent} : 负责处理多媒体内容</li>
  * </p>
  *
- * @param <T> 数据类型
+ * <p>
+ * 多模态 = 纯文本 + 多媒体
+ * </p>
+ *
+ * @param <T> 类型
  */
-@Value
+@Data
 @Accessors(fluent = true)
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@ToString
-@EqualsAndHashCode
-public class Content<T> {
+public abstract class Content<T> {
 
-    /**
-     * 类型
-     */
-    Type type;
+    private final Type type;
+    private final T data;
 
-    /**
-     * 数据
-     */
-    T data;
-
-    /**
-     * 创建新数据
-     *
-     * @param data 数据
-     * @param <U>  数据类型
-     * @return 新内容
-     */
-    public <U> Content<U> newData(U data) {
-
-        /*
-         * 这里作为唯一一个开放性的构造入口，需要对传入的参数进行检查
-         * 1. type为TEXT时，data为字符串
-         * 2. type为IMAGE、AUDIO、FILE、VIDEO以及后续其他时，data为URI
-         */
-        if (type == Type.TEXT && !(data instanceof String)) {
-            throw new IllegalArgumentException("Data type must be String with " + Type.TEXT.name());
-        } else if (type != Type.TEXT && !(data instanceof URI)) {
-            throw new IllegalArgumentException("Data type must be URI with " + type.name());
-        }
-
-        return new Content<>(type, data);
+    private Content(Type type, T data) {
+        this.type = type;
+        this.data = data;
     }
 
     /**
-     * 序列化为 {@code {"<TYPE>":"<DATA>"}} 格式
+     * 更改数据
      *
-     * @return Json Object Map
+     * @param data 新数据
+     * @return 修改后的内容
      */
-    @JsonValue
-    ObjectMap extract() {
-        return new ObjectMap() {{
-            put(type, data);
-        }};
-    }
+    abstract public Content<T> changeData(T data);
 
     /**
-     * 反序列化
-     *
-     * @param map Json Object Map
-     * @return 内容
-     */
-    @JsonCreator
-    static Content<?> of(Map<Type, Object> map) {
-        return map.entrySet().stream()
-                .map(entry -> {
-
-                    final Type type = entry.getKey();
-                    final Object data = entry.getValue();
-
-                    // 文本内容为字符串
-                    if (type == Type.TEXT) {
-                        return new Content<>(type, data.toString());
-                    }
-
-                    // 多模态的数据内容为URI
-                    if (type == Type.IMAGE || type == Type.AUDIO || type == Type.FILE || type == Type.VIDEO) {
-                        return new Content<>(type, URI.create(data.toString()));
-                    }
-
-                    // 其他类型不做反序列化支持
-                    return null;
-
-                })
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
-    }
-
-
-    /**
-     * 文本
+     * 构造文本内容
      *
      * @param text 文本
      * @return 文本内容
      */
-    public static Content<String> ofText(String text) {
-        return new Content<>(Type.TEXT, text);
+    public static TextContent ofText(String text) {
+        return new TextContent(text);
     }
 
     /**
-     * 图像
+     * 构造图像内容
      *
-     * @param resource 图像资源标识
+     * @param image 图片URI
      * @return 图像内容
      */
-    public static Content<URI> ofImage(URI resource) {
-        return new Content<>(Type.IMAGE, resource);
+    public static MediaContent ofImage(URI image) {
+        return new MediaContent(Type.IMAGE, image);
     }
 
     /**
-     * 音频
+     * 构造音频内容
      *
-     * @param resource 音频资源标识
+     * @param audio 音频URI
      * @return 音频内容
      */
-    public static Content<URI> ofAudio(URI resource) {
-        return new Content<>(Type.AUDIO, resource);
+    public static MediaContent ofAudio(URI audio) {
+        return new MediaContent(Type.AUDIO, audio);
     }
 
     /**
-     * 视频
+     * 构造视频内容
      *
-     * @param resource 视频资源标识
+     * @param video 视频URI
      * @return 视频内容
      */
-    public static Content<URI> ofVideo(URI resource) {
-        return new Content<>(Type.VIDEO, resource);
+    public static MediaContent ofVideo(URI video) {
+        return new MediaContent(Type.VIDEO, video);
     }
 
     /**
-     * 文件
+     * 构造文件内容
      *
-     * @param resource 文件资源标识
+     * @param file 文件URI
      * @return 文件内容
      */
-    public static Content<URI> ofFile(URI resource) {
-        return new Content<>(Type.FILE, resource);
+    public static MediaContent ofFile(URI file) {
+        return new MediaContent(Type.FILE, file);
     }
 
     /**
@@ -160,9 +100,6 @@ public class Content<T> {
      */
     public enum Type {
 
-        /**
-         * 文本
-         */
         @JsonProperty("text")
         TEXT,
 
@@ -189,6 +126,65 @@ public class Content<T> {
          */
         @JsonProperty("file")
         FILE
+
+    }
+
+
+    // 序列化
+    @JsonValue
+    Map.Entry<Type, ?> extract() {
+        return new SimpleEntry<>(type, data);
+    }
+
+    // 反序列化
+    @JsonCreator
+    static Content<?> of(Map.Entry<Type, String> entry) {
+        switch (entry.getKey()) {
+            case TEXT:
+                return new TextContent(entry.getValue());
+            case IMAGE:
+            case AUDIO:
+            case VIDEO:
+            case FILE:
+                return new MediaContent(entry.getKey(), URI.create(entry.getValue()));
+            default:
+                throw new IllegalArgumentException("Unsupported type: " + entry.getKey());
+        }
+    }
+
+    /**
+     * 文本内容
+     */
+    @Getter
+    @Accessors(fluent = true)
+    public static class TextContent extends Content<String> {
+
+        private TextContent(String data) {
+            super(Type.TEXT, data);
+        }
+
+        @Override
+        public TextContent changeData(String data) {
+            return new TextContent(data);
+        }
+
+    }
+
+    /**
+     * 多媒体内容
+     */
+    @Getter
+    @Accessors(fluent = true)
+    public static class MediaContent extends Content<URI> {
+
+        private MediaContent(Type type, URI data) {
+            super(type, data);
+        }
+
+        @Override
+        public MediaContent changeData(URI data) {
+            return new MediaContent(type(), data);
+        }
 
     }
 
