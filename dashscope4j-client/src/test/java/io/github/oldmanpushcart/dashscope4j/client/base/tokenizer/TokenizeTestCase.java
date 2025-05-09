@@ -28,7 +28,6 @@ public class TokenizeTestCase extends ClientSupport {
         list.forEach(v -> {
             Assertions.assertNotNull(v.getKey());
             Assertions.assertNotNull(v.getValue());
-            System.out.printf("%s | %s%n", v.getKey(), v.getValue());
         });
 
     }
@@ -48,7 +47,6 @@ public class TokenizeTestCase extends ClientSupport {
         list.forEach(v -> {
             Assertions.assertNotNull(v.getKey());
             Assertions.assertNotNull(v.getValue());
-            System.out.printf("%s | %s%n", v.getKey(), v.getValue());
         });
 
     }
@@ -69,7 +67,6 @@ public class TokenizeTestCase extends ClientSupport {
         list.forEach(v -> {
             Assertions.assertNotNull(v.getKey());
             Assertions.assertNotNull(v.getValue());
-            System.out.printf("%s | %s%n", v.getKey(), v.getValue());
         });
 
     }
@@ -89,7 +86,6 @@ public class TokenizeTestCase extends ClientSupport {
         list.forEach(v -> {
             Assertions.assertNotNull(v.getKey());
             Assertions.assertNotNull(v.getValue());
-            System.out.printf("%s | %s%n", v.getKey(), v.getValue());
         });
 
     }

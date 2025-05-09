@@ -28,14 +28,14 @@ public class ChatQvQTestCase extends ClientSupport {
 
         final StringBuilder stringBuf = new StringBuilder();
         client.chat().flow(request)
-                .thenAccept(responseFlow -> {
-                    responseFlow
-                            .doOnNext(response -> {
-                                assertApiResponseSuccessful(response);
-                                stringBuf.append(response.output().best().message().text());
-                            })
-                            .blockingSubscribe();
-                })
+                .thenCompose(responseFlow ->
+                        responseFlow
+                                .doOnNext(response -> {
+                                    assertApiResponseSuccessful(response);
+                                    stringBuf.append(response.output().best().message().text());
+                                })
+                                .toList()
+                                .toCompletionStage())
                 .toCompletableFuture()
                 .join();
 

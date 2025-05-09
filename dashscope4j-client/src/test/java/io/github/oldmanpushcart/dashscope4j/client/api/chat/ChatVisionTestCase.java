@@ -44,15 +44,12 @@ public class ChatVisionTestCase extends ClientSupport {
     @Test
     public void test$chat$vision$local$images() {
 
-        final List<Content<URI>> images = Stream.of(Objects.requireNonNull(new File("./test-data/video-001-images").listFiles()))
+        final List<Content<?>> contents = Stream.of(Objects.requireNonNull(new File("./test-data/video-001-images").listFiles()))
                 .filter(File::isFile)
                 .map(File::toURI)
                 .limit(20)
                 .map(Content::ofImage)
                 .collect(Collectors.toList());
-
-        final List<Content<?>> contents = new ArrayList<>();
-        contents.addAll(images);
         contents.add(Content.ofText("请根据视频内容来判断我的描述是否正确，如果正确请返回TRUE，否则返回FALSE，不需要说多余的话。\n" +
                                     "我的描述是：\n" +
                                     "1. 三个人坐在一张桌子旁。\n" +
