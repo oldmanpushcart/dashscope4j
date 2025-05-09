@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.agent.internal.util.ChatFunctionToolUtils.*;
+import static io.github.oldmanpushcart.dashscope4j.agent.typical.react.ChatFunctionToolHelper.*;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -45,18 +45,13 @@ public class ReActChatAgent extends BaseChatAgent {
      * 但外部其实并不关心 Final Answer: ，只需要后边的真正答案，所以这里就需要进行对内容解包
      */
     private ChatResponse unpackingReActResponse(ChatResponse response) {
-        return response.changeMessages(message -> {
-            final ReAct reAct = ReAct.valueOf(message.text());
-
-            // 没有最终答案则放过
-            if (!reAct.hasFinalAnswer()) {
-                return message;
-            }
-
-            // 只修改最终答案
-            return new Message(message.role(), Content.ofText(reAct.getFinalAnswer()), message.reasoningContent());
-
-        });
+        return response.changeChoice(choice ->
+                choice.changeMessage(message -> {
+                    final ReAct reAct = ReAct.valueOf(message.text());
+                    return reAct.hasFinalAnswer()
+                            ? new Message(message.role(), reAct.getFinalAnswer(), message.reasoningContent())
+                            : message;
+                }));
     }
 
     // 异步 ReAct
@@ -83,6 +78,7 @@ public class ReActChatAgent extends BaseChatAgent {
         final ChatFunctionTool functionTool = requireFunctionTool(context.functionTools(), functionName);
         final ChatFunction.Caller functionCaller = newFunctionCaller(client(), request);
 
+        // 调用函数
         return callingFunctionTool(functionCaller, functionTool, argumentJson)
                 .thenCompose(resultJson -> {
                     final ChatRequest nextRequest = ChatRequest.newBuilder(request)
@@ -112,28 +108,27 @@ public class ReActChatAgent extends BaseChatAgent {
         final StringDetector detector = new StringDetector(String.format("%s: ", ReAct.NAME_FINAL_ANSWER));
         return responseFlow
                 .map(response ->
-                        response.changeMessages(message -> {
+                        response.changeChoice(choice ->
+                                choice.changeMessage(message -> {
+                                    /*
+                                     * 如果不是增量输出，则每次匹配前需要清空检测器
+                                     */
+                                    final ChatRequest request = (ChatRequest) response.request();
+                                    if (!request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)) {
+                                        detector.reset();
+                                    }
 
-                            /*
-                             * 如果不是增量输出，则每次匹配前需要清空检测器
-                             */
-                            final ChatRequest request = (ChatRequest) response.request();
-                            if (!request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)) {
-                                detector.reset();
-                            }
+                                    final String text = message.text();
+                                    final int position = detector.detect(text);
 
-                            final String text = message.text();
-                            final int position = detector.detect(text);
+                                    // 找到探测字符串，则修改最终答案
+                                    final String newText = -1 == position
+                                            ? ""
+                                            : text.substring(position);
 
-                            // 找到探测字符串，则修改最终答案
-                            final String newText = -1 == position
-                                    ? ""
-                                    : text.substring(position);
-
-                            // 只修改最终答案
-                            return new Message(message.role(), Content.ofText(newText), message.reasoningContent());
-
-                        }));
+                                    // 只修改最终答案
+                                    return new Message(message.role(), newText, message.reasoningContent());
+                                })));
     }
 
     // 流式 ReAct

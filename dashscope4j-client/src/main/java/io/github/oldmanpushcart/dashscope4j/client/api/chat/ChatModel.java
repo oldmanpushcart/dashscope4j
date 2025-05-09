@@ -206,4 +206,12 @@ public interface ChatModel extends Model {
      */
     ChatModel QVQ_MAX = BaseChatModel.ofMultimodal("qvq-max");
 
+    /**
+     * QWEN3-235B-A22B
+     */
+    ChatModel QWEN3_235B_A22B = ChatModel.BaseChatModel.ofText("qwen3-235b-a22b", new Option()
+            .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+            .option(ChatOptions.ENABLE_THINKING, false)
+            .unmodifiable());
+
 }

@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 import io.github.oldmanpushcart.dashscope4j.agent.function.SystemDateTimeFunction;
 import io.github.oldmanpushcart.dashscope4j.agent.function.dashscope.*;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeChatAgent;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.Option;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
@@ -25,11 +26,11 @@ public class DebugTestCase extends ClientSupport {
                 .option("enable_thinking", false)
                 .unmodifiable());
 
-        final ChatAgent agent = DashscopeChatAgent.newBuilder()
+        final ChatAgent agent = ReActChatAgent.newBuilder()
                 .client(client)
                 .enableFlowBridge(true)
                 .addFunction(new SystemDateTimeFunction())
-                .addFunctionTool(DashscopeChatAgent.newBuilder()
+                .addFunctionTool(ReActChatAgent.newBuilder()
                         .client(client)
                         .enableFlowBridge(true)
                         .addFunctions(Arrays.asList(
@@ -51,30 +52,30 @@ public class DebugTestCase extends ClientSupport {
                 .build();
 
         final ChatRequest request = ChatRequest.newBuilder()
-                //.model(model)
+                .model(model)
                 //.model(ChatModel.QWEN_MAX)
-                .model(ChatModel.QWEN_PLUS)
-
-                .addMessage(Message.ofUser(Arrays.asList(
-                        Content.ofText("请描述图片内容"),
-                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-01.jpg").toURI())
-                )))
+                //.model(ChatModel.QWEN_PLUS)
 
 //                .addMessage(Message.ofUser(Arrays.asList(
-//                        Content.ofText("这是我老婆和女儿外出游玩的照片，请根据照片内容帮我写一篇出行游记"),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-01.jpg").toURI()),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-02.jpg").toURI()),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-03.jpg").toURI()),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-04.jpg").toURI()),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-05.jpg").toURI()),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-06.jpg").toURI()),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-07.jpg").toURI()),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-08.jpg").toURI()),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-09.jpg").toURI()),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-10.jpg").toURI()),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-11.jpg").toURI()),
-//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-12.jpg").toURI())
+//                        Content.ofText("请描述图片内容"),
+//                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-01.jpg").toURI())
 //                )))
+
+                .addMessage(Message.ofUser(Arrays.asList(
+                        Content.ofText("这是我老婆和女儿外出游玩的照片，请根据照片内容帮我写一篇出行游记"),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-01.jpg").toURI()),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-02.jpg").toURI()),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-03.jpg").toURI()),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-04.jpg").toURI()),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-05.jpg").toURI()),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-06.jpg").toURI()),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-07.jpg").toURI()),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-08.jpg").toURI()),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-09.jpg").toURI()),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-10.jpg").toURI()),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-11.jpg").toURI()),
+                        Content.ofImage(new File("C:\\Users\\vlinux\\OneDrive\\图片\\北野动物园\\image-12.jpg").toURI())
+                )))
 
                 .build();
 
@@ -89,7 +90,48 @@ public class DebugTestCase extends ClientSupport {
     @Test
     public void test$debug2() {
 
-        DashscopeAssertions.assertByDashscope(client, "有两辆自行车", "图片中看到有一辆黑色的自行车和一辆白色的自行车");
+        final ChatAgent agent = ReActChatAgent.newBuilder()
+                .client(client)
+                .enableFlowBridge(true)
+                .addFunction(new SystemDateTimeFunction())
+                .addFunctionTool(ReActChatAgent.newBuilder()
+                        .client(client)
+                        .enableFlowBridge(true)
+                        .addFunctions(Arrays.asList(
+                                new DashscopeGenImageByImageFunction()
+                                        .autoUpload(true),
+                                new DashscopeGenImageByTextFunction(),
+                                new DashscopeGenVideoByImageFunction()
+                                        .autoUpload(true),
+                                new DashscopeGenVideoByTextFunction(),
+                                new DashscopeUnderstandingDocumentFunction()
+                                        .autoUpload(true),
+                                new DashscopeUnderstandingVisualFunction()
+                                        .autoUpload(true),
+                                new DashscopeWebSearchFunction()
+                        ))
+                        .build()
+                        .newFunctionToolBuilder()
+                        .build())
+                .build();
+
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_PLUS)
+
+                .addMessage(Message.ofUser(Arrays.asList(
+                        Content.ofText("请根据今天天气做一副水墨画"),
+                        Content.ofFile(new File("./test-data/document-001.pdf").toURI())
+                )))
+
+                //.addMessage(Message.ofUser("现在几点了?"))
+
+                .build();
+
+        final ChatResponse response = agent.async(request)
+                .toCompletableFuture()
+                .join();
+
+        System.out.println(response.output().best().message().text());
 
     }
 

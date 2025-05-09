@@ -1,5 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.agent.internal.util;
+package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
+import io.github.oldmanpushcart.dashscope4j.agent.internal.util.JacksonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
@@ -10,7 +11,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-public abstract class ChatFunctionToolUtils {
+class ChatFunctionToolHelper {
 
     public static CompletionStage<String> callingFunctionTool(ChatFunction.Caller caller, ChatFunctionTool functionTool, String argumentJson) {
         final Type parameterType = functionTool.meta().parameterTs().type();

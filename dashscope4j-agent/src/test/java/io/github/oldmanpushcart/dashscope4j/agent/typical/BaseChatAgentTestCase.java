@@ -25,13 +25,10 @@ import java.util.stream.Stream;
 public class BaseChatAgentTestCase extends ClientSupport {
 
     private static final Set<ChatModel> models = Arrays.stream(new ChatModel[]{
-            ChatModel.QWEN_PLUS,
             ChatModel.QWEN_TURBO,
+            ChatModel.QWEN_PLUS,
             ChatModel.QWEN_MAX,
-            ChatModel.BaseChatModel.ofText("qwen3-235b-a22b", new Option()
-                    .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                    .option("enable_thinking", false)
-                    .unmodifiable())
+            ChatModel.QWEN3_235B_A22B
     }).collect(Collectors.toSet());
 
     private static ChatModel getModel(String mName) {
@@ -46,23 +43,35 @@ public class BaseChatAgentTestCase extends ClientSupport {
             return ReActChatAgent.newBuilder()
                     .client(client)
                     .enableFlowBridge(flowBridgeEnabled)
-                    .addFunction(new DashscopeUnderstandingVisualFunction()
-                            .autoUpload(true))
+                    .addFunctionTool(ReActChatAgent.newBuilder()
+                            .client(client)
+                            .enableFlowBridge(true)
+                            .addFunction(new DashscopeUnderstandingVisualFunction()
+                                    .autoUpload(true))
+                            .build()
+                            .newFunctionToolBuilder()
+                            .build())
                     .build();
         }
         if ("dashscope".equals(aName)) {
             return DashscopeChatAgent.newBuilder()
                     .client(client)
                     .enableFlowBridge(flowBridgeEnabled)
-                    .addFunction(new DashscopeUnderstandingVisualFunction()
-                            .autoUpload(true))
+                    .addFunctionTool(DashscopeChatAgent.newBuilder()
+                            .client(client)
+                            .enableFlowBridge(true)
+                            .addFunction(new DashscopeUnderstandingVisualFunction()
+                                    .autoUpload(true))
+                            .build()
+                            .newFunctionToolBuilder()
+                            .build())
                     .build();
         }
         throw new IllegalArgumentException("agent not found: " + aName);
     }
 
     private static Stream<Arguments> providerForAsync() {
-        final String[] mNames = {"qwen-plus", "qwen-max"};
+        final String[] mNames = {"qwen-turbo", "qwen-plus", "qwen-max"};
         final String[] aNames = {"react", "dashscope"};
         return Stream.of(mNames)
                 .flatMap(mName -> Stream.of(aNames)
@@ -70,7 +79,7 @@ public class BaseChatAgentTestCase extends ClientSupport {
     }
 
     private static Stream<Arguments> providerForFlow() {
-        final String[] mNames = {"qwen-plus", "qwen-max", "qwen3-235b-a22b"};
+        final String[] mNames = {"qwen-turbo", "qwen-plus", "qwen-max", "qwen3-235b-a22b"};
         final String[] aNames = {"react", "dashscope"};
         return Stream.of(mNames)
                 .flatMap(mName -> Stream.of(aNames)
@@ -86,7 +95,7 @@ public class BaseChatAgentTestCase extends ClientSupport {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(getModel(mName))
                 .addMessage(Message.ofUser(Arrays.asList(
-                        Content.ofText("有几辆自行车?"),
+                        Content.ofText("图片中有几辆自行车?"),
                         Content.ofImage(new File("./test-data/image-002.jpeg").toURI())
                 )))
                 .build();

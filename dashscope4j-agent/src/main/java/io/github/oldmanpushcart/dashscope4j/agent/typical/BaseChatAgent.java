@@ -16,7 +16,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFu
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.functions.BiFunction;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -89,22 +88,11 @@ public abstract class BaseChatAgent implements ChatAgent {
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .build();
 
-        // 对话应答合并操作
-        final BiFunction<ChatResponse, ChatResponse, ChatResponse> mergeOperator = (response1, response2) ->
-                response2.changeMessages(message2 -> {
-                    final Message message1 = response1.output().best().message();
-                    return new Message(
-                            message2.role(),
-                            Content.ofText(message1.text() + message2.text()),
-                            message1.reasoningContent() + message2.reasoningContent()
-                    );
-                });
-
         // 将增量流式输出的ChatResponse合并为一个ChatResponse，并返回
         return baseFlow(newRequest)
                 .thenCompose(responseFlow ->
                         responseFlow
-                                .reduce(mergeOperator)
+                                .reduce(ChatResponse::accumulate)
                                 .toCompletionStage());
     }
 
@@ -140,14 +128,20 @@ public abstract class BaseChatAgent implements ChatAgent {
     private void buildingForRewriteUserMessage(ChatRequest.Builder builder, ChatRequest request) {
 
         final String prompt = PromptTemplate.newBuilder()
-                .template("请根据用户问题作答:\n" +
-                          "${question}\n" +
-                          "${attachments}")
+                .template("## 请回答问题\n" +
+                          "### 附件列表\n" +
+                          "${attachments}\n" +
+                          "\n" +
+                          "### 问题内容\n" +
+                          "${question}")
                 .building(ptBuilder -> {
                     final Message message = request.requireLastMessageFromUser();
-                    final List<Content<?>> nonTextContents = message.nonTextContents();
+                    final String attachments = message.mediaContents()
+                            .stream()
+                            .map(content-> String.format("- **%s** : %s", content.type(), content.data()))
+                            .collect(Collectors.joining("\n"));
                     ptBuilder.self()
-                            .variable("attachments", JacksonUtils.toJson(nonTextContents))
+                            .variable("attachments", attachments)
                             .variable("question", message.text());
                 })
                 .build()
