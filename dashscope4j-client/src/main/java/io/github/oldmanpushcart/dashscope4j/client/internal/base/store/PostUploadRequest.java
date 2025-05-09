@@ -67,7 +67,7 @@ class PostUploadRequest extends ApiRequest<PostUploadResponse> {
             log.debug("dashscope://base/store/upload/{} <<< {}", ossKey, bodyJson);
             final String uuid = httpResponse.header("x-oss-request-id");
             return StringUtils.isNotBlank(bodyJson)
-                    ? JacksonXmlUtils.toObject(bodyJson, PostUploadResponse.class)
+                    ? JacksonXmlUtils.toObject(bodyJson, PostUploadResponse.class, this, httpResponse)
                     : new PostUploadResponse(this, uuid).output(URI.create(String.format("oss://%s", ossKey)));
         };
     }

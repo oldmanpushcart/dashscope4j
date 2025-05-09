@@ -71,7 +71,9 @@ public class DashscopeUnderstandingDocumentFunction
         @JsonProperty(required = true)
         String prompt;
 
-        @JsonPropertyDescription("文档URI列表")
+        @JsonPropertyDescription("文档URI列表\n" +
+                                 "- 必须严格符合URI格式：scheme://username:password@hostname:port/path?query#fragment\n" +
+                                 "- 可接受本地文件URI格式：file://hose/path")
         @JsonProperty(required = true)
         List<URI> documentURIs;
 

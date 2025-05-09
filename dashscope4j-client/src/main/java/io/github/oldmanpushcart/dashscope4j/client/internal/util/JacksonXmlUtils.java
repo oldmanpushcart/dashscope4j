@@ -49,6 +49,7 @@ public class JacksonXmlUtils {
                 String.format("http/header/%s", header.getFirst()),
                 header.getSecond()
         ));
+        variableMap.put("dashscope/request", request);
         try {
             return mapper.reader(new InjectableValues.Std(variableMap)).forType(type).readValue(xml);
         } catch (JsonProcessingException cause) {

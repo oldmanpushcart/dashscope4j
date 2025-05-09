@@ -78,11 +78,16 @@ public class DashscopeUnderstandingVisualFunction
         @JsonProperty(required = true)
         String prompt;
 
-        @JsonPropertyDescription("图片资源URI列表")
+        @JsonPropertyDescription("图片资源URI列表\n" +
+                                 "- 必须严格符合URI格式：scheme://username:password@hostname:port/path?query#fragment\n" +
+                                 "- 可接受本地文件URI格式：file://hose/path\n" +
+                                 "- 不接受BASE64格式")
         @JsonProperty(required = true)
         List<URI> imageURIs;
 
-        @JsonPropertyDescription("视频资源URI列表")
+        @JsonPropertyDescription("视频资源URI列表\n" +
+                                 "- 必须严格符合URI格式：scheme://username:password@hostname:port/path?query#fragment\n" +
+                                 "- 可接受本地文件URI格式：file://hose/path")
         @JsonProperty(required = true)
         List<URI> videoURIs;
 

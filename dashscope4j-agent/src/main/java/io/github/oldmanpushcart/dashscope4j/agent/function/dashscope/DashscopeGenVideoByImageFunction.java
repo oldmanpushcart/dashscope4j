@@ -62,7 +62,9 @@ public class DashscopeGenVideoByImageFunction
     public static class Parameter {
 
         @JsonProperty(required = true)
-        @JsonPropertyDescription("参考图像的URI")
+        @JsonPropertyDescription("参考图像的URI\n" +
+                                 "- 必须严格符合URI格式：scheme://username:password@hostname:port/path?query#fragment\n" +
+                                 "- 可接受本地文件URI格式：file://hose/path")
         URI referenceImage;
 
         @JsonProperty(required = true)

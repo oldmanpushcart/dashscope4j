@@ -20,11 +20,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
+import java.net.URI;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
@@ -44,13 +42,16 @@ public abstract class BaseChatAgent implements ChatAgent {
     private final DashscopeClient client;
     private final Memory memory;
     private final ChatModel model;
+    private final boolean flowBridgeEnabled;
     private final List<Interceptor> interceptors;
     private final List<ChatFunctionTool> functionTools;
-    private final boolean flowBridgeEnabled;
 
     protected BaseChatAgent(Builder<?, ?> builder) {
-        this.memory = builder.memory;
+
+        requireNonNull(builder.client, "Client must not be null");
+
         this.client = builder.client;
+        this.memory = builder.memory;
         this.model = builder.model;
         this.flowBridgeEnabled = builder.flowBridgeEnabled;
         this.interceptors = unmodifiableList(builder.interceptors);
@@ -74,6 +75,7 @@ public abstract class BaseChatAgent implements ChatAgent {
 
                 // 结果存储到记忆体
                 .thenApply(response -> processPersistMemoryFragmentForAsync(request, response));
+
     }
 
     /*
@@ -127,26 +129,25 @@ public abstract class BaseChatAgent implements ChatAgent {
      */
     private void buildingForRewriteUserMessage(ChatRequest.Builder builder, ChatRequest request) {
 
+        final Message message = request.requireLastMessageFromUser();
         final String prompt = PromptTemplate.newBuilder()
-                .template("## 请回答问题\n" +
-                          "### 附件列表\n" +
-                          "${attachments}\n" +
+                .template("### INPUT\n" +
+                          "${input}\n" +
                           "\n" +
-                          "### 问题内容\n" +
-                          "${question}")
-                .building(ptBuilder -> {
-                    final Message message = request.requireLastMessageFromUser();
-                    final String attachments = message.mediaContents()
-                            .stream()
-                            .map(content-> String.format("- **%s** : %s", content.type(), content.data()))
-                            .collect(Collectors.joining("\n"));
-                    ptBuilder.self()
-                            .variable("attachments", attachments)
-                            .variable("question", message.text());
-                })
+                          "### PARTS\n" +
+                          "${parts}")
+                .variable("input", message::text)
+                .variable("parts", ()-> message.mediaContents()
+                        .stream()
+                        .map(content-> String.format("- **%s**: %s", content.type(), content.data()))
+                        .collect(Collectors.joining("\n")))
                 .build()
                 .render();
 
+        /*
+         * 重组对话请求消息
+         * 将重写的消息替换最后一个用户消息
+         */
         builder.self()
                 .messages(emptyList())
                 .addMessages(request.historyMessages())
@@ -195,12 +196,15 @@ public abstract class BaseChatAgent implements ChatAgent {
 
     // 处理异步请求的记忆片段存储
     private ChatResponse processPersistMemoryFragmentForAsync(ChatRequest request, ChatResponse response) {
+
+        // 如果没有记忆体则不需要处理
         final Memory.Context context = request.context(Memory.Context.class);
         if (Objects.isNull(memory)
             || Memory.Context.isInvalid(context)) {
             return response;
         }
 
+        // 持久化记忆片段
         final Message requestMessage = request.requireLastMessageFromUser();
         final Message responseMessage = response.output().best().message();
         final Memory.Fragment fragment = new Memory.Fragment()
@@ -210,7 +214,6 @@ public abstract class BaseChatAgent implements ChatAgent {
                 .responseMessage(responseMessage)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now());
-
         final long fragmentId = memory.persist(fragment);
         context.newerThenFragmentId(fragmentId);
 
@@ -220,6 +223,7 @@ public abstract class BaseChatAgent implements ChatAgent {
     // 处理流式请求的记忆片段存储
     private Flowable<ChatResponse> processPersistMemoryFragmentForFlow(ChatRequest request, Flowable<ChatResponse> responseFlow) {
 
+        // 如果没有记忆体则不需要处理
         final Memory.Context context = request.context(Memory.Context.class);
         if (Objects.isNull(memory)
             || Memory.Context.isInvalid(context)) {

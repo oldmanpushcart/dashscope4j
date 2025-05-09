@@ -2,9 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.internal.util.JacksonUtils;
-import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import lombok.Builder;
@@ -14,8 +13,10 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 /**
  * 基础智能体函数
@@ -31,27 +32,14 @@ class BaseChatAgentFunction
 
     @Override
     public CompletionStage<Result> call(Caller caller, Parameter parameter) {
-
-        final String prompt = PromptTemplate.newBuilder()
-                .template("### INPUT\n" +
-                          "${input}\n" +
-                          "\n" +
-                          "### PARTS\n" +
-                          "${parts}")
-                .variable("input", parameter.input())
-                .variable("parts", JacksonUtils.toJson(parameter.parts()))
-                .build()
-                .render();
-
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(caller.request().model())
-                .addMessage(Message.ofUser(prompt))
+                .addMessage(parameter.toMessage())
                 .build();
         return agent.async(request)
                 .thenApply(response -> response.output().best().message().text())
                 .thenApply(Result::new);
     }
-
 
     /**
      * 函数参数
@@ -100,6 +88,40 @@ class BaseChatAgentFunction
 
             }
 
+            /**
+             * @return 转换为媒体内容
+             */
+            public Content<?> toContent() {
+                switch (type) {
+                    case IMAGE:
+                        return Content.MediaContent.ofImage(uri);
+                    case VIDEO:
+                        return Content.MediaContent.ofVideo(uri);
+                    case AUDIO:
+                        return Content.MediaContent.ofAudio(uri);
+                    case FILE:
+                        return Content.MediaContent.ofFile(uri);
+                    default:
+                        throw new IllegalArgumentException("Unsupported type: " + type);
+                }
+            }
+
+        }
+
+        /**
+         * @return 转换为消息
+         */
+        public Message toMessage() {
+
+            final List<Content<?>> mediaContents = parts.stream()
+                    .map(Part::toContent)
+                    .collect(Collectors.toList());
+
+            final List<Content<?>> contents = new ArrayList<>();
+            contents.add(Content.ofText(input));
+            contents.addAll(mediaContents);
+
+            return Message.ofUser(contents);
         }
 
     }
