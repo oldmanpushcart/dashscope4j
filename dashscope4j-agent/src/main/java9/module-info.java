@@ -11,6 +11,5 @@ open module dashscope4j.agent {
     exports io.github.oldmanpushcart.dashscope4j.agent.typical;
     exports io.github.oldmanpushcart.dashscope4j.agent.typical.react;
     exports io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope;
-    exports io.github.oldmanpushcart.dashscope4j.agent.interceptor;
 
 }
