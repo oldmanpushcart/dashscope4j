@@ -30,7 +30,7 @@ class FileDeleteRequest extends OpenAiRequest<FileDeleteResponse> {
 
     @Override
     public Request newHttpRequest() {
-        log.debug("dashscope://base/files/delete/{} >>> DELETE", identity);
+        log.debug("dashscope-client://base/files/delete/{} >>> DELETE", identity);
         return new Request.Builder()
                 .url(String.format("https://dashscope.aliyuncs.com/compatible-mode/v1/files/%s", identity))
                 .delete()
@@ -40,7 +40,7 @@ class FileDeleteRequest extends OpenAiRequest<FileDeleteResponse> {
     @Override
     public BiFunction<Response, String, FileDeleteResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
-            log.debug("dashscope://base/files/delete/{} <<< {}", identity, bodyJson);
+            log.debug("dashscope-client://base/files/delete/{} <<< {}", identity, bodyJson);
             return JacksonJsonUtils.toObject(bodyJson, FileDeleteResponse.class, this, httpResponse);
         };
     }

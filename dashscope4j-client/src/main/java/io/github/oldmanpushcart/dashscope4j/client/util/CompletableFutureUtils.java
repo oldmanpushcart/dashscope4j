@@ -11,16 +11,30 @@ import java.util.function.Function;
 import static java.util.Objects.nonNull;
 
 /**
- * CompletableFuture工具类
+ * CompletableFuture 工具类
  */
 public class CompletableFutureUtils {
 
+    /**
+     * 创建失败的 CompletionStage
+     *
+     * @param ex  异常
+     * @param <T> T
+     * @return stage
+     */
     public static <T> CompletionStage<T> failedStage(Throwable ex) {
         final CompletableFuture<T> future = new CompletableFuture<>();
         future.completeExceptionally(ex);
         return future;
     }
 
+    /**
+     * 创建成功的 CompletionStage
+     *
+     * @param value 值
+     * @param <T>   T
+     * @return stage
+     */
     public static <T> CompletionStage<T> completedStage(T value) {
         final CompletableFuture<T> future = new CompletableFuture<>();
         future.complete(value);

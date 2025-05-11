@@ -44,7 +44,7 @@ class FileListRequest extends OpenAiRequest<FileListResponse> {
 
     @Override
     public Request newHttpRequest() {
-        log.debug("dashscope://base/files/list >>> limit={};after={};", limit, after);
+        log.debug("dashscope-client://base/files/list >>> limit={};after={};", limit, after);
         return new Request.Builder()
                 .url(genQueryURI().toString())
                 .get()
@@ -54,7 +54,7 @@ class FileListRequest extends OpenAiRequest<FileListResponse> {
     @Override
     public BiFunction<Response, String, FileListResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
-            log.debug("dashscope://base/files/list <<< {}", bodyJson);
+            log.debug("dashscope-client://base/files/list <<< {}", bodyJson);
             return JacksonJsonUtils.toObject(bodyJson, FileListResponse.class, this, httpResponse);
         };
     }

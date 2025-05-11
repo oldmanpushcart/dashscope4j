@@ -163,7 +163,7 @@ class ToolCaller implements ChatFunction.Caller {
         final String parameterJson = call.stub().arguments();
 
         if (log.isDebugEnabled()) {
-            log.debug("dashscope://chat/function/{} <<< {}",
+            log.debug("dashscope-client://chat/function/{} <<< {}",
                     call.stub().name(),
                     JacksonJsonUtils.compact(parameterJson)
             );
@@ -174,7 +174,7 @@ class ToolCaller implements ChatFunction.Caller {
                     .thenApply(JacksonJsonUtils::toJson)
                     .whenComplete((resultJson, ex) -> {
                         if (log.isDebugEnabled()) {
-                            log.debug("dashscope://chat/function/{} >>> {}",
+                            log.debug("dashscope-client://chat/function/{} >>> {}",
                                     call.stub().name(),
                                     JacksonJsonUtils.compact(resultJson),
                                     ex

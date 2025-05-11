@@ -32,7 +32,7 @@ public class TaskCancelRequest extends ApiRequest<TaskCancelResponse> {
 
     @Override
     public Request newHttpRequest() {
-        log.debug("dashscope://base/task/cancel/{} >>> POST", taskId);
+        log.debug("dashscope-client://base/task/cancel/{} >>> POST", taskId);
         return new Request.Builder()
                 .url(String.format("https://dashscope.aliyuncs.com/api/v1/tasks/%s/cancel", taskId))
                 .post(RequestBody.create("", MT_APPLICATION_JSON))
@@ -42,7 +42,7 @@ public class TaskCancelRequest extends ApiRequest<TaskCancelResponse> {
     @Override
     public BiFunction<Response, String, TaskCancelResponse> newResponseDecoder() {
         return (httpResponse, bodyJson)-> {
-            log.debug("dashscope://base/task/cancel/{} <<< {}", taskId, bodyJson);
+            log.debug("dashscope-client://base/task/cancel/{} <<< {}", taskId, bodyJson);
             return JacksonJsonUtils.toObject(bodyJson, TaskCancelResponse.class, this, httpResponse);
         };
     }

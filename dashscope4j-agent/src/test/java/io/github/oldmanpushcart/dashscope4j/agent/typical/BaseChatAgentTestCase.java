@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.agent.function.dashscope.DashscopeUnderstandingVisualFunction;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeChatAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActChatAgent;
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
@@ -17,84 +18,82 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class BaseChatAgentTestCase extends ClientSupport {
 
-    private static final Set<ChatModel> models = Arrays.stream(new ChatModel[]{
-            ChatModel.QWEN_TURBO,
-            ChatModel.QWEN_PLUS,
-            ChatModel.QWEN_MAX,
-            ChatModel.QWEN3_235B_A22B
-    }).collect(Collectors.toSet());
-
-    private static ChatModel getModel(String mName) {
-        return models.stream()
-                .filter(m -> m.name().equals(mName))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("model not found: " + mName));
+    public enum ChatAgentType {
+        REACT,
+        DASHSCOPE
     }
 
-    private static ChatAgent newChatAgent(String aName, boolean flowBridgeEnabled) {
-        if ("react".equals(aName)) {
-            return ReActChatAgent.newBuilder()
-                    .name("root")
-                    .client(client)
-                    .flowBridge(flowBridgeEnabled)
-                    .addFunctionTool(ReActChatAgent.newBuilder()
-                            .name("child")
-                            .client(client)
-                            .flowBridge(true)
-                            .addFunction(new DashscopeUnderstandingVisualFunction())
-                            .build()
-                            .newFunctionToolBuilder()
-                            .build())
-                    .build();
+    private static ChatAgent newChatAgent(ChatAgentType aType, boolean flowBridge) {
+        switch (aType) {
+            case REACT:
+                return ReActChatAgent.newBuilder()
+                        .name("root")
+                        .client(client)
+                        .flowBridge(flowBridge)
+                        .addFunctionTool(ReActChatAgent.newBuilder()
+                                .name("child")
+                                .client(client)
+                                .flowBridge(true)
+                                .addFunction(new DashscopeUnderstandingVisualFunction())
+                                .build()
+                                .newFunctionToolBuilder()
+                                .build())
+                        .build();
+            case DASHSCOPE:
+                return DashscopeChatAgent.newBuilder()
+                        .name("root")
+                        .client(client)
+                        .flowBridge(flowBridge)
+                        .addFunctionTool(DashscopeChatAgent.newBuilder()
+                                .name("child")
+                                .client(client)
+                                .flowBridge(true)
+                                .addFunction(new DashscopeUnderstandingVisualFunction())
+                                .build()
+                                .newFunctionToolBuilder()
+                                .build())
+                        .build();
+                default:
+                    throw new IllegalArgumentException("agent type not found: " + aType);
         }
-        if ("dashscope".equals(aName)) {
-            return DashscopeChatAgent.newBuilder()
-                    .name("root")
-                    .client(client)
-                    .flowBridge(flowBridgeEnabled)
-                    .addFunctionTool(DashscopeChatAgent.newBuilder()
-                            .name("child")
-                            .client(client)
-                            .flowBridge(true)
-                            .addFunction(new DashscopeUnderstandingVisualFunction())
-                            .build()
-                            .newFunctionToolBuilder()
-                            .build())
-                    .build();
-        }
-        throw new IllegalArgumentException("agent not found: " + aName);
     }
 
-    private static Stream<Arguments> providerForAsync() {
-        final String[] mNames = {"qwen-turbo", "qwen-plus", "qwen-max"};
-        final String[] aNames = {"react", "dashscope"};
-        return Stream.of(mNames)
-                .flatMap(mName -> Stream.of(aNames)
-                        .map(aName -> Arguments.of(mName, aName)));
+    private static Stream<Arguments> provideArgumentsForAsync() {
+        final ChatModel[] models = {
+                ChatModel.QWEN_TURBO,
+                ChatModel.QWEN_PLUS,
+                ChatModel.QWEN_MAX
+        };
+        return Stream.of(models)
+                .flatMap(model -> Stream.of(ChatAgentType.values())
+                        .map(type -> Arguments.of(model, type)));
     }
 
-    private static Stream<Arguments> providerForFlow() {
-        final String[] mNames = {"qwen-turbo", "qwen-plus", "qwen-max", "qwen3-235b-a22b"};
-        final String[] aNames = {"react", "dashscope"};
-        return Stream.of(mNames)
-                .flatMap(mName -> Stream.of(aNames)
-                        .map(aName -> Arguments.of(mName, aName)));
+    private static Stream<Arguments> provideArgumentsForFlow() {
+        final ChatModel[] models = {
+                ChatModel.QWEN_TURBO,
+                ChatModel.QWEN_PLUS,
+                ChatModel.QWEN_MAX,
+                ChatModel.QWEN3_235B_A22B
+        };
+        return Stream.of(models)
+                .flatMap(model -> Stream.of(ChatAgentType.values())
+                        .map(type -> Arguments.of(model, type)));
     }
 
     @ParameterizedTest
-    @MethodSource("providerForAsync")
-    public void test$async(String mName, String aName) {
+    @MethodSource("provideArgumentsForAsync")
+    public void test$async(ChatModel model, ChatAgentType type) {
 
-        final ChatAgent agent = newChatAgent(aName, false);
+        final ChatAgent agent = newChatAgent(type, false);
 
         final ChatRequest request = ChatRequest.newBuilder()
-                .model(getModel(mName))
+                .model(model)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("图片中有几辆自行车?"),
                         Content.ofImage(new File("./test-data/image-002.jpeg").toURI())
@@ -110,13 +109,14 @@ public class BaseChatAgentTestCase extends ClientSupport {
     }
 
     @ParameterizedTest
-    @MethodSource("providerForFlow")
-    public void test$async$flowBridge(String mName, String aName) {
+    @MethodSource("provideArgumentsForFlow")
+    public void test$async$flowBridge(ChatModel model, ChatAgentType type) {
 
-        final ChatAgent agent = newChatAgent(aName, true);
+        final ChatAgent agent = newChatAgent(type, true);
 
         final ChatRequest request = ChatRequest.newBuilder()
-                .model(getModel(mName))
+                .model(model)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("有几辆自行车?"),
                         Content.ofImage(new File("./test-data/image-002.jpeg").toURI())
@@ -133,13 +133,14 @@ public class BaseChatAgentTestCase extends ClientSupport {
 
 
     @ParameterizedTest
-    @MethodSource("providerForFlow")
-    public void test$flow(String mName, String aName) {
+    @MethodSource("provideArgumentsForFlow")
+    public void test$flow(ChatModel model, ChatAgentType type) {
 
-        final ChatAgent agent = newChatAgent(aName, false);
+        final ChatAgent agent = newChatAgent(type, false);
 
         final ChatRequest request = ChatRequest.newBuilder()
-                .model(getModel(mName))
+                .model(model)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("有几辆自行车?"),
                         Content.ofImage(new File("./test-data/image-002.jpeg").toURI())

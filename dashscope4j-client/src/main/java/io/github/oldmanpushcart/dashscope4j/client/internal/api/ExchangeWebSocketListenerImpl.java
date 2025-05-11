@@ -120,7 +120,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
         switch (frame.header().type()) {
 
             case STARTED: {
-                log.debug("dashscope://exchange/{}/{} started! payload={};",
+                log.debug("dashscope-client://exchange/{}/{} started! payload={};",
                         mode,
                         uuid,
                         frame.payload()
@@ -133,7 +133,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
              * 记录失败信息并继续接收消息
              */
             case FAILED: {
-                log.warn("dashscope://exchange/{}/{} running failed! code={};desc={};payload={};",
+                log.warn("dashscope-client://exchange/{}/{} running failed! code={};desc={};payload={};",
                         mode,
                         uuid,
                         frame.header().code(),
@@ -148,7 +148,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
              * 可以优雅地关闭连接。
              */
             case FINISHED: {
-                log.debug("dashscope://exchange/{}/{} finished! payload={};",
+                log.debug("dashscope-client://exchange/{}/{} finished! payload={};",
                         mode,
                         uuid,
                         frame.payload()
@@ -168,7 +168,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
              * 转换为数据交换应答对象
              */
             case GENERATED: {
-                log.debug("dashscope://exchange/{}/{} generated! payload={};",
+                log.debug("dashscope-client://exchange/{}/{} generated! payload={};",
                         mode,
                         uuid,
                         frame.payload()

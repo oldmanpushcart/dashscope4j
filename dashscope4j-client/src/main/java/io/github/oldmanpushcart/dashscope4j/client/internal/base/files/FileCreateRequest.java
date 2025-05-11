@@ -42,7 +42,7 @@ class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
 
     @Override
     public Request newHttpRequest() {
-        log.debug("dashscope://base/files/create >>> resource={};purpose={};", resource, purpose);
+        log.debug("dashscope-client://base/files/create >>> resource={};purpose={};", resource, purpose);
         return new Request.Builder()
                 .url("https://dashscope.aliyuncs.com/compatible-mode/v1/files")
                 .post(new MultipartBody.Builder()
@@ -56,7 +56,7 @@ class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
     @Override
     public BiFunction<okhttp3.Response, String, FileCreateResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
-            log.debug("dashscope://base/files/create <<< {}", bodyJson);
+            log.debug("dashscope-client://base/files/create <<< {}", bodyJson);
             return JacksonJsonUtils.toObject(bodyJson, FileCreateResponse.class, this, httpResponse);
         };
     }

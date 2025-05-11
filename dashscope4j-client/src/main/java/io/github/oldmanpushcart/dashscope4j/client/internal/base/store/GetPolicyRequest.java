@@ -29,7 +29,7 @@ class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {
 
     @Override
     public Request newHttpRequest() {
-        log.debug("dashscope://base/store/get-policy >>> model={}", model.name());
+        log.debug("dashscope-client://base/store/get-policy >>> model={}", model.name());
         return new Request.Builder()
                 .url(String.format("https://dashscope.aliyuncs.com/api/v1/uploads?action=getPolicy&model=%s", model.name()))
                 .get()
@@ -39,7 +39,7 @@ class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {
     @Override
     public BiFunction<okhttp3.Response, String, GetPolicyResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
-            log.debug("dashscope://base/store/get-policy <<< {}", bodyJson);
+            log.debug("dashscope-client://base/store/get-policy <<< {}", bodyJson);
             return JacksonJsonUtils.toObject(bodyJson, GetPolicyResponse.class, this, httpResponse);
         };
     }

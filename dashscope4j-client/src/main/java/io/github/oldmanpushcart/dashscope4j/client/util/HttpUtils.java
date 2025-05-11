@@ -1,7 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.client.util;
 
+import io.github.oldmanpushcart.dashscope4j.client.internal.CompletableFutureCallback;
 import jakarta.validation.constraints.NotNull;
-import okhttp3.*;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.ResponseBody;
 import okio.*;
 
 import java.io.File;
@@ -10,7 +14,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -45,33 +48,24 @@ public class HttpUtils {
                 .url(remote.toString())
                 .get()
                 .build();
-        final CompletableFuture<String> future = new CompletableFuture<>();
-        http.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                future.completeExceptionally(e);
+
+        final CompletableFutureCallback<String> callback = new CompletableFutureCallback<>((call, response) -> {
+
+            if (!response.isSuccessful()) {
+                throw new IOException(String.format("Unexpected code: %s", response.code()));
             }
 
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) {
-                if (!response.isSuccessful()) {
-                    future.completeExceptionally(new IOException(String.format("Unexpected code: %s", response.code())));
-                    return;
-                }
-                final ResponseBody responseBody = response.body();
-                if (null == responseBody) {
-                    future.complete("");
-                    return;
-                }
-                final ResponseBody progressResponseBody = new ProgressResponseBody(responseBody, listener);
-                try {
-                    future.complete(progressResponseBody.string());
-                } catch (IOException e) {
-                    future.completeExceptionally(e);
-                }
+            final ResponseBody responseBody = response.body();
+            if (null == responseBody) {
+                return null;
             }
+
+            return new ProgressResponseBody(responseBody, listener)
+                    .string();
         });
-        return future;
+
+        http.newCall(request).enqueue(callback);
+        return callback;
     }
 
     /**
@@ -101,41 +95,33 @@ public class HttpUtils {
                 .url(remote.toString())
                 .get()
                 .build();
-        final CompletableFuture<File> future = new CompletableFuture<>();
-        http.newCall(request).enqueue(new Callback() {
 
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                future.completeExceptionally(e);
+        final CompletableFutureCallback<File> callback = new CompletableFutureCallback<>((call, response) -> {
+
+            if (!response.isSuccessful()) {
+                throw new IOException(String.format("Unexpected code: %s", response.code()));
             }
 
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                if (!response.isSuccessful()) {
-                    future.completeExceptionally(new IOException(String.format("Unexpected code: %s", response.code())));
-                    return;
+            final byte[] buffer = new byte[1024];
+            final File tempFile = File.createTempFile("dashscope4j", ".download.tmp");
+            final ResponseBody progressResponseBody = new ProgressResponseBody(response.body(), listener);
+            try (final InputStream input = progressResponseBody.byteStream();
+                 final OutputStream output = Files.newOutputStream(tempFile.toPath())) {
+                int bytesRead;
+
+                // 逐步读取并写入文件
+                while ((bytesRead = input.read(buffer)) != -1) {
+                    output.write(buffer, 0, bytesRead);
                 }
 
-                final byte[] buffer = new byte[1024];
-                final File tempFile = File.createTempFile("dashscope4j", ".download.tmp");
-                final ResponseBody progressResponseBody = new ProgressResponseBody(response.body(), listener);
-                try (final InputStream input = progressResponseBody.byteStream();
-                     final OutputStream output = Files.newOutputStream(tempFile.toPath())) {
-                    int bytesRead;
-
-                    // 逐步读取并写入文件
-                    while ((bytesRead = input.read(buffer)) != -1) {
-                        output.write(buffer, 0, bytesRead);
-                    }
-
-                }
-
-                // 完成下载，返回临时文件
-                future.complete(tempFile);
             }
+
+            return tempFile;
 
         });
-        return future;
+
+        http.newCall(request).enqueue(callback);
+        return callback;
     }
 
     /**

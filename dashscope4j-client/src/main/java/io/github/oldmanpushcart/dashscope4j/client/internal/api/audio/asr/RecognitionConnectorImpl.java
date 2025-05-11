@@ -45,7 +45,7 @@ public class RecognitionConnectorImpl extends AbstractExchangeConnector implemen
 
     @Override
     public String toString() {
-        return "dashscope://audio/asr/recognizer";
+        return "dashscope-client://audio/asr/recognizer";
     }
 
     @Override

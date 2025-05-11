@@ -12,11 +12,13 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
@@ -37,8 +40,10 @@ import static java.util.Optional.ofNullable;
  */
 @Getter(AccessLevel.PROTECTED)
 @Accessors(fluent = true)
+@Slf4j
 public abstract class BaseChatAgent implements ChatAgent {
 
+    private static final AtomicInteger identityGen = new AtomicInteger(100);
     private final String name;
     private final DashscopeClient client;
     private final Memory memory;
@@ -51,7 +56,7 @@ public abstract class BaseChatAgent implements ChatAgent {
 
         requireNonNull(builder.client);
 
-        this.name = builder.name;
+        this.name = buildingName(builder.name);
         this.client = builder.client;
         this.memory = builder.memory;
         this.model = builder.model;
@@ -59,6 +64,12 @@ public abstract class BaseChatAgent implements ChatAgent {
         this.interceptors = unmodifiableList(builder.interceptors);
         this.functionTools = unmodifiableList(builder.functionTools);
 
+    }
+
+    private String buildingName(String name) {
+        return StringUtils.isNotBlank(name)
+                ? name
+                : String.format("chat-agent-%s", identityGen.incrementAndGet());
     }
 
     @Override
@@ -84,7 +95,13 @@ public abstract class BaseChatAgent implements ChatAgent {
                         : baseAsync(newRequest))
 
                 // 结果存储到记忆体
-                .thenApply(response -> processPersistMemoryFragmentForAsync(request, response));
+                .thenApply(response ->
+                        processPersistMemoryFragmentForAsync(request, response))
+
+                // 记录日志
+                .whenComplete((r, ex) ->
+                        log.debug("dashscope-agent://{}/async completed.", name(), ex))
+                ;
 
     }
 
@@ -113,7 +130,10 @@ public abstract class BaseChatAgent implements ChatAgent {
         return CompletableFuture.completedFuture(request)
                 .thenApply(this::newChatRequest)
                 .thenCompose(this::baseFlow)
-                .thenApply(responseFlow -> processPersistMemoryFragmentForFlow(request, responseFlow));
+                .thenApply(responseFlow ->
+                        processPersistMemoryFragmentForFlow(request, responseFlow))
+                .whenComplete((r, ex) ->
+                        log.debug("dashscope-agent://{}/flow completed.", name(), ex));
     }
 
     /**

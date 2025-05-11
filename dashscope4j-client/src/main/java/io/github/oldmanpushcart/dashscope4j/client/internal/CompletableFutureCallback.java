@@ -8,8 +8,6 @@ import okhttp3.Response;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
-import static java.util.Objects.requireNonNull;
-
 public class CompletableFutureCallback<T> extends CompletableFuture<T> implements Callback {
 
     private final Action<T> action;
@@ -31,11 +29,6 @@ public class CompletableFutureCallback<T> extends CompletableFuture<T> implement
         } catch (Throwable ex) {
             completeExceptionally(ex);
         }
-    }
-
-    public static CompletableFutureCallback<String> newStringFutureCallback() {
-        return new CompletableFutureCallback<>((call, response) ->
-                requireNonNull(response.body()).string());
     }
 
     @FunctionalInterface

@@ -42,7 +42,7 @@ class PostUploadRequest extends ApiRequest<PostUploadResponse> {
 
     @Override
     public Request newHttpRequest() {
-        log.debug("dashscope://base/store/upload/{} >>> {}", ossKey, resource);
+        log.debug("dashscope-client://base/store/upload/{} >>> {}", ossKey, resource);
         return new Request.Builder()
                 .url(policy.oss().host())
                 .addHeader("x-oss-object-acl", policy.oss().acl())
@@ -64,7 +64,7 @@ class PostUploadRequest extends ApiRequest<PostUploadResponse> {
     @Override
     public BiFunction<okhttp3.Response, String, PostUploadResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
-            log.debug("dashscope://base/store/upload/{} <<< {}", ossKey, bodyJson);
+            log.debug("dashscope-client://base/store/upload/{} <<< {}", ossKey, bodyJson);
             final String uuid = httpResponse.header("x-oss-request-id");
             return StringUtils.isNotBlank(bodyJson)
                     ? JacksonXmlUtils.toObject(bodyJson, PostUploadResponse.class, this, httpResponse)

@@ -183,21 +183,21 @@ public class ApiOpImpl implements ApiOp {
                             if (null != event) {
                                 onEvent(eventSource, event.id(), event.type(), event.data());
                             } else {
-                                emitter.onError(new RuntimeException(String.format("dashscope://flow error! code: %d, body: %s",
+                                emitter.onError(new RuntimeException(String.format("dashscope-client://flow error! code: %d, body: %s",
                                         httpResponse.code(),
                                         body
                                 )));
                             }
                             return;
                         } catch (IOException ex) {
-                            log.debug("dashscope://flow parse event error!", ex);
+                            log.debug("dashscope-client://flow parse event error!", ex);
                         }
                     }
 
                     /*
                      * 走到这一步则说明获取body失败，则直接抛出异常
                      */
-                    emitter.onError(new RuntimeException(String.format("dashscope://flow error! code: %d",
+                    emitter.onError(new RuntimeException(String.format("dashscope-client://flow error! code: %d",
                             httpResponse.code()
                     )));
 
@@ -374,7 +374,7 @@ public class ApiOpImpl implements ApiOp {
                                         .build();
                                 return executeAsync(taskCancelRequest)
                                         .handle((cv, cex) -> {
-                                            log.warn("dashscope://task/cancel completed: task={};", task.identity(), cex);
+                                            log.warn("dashscope-client://task/cancel completed: task={};", task.identity(), cex);
                                             return cv;
                                         })
                                         .thenCompose(cv -> failedStage(ex));

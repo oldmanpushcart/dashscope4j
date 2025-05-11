@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
@@ -34,6 +35,7 @@ class BaseChatAgentFunction
     public CompletionStage<Result> call(Caller caller, Parameter parameter) {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(caller.request().model())
+                .copyContextFrom(caller.request())
                 .addMessage(parameter.toMessage())
                 .build();
         return agent.async(request)

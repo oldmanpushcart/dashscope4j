@@ -38,7 +38,7 @@ public class TaskGetRequest extends ApiRequest<TaskGetResponse> {
 
     @Override
     public Request newHttpRequest() {
-        log.debug("dashscope://base/task/get/{} >>> GET", taskId);
+        log.debug("dashscope-client://base/task/get/{} >>> GET", taskId);
         return new Request.Builder()
                 .url(String.format("https://dashscope.aliyuncs.com/api/v1/tasks/%s", taskId))
                 .get()
@@ -48,7 +48,7 @@ public class TaskGetRequest extends ApiRequest<TaskGetResponse> {
     @Override
     public BiFunction<Response, String, TaskGetResponse> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
-            log.debug("dashscope://base/task/get/{} <<< {}", taskId, bodyJson);
+            log.debug("dashscope-client://base/task/get/{} <<< {}", taskId, bodyJson);
             return JacksonJsonUtils.toObject(bodyJson, TaskGetResponse.class, this, httpResponse);
         };
     }

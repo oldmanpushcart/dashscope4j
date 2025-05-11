@@ -23,9 +23,6 @@ public abstract class Request {
 
     /**
      * 获取上下文
-     * <p>
-     * 上下文回跟随请求传递到对应的应答报文，可以通过{@link Response#context()}获取
-     * </p>
      *
      * @param <C> 上下文类型
      * @return 上下文
@@ -101,6 +98,21 @@ public abstract class Request {
             } else {
                 this.contextMap.put(type, context);
             }
+            return self();
+        }
+
+        /**
+         * 从其他请求复制上下文
+         * <p>
+         * 用于请求接力的场景
+         * </p>
+         *
+         * @param request 请求
+         * @return this
+         * @since 3.2.0
+         */
+        public B copyContextFrom(Request request) {
+            this.contextMap.putAll(request.contextMap);
             return self();
         }
 

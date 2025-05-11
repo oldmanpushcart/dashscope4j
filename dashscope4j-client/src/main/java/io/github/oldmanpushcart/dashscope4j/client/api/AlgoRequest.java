@@ -116,7 +116,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
     protected Function<? super ApiRequest<R>, String> newRequestEncoder() {
         return request -> {
             final String bodyJson = JacksonJsonUtils.toJson(this);
-            log.debug("dashscope://algo/{} >>> {}", model.name(), bodyJson);
+            log.debug("dashscope-client://algo/{} >>> {}", model.name(), bodyJson);
             return bodyJson;
         };
     }
@@ -124,7 +124,7 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
     @Override
     public BiFunction<Response, String, R> newResponseDecoder() {
         return (httpResponse, bodyJson) -> {
-            log.debug("dashscope://algo/{} <<< {}", model.name(), bodyJson);
+            log.debug("dashscope-client://algo/{} <<< {}", model.name(), bodyJson);
             return JacksonJsonUtils.toObject(bodyJson, responseType(), this, httpResponse);
         };
     }
