@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 /**
  * 处理 {@link ChatModel#QWEN_LONG} 模型对话消息中的多媒体内容
  */
-public class ProcessChatMessageContentForQwenLongInterceptor implements Interceptor {
+class ProcessContentForQwenLongInterceptor implements Interceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain) {

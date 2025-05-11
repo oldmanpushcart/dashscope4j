@@ -3,13 +3,15 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.github.oldmanpushcart.dashscope4j.client.Option;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
-import java.util.AbstractMap.SimpleEntry;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 /**
  * 多模态内容
@@ -31,10 +33,18 @@ public abstract class Content<T> {
 
     private final Type type;
     private final T data;
+    private final Option option;
+
+    private Content(Type type, T data, Option option) {
+        this.type = type;
+        this.data = data;
+        this.option = option.unmodifiable();
+    }
 
     private Content(Type type, T data) {
         this.type = type;
         this.data = data;
+        this.option = new Option().unmodifiable();
     }
 
     /**
@@ -44,6 +54,14 @@ public abstract class Content<T> {
      * @return 修改后的内容
      */
     abstract public Content<T> changeData(T data);
+
+    /**
+     * 改变选项
+     *
+     * @param operator 改变选项操作
+     * @return 修改后的内容
+     */
+    abstract public Content<T> changeOption(UnaryOperator<Option> operator);
 
     /**
      * 构造文本内容
@@ -132,8 +150,11 @@ public abstract class Content<T> {
 
     // 序列化
     @JsonValue
-    Map.Entry<Type, ?> extract() {
-        return new SimpleEntry<>(type, data);
+    Map<Object, Object> extract() {
+        final Map<Object, Object> extactMap = new HashMap<>();
+        extactMap.put(type, data);
+        option.forEach(extactMap::put);
+        return extactMap;
     }
 
     // 反序列化
@@ -160,12 +181,22 @@ public abstract class Content<T> {
     public static class TextContent extends Content<String> {
 
         private TextContent(String data) {
-            super(Type.TEXT, data);
+            super(Type.TEXT, data, new Option());
+        }
+
+        private TextContent(String data, Option option) {
+            super(Type.TEXT, data, option);
         }
 
         @Override
         public TextContent changeData(String data) {
-            return new TextContent(data);
+            return new TextContent(data, option());
+        }
+
+        @Override
+        public Content<String> changeOption(UnaryOperator<Option> operator) {
+            final Option newOption = operator.apply(new Option().merge(option()));
+            return new TextContent(data(), newOption);
         }
 
     }
@@ -178,12 +209,22 @@ public abstract class Content<T> {
     public static class MediaContent extends Content<URI> {
 
         private MediaContent(Type type, URI data) {
-            super(type, data);
+            super(type, data, new Option());
+        }
+
+        private MediaContent(Type type, URI data, Option option) {
+            super(type, data, option);
         }
 
         @Override
         public MediaContent changeData(URI data) {
-            return new MediaContent(type(), data);
+            return new MediaContent(type(), data, option());
+        }
+
+        @Override
+        public Content<URI> changeOption(UnaryOperator<Option> operator) {
+            final Option newOption = operator.apply(new Option().merge(option()));
+            return new MediaContent(type(), data(), newOption);
         }
 
     }

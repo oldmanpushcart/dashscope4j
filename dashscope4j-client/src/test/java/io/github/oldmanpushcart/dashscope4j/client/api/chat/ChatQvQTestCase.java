@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
@@ -18,7 +19,7 @@ public class ChatQvQTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QVQ_MAX)
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofImage(new File("./test-data/IMG_0942.JPG").toURI()),

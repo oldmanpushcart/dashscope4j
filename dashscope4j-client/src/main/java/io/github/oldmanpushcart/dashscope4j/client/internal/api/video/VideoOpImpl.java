@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.video;
 
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.OpTask;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.video.VideoOp;
@@ -9,9 +10,15 @@ import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenV
 import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenVideoResponse;
 import lombok.AllArgsConstructor;
 
+import java.util.Arrays;
+import java.util.List;
+
 @AllArgsConstructor
 public class VideoOpImpl implements VideoOp {
 
+    private static final List<Interceptor> interceptors = Arrays.asList(
+            new ProcessAutoUploadForImageGenVideoInterceptor()
+    );
     private final ApiOp apiOp;
 
     @Override
@@ -21,7 +28,12 @@ public class VideoOpImpl implements VideoOp {
 
     @Override
     public OpTask<ImageGenVideoRequest, ImageGenVideoResponse> genByImage() {
-        return apiOp::executeTask;
+        return request -> {
+            final ImageGenVideoRequest newRequest = ImageGenVideoRequest.newBuilder(request)
+                    .interceptors(interceptors)
+                    .build();
+            return apiOp.executeTask(newRequest);
+        };
     }
 
 }

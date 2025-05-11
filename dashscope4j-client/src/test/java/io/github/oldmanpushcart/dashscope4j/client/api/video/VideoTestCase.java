@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.video;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.*;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
@@ -36,7 +37,7 @@ public class VideoTestCase extends ClientSupport {
 
         final ImageGenVideoRequest request = ImageGenVideoRequest.newBuilder()
                 .model(ImageGenVideoModel.WANX_V2_1_I2V_TURBO)
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .prompt("中式美女小乔出嫁，坐在梳妆台前，楚楚动人的在装扮着自己。")
                 .image(new File("./test-data/lingzhiling.jpg").toURI())
                 .option(TextGenVideoOptions.ENABLE_PROMPT_EXTEND, true)

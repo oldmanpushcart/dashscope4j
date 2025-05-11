@@ -1,17 +1,23 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.reactivex.rxjava3.core.Flowable;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
-
-import static java.util.concurrent.CompletableFuture.completedFuture;
 
 public class ChatOpImpl implements ChatOp {
 
+    private static final List<Interceptor> interceptors = Arrays.asList(
+            new ProcessAutoUploadForChatMessageInterceptor(),
+            new ProcessContentForQwenLongInterceptor(),
+            new ProcessToolCallForChatInterceptor()
+    );
     private final ApiOp apiOp;
 
     public ChatOpImpl(ApiOp apiOp) {
@@ -20,14 +26,18 @@ public class ChatOpImpl implements ChatOp {
 
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
-        return completedFuture(request)
-                .thenCompose(apiOp::executeAsync);
+        final ChatRequest newRequest = ChatRequest.newBuilder(request)
+                .addInterceptors(interceptors)
+                .build();
+        return apiOp.executeAsync(newRequest);
     }
 
     @Override
     public CompletionStage<Flowable<ChatResponse>> flow(ChatRequest request) {
-        return completedFuture(request)
-                .thenCompose(apiOp::executeFlow);
+        final ChatRequest newRequest = ChatRequest.newBuilder(request)
+                .addInterceptors(interceptors)
+                .build();
+        return apiOp.executeFlow(newRequest);
     }
 
 }

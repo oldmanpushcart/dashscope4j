@@ -1,6 +1,8 @@
-package io.github.oldmanpushcart.dashscope4j.client.api.video.generation;
+package io.github.oldmanpushcart.dashscope4j.client.internal.api.video;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.ImageGenVideoRequest;
 
 import java.net.URI;
 import java.util.concurrent.CompletionStage;
@@ -10,12 +12,19 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 /**
  * 处理图片生成视频的请求
  */
-class ProcessImageGenVideoForUploadInterceptor implements Interceptor {
+class ProcessAutoUploadForImageGenVideoInterceptor implements Interceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain) {
 
+        // 只处理图生视频请求
         if (!(chain.request() instanceof ImageGenVideoRequest)) {
+            return chain.process(chain.request());
+        }
+
+        // 只处理开启了自动上传的请求
+        final AutoUploadContext autoUploadContext = chain.request().context(AutoUploadContext.class);
+        if (null == autoUploadContext || !autoUploadContext.autoUpload()) {
             return chain.process(chain.request());
         }
 

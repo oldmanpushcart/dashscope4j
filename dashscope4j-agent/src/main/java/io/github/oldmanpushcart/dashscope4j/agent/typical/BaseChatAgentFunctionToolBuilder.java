@@ -21,12 +21,13 @@ class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder 
 
     private static final AtomicInteger identityGen = new AtomicInteger(100);
     private final BaseChatAgent agent;
-    private String name = String.format("base_chat_agent_function_" + identityGen.getAndIncrement());
+    private String name;
     private String summary = "具备以下能力";
 
     public BaseChatAgentFunctionToolBuilder(BaseChatAgent agent) {
         requireNonNull(agent, "agent is required!");
         this.agent = agent;
+        this.name = String.format("%s_function_%s", agent.name(), identityGen.getAndIncrement());
     }
 
     @Override

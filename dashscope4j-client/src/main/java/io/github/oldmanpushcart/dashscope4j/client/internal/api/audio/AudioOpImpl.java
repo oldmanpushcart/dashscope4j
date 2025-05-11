@@ -1,9 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.audio;
 
-import io.github.oldmanpushcart.dashscope4j.client.DelegateExchange;
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.OpExchange;
-import io.github.oldmanpushcart.dashscope4j.client.OpTask;
+import io.github.oldmanpushcart.dashscope4j.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.audio.AudioOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.audio.asr.RecognitionRequest;
@@ -17,11 +14,17 @@ import io.github.oldmanpushcart.dashscope4j.client.api.audio.voice.VoiceOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.vocabulary.VocabularyOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.voice.VoiceOpImpl;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils.isNotBlank;
 import static java.util.Objects.nonNull;
 
 public class AudioOpImpl implements AudioOp {
 
+    private static final List<Interceptor> interceptors = Arrays.asList(
+            new ProcessAutoUploadForTranscriptionInterceptor()
+    );
     private final ApiOp apiOp;
     private final VocabularyOp vocabularyOp;
     private final VoiceOp voiceOp;
@@ -86,7 +89,12 @@ public class AudioOpImpl implements AudioOp {
 
     @Override
     public OpTask<TranscriptionRequest, TranscriptionResponse> transcription() {
-        return apiOp::executeTask;
+        return request -> {
+            final TranscriptionRequest newRequest = TranscriptionRequest.newBuilder(request)
+                    .addInterceptors(interceptors)
+                    .build();
+            return apiOp.executeTask(newRequest);
+        };
     }
 
 }

@@ -1,7 +1,10 @@
-package io.github.oldmanpushcart.dashscope4j.client.api.chat;
+package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.Model;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.*;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
@@ -15,13 +18,19 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 /**
  * 处理聊天消息附件上传的拦截器
  */
-class ProcessChatMessageContentForUploadInterceptor implements Interceptor {
+class ProcessAutoUploadForChatMessageInterceptor implements Interceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain) {
 
         // 只处理对话消息
         if (!(chain.request() instanceof ChatRequest)) {
+            return chain.process(chain.request());
+        }
+
+        // 只处理开启了自动上传的请求
+        final AutoUploadContext autoUploadContext = chain.request().context(AutoUploadContext.class);
+        if (null == autoUploadContext || !autoUploadContext.autoUpload()) {
             return chain.process(chain.request());
         }
 

@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
@@ -105,7 +106,7 @@ public class ChatTestCase extends ClientSupport {
     public void test$chat$async$plugin$calculator(String mName) {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(getModel(mName))
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .addPlugin(ChatPlugin.CALCULATOR)
                 .addMessage(Message.ofUser("1+2*3-4/5=?"))
                 .build();
@@ -129,7 +130,7 @@ public class ChatTestCase extends ClientSupport {
     public void test$chat$async$plugin$pdf_extracter(String mName) {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(getModel(mName))
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .addPlugin(ChatPlugin.PDF_EXTRACTER)
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("请总结这篇文档"),
@@ -156,7 +157,7 @@ public class ChatTestCase extends ClientSupport {
     public void test$chat$async$tool$function$echo(String mName) {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(getModel(mName))
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .addFunction(new EchoFunction())
                 .addMessage(Message.ofUser("echo: HELLO!"))
                 .build();
@@ -180,7 +181,7 @@ public class ChatTestCase extends ClientSupport {
     public void test$chat$flow$tool$function$echo(String mName) {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(getModel(mName))
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .addFunction(new EchoFunction())
                 .addMessage(Message.ofUser("echo: HELLO!"))
                 .build();
@@ -210,7 +211,7 @@ public class ChatTestCase extends ClientSupport {
     public void test$chat$flow_incremental$tool$function$echo(String mName) {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(getModel(mName))
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .addFunction(new EchoFunction())
                 .addMessage(Message.ofUser("echo: HELLO!"))
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)

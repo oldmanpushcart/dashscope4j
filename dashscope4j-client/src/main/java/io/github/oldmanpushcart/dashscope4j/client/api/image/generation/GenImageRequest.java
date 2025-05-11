@@ -12,6 +12,9 @@ import java.net.URI;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.CommonUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 文生图请求
+ */
 @Value
 @Accessors(fluent = true)
 @ToString(callSuper = true)
@@ -76,21 +79,6 @@ public class GenImageRequest extends AlgoRequest<GenImageModel, GenImageResponse
 
         public Builder reference(URI reference) {
             this.reference = requireNonNull(reference);
-            return this;
-        }
-
-        /**
-         * 启用自动上传
-         *
-         * @param enabled 是否启用自动上传
-         * @return this
-         * @since 3.2.0
-         */
-        public Builder enableAutoUpload(boolean enabled) {
-            removeInterceptorByType(ProcessImageGenImageForUploadInterceptor.class);
-            if (enabled) {
-                addInterceptor(new ProcessImageGenImageForUploadInterceptor());
-            }
             return this;
         }
 

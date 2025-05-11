@@ -13,6 +13,11 @@ import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 public interface ChatAgent extends OpAsync<ChatRequest, ChatResponse>, OpFlow<ChatRequest, ChatResponse> {
 
     /**
+     * @return 智能体名称
+     */
+    String name();
+
+    /**
      * @return 创建函数工具构建器
      */
     FunctionToolBuilder newFunctionToolBuilder();

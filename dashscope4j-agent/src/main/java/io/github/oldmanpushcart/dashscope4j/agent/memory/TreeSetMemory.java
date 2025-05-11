@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.agent.memory;
 
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.MessageCodec;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.LocalTokenizerUtils;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.MessageCodec;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;

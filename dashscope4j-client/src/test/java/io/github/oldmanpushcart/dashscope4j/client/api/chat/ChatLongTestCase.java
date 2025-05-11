@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
@@ -73,7 +74,7 @@ public class ChatLongTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_LONG)
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("总结两篇文章内容"),
                         Content.ofFile(meta1.toURI()),

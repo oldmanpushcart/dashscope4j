@@ -14,8 +14,6 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.api.InterceptionApiO
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.RequestInterceptionApiOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.AudioOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.ChatOpImpl;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.ProcessChatMessageContentForQwenLongInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.ProcessToolCallForChatInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.embedding.EmbeddingOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.image.ImageOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.video.VideoOpImpl;
@@ -64,8 +62,6 @@ class DashscopeClientImpl implements DashscopeClient {
          *
          */
         final List<Interceptor> merged = new ArrayList<>(interceptors);
-        merged.add(new ProcessChatMessageContentForQwenLongInterceptor());
-        merged.add(new ProcessToolCallForChatInterceptor());
 
         // 生成拦截器组
         final ApiOp realApiOp = new ApiOpImpl(ak, http);

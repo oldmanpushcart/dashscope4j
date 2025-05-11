@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.function.SystemDateTimeFunction;
 import io.github.oldmanpushcart.dashscope4j.agent.function.dashscope.*;
-import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeChatAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.Option;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
@@ -27,23 +26,21 @@ public class DebugTestCase extends ClientSupport {
                 .unmodifiable());
 
         final ChatAgent agent = ReActChatAgent.newBuilder()
+                .name("root")
                 .client(client)
-                .enableFlowBridge(true)
+                .flowBridge(true)
                 .addFunction(new SystemDateTimeFunction())
                 .addFunctionTool(ReActChatAgent.newBuilder()
+                        .name("child")
                         .client(client)
-                        .enableFlowBridge(true)
+                        .flowBridge(true)
                         .addFunctions(Arrays.asList(
-                                new DashscopeGenImageByImageFunction()
-                                        .autoUpload(true),
+                                new DashscopeGenImageByImageFunction(),
                                 new DashscopeGenImageByTextFunction(),
-                                new DashscopeGenVideoByImageFunction()
-                                        .autoUpload(true),
+                                new DashscopeGenVideoByImageFunction(),
                                 new DashscopeGenVideoByTextFunction(),
-                                new DashscopeUnderstandingDocumentFunction()
-                                        .autoUpload(true),
-                                new DashscopeUnderstandingVisualFunction()
-                                        .autoUpload(true),
+                                new DashscopeUnderstandingDocumentFunction(),
+                                new DashscopeUnderstandingVisualFunction(),
                                 new DashscopeWebSearchFunction()
                         ))
                         .build()
@@ -52,9 +49,10 @@ public class DebugTestCase extends ClientSupport {
                 .build();
 
         final ChatRequest request = ChatRequest.newBuilder()
-                .model(model)
+                //.model(model)
                 //.model(ChatModel.QWEN_MAX)
                 //.model(ChatModel.QWEN_PLUS)
+                .model(ChatModel.QWEN_TURBO)
 
 //                .addMessage(Message.ofUser(Arrays.asList(
 //                        Content.ofText("请描述图片内容"),
@@ -92,22 +90,18 @@ public class DebugTestCase extends ClientSupport {
 
         final ChatAgent agent = ReActChatAgent.newBuilder()
                 .client(client)
-                .enableFlowBridge(true)
+                .flowBridge(true)
                 .addFunction(new SystemDateTimeFunction())
                 .addFunctionTool(ReActChatAgent.newBuilder()
                         .client(client)
-                        .enableFlowBridge(true)
+                        .flowBridge(true)
                         .addFunctions(Arrays.asList(
-                                new DashscopeGenImageByImageFunction()
-                                        .autoUpload(true),
+                                new DashscopeGenImageByImageFunction(),
                                 new DashscopeGenImageByTextFunction(),
-                                new DashscopeGenVideoByImageFunction()
-                                        .autoUpload(true),
+                                new DashscopeGenVideoByImageFunction(),
                                 new DashscopeGenVideoByTextFunction(),
-                                new DashscopeUnderstandingDocumentFunction()
-                                        .autoUpload(true),
-                                new DashscopeUnderstandingVisualFunction()
-                                        .autoUpload(true),
+                                new DashscopeUnderstandingDocumentFunction(),
+                                new DashscopeUnderstandingVisualFunction(),
                                 new DashscopeWebSearchFunction()
                         ))
                         .build()
@@ -125,6 +119,32 @@ public class DebugTestCase extends ClientSupport {
 
                 //.addMessage(Message.ofUser("现在几点了?"))
 
+                .build();
+
+        final ChatResponse response = agent.async(request)
+                .toCompletableFuture()
+                .join();
+
+        System.out.println(response.output().best().message().text());
+
+    }
+
+    @Test
+    public void test$debug3() {
+
+        final ChatAgent agent = ReActChatAgent.newBuilder()
+                .name("root")
+                .client(client)
+                .flowBridge(true)
+                .addFunction(new DashscopeGenVideoByImageFunction())
+                .build();
+
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_TURBO)
+                .addMessage(Message.ofUser(Arrays.asList(
+                        Content.ofText("请让照片中的人动起来"),
+                        Content.ofImage(new File("./test-data/image-001.jpeg").toURI())
+                )))
                 .build();
 
         final ChatResponse response = agent.async(request)

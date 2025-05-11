@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
@@ -7,8 +8,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -24,7 +23,7 @@ public class ChatVisionTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofImage(new File("./test-data/IMG_0942.JPG").toURI()),
                         Content.ofText("图片中一共多少个男孩?")
@@ -61,7 +60,7 @@ public class ChatVisionTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .addMessage(Message.ofUser(contents))
                 .build();
 

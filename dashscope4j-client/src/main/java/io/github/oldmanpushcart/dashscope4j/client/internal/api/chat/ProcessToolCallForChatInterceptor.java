@@ -12,7 +12,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * 对话请求处理工具调用
  */
-public class ProcessToolCallForChatInterceptor implements Interceptor {
+class ProcessToolCallForChatInterceptor implements Interceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain) {

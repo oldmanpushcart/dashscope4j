@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.function.dashscope;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
@@ -31,7 +32,6 @@ import static java.util.Optional.ofNullable;
 public class DashscopeGenImageByImageFunction
         implements ChatFunction<DashscopeGenImageByImageFunction.Parameter, DashscopeGenImageByImageFunction.Result> {
 
-    private boolean autoUpload;
     private Task.WaitStrategy waitStrategy = Task.WaitStrategies.until(
             Duration.ofSeconds(5),
             Duration.ofMinutes(1)
@@ -42,7 +42,7 @@ public class DashscopeGenImageByImageFunction
 
         final GenImageRequest request = GenImageRequest.newBuilder()
                 .model(GenImageModel.WANX_V1)
-                .enableAutoUpload(autoUpload)
+                .context(AutoUploadContext.class, caller.request().context(AutoUploadContext.class))
                 .option(GenImageOptions.NUMBER, 1)
                 .prompt(parameter.prompt())
                 .reference(parameter.referenceImage())

@@ -1,5 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.voice;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.Model;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.audio.voice.Voice;
@@ -8,6 +10,7 @@ import io.reactivex.rxjava3.core.Flowable;
 import lombok.AllArgsConstructor;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -21,16 +24,20 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 @AllArgsConstructor
 public class VoiceOpImpl implements VoiceOp {
 
+    private static final List<Interceptor> interceptors = Arrays.asList(
+            new ProcessAutoUploadForVoiceInterceptor()
+    );
     private final ApiOp apiOp;
 
     @Override
     public CompletionStage<Voice> create(String group, Model targetModel, URI resource) {
         final VoiceCreateRequest request = VoiceCreateRequest.newBuilder()
                 .model(VoiceModel.VOICE_ENROLLMENT)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .group(group)
                 .targetModel(targetModel)
                 .resource(resource)
-                .addInterceptor(new ProcessVoiceForUploadInterceptor())
+                .addInterceptors(interceptors)
                 .build();
         return apiOp.executeAsync(request)
                 .thenCompose(response -> detail(response.output().voiceId()));
@@ -70,9 +77,10 @@ public class VoiceOpImpl implements VoiceOp {
     public CompletionStage<?> update(String voiceId, URI resource) {
         final VoiceUpdateRequest request = VoiceUpdateRequest.newBuilder()
                 .model(VoiceModel.VOICE_ENROLLMENT)
-                .addInterceptor(new ProcessVoiceForUploadInterceptor())
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .voiceId(voiceId)
                 .resource(resource)
+                .addInterceptors(interceptors)
                 .build();
         return apiOp.executeAsync(request);
     }

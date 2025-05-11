@@ -86,21 +86,6 @@ public class ImageGenVideoRequest extends AlgoRequest<ImageGenVideoModel, ImageG
             return this;
         }
 
-        /**
-         * 启用自动上传
-         *
-         * @param enabled 是否启用自动上传
-         * @return this
-         * @since 3.2.0
-         */
-        public Builder enableAutoUpload(boolean enabled) {
-            removeInterceptorByType(ProcessImageGenVideoForUploadInterceptor.class);
-            if (enabled) {
-                addInterceptor(new ProcessImageGenVideoForUploadInterceptor());
-            }
-            return this;
-        }
-
         @Override
         public ImageGenVideoRequest build() {
             return new ImageGenVideoRequest(this);

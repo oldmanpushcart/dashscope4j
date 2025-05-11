@@ -80,21 +80,6 @@ public class TranscriptionRequest extends AlgoRequest<TranscriptionModel, Transc
             return this;
         }
 
-        /**
-         * 启用自动上传
-         *
-         * @param enabled 是否启用自动上传
-         * @return this
-         * @since 3.2.0
-         */
-        public Builder enableAutoUpload(boolean enabled) {
-            removeInterceptorByType(ProcessTranscriptionForUploadInterceptor.class);
-            if (enabled) {
-                addInterceptor(new ProcessTranscriptionForUploadInterceptor());
-            }
-            return this;
-        }
-
         @Override
         public TranscriptionRequest build() {
             return new TranscriptionRequest(this);

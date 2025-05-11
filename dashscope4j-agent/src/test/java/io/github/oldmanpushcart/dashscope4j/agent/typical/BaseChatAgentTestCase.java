@@ -6,7 +6,6 @@ import io.github.oldmanpushcart.dashscope4j.agent.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.agent.function.dashscope.DashscopeUnderstandingVisualFunction;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeChatAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActChatAgent;
-import io.github.oldmanpushcart.dashscope4j.client.Option;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
@@ -41,13 +40,14 @@ public class BaseChatAgentTestCase extends ClientSupport {
     private static ChatAgent newChatAgent(String aName, boolean flowBridgeEnabled) {
         if ("react".equals(aName)) {
             return ReActChatAgent.newBuilder()
+                    .name("root")
                     .client(client)
-                    .enableFlowBridge(flowBridgeEnabled)
+                    .flowBridge(flowBridgeEnabled)
                     .addFunctionTool(ReActChatAgent.newBuilder()
+                            .name("child")
                             .client(client)
-                            .enableFlowBridge(true)
-                            .addFunction(new DashscopeUnderstandingVisualFunction()
-                                    .autoUpload(true))
+                            .flowBridge(true)
+                            .addFunction(new DashscopeUnderstandingVisualFunction())
                             .build()
                             .newFunctionToolBuilder()
                             .build())
@@ -55,13 +55,14 @@ public class BaseChatAgentTestCase extends ClientSupport {
         }
         if ("dashscope".equals(aName)) {
             return DashscopeChatAgent.newBuilder()
+                    .name("root")
                     .client(client)
-                    .enableFlowBridge(flowBridgeEnabled)
+                    .flowBridge(flowBridgeEnabled)
                     .addFunctionTool(DashscopeChatAgent.newBuilder()
+                            .name("child")
                             .client(client)
-                            .enableFlowBridge(true)
-                            .addFunction(new DashscopeUnderstandingVisualFunction()
-                                    .autoUpload(true))
+                            .flowBridge(true)
+                            .addFunction(new DashscopeUnderstandingVisualFunction())
                             .build()
                             .newFunctionToolBuilder()
                             .build())
@@ -159,7 +160,7 @@ public class BaseChatAgentTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        DashscopeAssertions.assertByDashscope(client, "有两辆自行车", result);
+        DashscopeAssertions.assertByDashscope(client, "有2辆自行车", result);
     }
 
 }

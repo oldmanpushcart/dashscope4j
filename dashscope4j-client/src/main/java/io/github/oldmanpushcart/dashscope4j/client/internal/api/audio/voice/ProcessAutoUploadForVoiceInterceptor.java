@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.voice;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoRequest;
 
@@ -8,10 +9,16 @@ import java.util.concurrent.CompletionStage;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
-class ProcessVoiceForUploadInterceptor implements Interceptor {
+class ProcessAutoUploadForVoiceInterceptor implements Interceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain) {
+
+        // 只处理开启了自动上传的请求
+        final AutoUploadContext autoUploadContext = chain.request().context(AutoUploadContext.class);
+        if (null == autoUploadContext || !autoUploadContext.autoUpload()) {
+            return chain.process(chain.request());
+        }
 
         // 处理创建请求
         if (chain.request() instanceof VoiceCreateRequest) {

@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.embedding.mm;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import org.junit.jupiter.api.Assertions;
@@ -17,7 +18,7 @@ public class MmEmbeddingTestCase extends ClientSupport {
 
         final MmEmbeddingRequest request = MmEmbeddingRequest.newBuilder()
                 .model(MmEmbeddingModel.MM_EMBEDDING_V1)
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .contents(Arrays.asList(
                         Content.ofImage(new File("./test-data/image-002.jpeg").toURI()),
                         Content.ofText("一个帅哥在骑自行车念经"),

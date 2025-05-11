@@ -421,21 +421,6 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
             return this;
         }
 
-        /**
-         * 启用自动上传
-         *
-         * @param enabled 是否启用自动上传
-         * @return this
-         * @since 3.2.0
-         */
-        public Builder enableAutoUpload(boolean enabled) {
-            removeInterceptorByType(ProcessChatMessageContentForUploadInterceptor.class);
-            if (enabled) {
-                addInterceptor(new ProcessChatMessageContentForUploadInterceptor());
-            }
-            return this;
-        }
-
         @Override
         public ChatRequest build() {
             return new ChatRequest(this);

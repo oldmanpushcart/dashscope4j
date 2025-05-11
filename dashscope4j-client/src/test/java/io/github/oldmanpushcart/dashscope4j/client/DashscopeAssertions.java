@@ -47,7 +47,7 @@ public class DashscopeAssertions {
                             + "不要添加任何解释或其他多余内容。";
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText(text),
                         Content.ofImage(imageURI)

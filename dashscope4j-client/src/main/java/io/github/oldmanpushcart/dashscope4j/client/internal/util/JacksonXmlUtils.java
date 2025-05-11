@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.Request;
@@ -51,7 +50,7 @@ public class JacksonXmlUtils {
         ));
         variableMap.put("dashscope/request", request);
         try {
-            return mapper.reader(new InjectableValues.Std(variableMap)).forType(type).readValue(xml);
+            return mapper.reader(new NullableInjectableValues(variableMap)).forType(type).readValue(xml);
         } catch (JsonProcessingException cause) {
             throw new IllegalArgumentException("parse xml to object failed!", cause);
         }

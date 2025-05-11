@@ -120,7 +120,7 @@ public class JacksonJsonUtils {
         ));
         variableMap.put("dashscope/request", request);
         try {
-            return mapper.reader(new InjectableValues.Std(variableMap)).forType(type).readValue(json);
+            return mapper.reader(new NullableInjectableValues(variableMap)).forType(type).readValue(json);
         } catch (JsonProcessingException cause) {
             throw new IllegalArgumentException("parse json to object failed!", cause);
         }

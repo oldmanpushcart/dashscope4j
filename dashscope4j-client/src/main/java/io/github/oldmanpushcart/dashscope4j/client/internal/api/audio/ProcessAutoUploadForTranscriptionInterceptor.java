@@ -1,6 +1,8 @@
-package io.github.oldmanpushcart.dashscope4j.client.api.audio.asr;
+package io.github.oldmanpushcart.dashscope4j.client.internal.api.audio;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.api.audio.asr.TranscriptionRequest;
 
 import java.net.URI;
 import java.util.List;
@@ -9,12 +11,19 @@ import java.util.concurrent.CompletionStage;
 import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.thenIterateCompose;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
-class ProcessTranscriptionForUploadInterceptor implements Interceptor {
+class ProcessAutoUploadForTranscriptionInterceptor implements Interceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain) {
 
+        // 只处理语音转录请求
         if (!(chain.request() instanceof TranscriptionRequest)) {
+            return chain.process(chain.request());
+        }
+
+        // 只处理开启了自动上传的请求
+        final AutoUploadContext autoUploadContext = chain.request().context(AutoUploadContext.class);
+        if (null == autoUploadContext || !autoUploadContext.autoUpload()) {
             return chain.process(chain.request());
         }
 

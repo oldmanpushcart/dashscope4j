@@ -8,6 +8,7 @@ import lombok.experimental.Accessors;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
@@ -97,6 +98,23 @@ public final class Option {
      */
     public boolean has(String name, Object value) {
         return map.containsKey(name) && map.get(name).equals(value);
+    }
+
+    /**
+     * @return 是否为空
+     * @since 3.2.0
+     */
+    public boolean isEmpty() {
+        return map.isEmpty();
+    }
+
+    /**
+     * 遍历选项
+     *
+     * @param consumer 遍历函数
+     */
+    public void forEach(BiConsumer<String, Object> consumer) {
+        map.forEach(consumer);
     }
 
     /**

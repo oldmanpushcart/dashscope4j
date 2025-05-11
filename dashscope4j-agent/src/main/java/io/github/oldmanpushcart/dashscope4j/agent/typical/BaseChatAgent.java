@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.internal.util.JacksonUtils;
 import io.github.oldmanpushcart.dashscope4j.agent.memory.Memory;
 import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
@@ -10,7 +9,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
@@ -20,9 +18,11 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
-import java.net.URI;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
@@ -39,23 +39,31 @@ import static java.util.Optional.ofNullable;
 @Accessors(fluent = true)
 public abstract class BaseChatAgent implements ChatAgent {
 
+    private final String name;
     private final DashscopeClient client;
     private final Memory memory;
     private final ChatModel model;
-    private final boolean flowBridgeEnabled;
+    private final boolean flowBridge;
     private final List<Interceptor> interceptors;
     private final List<ChatFunctionTool> functionTools;
 
     protected BaseChatAgent(Builder<?, ?> builder) {
 
-        requireNonNull(builder.client, "Client must not be null");
+        requireNonNull(builder.client);
 
+        this.name = builder.name;
         this.client = builder.client;
         this.memory = builder.memory;
         this.model = builder.model;
-        this.flowBridgeEnabled = builder.flowBridgeEnabled;
+        this.flowBridge = builder.flowBridge;
         this.interceptors = unmodifiableList(builder.interceptors);
         this.functionTools = unmodifiableList(builder.functionTools);
+
+    }
+
+    @Override
+    public String name() {
+        return name;
     }
 
     @Override
@@ -66,10 +74,12 @@ public abstract class BaseChatAgent implements ChatAgent {
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
         return CompletableFuture.completedFuture(request)
+
+                // 创建新的对话请求
                 .thenApply(this::newChatRequest)
 
                 // 根据流控开关选择不同的执行方式
-                .thenCompose(newRequest -> flowBridgeEnabled
+                .thenCompose(newRequest -> flowBridge
                         ? baseAsyncByFlowBridge(newRequest)
                         : baseAsync(newRequest))
 
@@ -129,6 +139,14 @@ public abstract class BaseChatAgent implements ChatAgent {
      */
     private void buildingForRewriteUserMessage(ChatRequest.Builder builder, ChatRequest request) {
 
+        /*
+         * 将消息重写为用户的输入
+         *
+         * 这里之所以需要这样做，主要是消息的多媒体部分是藏在 Message#contents() 中的，
+         * 这种情况下并不利于基于文本构建的智能体进行处理，比如ReAct。
+         *
+         * 所以这里得想办法将消息格式转变为文本的信息，以便于智能体后续的处理
+         */
         final Message message = request.requireLastMessageFromUser();
         final String prompt = PromptTemplate.newBuilder()
                 .template("### INPUT\n" +
@@ -137,9 +155,9 @@ public abstract class BaseChatAgent implements ChatAgent {
                           "### PARTS\n" +
                           "${parts}")
                 .variable("input", message::text)
-                .variable("parts", ()-> message.mediaContents()
+                .variable("parts", message.mediaContents()
                         .stream()
-                        .map(content-> String.format("- **%s**: %s", content.type(), content.data()))
+                        .map(content -> String.format("- **%s**: %s", content.type(), content.data()))
                         .collect(Collectors.joining("\n")))
                 .build()
                 .render();
@@ -304,10 +322,11 @@ public abstract class BaseChatAgent implements ChatAgent {
      */
     public static abstract class Builder<T extends BaseChatAgent, B extends Builder<T, B>> implements Buildable<T, B> {
 
+        private String name;
         private DashscopeClient client;
         private Memory memory;
         private ChatModel model;
-        private boolean flowBridgeEnabled;
+        private boolean flowBridge;
         private final List<Interceptor> interceptors = new ArrayList<>();
         private final List<ChatFunctionTool> functionTools = new ArrayList<>();
 
@@ -316,11 +335,23 @@ public abstract class BaseChatAgent implements ChatAgent {
         }
 
         public Builder(BaseChatAgent agent) {
+            this.name = agent.name;
             this.client = agent.client;
             this.memory = agent.memory;
             this.model = agent.model;
             this.interceptors.addAll(agent.interceptors);
             this.functionTools.addAll(agent.functionTools);
+        }
+
+        /**
+         * 设置智能体名称
+         *
+         * @param name 智能体名称
+         * @return this
+         */
+        public B name(String name) {
+            this.name = requireNonNull(name, "name is required!");
+            return self();
         }
 
         /**
@@ -330,7 +361,7 @@ public abstract class BaseChatAgent implements ChatAgent {
          * @return this
          */
         public B client(DashscopeClient client) {
-            this.client = client;
+            this.client = requireNonNull(client, "client is required!");
             return self();
         }
 
@@ -357,8 +388,14 @@ public abstract class BaseChatAgent implements ChatAgent {
             return self();
         }
 
-        public B enableFlowBridge(boolean enabled) {
-            this.flowBridgeEnabled = enabled;
+        /**
+         * 设置是否启用流式对话桥接
+         *
+         * @param enabled 是否启用流式对话桥接
+         * @return this
+         */
+        public B flowBridge(boolean enabled) {
+            this.flowBridge = enabled;
             return self();
         }
 

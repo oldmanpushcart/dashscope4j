@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.function.dashscope;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
@@ -28,14 +29,12 @@ import java.util.concurrent.CompletionStage;
 public class DashscopeUnderstandingVisualFunction
         implements ChatFunction<DashscopeUnderstandingVisualFunction.Parameter, DashscopeUnderstandingVisualFunction.Result> {
 
-    private boolean autoUpload;
-
     @Override
     public CompletionStage<Result> call(Caller caller, Parameter parameter) {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
-                .enableAutoUpload(autoUpload)
+                .context(AutoUploadContext.class, caller.request().context(AutoUploadContext.class))
                 .addMessage(newUserMessage(parameter))
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .build();

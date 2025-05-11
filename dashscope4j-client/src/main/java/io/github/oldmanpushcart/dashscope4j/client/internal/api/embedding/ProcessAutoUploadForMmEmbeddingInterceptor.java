@@ -1,7 +1,9 @@
-package io.github.oldmanpushcart.dashscope4j.client.api.embedding.mm;
+package io.github.oldmanpushcart.dashscope4j.client.internal.api.embedding;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
+import io.github.oldmanpushcart.dashscope4j.client.api.embedding.mm.MmEmbeddingRequest;
 
 import java.net.URI;
 import java.util.concurrent.CompletionStage;
@@ -12,16 +14,23 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 /**
  * 处理多嵌入内容上传的拦截器
  */
-class ProcessMmEmbeddingContentForUploadInterceptor implements Interceptor {
+class ProcessAutoUploadForMmEmbeddingInterceptor implements Interceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain) {
 
+        // 只处理多模态嵌入请求
         if (!(chain.request() instanceof MmEmbeddingRequest)) {
             return chain.process(chain.request());
         }
 
-        return processRequest(chain,  (MmEmbeddingRequest) chain.request())
+        // 只处理开启了自动上传的请求
+        final AutoUploadContext autoUploadContext = chain.request().context(AutoUploadContext.class);
+        if (null == autoUploadContext || !autoUploadContext.autoUpload()) {
+            return chain.process(chain.request());
+        }
+
+        return processRequest(chain, (MmEmbeddingRequest) chain.request())
                 .thenCompose(chain::process);
     }
 

@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.image.generation;
 
+import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.Ret;
@@ -74,7 +75,7 @@ public class GenImageTestCase extends ClientSupport {
 
         final GenImageRequest request = GenImageRequest.newBuilder()
                 .model(GenImageModel.WANX_V1)
-                .enableAutoUpload(true)
+                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
                 .prompt("将图片转为卡通风格")
                 .reference(new File("./test-data/image-002.jpeg").toURI())
                 .option(GenImageOptions.NUMBER, 1)
