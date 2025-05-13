@@ -1,14 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.memory.Memory;
+import io.github.oldmanpushcart.dashscope4j.agent.chain.ChatChain;
 import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
@@ -20,11 +17,9 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,52 +30,64 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
-/**
- * 基础智能体
- */
-@Getter(AccessLevel.PROTECTED)
+
 @Accessors(fluent = true)
 @Slf4j
 public abstract class BaseChatAgent implements ChatAgent {
 
     private static final AtomicInteger identityGen = new AtomicInteger(100);
+
+    @Getter
     private final String name;
+
+    @Getter(AccessLevel.PROTECTED)
     private final DashscopeClient client;
-    private final Memory memory;
+
     private final ChatModel model;
     private final boolean flowBridge;
     private final List<Interceptor> interceptors;
+
+    @Getter(AccessLevel.PROTECTED)
     private final List<ChatFunctionTool> functionTools;
+
+    private final List<ChatChain> chains;
+    private final ChatOp chatOp;
 
     protected BaseChatAgent(Builder<?, ?> builder) {
 
-        requireNonNull(builder.client);
+        requireNonNull(builder.client, "client is required!");
 
         this.name = buildingName(builder.name);
         this.client = builder.client;
-        this.memory = builder.memory;
         this.model = builder.model;
         this.flowBridge = builder.flowBridge;
         this.interceptors = unmodifiableList(builder.interceptors);
         this.functionTools = unmodifiableList(builder.functionTools);
-
+        this.chains = unmodifiableList(builder.chains);
+        this.chatOp = newBaseChatOp(this, builder.chains);
     }
 
-    private String buildingName(String name) {
+    private static ChatOp newBaseChatOp(BaseChatAgent agent, List<ChatChain> chains) {
+        final ChatOp baseChatOp = new ChatOp() {
+            @Override
+            public CompletionStage<ChatResponse> async(ChatRequest request) {
+                return agent.baseAsync(request);
+            }
+
+            @Override
+            public CompletionStage<Flowable<ChatResponse>> flow(ChatRequest request) {
+                return agent.baseFlow(request);
+            }
+        };
+        return ChainChatOp.group(baseChatOp, chains);
+    }
+
+    private static String buildingName(String name) {
         return StringUtils.isNotBlank(name)
                 ? name
                 : String.format("chat-agent-%s", identityGen.incrementAndGet());
     }
 
-    @Override
-    public String name() {
-        return name;
-    }
-
-    @Override
-    public ChatAgent.FunctionToolBuilder newFunctionToolBuilder() {
-        return new BaseChatAgentFunctionToolBuilder(this);
-    }
 
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
@@ -91,26 +98,17 @@ public abstract class BaseChatAgent implements ChatAgent {
 
                 // 根据流控开关选择不同的执行方式
                 .thenCompose(newRequest -> flowBridge
-                        ? baseAsyncByFlowBridge(newRequest)
-                        : baseAsync(newRequest))
-
-                // 结果存储到记忆体
-                .thenApply(response ->
-                        processPersistMemoryFragmentForAsync(request, response))
+                        ? asyncByFlowBridge(newRequest)
+                        : chatOp.async(newRequest))
 
                 // 记录日志
                 .whenComplete((r, ex) ->
                         log.debug("dashscope-agent://{}/async completed.", name(), ex))
                 ;
-
     }
 
-    /*
-     * 流式桥接异步
-     *
-     * 这里强制采用增量输出模式，减少网络传输和处理开销负担
-     */
-    private CompletionStage<ChatResponse> baseAsyncByFlowBridge(ChatRequest request) {
+    // 流式桥接异步
+    private CompletionStage<ChatResponse> asyncByFlowBridge(ChatRequest request) {
 
         // 强制开启增量输出模式
         final ChatRequest newRequest = ChatRequest.newBuilder(request)
@@ -118,7 +116,7 @@ public abstract class BaseChatAgent implements ChatAgent {
                 .build();
 
         // 将增量流式输出的ChatResponse合并为一个ChatResponse，并返回
-        return baseFlow(newRequest)
+        return chatOp.flow(newRequest)
                 .thenCompose(responseFlow ->
                         responseFlow
                                 .reduce(ChatResponse::accumulate)
@@ -129,9 +127,7 @@ public abstract class BaseChatAgent implements ChatAgent {
     public CompletionStage<Flowable<ChatResponse>> flow(ChatRequest request) {
         return CompletableFuture.completedFuture(request)
                 .thenApply(this::newChatRequest)
-                .thenCompose(this::baseFlow)
-                .thenApply(responseFlow ->
-                        processPersistMemoryFragmentForFlow(request, responseFlow))
+                .thenCompose(chatOp::flow)
                 .whenComplete((r, ex) ->
                         log.debug("dashscope-agent://{}/flow completed.", name(), ex));
     }
@@ -145,18 +141,18 @@ public abstract class BaseChatAgent implements ChatAgent {
     private ChatRequest newChatRequest(ChatRequest request) {
         return ChatRequest.newBuilder(request)
                 .addInterceptors(interceptors)
-                .addTools(functionTools)
-                .building(builder -> ofNullable(model).ifPresent(builder::model))
+                .tools(functionTools)
+                .building(this::buildingForResetChatModel)
                 .building(builder -> buildingForRewriteUserMessage(builder, request))
-                .building(builder -> buildingForMemoryRecall(builder, request))
                 .build();
     }
 
-    /*
-     * 重写用户输入部分
-     *
-     * 将多模态部分作为附件形式存放，便于智能体做更好的处理
-     */
+    // 重设对话模型
+    private void buildingForResetChatModel(ChatRequest.Builder builder) {
+        ofNullable(model).ifPresent(builder::model);
+    }
+
+    // 重写用户输入
     private void buildingForRewriteUserMessage(ChatRequest.Builder builder, ChatRequest request) {
 
         /*
@@ -192,129 +188,6 @@ public abstract class BaseChatAgent implements ChatAgent {
                 .addMessage(Message.ofUser(prompt));
     }
 
-    /*
-     * 在对话列表中添加回忆部分
-     * SYSTEM
-     * HISTORY
-     * LAST_USER_INPUT
-     */
-    private void buildingForMemoryRecall(ChatRequest.Builder builder, ChatRequest request) {
-
-        final Memory.Context context = request.context(Memory.Context.class);
-        if (Objects.isNull(memory)
-            || Memory.Context.isInvalid(context)) {
-            return;
-        }
-
-        final List<Message> newMessages = new ArrayList<>();
-
-        // 先添加SYSTEM
-        request.messages()
-                .stream()
-                .filter(message -> message.role() == Message.Role.SYSTEM)
-                .forEach(newMessages::add);
-
-        // 然后添加回忆
-        memory.recall(context.sessionId(), context.olderThenFragmentId(), context.newerThenFragmentId())
-                .forEach(fragment -> {
-                    newMessages.add(fragment.requestMessage());
-                    newMessages.add(fragment.responseMessage());
-                });
-
-        // 最后添加请求原有的对话信息
-        request.messages()
-                .stream()
-                .filter(message -> message.role() != Message.Role.SYSTEM)
-                .forEach(newMessages::add);
-
-        // 替换原有的消息列表
-        builder.messages(newMessages);
-
-    }
-
-    // 处理异步请求的记忆片段存储
-    private ChatResponse processPersistMemoryFragmentForAsync(ChatRequest request, ChatResponse response) {
-
-        // 如果没有记忆体则不需要处理
-        final Memory.Context context = request.context(Memory.Context.class);
-        if (Objects.isNull(memory)
-            || Memory.Context.isInvalid(context)) {
-            return response;
-        }
-
-        // 持久化记忆片段
-        final Message requestMessage = request.requireLastMessageFromUser();
-        final Message responseMessage = response.output().best().message();
-        final Memory.Fragment fragment = new Memory.Fragment()
-                .fragmentId(context.newerThenFragmentId())
-                .sessionId(context.sessionId())
-                .requestMessage(requestMessage)
-                .responseMessage(responseMessage)
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now());
-        final long fragmentId = memory.persist(fragment);
-        context.newerThenFragmentId(fragmentId);
-
-        return response;
-    }
-
-    // 处理流式请求的记忆片段存储
-    private Flowable<ChatResponse> processPersistMemoryFragmentForFlow(ChatRequest request, Flowable<ChatResponse> responseFlow) {
-
-        // 如果没有记忆体则不需要处理
-        final Memory.Context context = request.context(Memory.Context.class);
-        if (Objects.isNull(memory)
-            || Memory.Context.isInvalid(context)) {
-            return responseFlow;
-        }
-
-        /*
-         * 应答流式输出内容缓存
-         * 所以这里需要一个字符串缓存来存储流式输出内容
-         */
-        final StringBuilder stringBuf = new StringBuilder();
-
-        /*
-         * 从流式回复中截留应答文本
-         * 将应答文本存储到记忆体中
-         */
-        return responseFlow
-                .doOnNext(response -> {
-
-                    /*
-                     * 如果不是增量输出，则说明是全量输出
-                     * 需要每次均清空缓冲区
-                     */
-                    final boolean isIncrementalOutput = request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true);
-                    if (!isIncrementalOutput) {
-                        stringBuf.setLength(0);
-                    }
-
-                    // 将当前输出添加到输出缓存中
-                    final String text = response.output().best().message().text();
-                    stringBuf.append(text);
-
-                })
-
-                // 成功完成时触发记忆片段刷新
-                .doOnComplete(() -> {
-
-                    final Message requestMessage = request.requireLastMessageFromUser();
-                    final Message responseMessage = Message.ofAi(stringBuf.toString());
-                    final Memory.Fragment fragment = new Memory.Fragment()
-                            .fragmentId(context.newerThenFragmentId())
-                            .sessionId(context.sessionId())
-                            .requestMessage(requestMessage)
-                            .responseMessage(responseMessage)
-                            .createdAt(Instant.now())
-                            .updatedAt(Instant.now());
-
-                    final long fragmentId = memory.persist(fragment);
-                    context.newerThenFragmentId(fragmentId);
-
-                });
-    }
-
     /**
      * 异步对话
      *
@@ -331,22 +204,19 @@ public abstract class BaseChatAgent implements ChatAgent {
      */
     abstract protected CompletionStage<Flowable<ChatResponse>> baseFlow(ChatRequest request);
 
+    @Override
+    public ChatAgent.FunctionToolBuilder newFunctionToolBuilder() {
+        return new BaseChatAgentFunctionToolBuilder(this);
+    }
 
-    // ------------------------- BUILDER : BASE_CHAT_AGENT -------------------------
 
-    /**
-     * 基础智能体构造器
-     *
-     * @param <T> 智能体类型
-     * @param <B> 构造器类型
-     */
     public static abstract class Builder<T extends BaseChatAgent, B extends Builder<T, B>> implements Buildable<T, B> {
 
         private String name;
         private DashscopeClient client;
-        private Memory memory;
         private ChatModel model;
         private boolean flowBridge;
+        private final List<ChatChain> chains = new ArrayList<>();
         private final List<Interceptor> interceptors = new ArrayList<>();
         private final List<ChatFunctionTool> functionTools = new ArrayList<>();
 
@@ -357,8 +227,8 @@ public abstract class BaseChatAgent implements ChatAgent {
         public Builder(BaseChatAgent agent) {
             this.name = agent.name;
             this.client = agent.client;
-            this.memory = agent.memory;
             this.model = agent.model;
+            this.chains.addAll(agent.chains);
             this.interceptors.addAll(agent.interceptors);
             this.functionTools.addAll(agent.functionTools);
         }
@@ -384,18 +254,6 @@ public abstract class BaseChatAgent implements ChatAgent {
             this.client = requireNonNull(client, "client is required!");
             return self();
         }
-
-        /**
-         * 设置记忆体
-         *
-         * @param memory 记忆体
-         * @return this
-         */
-        public B memory(Memory memory) {
-            this.memory = memory;
-            return self();
-        }
-
 
         /**
          * 设置对话模型
@@ -524,6 +382,22 @@ public abstract class BaseChatAgent implements ChatAgent {
                     .map(ChatFunctionTool::of)
                     .collect(Collectors.toList());
             return functionTools(functionTools);
+        }
+
+        public B addChain(ChatChain chain) {
+            this.chains.add(chain);
+            return self();
+        }
+
+        public B addChains(Collection<? extends ChatChain> chains) {
+            this.chains.addAll(chains);
+            return self();
+        }
+
+        public B chains(Collection<? extends ChatChain> chains) {
+            this.chains.clear();
+            this.chains.addAll(chains);
+            return self();
         }
 
     }

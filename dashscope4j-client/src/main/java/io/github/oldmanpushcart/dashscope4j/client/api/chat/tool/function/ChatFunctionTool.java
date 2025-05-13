@@ -14,6 +14,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.lang.reflect.Type;
+import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.CommonUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
@@ -39,6 +40,32 @@ public class ChatFunctionTool implements Tool {
     @Override
     public Classify classify() {
         return Classify.FUNCTION;
+    }
+
+    /**
+     * 调用函数
+     *
+     * @param caller       调用者
+     * @param argumentJson 参数JSON
+     * @return 调用结果JSON
+     */
+    public CompletionStage<String> call(ChatFunction.Caller caller, String argumentJson) {
+        final Type parameterType = meta.parameterTs().type();
+        return function
+                .call(caller, toArgument(argumentJson, parameterType))
+                .thenApply(JacksonJsonUtils::toJson);
+    }
+
+    /*
+     * 转换为参数
+     * 这里需要处理传递的参数直接为null的情况，null -> null
+     * 不要拿null到jackson进行转换
+     */
+    private static <T> T toArgument(String parameterJson, Type parameterType) {
+        if (null == parameterJson || parameterJson.trim().isEmpty()) {
+            return null;
+        }
+        return JacksonJsonUtils.toObject(parameterJson, parameterType);
     }
 
     /**

@@ -1,16 +1,13 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
-import io.github.oldmanpushcart.dashscope4j.client.OpAsync;
-import io.github.oldmanpushcart.dashscope4j.client.OpFlow;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 /**
  * 智能体
  */
-public interface ChatAgent extends OpAsync<ChatRequest, ChatResponse>, OpFlow<ChatRequest, ChatResponse> {
+public interface ChatAgent extends ChatOp {
 
     /**
      * @return 智能体名称

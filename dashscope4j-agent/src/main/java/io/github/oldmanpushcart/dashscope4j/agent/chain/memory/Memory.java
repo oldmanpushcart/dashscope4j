@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.memory;
+package io.github.oldmanpushcart.dashscope4j.agent.chain.memory;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import lombok.Data;
@@ -121,24 +121,6 @@ public interface Memory {
          * 旧于指定记忆片段 ID
          */
         Long olderThenFragmentId;
-
-        /**
-         * @return 新于指定记忆片段 ID
-         */
-        public long newerThenFragmentId() {
-            return newerThenFragmentId == null
-                    ? Long.MAX_VALUE
-                    : newerThenFragmentId;
-        }
-
-        /**
-         * @return 旧于指定记忆片段 ID
-         */
-        public long olderThenFragmentId() {
-            return olderThenFragmentId == null
-                    ? -1L
-                    : olderThenFragmentId;
-        }
 
         /**
          * 判断上下文是否无效

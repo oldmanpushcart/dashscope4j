@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseChatAgent;
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
@@ -8,16 +9,14 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionToolNotFoundException;
 import io.reactivex.rxjava3.core.Flowable;
-import lombok.Data;
-import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.agent.typical.react.ChatFunctionToolHelper.*;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -71,15 +70,14 @@ public class ReActChatAgent extends BaseChatAgent {
         }
 
         final ChatRequest request = (ChatRequest) previousResponse.request();
-        final Context context = request.context(Context.class);
 
         final String functionName = reAct.getAction();
         final String argumentJson = reAct.getActionInput();
-        final ChatFunctionTool functionTool = requireFunctionTool(context.functionTools(), functionName);
+        final ChatFunctionTool functionTool = requireFunctionTool(functionTools(), functionName);
         final ChatFunction.Caller functionCaller = newFunctionCaller(client(), request);
 
         // 调用函数
-        return callingFunctionTool(functionCaller, functionTool, argumentJson)
+        return functionTool.call(functionCaller, argumentJson)
                 .thenCompose(resultJson -> {
                     final ChatRequest nextRequest = ChatRequest.newBuilder(request)
                             .addMessage(previousResponseMessage)
@@ -138,7 +136,6 @@ public class ReActChatAgent extends BaseChatAgent {
 
             final ChatResponse.Choice choice = response.output().best();
             final ChatRequest request = (ChatRequest) response.request();
-            final Context context = request.context(Context.class);
 
             /*
              * 如果不是增量输出，则清空缓存
@@ -171,14 +168,14 @@ public class ReActChatAgent extends BaseChatAgent {
 
             final String functionName = reAct.getAction();
             final String argumentJson = reAct.getActionInput();
-            final ChatFunctionTool functionTool = requireFunctionTool(context.functionTools(), functionName);
+            final ChatFunctionTool functionTool = requireFunctionTool(functionTools(), functionName);
             final ChatFunction.Caller functionCaller = newFunctionCaller(client(), request);
 
             return Flowable
                     .just(response)
                     .concatWith(Flowable.defer(() -> {
                         final CompletionStage<Flowable<ChatResponse>> nextFlow = completedFuture(null)
-                                .thenCompose(unused -> callingFunctionTool(functionCaller, functionTool, argumentJson))
+                                .thenCompose(unused -> functionTool.call(functionCaller, argumentJson))
                                 .thenCompose(resultJson -> {
                                     final ChatRequest nextRequest = ChatRequest.newBuilder(request)
                                             .addMessage(Message.ofAi(responseText))
@@ -228,19 +225,34 @@ public class ReActChatAgent extends BaseChatAgent {
                             .map(ChatFunctionTool.class::cast)
                             .collect(Collectors.toList());
                     final Message newMessage = rewriteReActUserMessage(request.requireLastMessageFromUser(), newFunctionTools);
-                    final Context newContext = new Context().functionTools(newFunctionTools);
                     builder.self()
-                            .context(Context.class, newContext)
                             .addMessage(newMessage);
                 })
                 .tools(emptyList())
                 .build();
     }
 
-    @Data
-    @Accessors(fluent = true, chain = true)
-    private static class Context {
-        private List<ChatFunctionTool> functionTools = new ArrayList<>();
+    private static ChatFunctionTool requireFunctionTool(List<ChatFunctionTool> functionTools, String functionName) {
+        return functionTools.stream()
+                .filter(v -> v.meta().name().equals(functionName))
+                .findFirst()
+                .orElseThrow(() -> new FunctionToolNotFoundException(functionName));
+    }
+
+    private static ChatFunction.Caller newFunctionCaller(DashscopeClient client, ChatRequest request) {
+        return new ChatFunction.Caller() {
+
+            @Override
+            public DashscopeClient client() {
+                return client;
+            }
+
+            @Override
+            public ChatRequest request() {
+                return request;
+            }
+
+        };
     }
 
 

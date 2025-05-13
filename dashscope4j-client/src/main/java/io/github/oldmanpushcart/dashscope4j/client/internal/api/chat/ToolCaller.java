@@ -159,19 +159,19 @@ class ToolCaller implements ChatFunction.Caller {
 
     // 函数调用
     private CompletionStage<String> callFunction(ChatFunctionTool tool, ChatFunctionTool.Call call) {
+
         final Type parameterType = tool.meta().parameterTs().type();
-        final String parameterJson = call.stub().arguments();
+        final String argumentsJson = call.stub().arguments();
 
         if (log.isDebugEnabled()) {
             log.debug("dashscope-client://chat/function/{} <<< {}",
                     call.stub().name(),
-                    JacksonJsonUtils.compact(parameterJson)
+                    JacksonJsonUtils.compact(argumentsJson)
             );
         }
 
         try {
-            return tool.function().call(this, toArgument(parameterJson, parameterType))
-                    .thenApply(JacksonJsonUtils::toJson)
+            return tool.call(this, argumentsJson)
                     .whenComplete((resultJson, ex) -> {
                         if (log.isDebugEnabled()) {
                             log.debug("dashscope-client://chat/function/{} >>> {}",
@@ -183,10 +183,10 @@ class ToolCaller implements ChatFunction.Caller {
                     });
         } catch (Throwable cause) {
             throw new RuntimeException(
-                    String.format("Function call error! fn=%s;parameters=%s;parameter-type=%s",
+                    String.format("Function call error! fn=%s;arguments[type=%s]=%s",
                             call.stub().name(),
-                            parameterJson,
-                            parameterType.getTypeName()
+                            parameterType.getTypeName(),
+                            argumentsJson
                     ),
                     cause
             );

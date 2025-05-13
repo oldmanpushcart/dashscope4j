@@ -31,11 +31,9 @@ public class BaseChatAgentTestCase extends ClientSupport {
         switch (aType) {
             case REACT:
                 return ReActChatAgent.newBuilder()
-                        .name("root")
                         .client(client)
                         .flowBridge(flowBridge)
                         .addFunctionTool(ReActChatAgent.newBuilder()
-                                .name("child")
                                 .client(client)
                                 .flowBridge(true)
                                 .addFunction(new DashscopeUnderstandingVisualFunction())
@@ -45,11 +43,9 @@ public class BaseChatAgentTestCase extends ClientSupport {
                         .build();
             case DASHSCOPE:
                 return DashscopeChatAgent.newBuilder()
-                        .name("root")
                         .client(client)
                         .flowBridge(flowBridge)
                         .addFunctionTool(DashscopeChatAgent.newBuilder()
-                                .name("child")
                                 .client(client)
                                 .flowBridge(true)
                                 .addFunction(new DashscopeUnderstandingVisualFunction())

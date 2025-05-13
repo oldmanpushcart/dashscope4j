@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope;
 
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseChatAgent;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.reactivex.rxjava3.core.Flowable;
@@ -18,12 +19,20 @@ public class DashscopeChatAgent extends BaseChatAgent {
 
     @Override
     protected CompletionStage<ChatResponse> baseAsync(ChatRequest request) {
-        return client().chat().async(request);
+        final ChatRequest newRequest = newDashscopeChatRequest(request);
+        return client().chat().async(newRequest);
     }
 
     @Override
     protected CompletionStage<Flowable<ChatResponse>> baseFlow(ChatRequest request) {
-        return client().chat().flow(request);
+        final ChatRequest newRequest = newDashscopeChatRequest(request);
+        return client().chat().flow(newRequest);
+    }
+
+    private ChatRequest newDashscopeChatRequest(ChatRequest request) {
+        return ChatRequest.newBuilder(request)
+                .option(ChatOptions.ENABLE_PARALLEL_TOOL_CALLS, true)
+                .build();
     }
 
     public static Builder newBuilder() {
