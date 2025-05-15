@@ -1,14 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.agent.plugin.memory;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.MessageCodec;
-import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.LocalTokenizerUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,56 +17,36 @@ import java.util.stream.Collectors;
 import static io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel.Mode.MULTIMODAL;
 
 /**
- * TreeSet 记忆体
+ * 记忆体实现（TreeSet）
  */
 public class TreeSetMemory implements Memory {
 
-    private final AtomicLong fragmentIdGen = new AtomicLong(1000);
-    private final Set<FragmentDO> fragments = new TreeSet<>();
-    private final Integer maxTokens;
-    private final Integer maxCount;
-    private final Duration maxDuration;
-
-    private TreeSetMemory(Builder builder) {
-        this.maxTokens = builder.maxTokens;
-        this.maxCount = builder.maxCount;
-        this.maxDuration = builder.maxDuration;
-    }
+    private final AtomicLong identityGen = new AtomicLong(1000);
+    private final Set<FragmentDO> fragmentDOs = new TreeSet<>();
 
     @Override
-    public Long newestFragmentId(String sessionId) {
-        return fragments.stream()
-                .filter(fragmentDO -> Objects.equals(sessionId, fragmentDO.getSessionId()))
-                .map(FragmentDO::getFragmentId)
-                .findFirst()
-                .orElse(-1L);
-    }
-
-    @Override
-    public List<Fragment> recall(String sessionId, long olderThenFragmentId, long newerThenFragmentId) {
-        return fragments.stream()
-                .filter(fragmentDO -> Objects.equals(sessionId, fragmentDO.getSessionId()))
-                .filter(fragmentDO -> filterByFragmentIdRange(fragmentDO, olderThenFragmentId, newerThenFragmentId))
-                .filter(this::filterByCondition)
+    public List<Fragment> recall(String conversationId, Condition condition) {
+        return fragmentDOs.stream()
+                .filter(filteringByConversationId(conversationId))
+                .filter(filteringByCondition(condition))
                 .map(FragmentDO::toFragment)
                 .collect(Collectors.toList());
     }
 
-    private boolean filterByFragmentIdRange(FragmentDO fragmentDO, long older, long newer) {
-        return ((Predicate<FragmentDO>) v -> true)
-                .and(fragment -> fragment.getFragmentId() > older)
-                .and(fragment -> fragment.getFragmentId() < newer)
-                .test(fragmentDO);
+    private Predicate<FragmentDO> filteringByConversationId(String conversationId) {
+        return fragmentDO -> Objects.equals(conversationId, fragmentDO.getConversationId());
     }
 
-    private boolean filterByCondition(FragmentDO fragmentDO) {
-        final AtomicInteger hitTokensRef = new AtomicInteger();
-        final AtomicInteger hitCountRef = new AtomicInteger();
+    private Predicate<FragmentDO> filteringByCondition(Condition condition) {
+        final AtomicInteger countRef = new AtomicInteger();
+        final AtomicInteger tokensRef = new AtomicInteger();
+        final Instant lowerBound = Optional.ofNullable(condition.maxDuration())
+                .map(maxDuration -> Instant.now().minus(condition.maxDuration()))
+                .orElse(null);
         return ((Predicate<FragmentDO>) v -> true)
-                .and(fragment -> null == maxDuration || fragment.getCreatedAt().isAfter(Instant.now().minus(maxDuration)))
-                .and(fragment -> null == maxTokens || hitTokensRef.addAndGet(fragment.getTokens()) <= maxTokens)
-                .and(fragment -> null == maxCount || hitCountRef.incrementAndGet() <= maxCount)
-                .test(fragmentDO);
+                .and(fragmentDO -> null == lowerBound || fragmentDO.getCreatedAt().isAfter(lowerBound))
+                .and(fragmentDO -> null == condition.maxTokens() || tokensRef.addAndGet(fragmentDO.getTokens()) <= condition.maxTokens())
+                .and(fragmentDO -> null == condition.maxCount() || countRef.incrementAndGet() <= condition.maxCount());
     }
 
     @Override
@@ -76,17 +54,17 @@ public class TreeSetMemory implements Memory {
 
         // update
         if (fragment.fragmentId() != null) {
-            fragments.add(FragmentDO.fromFragment(fragment));
+            fragmentDOs.add(FragmentDO.fromFragment(fragment));
             return fragment.fragmentId();
         }
 
         // create
         else {
             final FragmentDO fragmentDO = FragmentDO.fromFragment(fragment)
-                    .setFragmentId(fragmentIdGen.incrementAndGet())
+                    .setFragmentId(identityGen.incrementAndGet())
                     .setCreatedAt(Instant.now())
                     .setUpdatedAt(Instant.now());
-            fragments.add(fragmentDO);
+            fragmentDOs.add(fragmentDO);
             return fragmentDO.getFragmentId();
         }
 
@@ -103,7 +81,7 @@ public class TreeSetMemory implements Memory {
         @EqualsAndHashCode.Include
         private Long fragmentId;
 
-        private String sessionId;
+        private String conversationId;
         private Integer tokens;
         private String requestMessageJson;
         private String responseMessageJson;
@@ -118,10 +96,10 @@ public class TreeSetMemory implements Memory {
         /**
          * @return 转换为记忆片段
          */
-        public Memory.Fragment toFragment() {
-            return new Memory.Fragment()
+        public Fragment toFragment() {
+            return new Fragment()
                     .fragmentId(this.fragmentId)
-                    .sessionId(this.sessionId)
+                    .conversationId(this.conversationId)
                     .requestMessage(MessageCodec.decode(this.requestMessageJson))
                     .responseMessage(MessageCodec.decode(this.responseMessageJson))
                     .createdAt(this.createdAt)
@@ -134,7 +112,7 @@ public class TreeSetMemory implements Memory {
          * @param fragment 记忆片段
          * @return 记忆片段实体
          */
-        public static FragmentDO fromFragment(Memory.Fragment fragment) {
+        public static FragmentDO fromFragment(Fragment fragment) {
             final int tokens = LocalTokenizerUtils
                     .encode(Arrays.asList(
                             fragment.requestMessage(),
@@ -145,62 +123,12 @@ public class TreeSetMemory implements Memory {
             final String responseMessageJson = MessageCodec.encodeToJson(MULTIMODAL, fragment.responseMessage());
             return new FragmentDO()
                     .setFragmentId(fragment.fragmentId())
-                    .setSessionId(fragment.sessionId())
+                    .setConversationId(fragment.conversationId())
                     .setTokens(tokens)
                     .setRequestMessageJson(requestMessageJson)
                     .setResponseMessageJson(responseMessageJson)
                     .setCreatedAt(fragment.createdAt())
                     .setUpdatedAt(fragment.updatedAt());
-        }
-
-    }
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static class Builder implements Buildable<TreeSetMemory, Builder> {
-
-        private Integer maxTokens = 50000;
-        private Integer maxCount = 1024;
-        private Duration maxDuration = Duration.ofHours(1);
-
-        /**
-         * 设置最大token数，超过则丢弃
-         *
-         * @param maxTokens 最大token数
-         * @return this
-         */
-        public Builder maxTokens(Integer maxTokens) {
-            this.maxTokens = maxTokens;
-            return this;
-        }
-
-        /**
-         * 设置最大数量，超过则丢弃
-         *
-         * @param maxCount 最大数量
-         * @return this
-         */
-        public Builder maxCount(Integer maxCount) {
-            this.maxCount = maxCount;
-            return this;
-        }
-
-        /**
-         * 设置最大时长，超过则丢弃
-         *
-         * @param maxDuration 最大时长
-         * @return this
-         */
-        public Builder maxDuration(Duration maxDuration) {
-            this.maxDuration = maxDuration;
-            return this;
-        }
-
-        @Override
-        public TreeSetMemory build() {
-            return new TreeSetMemory(this);
         }
 
     }

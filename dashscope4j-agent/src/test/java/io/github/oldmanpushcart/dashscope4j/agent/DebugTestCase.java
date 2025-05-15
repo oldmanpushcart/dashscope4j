@@ -86,12 +86,13 @@ public class DebugTestCase extends ClientSupport {
     @Test
     public void test$debug2() {
 
-        final Memory memory = TreeSetMemory.newBuilder()
+        final MemoryPlugin memoryPlugin = MemoryPlugin.newBuilder()
+                .memory(new TreeSetMemory())
                 .build();
 
         final ChatAgent agent = ReActChatAgent.newBuilder()
                 .client(client)
-                .addPlugin(new MemoryPlugin(memory))
+                .addPlugin(memoryPlugin)
                 .flowBridge(true)
                 .addFunction(new SystemDateTimeFunction())
                 .addFunctionTool(DashscopeChatAgent.newBuilder()
@@ -114,7 +115,7 @@ public class DebugTestCase extends ClientSupport {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
                 .context(Memory.Context.class, new Memory.Context()
-                        .sessionId(UUID.randomUUID().toString()))
+                        .conversationId(UUID.randomUUID().toString()))
 
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("请根据杭州今天天气做一副水墨画"),

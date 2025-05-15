@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
@@ -13,39 +14,13 @@ import java.util.List;
 public interface Memory {
 
     /**
-     * 获取指定会话的最新的记忆片段 ID
-     *
-     * @param sessionId 会话 ID
-     * @return 最新的记忆片段 ID
-     */
-    Long newestFragmentId(String sessionId);
-
-    /**
      * 回忆
-     * <p>
-     * 回忆起{@code (olderThenFragmentId, newerThenFragmentId)}范围之内的记忆片段
-     * </p>
      *
-     * @param sessionId           会话 ID
-     * @param olderThenFragmentId 旧于指定记忆片段 ID
-     * @param newerThenFragmentId 新于指定记忆片段 ID
+     * @param conversationId 对话 ID
+     * @param condition      条件
      * @return 回忆起来的记忆片段集合
      */
-    List<Fragment> recall(String sessionId, long olderThenFragmentId, long newerThenFragmentId);
-
-    /**
-     * 回忆
-     * <p>
-     * 回忆起{@code (olderThenFragmentId, Long.MAX_VALUE)}范围之内的记忆片段
-     * </p>
-     *
-     * @param sessionId           会话 ID
-     * @param olderThenFragmentId 旧于指定记忆片段 ID
-     * @return 片段列表
-     */
-    default List<Fragment> recall(String sessionId, long olderThenFragmentId) {
-        return recall(sessionId, olderThenFragmentId, Long.MAX_VALUE);
-    }
+    List<Fragment> recall(String conversationId, Condition condition);
 
     /**
      * 存储记忆片段
@@ -56,21 +31,50 @@ public interface Memory {
     long persist(Fragment fragment);
 
     /**
-     * 记忆片段
+     * 条件
+     */
+    @Data
+    @Accessors(fluent = true, chain = true)
+    class Condition {
+
+        /**
+         * 最大数量
+         */
+        private Integer maxCount;
+
+        /**
+         * 最大长度
+         */
+        private Integer maxTokens;
+
+        /**
+         * 最大时长
+         */
+        private Duration maxDuration;
+
+        /**
+         * 开始 ID
+         */
+        private Long beginId;
+
+    }
+
+    /**
+     * 片段
      */
     @Data
     @Accessors(fluent = true, chain = true)
     class Fragment implements Comparable<Fragment> {
 
         /**
-         * 记忆片段 ID
+         * 片段 ID
          */
         private Long fragmentId;
 
         /**
-         * 会话 ID
+         * 对话 ID
          */
-        private String sessionId;
+        private String conversationId;
 
         /**
          * 请求消息
@@ -99,38 +103,22 @@ public interface Memory {
 
     }
 
-
     /**
-     * 记忆体上下文
+     * 上下文
      */
     @Data
     @Accessors(fluent = true, chain = true)
     class Context {
 
         /**
-         * 会话 ID
+         * 对话 ID
          */
-        String sessionId;
+        private String conversationId;
 
         /**
-         * 新于指定记忆片段 ID
+         * 当前片段 ID
          */
-        Long newerThenFragmentId;
-
-        /**
-         * 旧于指定记忆片段 ID
-         */
-        Long olderThenFragmentId;
-
-        /**
-         * 判断上下文是否无效
-         *
-         * @param context 上下文
-         * @return TRUE | FALSE
-         */
-        public static boolean isInvalid(Context context) {
-            return context == null || context.sessionId() == null;
-        }
+        private Long currentId;
 
     }
 
