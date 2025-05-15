@@ -1,10 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
-import io.github.oldmanpushcart.dashscope4j.agent.chain.memory.Memory;
-import io.github.oldmanpushcart.dashscope4j.agent.chain.memory.MemoryChatChain;
-import io.github.oldmanpushcart.dashscope4j.agent.chain.memory.TreeSetMemory;
 import io.github.oldmanpushcart.dashscope4j.agent.function.SystemDateTimeFunction;
 import io.github.oldmanpushcart.dashscope4j.agent.function.dashscope.*;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.memory.Memory;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.memory.MemoryPlugin;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.memory.TreeSetMemory;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeChatAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
@@ -91,7 +91,7 @@ public class DebugTestCase extends ClientSupport {
 
         final ChatAgent agent = ReActChatAgent.newBuilder()
                 .client(client)
-                .addChain(new MemoryChatChain(memory))
+                .addPlugin(new MemoryPlugin(memory))
                 .flowBridge(true)
                 .addFunction(new SystemDateTimeFunction())
                 .addFunctionTool(DashscopeChatAgent.newBuilder()

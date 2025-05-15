@@ -15,6 +15,11 @@ public interface ChatAgent extends ChatOp {
     String name();
 
     /**
+     * @return 智能体摘要
+     */
+    String summary();
+
+    /**
      * @return 创建函数工具构建器
      */
     FunctionToolBuilder newFunctionToolBuilder();

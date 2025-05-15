@@ -15,8 +15,14 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
-                    <include>qwen/qwen.tiktoken</include>
                     <include>dashscope4j-client-meta.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>qwen/qwen.tiktoken</include>
                 </includes>
             </resource>
         </resources>

@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.chain.ChatChain;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
@@ -30,15 +30,17 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
-
-@Accessors(fluent = true)
 @Slf4j
+@Accessors(fluent = true)
 public abstract class BaseChatAgent implements ChatAgent {
 
     private static final AtomicInteger identityGen = new AtomicInteger(100);
 
     @Getter
     private final String name;
+
+    @Getter
+    private final String summary;
 
     @Getter(AccessLevel.PROTECTED)
     private final DashscopeClient client;
@@ -50,7 +52,7 @@ public abstract class BaseChatAgent implements ChatAgent {
     @Getter(AccessLevel.PROTECTED)
     private final List<ChatFunctionTool> functionTools;
 
-    private final List<ChatChain> chains;
+    private final List<Plugin> plugins;
     private final ChatOp chatOp;
 
     protected BaseChatAgent(Builder<?, ?> builder) {
@@ -58,28 +60,14 @@ public abstract class BaseChatAgent implements ChatAgent {
         requireNonNull(builder.client, "client is required!");
 
         this.name = buildingName(builder.name);
+        this.summary = builder.summary;
         this.client = builder.client;
         this.model = builder.model;
         this.flowBridge = builder.flowBridge;
         this.interceptors = unmodifiableList(builder.interceptors);
         this.functionTools = unmodifiableList(builder.functionTools);
-        this.chains = unmodifiableList(builder.chains);
-        this.chatOp = newBaseChatOp(this, builder.chains);
-    }
-
-    private static ChatOp newBaseChatOp(BaseChatAgent agent, List<ChatChain> chains) {
-        final ChatOp baseChatOp = new ChatOp() {
-            @Override
-            public CompletionStage<ChatResponse> async(ChatRequest request) {
-                return agent.baseAsync(request);
-            }
-
-            @Override
-            public CompletionStage<Flowable<ChatResponse>> flow(ChatRequest request) {
-                return agent.baseFlow(request);
-            }
-        };
-        return ChainChatOp.group(baseChatOp, chains);
+        this.plugins = unmodifiableList(builder.plugins);
+        this.chatOp = BaseChatOp.of(this, builder.plugins);
     }
 
     private static String buildingName(String name) {
@@ -87,7 +75,6 @@ public abstract class BaseChatAgent implements ChatAgent {
                 ? name
                 : String.format("chat-agent-%s", identityGen.incrementAndGet());
     }
-
 
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
@@ -213,10 +200,11 @@ public abstract class BaseChatAgent implements ChatAgent {
     public static abstract class Builder<T extends BaseChatAgent, B extends Builder<T, B>> implements Buildable<T, B> {
 
         private String name;
+        private String summary;
         private DashscopeClient client;
         private ChatModel model;
         private boolean flowBridge;
-        private final List<ChatChain> chains = new ArrayList<>();
+        private final List<Plugin> plugins = new ArrayList<>();
         private final List<Interceptor> interceptors = new ArrayList<>();
         private final List<ChatFunctionTool> functionTools = new ArrayList<>();
 
@@ -226,9 +214,10 @@ public abstract class BaseChatAgent implements ChatAgent {
 
         public Builder(BaseChatAgent agent) {
             this.name = agent.name;
+            this.summary = agent.summary;
             this.client = agent.client;
             this.model = agent.model;
-            this.chains.addAll(agent.chains);
+            this.plugins.addAll(agent.plugins);
             this.interceptors.addAll(agent.interceptors);
             this.functionTools.addAll(agent.functionTools);
         }
@@ -241,6 +230,17 @@ public abstract class BaseChatAgent implements ChatAgent {
          */
         public B name(String name) {
             this.name = requireNonNull(name, "name is required!");
+            return self();
+        }
+
+        /**
+         * 智能体摘要
+         *
+         * @param summary 智能体摘要
+         * @return this
+         */
+        public B summary(String summary) {
+            this.summary = requireNonNull(summary, "summary is required!");
             return self();
         }
 
@@ -384,19 +384,37 @@ public abstract class BaseChatAgent implements ChatAgent {
             return functionTools(functionTools);
         }
 
-        public B addChain(ChatChain chain) {
-            this.chains.add(chain);
+        /**
+         * 添加插件
+         *
+         * @param plugin 插件
+         * @return this
+         */
+        public B addPlugin(Plugin plugin) {
+            this.plugins.add(plugin);
             return self();
         }
 
-        public B addChains(Collection<? extends ChatChain> chains) {
-            this.chains.addAll(chains);
+        /**
+         * 批量添加插件
+         *
+         * @param plugins 插件集合
+         * @return this
+         */
+        public B addPlugins(Collection<? extends Plugin> plugins) {
+            this.plugins.addAll(plugins);
             return self();
         }
 
-        public B chains(Collection<? extends ChatChain> chains) {
-            this.chains.clear();
-            this.chains.addAll(chains);
+        /**
+         * 设置插件列表
+         *
+         * @param plugins 插件集合
+         * @return this
+         */
+        public B plugins(Collection<? extends Plugin> plugins) {
+            this.plugins.clear();
+            this.plugins.addAll(plugins);
             return self();
         }
 

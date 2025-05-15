@@ -1,6 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.agent.chain.memory;
+package io.github.oldmanpushcart.dashscope4j.agent.plugin.memory;
 
-import io.github.oldmanpushcart.dashscope4j.agent.chain.ChatChain;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
@@ -17,12 +17,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 @AllArgsConstructor
-public class MemoryChatChain implements ChatChain {
+public class MemoryPlugin implements Plugin {
 
     private final Memory memory;
 
     @Override
-    public CompletionStage<ChatResponse> chainAsync(Processor<ChatResponse> processor) {
+    public CompletionStage<ChatResponse> onAsync(Processor<ChatResponse> processor) {
         return CompletableFuture.completedFuture(processor.request())
                 .thenApply(this::processRecallForChatRequest)
                 .thenCompose(processor::process)
@@ -30,7 +30,7 @@ public class MemoryChatChain implements ChatChain {
     }
 
     @Override
-    public CompletionStage<Flowable<ChatResponse>> chainFlow(Processor<Flowable<ChatResponse>> processor) {
+    public CompletionStage<Flowable<ChatResponse>> onFlow(Processor<Flowable<ChatResponse>> processor) {
         return CompletableFuture.completedFuture(processRecallForChatRequest(processor.request()))
                 .thenApply(this::processRecallForChatRequest)
                 .thenCompose(processor::process)
