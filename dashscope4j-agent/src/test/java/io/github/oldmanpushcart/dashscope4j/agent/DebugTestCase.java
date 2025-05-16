@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.function.dashscope.*;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.memory.Memory;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.memory.MemoryPlugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.memory.TreeSetMemory;
+import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeChatAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
@@ -86,47 +87,27 @@ public class DebugTestCase extends ClientSupport {
     @Test
     public void test$debug2() {
 
-        final MemoryPlugin memoryPlugin = MemoryPlugin.newBuilder()
-                .memory(new TreeSetMemory())
-                .build();
-
-        final ChatAgent agent = ReActChatAgent.newBuilder()
-                .client(client)
-                .addPlugin(memoryPlugin)
-                .flowBridge(true)
-                .addFunction(new SystemDateTimeFunction())
-                .addFunctionTool(DashscopeChatAgent.newBuilder()
-                        .client(client)
-                        .flowBridge(true)
-                        .addFunctions(Arrays.asList(
-                                new DashscopeGenImageByImageFunction(),
-                                new DashscopeGenImageByTextFunction(),
-                                new DashscopeGenVideoByImageFunction(),
-                                new DashscopeGenVideoByTextFunction(),
-                                new DashscopeUnderstandingDocumentFunction(),
-                                new DashscopeUnderstandingVisualFunction(),
-                                new DashscopeWebSearchFunction()
-                        ))
-                        .build()
-                        .newFunctionToolBuilder()
-                        .build())
-                .build();
+        final String planPrompt = PromptTemplate.newBuilder()
+                .template("You are a task planning assistant. Given a task, create a detailed plan.\n" +
+                          "\n" +
+                          "## Task\n" +
+                          "${input}\n" +
+                          "\n" +
+                          "Create a plan with the following format:\n" +
+                          "1. First step\n" +
+                          "2. Second step\n" +
+                          "...\n"
+                )
+                .variable("input", "根据杭州今天的天气画一副水墨画")
+                .build()
+                .render();
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
-                .context(Memory.Context.class, new Memory.Context()
-                        .conversationId(UUID.randomUUID().toString()))
-
-                .addMessage(Message.ofUser(Arrays.asList(
-                        Content.ofText("请根据杭州今天天气做一副水墨画"),
-                        Content.ofFile(new File("./test-data/document-001.pdf").toURI())
-                )))
-
-                //.addMessage(Message.ofUser("现在几点了?"))
-
+                .addMessage(Message.ofUser(planPrompt))
                 .build();
 
-        final ChatResponse response = agent.async(request)
+        final ChatResponse response = client.chat().async(request)
                 .toCompletableFuture()
                 .join();
 

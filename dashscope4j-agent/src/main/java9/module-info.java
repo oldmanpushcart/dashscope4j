@@ -2,7 +2,7 @@ open module dashscope4j.agent {
 
     requires static lombok;
 
-    requires dashscope4j.client;
+    requires transitive dashscope4j.client;
 
     exports io.github.oldmanpushcart.dashscope4j.agent;
     exports io.github.oldmanpushcart.dashscope4j.agent.function;
