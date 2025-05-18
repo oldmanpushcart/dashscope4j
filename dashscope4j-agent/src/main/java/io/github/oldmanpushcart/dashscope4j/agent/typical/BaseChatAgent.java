@@ -76,7 +76,7 @@ public abstract class BaseChatAgent implements ChatAgent {
      * 1. 对话原有的async/flow将会被baseAsync/baseFlow所取代
      * 2. 代理智能体的Plugin
      */
-    private static ChatOp newChatOp(BaseChatAgent agent,  List<Plugin> plugins) {
+    private static ChatOp newChatOp(BaseChatAgent agent, List<Plugin> plugins) {
         final List<Plugin> merged = new ArrayList<>(plugins);
         merged.add(new BaseRewriteUserMessagePlugin());
         return BaseChatOp.of(agent, merged);
@@ -131,6 +131,12 @@ public abstract class BaseChatAgent implements ChatAgent {
                         log.debug("dashscope-agent://{}/flow completed.", name(), ex));
     }
 
+    /*
+     * 重写对话请求
+     * 1. 如果智能体设置了对话模型，则将只使用智能体指定的对话模型
+     * 2. 如果智能体设置了拦截器，则将智能体拦截器添加到本次对话中
+     * 3. 取消传入对话请求的所有工具，只能使用智能体提供的工具
+     */
     private ChatRequest newChatRequest(ChatRequest request) {
         return ChatRequest.newBuilder(request)
                 .building(builder -> ofNullable(model).ifPresent(builder::model))

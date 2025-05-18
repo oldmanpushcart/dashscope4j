@@ -108,9 +108,8 @@ public class ReActChatAgent extends BaseChatAgent {
                 .map(response ->
                         response.changeChoice(choice ->
                                 choice.changeMessage(message -> {
-                                    /*
-                                     * 如果不是增量输出，则每次匹配前需要清空检测器
-                                     */
+
+                                    // 如果不是增量输出，则每次匹配前需要清空检测器
                                     final ChatRequest request = (ChatRequest) response.request();
                                     if (!request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)) {
                                         detector.reset();
@@ -126,6 +125,7 @@ public class ReActChatAgent extends BaseChatAgent {
 
                                     // 只修改最终答案
                                     return new Message(message.role(), newText, message.reasoningContent());
+
                                 })));
     }
 
