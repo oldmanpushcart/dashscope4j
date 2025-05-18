@@ -2,9 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.function.SystemDateTimeFunction;
 import io.github.oldmanpushcart.dashscope4j.agent.function.dashscope.*;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.memory.Memory;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.memory.MemoryPlugin;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.memory.TreeSetMemory;
 import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeChatAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActChatAgent;
@@ -18,7 +15,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.UUID;
 
 public class DebugTestCase extends ClientSupport {
 

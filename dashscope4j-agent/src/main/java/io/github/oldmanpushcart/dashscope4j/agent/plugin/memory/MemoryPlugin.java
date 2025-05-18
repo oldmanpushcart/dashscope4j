@@ -61,6 +61,7 @@ public class MemoryPlugin implements Plugin {
 
         final Memory.Context context = request.context(Memory.Context.class);
         if (Objects.isNull(memory)
+            || Objects.isNull(context)
             || Objects.isNull(context.conversationId())) {
             return request;
         }
@@ -109,6 +110,7 @@ public class MemoryPlugin implements Plugin {
         // 如果没有记忆体则不需要处理
         final Memory.Context context = request.context(Memory.Context.class);
         if (Objects.isNull(memory)
+            || Objects.isNull(context)
             || Objects.isNull(context.conversationId())) {
             return response;
         }
@@ -135,6 +137,7 @@ public class MemoryPlugin implements Plugin {
         // 如果没有记忆体则不需要处理
         final Memory.Context context = request.context(Memory.Context.class);
         if (Objects.isNull(memory)
+            || Objects.isNull(context)
             || Objects.isNull(context.conversationId())) {
             return responseFlow;
         }

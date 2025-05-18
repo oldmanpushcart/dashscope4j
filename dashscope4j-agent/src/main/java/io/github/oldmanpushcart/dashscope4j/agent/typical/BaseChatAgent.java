@@ -2,11 +2,9 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
-import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
@@ -25,7 +23,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
@@ -70,7 +67,19 @@ public abstract class BaseChatAgent implements ChatAgent {
         this.interceptors = unmodifiableList(builder.interceptors);
         this.functionTools = unmodifiableList(builder.functionTools);
         this.plugins = unmodifiableList(builder.plugins);
-        this.chatOp = BaseChatOp.of(this, builder.plugins);
+        this.chatOp = newChatOp(this, plugins);
+
+    }
+
+    /*
+     * 创建新的对话操作，在这个新的对话操作中
+     * 1. 对话原有的async/flow将会被baseAsync/baseFlow所取代
+     * 2. 代理智能体的Plugin
+     */
+    private static ChatOp newChatOp(BaseChatAgent agent,  List<Plugin> plugins) {
+        final List<Plugin> merged = new ArrayList<>(plugins);
+        merged.add(new BaseRewriteUserMessagePlugin());
+        return BaseChatOp.of(agent, merged);
     }
 
     private static String buildingName(String name) {
@@ -122,60 +131,12 @@ public abstract class BaseChatAgent implements ChatAgent {
                         log.debug("dashscope-agent://{}/flow completed.", name(), ex));
     }
 
-    /**
-     * 创建新的对话请求
-     *
-     * @param request 原始对话请求
-     * @return 新的对话请求
-     */
     private ChatRequest newChatRequest(ChatRequest request) {
         return ChatRequest.newBuilder(request)
+                .building(builder -> ofNullable(model).ifPresent(builder::model))
                 .addInterceptors(interceptors)
                 .tools(functionTools)
-                .building(this::buildingForResetChatModel)
-                .building(builder -> buildingForRewriteUserMessage(builder, request))
                 .build();
-    }
-
-    // 重设对话模型
-    private void buildingForResetChatModel(ChatRequest.Builder builder) {
-        ofNullable(model).ifPresent(builder::model);
-    }
-
-    // 重写用户输入
-    private void buildingForRewriteUserMessage(ChatRequest.Builder builder, ChatRequest request) {
-
-        /*
-         * 将消息重写为用户的输入
-         *
-         * 这里之所以需要这样做，主要是消息的多媒体部分是藏在 Message#contents() 中的，
-         * 这种情况下并不利于基于文本构建的智能体进行处理，比如ReAct。
-         *
-         * 所以这里得想办法将消息格式转变为文本的信息，以便于智能体后续的处理
-         */
-        final Message message = request.requireLastMessageFromUser();
-        final String prompt = PromptTemplate.newBuilder()
-                .template("### INPUT\n" +
-                          "${input}\n" +
-                          "\n" +
-                          "### PARTS\n" +
-                          "${parts}")
-                .variable("input", message::text)
-                .variable("parts", message.mediaContents()
-                        .stream()
-                        .map(content -> String.format("- **%s**: %s", content.type(), content.data()))
-                        .collect(Collectors.joining("\n")))
-                .build()
-                .render();
-
-        /*
-         * 重组对话请求消息
-         * 将重写的消息替换最后一个用户消息
-         */
-        builder.self()
-                .messages(emptyList())
-                .addMessages(request.historyMessages())
-                .addMessage(Message.ofUser(prompt));
     }
 
     /**
