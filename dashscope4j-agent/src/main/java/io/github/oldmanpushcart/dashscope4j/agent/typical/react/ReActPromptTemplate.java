@@ -65,14 +65,26 @@ class ReActPromptTemplate extends PromptTemplate {
          */
         public Builder tools(List<ChatFunctionTool> tools) {
 
+            /*
+             * 列出所有注册到智能体的工具
+             * 格式为
+             *
+             * ### 工具名
+             *
+             * #### SUMMARY
+             * 工具描述
+             *
+             * #### PARAMETER-SCHEMA
+             * 参数定义（JSON-SCHEMA）
+             */
             variable(NAME_TOOLS, tools.stream()
                     .map(ChatFunctionTool::meta)
                     .map(meta ->
                             PromptTemplate.newBuilder()
                                     .template("### ${name}\n" +
-                                              "### SUMMARY\n" +
+                                              "#### SUMMARY\n" +
                                               "${summary}\n" +
-                                              "### PARAMETER-SCHEMA\n" +
+                                              "#### PARAMETER-SCHEMA\n" +
                                               "${parameter-schema}\n" +
                                               "\n")
                                     .variable("name", meta.name())
@@ -81,10 +93,15 @@ class ReActPromptTemplate extends PromptTemplate {
                                     .build())
                     .collect(Collectors.toList()));
 
+            /*
+             * 工具名清单
+             * ['工具1','工具2',...,'工具N']
+             */
             variable(NAME_TOOL_NAMES, tools.stream()
                     .map(ChatFunctionTool::meta)
                     .map(ChatFunctionTool.Meta::name)
                     .collect(Collectors.toList()));
+
             return this;
         }
 

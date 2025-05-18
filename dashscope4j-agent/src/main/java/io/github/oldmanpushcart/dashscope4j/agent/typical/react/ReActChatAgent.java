@@ -146,31 +146,33 @@ public class ReActChatAgent extends BaseChatAgent {
             stringBuf.append(choice.message().text());
 
 
-            /*
-             * 如果不是最后一个消息，则直接返回当前对话流
-             */
+            // 如果不是最后一个消息，则直接返回当前对话流
             if (choice.finish() == ChatResponse.Finish.NONE) {
                 return Flowable.just(response);
             }
 
+            /*
+             * 解析为ReAct
+             * 1. 如果有最终的答案，则直接返回
+             * 2. 如果没有动作，则抛出异常
+             */
             final String responseText = stringBuf.toString();
             final ReAct reAct = ReAct.valueOf(responseText);
-
-            // 如果有最终的答案，则直接返回
             if (reAct.hasFinalAnswer()) {
                 return Flowable.just(response);
             }
-
-            // 如果没有动作，则抛出异常
             if (!reAct.hasAction()) {
                 throw new IllegalArgumentException("Action is required!");
             }
 
+            /*
+             * 执行函数并将函数执行结果作为下一次对话的输入
+             * 下一次对话输出流合并到当前对话流中
+             */
             final String functionName = reAct.getAction();
             final String argumentJson = reAct.getActionInput();
             final ChatFunctionTool functionTool = requireFunctionTool(functionTools(), functionName);
             final ChatFunction.Caller functionCaller = newFunctionCaller(client(), request);
-
             return Flowable
                     .just(response)
                     .concatWith(Flowable.defer(() -> {
@@ -195,11 +197,7 @@ public class ReActChatAgent extends BaseChatAgent {
     // 重写 ReAct 用户消息
     private Message rewriteReActUserMessage(Message message, List<ChatFunctionTool> functionTools) {
 
-        final List<Content<?>> nonTextContents = message.contents()
-                .stream()
-                .filter(v -> v.type() != Content.Type.TEXT)
-                .collect(Collectors.toList());
-
+        // 构建ReAct输入文本
         final Content<?> textContent = ReActPromptTemplate.newBuilder()
                 .tools(functionTools)
                 .question(message.text())
@@ -208,7 +206,7 @@ public class ReActChatAgent extends BaseChatAgent {
 
         final List<Content<?>> newContents = new ArrayList<>();
         newContents.add(textContent);
-        newContents.addAll(nonTextContents);
+        newContents.addAll(message.mediaContents());
 
         return Message.ofUser(newContents);
     }

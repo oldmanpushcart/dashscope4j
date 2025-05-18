@@ -30,6 +30,9 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
+/**
+ * 抽象的智能体实现
+ */
 @Slf4j
 @Accessors(fluent = true)
 public abstract class BaseChatAgent implements ChatAgent {
@@ -197,6 +200,12 @@ public abstract class BaseChatAgent implements ChatAgent {
     }
 
 
+    /**
+     * 抽象智能体功能工具构建器
+     *
+     * @param <T> 智能体类型
+     * @param <B> 构造器类型
+     */
     public static abstract class Builder<T extends BaseChatAgent, B extends Builder<T, B>> implements Buildable<T, B> {
 
         private String name;

@@ -96,18 +96,43 @@ public class DebugTestCase extends ClientSupport {
                           "Create a plan with the following format:\n" +
                           "1. First step\n" +
                           "2. Second step\n" +
-                          "...\n"
+                          "...\n" +
+                          "\n" +
+                          "Plan:"
                 )
                 .variable("input", "根据杭州今天的天气画一副水墨画")
                 .build()
                 .render();
 
         final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_PLUS)
+                .model(ChatModel.QWEN_MAX)
                 .addMessage(Message.ofUser(planPrompt))
                 .build();
 
         final ChatResponse response = client.chat().async(request)
+                .toCompletableFuture()
+                .join();
+
+        System.out.println(response.output().best().message().text());
+
+    }
+
+    @Test
+    public void test$debug3() {
+
+        final ChatAgent agent = ReActChatAgent.newBuilder()
+                .client(client)
+                .addFunction(new SystemDateTimeFunction())
+                .addFunction(new DashscopeWebSearchFunction())
+                .addFunction(new DashscopeGenImageByTextFunction())
+                .build();
+
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_TURBO)
+                .addMessage(Message.ofUser("请根据杭州今天天气画一副因地制宜的水墨画"))
+                .build();
+
+        final ChatResponse response = agent.async(request)
                 .toCompletableFuture()
                 .join();
 

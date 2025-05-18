@@ -15,6 +15,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel.Mode.MULTIMODAL;
+import static java.util.Objects.requireNonNull;
 
 /**
  * 记忆体实现（TreeSet）
@@ -22,50 +23,92 @@ import static io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel.Mod
 public class TreeSetMemory implements Memory {
 
     private final AtomicLong identityGen = new AtomicLong(1000);
-    private final Set<FragmentDO> fragmentDOs = new TreeSet<>();
+    private final Map<Long, FragmentDO> fragmentDOMap = new TreeMap<>(Comparator.reverseOrder());
 
     @Override
     public List<Fragment> recall(String conversationId, Condition condition) {
-        return fragmentDOs.stream()
-                .filter(filteringByConversationId(conversationId))
-                .filter(filteringByCondition(condition))
+
+        requireNonNull(conversationId, "conversationId is required");
+        requireNonNull(condition, "condition is required");
+
+        return fragmentDOMap.entrySet().stream()
+                .filter(filterByConversationId(conversationId))
+                .filter(filterByCondition(condition))
+                .map(Map.Entry::getValue)
                 .map(FragmentDO::toFragment)
                 .collect(Collectors.toList());
+
     }
 
-    private Predicate<FragmentDO> filteringByConversationId(String conversationId) {
-        return fragmentDO -> Objects.equals(conversationId, fragmentDO.getConversationId());
+    private Predicate<Map.Entry<Long, FragmentDO>> filterByConversationId(String conversationId) {
+        return entry -> Objects.equals(conversationId, entry.getValue().getConversationId());
     }
 
-    private Predicate<FragmentDO> filteringByCondition(Condition condition) {
+    private Predicate<Map.Entry<Long, FragmentDO>> filterByCondition(Condition condition) {
         final AtomicInteger countRef = new AtomicInteger();
         final AtomicInteger tokensRef = new AtomicInteger();
         final Instant lowerBound = Optional.ofNullable(condition.maxDuration())
                 .map(maxDuration -> Instant.now().minus(condition.maxDuration()))
                 .orElse(null);
-        return ((Predicate<FragmentDO>) v -> true)
-                .and(fragmentDO -> null == lowerBound || fragmentDO.getCreatedAt().isAfter(lowerBound))
-                .and(fragmentDO -> null == condition.maxTokens() || tokensRef.addAndGet(fragmentDO.getTokens()) <= condition.maxTokens())
-                .and(fragmentDO -> null == condition.maxCount() || countRef.incrementAndGet() <= condition.maxCount());
+        return ((Predicate<Map.Entry<Long, FragmentDO>>) v -> true)
+                .and(entry -> null == lowerBound || entry.getValue().getCreatedAt().isAfter(lowerBound))
+                .and(entry -> null == condition.maxTokens() || tokensRef.addAndGet(entry.getValue().getTokens()) <= condition.maxTokens())
+                .and(entry -> null == condition.maxCount() || countRef.incrementAndGet() <= condition.maxCount());
     }
 
     @Override
-    public long persist(Fragment fragment) {
+    public synchronized long persist(Fragment fragment) {
+
+        requireNonNull(fragment, "fragment is required");
+        requireNonNull(fragment.conversationId(), "fragment.conversationId is required");
+        requireNonNull(fragment.requestMessage(), "fragment.requestMessage is required");
+        requireNonNull(fragment.responseMessage(), "fragment.responseMessage is required");
 
         // update
         if (fragment.fragmentId() != null) {
-            fragmentDOs.add(FragmentDO.fromFragment(fragment));
+
+            // 已存在对象
+            final FragmentDO existedDO = fragmentDOMap.get(fragment.fragmentId());
+            if (null == existedDO) {
+                throw new NoSuchElementException("Fragment not found! fragmentId: " + fragment.fragmentId());
+            }
+
+            // 待更新对象
+            final FragmentDO updatedDO = FragmentDO.fromFragment(fragment);
+
+            // 更新已存在的对象
+            existedDO
+                    .setUpdatedAt(Instant.now())
+                    .setTokens(updatedDO.getTokens())
+                    .setRequestMessageJson(updatedDO.getRequestMessageJson())
+                    .setResponseMessageJson(updatedDO.getResponseMessageJson());
+
+            // 更新原有对象
+            fragment
+                    .createdAt(existedDO.getCreatedAt())
+                    .updatedAt(existedDO.getUpdatedAt());
+
             return fragment.fragmentId();
         }
 
         // create
         else {
-            final FragmentDO fragmentDO = FragmentDO.fromFragment(fragment)
+
+            // 创建新实体
+            final FragmentDO createdDO = FragmentDO.fromFragment(fragment)
                     .setFragmentId(identityGen.incrementAndGet())
                     .setCreatedAt(Instant.now())
                     .setUpdatedAt(Instant.now());
-            fragmentDOs.add(fragmentDO);
-            return fragmentDO.getFragmentId();
+
+            // 持久化实体
+            fragmentDOMap.put(createdDO.getFragmentId(), createdDO);
+
+            // 更新原有对象
+            fragment
+                    .createdAt(createdDO.getCreatedAt())
+                    .updatedAt(createdDO.getUpdatedAt());
+
+            return createdDO.getFragmentId();
         }
 
     }
