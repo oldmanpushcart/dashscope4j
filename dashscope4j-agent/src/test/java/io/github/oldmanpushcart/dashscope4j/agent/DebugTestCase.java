@@ -118,14 +118,16 @@ public class DebugTestCase extends ClientSupport {
 
         final ChatAgent agent = ReActChatAgent.newBuilder()
                 .client(client)
+                .flowBridge(true)
+                .prompt("Your name called MOSS, you only speak in English.")
                 .addFunction(new SystemDateTimeFunction())
                 .addFunction(new DashscopeWebSearchFunction())
                 .addFunction(new DashscopeGenImageByTextFunction())
                 .build();
 
         final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_TURBO)
-                .addMessage(Message.ofUser("请根据杭州今天天气画一副因地制宜的水墨画"))
+                .model(ChatModel.QWEN3_235B_A22B)
+                .addMessage(Message.ofUser("杭州明天天气如何?"))
                 .build();
 
         final ChatResponse response = agent.async(request)

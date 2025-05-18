@@ -14,6 +14,8 @@ import io.reactivex.rxjava3.core.Flowable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -194,38 +196,36 @@ public class ReActChatAgent extends BaseChatAgent {
         });
     }
 
-    // 重写 ReAct 用户消息
-    private Message rewriteReActUserMessage(Message message, List<ChatFunctionTool> functionTools) {
-
-        // 构建ReAct输入文本
-        final Content<?> textContent = ReActPromptTemplate.newBuilder()
-                .tools(functionTools)
-                .question(message.text())
-                .build()
-                .renderTo(Content::ofText);
-
-        final List<Content<?>> newContents = new ArrayList<>();
-        newContents.add(textContent);
-        newContents.addAll(message.mediaContents());
-
-        return Message.ofUser(newContents);
-    }
-
     // 新建 ReAct 请求
     private ChatRequest newReActChatRequest(ChatRequest request) {
         return ChatRequest.newBuilder(request)
                 .option(ChatOptions.STOP_WORDS, new String[]{ReAct.NAME_OBSERVATION + ":"})
-                .messages(request.historyMessages())
+
+                // 重写对话消息
                 .building(builder -> {
-                    final List<ChatFunctionTool> newFunctionTools = request.tools()
-                            .stream()
-                            .filter(v -> v instanceof ChatFunctionTool)
-                            .map(ChatFunctionTool.class::cast)
-                            .collect(Collectors.toList());
-                    final Message newMessage = rewriteReActUserMessage(request.requireLastMessageFromUser(), newFunctionTools);
+
+                    final Message lastUserMessage = request.requireLastMessageFromUser();
+                    final Message newLastUserMessage = ReActPromptTemplate.newBuilder()
+                            .tools(request.tools().stream()
+                                    .filter(tool-> tool instanceof ChatFunctionTool)
+                                    .map(ChatFunctionTool.class::cast)
+                                    .collect(Collectors.toList()))
+                            .question(lastUserMessage.text())
+                            .build()
+                            .renderTo(prompt-> {
+                                final List<Content<?>> newContents = new ArrayList<>();
+                                newContents.add(Content.ofText(prompt));
+                                newContents.addAll(lastUserMessage.mediaContents());
+                                return Message.ofUser(newContents);
+                            });
+
                     builder.self()
-                            .addMessage(newMessage);
+                            .messages(emptyList())
+                            .addMessages(request.historyMessages())
+                            .addMessage(newLastUserMessage);
                 })
+
+                // 清空工具
                 .tools(emptyList())
                 .build();
     }

@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
@@ -18,41 +19,39 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
-import static java.util.Optional.ofNullable;
 
 /**
  * 抽象的智能体实现
  */
 @Slf4j
+@Getter
 @Accessors(fluent = true)
 public abstract class BaseChatAgent implements ChatAgent {
 
     private static final AtomicInteger identityGen = new AtomicInteger(100);
 
-    @Getter
     private final String name;
-
-    @Getter
     private final String summary;
+    private final String prompt;
+    private final ChatModel model;
+    private final boolean flowBridge;
+    private final List<Interceptor> interceptors;
+    private final List<ChatFunctionTool> functionTools;
+    private final List<Plugin> plugins;
 
     @Getter(AccessLevel.PROTECTED)
     private final DashscopeClient client;
 
-    private final ChatModel model;
-    private final boolean flowBridge;
-    private final List<Interceptor> interceptors;
-
-    @Getter(AccessLevel.PROTECTED)
-    private final List<ChatFunctionTool> functionTools;
-
-    private final List<Plugin> plugins;
+    @Getter(AccessLevel.NONE)
     private final ChatOp chatOp;
 
     protected BaseChatAgent(Builder<?, ?> builder) {
@@ -61,6 +60,7 @@ public abstract class BaseChatAgent implements ChatAgent {
 
         this.name = buildingName(builder.name);
         this.summary = builder.summary;
+        this.prompt = builder.prompt;
         this.client = builder.client;
         this.model = builder.model;
         this.flowBridge = builder.flowBridge;
@@ -136,12 +136,39 @@ public abstract class BaseChatAgent implements ChatAgent {
      * 1. 如果智能体设置了对话模型，则将只使用智能体指定的对话模型
      * 2. 如果智能体设置了拦截器，则将智能体拦截器添加到本次对话中
      * 3. 取消传入对话请求的所有工具，只能使用智能体提供的工具
+     * 4. 将智能体的提示词替换原有的System消息
      */
     private ChatRequest newChatRequest(ChatRequest request) {
         return ChatRequest.newBuilder(request)
-                .building(builder -> ofNullable(model).ifPresent(builder::model))
-                .addInterceptors(interceptors)
+
+                // 设置对话模型
+                .building(builder -> {
+                    if (Objects.nonNull(model)) {
+                        builder.model(model);
+                    }
+                })
+
+                // 设置提示词
+                .building(builder -> {
+                    if (Objects.isNull(prompt)) {
+                        return;
+                    }
+                    final List<Message> nonSystemMessages = request.messages().stream()
+                            .filter(message -> message.role() != Message.Role.SYSTEM)
+                            .collect(Collectors.toList());
+                    builder.self()
+                            .messages(emptyList())
+                            .addMessage(Message.ofSystem(prompt))
+                            .addMessages(nonSystemMessages);
+                })
+
+                // 阻断拦截器，仅生效智能体声明的拦截器
+                .interceptors(interceptors)
+
+                // 阻断工具，仅生效智能体声明的工具
                 .tools(functionTools)
+
+                // 构造对话请求
                 .build();
     }
 
@@ -177,6 +204,7 @@ public abstract class BaseChatAgent implements ChatAgent {
 
         private String name;
         private String summary;
+        private String prompt;
         private DashscopeClient client;
         private ChatModel model;
         private boolean flowBridge;
@@ -191,6 +219,7 @@ public abstract class BaseChatAgent implements ChatAgent {
         public Builder(BaseChatAgent agent) {
             this.name = agent.name;
             this.summary = agent.summary;
+            this.prompt = agent.prompt;
             this.client = agent.client;
             this.model = agent.model;
             this.plugins.addAll(agent.plugins);
@@ -205,18 +234,29 @@ public abstract class BaseChatAgent implements ChatAgent {
          * @return this
          */
         public B name(String name) {
-            this.name = requireNonNull(name, "name is required!");
+            this.name = name;
             return self();
         }
 
         /**
-         * 智能体摘要
+         * 设置智能体摘要
          *
          * @param summary 智能体摘要
          * @return this
          */
         public B summary(String summary) {
-            this.summary = requireNonNull(summary, "summary is required!");
+            this.summary = summary;
+            return self();
+        }
+
+        /**
+         * 设置智能体提示词
+         *
+         * @param prompt 智能体提示词
+         * @return this
+         */
+        public B prompt(String prompt) {
+            this.prompt = prompt;
             return self();
         }
 

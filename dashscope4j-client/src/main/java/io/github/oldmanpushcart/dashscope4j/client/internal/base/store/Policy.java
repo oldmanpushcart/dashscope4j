@@ -5,6 +5,7 @@ import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
+import java.time.Duration;
 import java.time.Instant;
 
 @Value
@@ -32,8 +33,14 @@ class Policy {
         boolean isForbidOverwrite;
     }
 
+    /**
+     * @return 是否已过期
+     */
     public boolean isExpired() {
-        return expireAt.isBefore(Instant.now());
+        // 这里需要扣掉10秒，防止边界情况
+        return expireAt
+                .minus(Duration.ofSeconds(10))
+                .isBefore(Instant.now());
     }
 
 }

@@ -79,15 +79,25 @@ public class Message {
      * @return 获取纯文本内容
      */
     public String text() {
-        return contents.stream()
-                .filter(Content.TextContent.class::isInstance)
-                .map(content -> (Content.TextContent) content)
+        return textContents().stream()
                 .map(Content.TextContent::data)
                 .collect(Collectors.joining());
     }
 
     /**
-     * 获取多媒体内容
+     * 获取文本内容集合
+     *
+     * @return 文本内容集合
+     */
+    public List<Content.TextContent> textContents() {
+        return contents.stream()
+                .filter(Content.TextContent.class::isInstance)
+                .map(Content.TextContent.class::cast)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取多媒体内容集合
      *
      * @param types 多媒体类型
      * @return 多媒体内容集合

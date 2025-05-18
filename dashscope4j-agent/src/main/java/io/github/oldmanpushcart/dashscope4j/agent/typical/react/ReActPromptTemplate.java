@@ -30,7 +30,7 @@ class ReActPromptTemplate extends PromptTemplate {
               "Thought: I now know the final answer.\n" +
               "Final Answer: the final answer to the original input question\n" +
               "\n" +
-              "Begin!\n" +
+              "Please make sure that if you return JSON data, you return it in plain JSON format without using Markdown code blocks like ```json or anything similar.\n" +
               "\n" +
               "Question:\n" +
               "${question}";
