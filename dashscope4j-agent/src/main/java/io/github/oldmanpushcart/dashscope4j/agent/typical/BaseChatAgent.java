@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
+import io.github.oldmanpushcart.dashscope4j.agent.component.Component;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
@@ -46,7 +46,7 @@ public abstract class BaseChatAgent implements ChatAgent {
     private final boolean flowBridge;
     private final List<Interceptor> interceptors;
     private final List<ChatFunctionTool> functionTools;
-    private final List<Plugin> plugins;
+    private final List<Component> components;
 
     @Getter(AccessLevel.PROTECTED)
     private final DashscopeClient client;
@@ -66,8 +66,8 @@ public abstract class BaseChatAgent implements ChatAgent {
         this.flowBridge = builder.flowBridge;
         this.interceptors = unmodifiableList(builder.interceptors);
         this.functionTools = unmodifiableList(builder.functionTools);
-        this.plugins = unmodifiableList(builder.plugins);
-        this.chatOp = newChatOp(this, plugins);
+        this.components = unmodifiableList(builder.components);
+        this.chatOp = newChatOp(this, components);
 
     }
 
@@ -76,9 +76,9 @@ public abstract class BaseChatAgent implements ChatAgent {
      * 1. 对话原有的async/flow将会被baseAsync/baseFlow所取代
      * 2. 代理智能体的Plugin
      */
-    private static ChatOp newChatOp(BaseChatAgent agent, List<Plugin> plugins) {
-        final List<Plugin> merged = new ArrayList<>(plugins);
-        merged.add(new BaseRewriteUserMessagePlugin());
+    private static ChatOp newChatOp(BaseChatAgent agent, List<Component> components) {
+        final List<Component> merged = new ArrayList<>(components);
+        merged.add(new BaseRewriteUserMessageComponent());
         return BaseChatOp.of(agent, merged);
     }
 
@@ -208,7 +208,7 @@ public abstract class BaseChatAgent implements ChatAgent {
         private DashscopeClient client;
         private ChatModel model;
         private boolean flowBridge;
-        private final List<Plugin> plugins = new ArrayList<>();
+        private final List<Component> components = new ArrayList<>();
         private final List<Interceptor> interceptors = new ArrayList<>();
         private final List<ChatFunctionTool> functionTools = new ArrayList<>();
 
@@ -222,7 +222,7 @@ public abstract class BaseChatAgent implements ChatAgent {
             this.prompt = agent.prompt;
             this.client = agent.client;
             this.model = agent.model;
-            this.plugins.addAll(agent.plugins);
+            this.components.addAll(agent.components);
             this.interceptors.addAll(agent.interceptors);
             this.functionTools.addAll(agent.functionTools);
         }
@@ -401,36 +401,36 @@ public abstract class BaseChatAgent implements ChatAgent {
         }
 
         /**
-         * 添加插件
+         * 添加组件
          *
-         * @param plugin 插件
+         * @param component 组件
          * @return this
          */
-        public B addPlugin(Plugin plugin) {
-            this.plugins.add(plugin);
+        public B addComponent(Component component) {
+            this.components.add(component);
             return self();
         }
 
         /**
-         * 批量添加插件
+         * 批量添加组件
          *
-         * @param plugins 插件集合
+         * @param components 组件集合
          * @return this
          */
-        public B addPlugins(Collection<? extends Plugin> plugins) {
-            this.plugins.addAll(plugins);
+        public B addComponents(Collection<? extends Component> components) {
+            this.components.addAll(components);
             return self();
         }
 
         /**
-         * 设置插件列表
+         * 设置组件集合
          *
-         * @param plugins 插件集合
+         * @param components 组件集合
          * @return this
          */
-        public B plugins(Collection<? extends Plugin> plugins) {
-            this.plugins.clear();
-            this.plugins.addAll(plugins);
+        public B components(Collection<? extends Component> components) {
+            this.components.clear();
+            this.components.addAll(components);
             return self();
         }
 

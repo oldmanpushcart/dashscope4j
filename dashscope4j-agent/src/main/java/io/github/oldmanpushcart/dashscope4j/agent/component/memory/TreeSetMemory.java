@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.memory;
+package io.github.oldmanpushcart.dashscope4j.agent.component.memory;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.MessageCodec;
 import io.github.oldmanpushcart.dashscope4j.client.util.LocalTokenizerUtils;

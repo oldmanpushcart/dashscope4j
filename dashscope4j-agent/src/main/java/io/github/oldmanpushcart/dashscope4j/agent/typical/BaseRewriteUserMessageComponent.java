@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
+import io.github.oldmanpushcart.dashscope4j.agent.component.Component;
 import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
 import static java.util.Collections.emptyList;
 
 /**
- * 重写用户输入的插件
+ * 重写用户输入的组件
  */
-class BaseRewriteUserMessagePlugin implements Plugin {
+class BaseRewriteUserMessageComponent implements Component {
 
     @Override
     public CompletionStage<ChatResponse> onAsync(Processor<ChatResponse> processor) {

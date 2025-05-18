@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin;
+package io.github.oldmanpushcart.dashscope4j.agent.component;
 
 import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
@@ -8,12 +8,12 @@ import io.reactivex.rxjava3.core.Flowable;
 import java.util.concurrent.CompletionStage;
 
 /**
- * 智能体插件
+ * 智能体组件
  * <p>
- * {@link ChatAgent} 的插件，用于对对话进行增强。
+ * {@link ChatAgent} 的组件，用于对对话进行增强。
  * </p>
  */
-public interface Plugin {
+public interface Component {
 
     /**
      * 异步对话

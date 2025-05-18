@@ -1,6 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.memory;
+package io.github.oldmanpushcart.dashscope4j.agent.component.memory;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
+import io.github.oldmanpushcart.dashscope4j.agent.component.Component;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
@@ -18,16 +18,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * 记忆插件
+ * 记忆体组件
  */
-public class MemoryPlugin implements Plugin {
+public class MemoryComponent implements Component {
 
     private final Memory memory;
     private final Integer maxCount;
     private final Integer maxTokens;
     private final Duration maxDuration;
 
-    private MemoryPlugin(Builder builder) {
+    private MemoryComponent(Builder builder) {
         this.memory = builder.memory;
         this.maxCount = builder.maxCount;
         this.maxTokens = builder.maxTokens;
@@ -194,7 +194,7 @@ public class MemoryPlugin implements Plugin {
         return new Builder();
     }
 
-    public static class Builder implements Buildable<MemoryPlugin, Builder> {
+    public static class Builder implements Buildable<MemoryComponent, Builder> {
 
         private Memory memory;
         private Integer maxCount;
@@ -246,8 +246,8 @@ public class MemoryPlugin implements Plugin {
         }
 
         @Override
-        public MemoryPlugin build() {
-            return new MemoryPlugin(this);
+        public MemoryComponent build() {
+            return new MemoryComponent(this);
         }
 
     }

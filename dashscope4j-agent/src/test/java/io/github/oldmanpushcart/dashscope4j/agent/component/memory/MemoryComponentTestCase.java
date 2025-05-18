@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.memory;
+package io.github.oldmanpushcart.dashscope4j.agent.component.memory;
 
 import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.ClientSupport;
@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.UUID;
 
-public class MemoryPluginTestCase extends ClientSupport {
+public class MemoryComponentTestCase extends ClientSupport {
 
     @Test
     public void test$memory$append() {
@@ -25,7 +25,7 @@ public class MemoryPluginTestCase extends ClientSupport {
 
         final ChatAgent agent = ReActChatAgent.newBuilder()
                 .client(client)
-                .addPlugin(MemoryPlugin.newBuilder()
+                .addComponent(MemoryComponent.newBuilder()
                         .memory(memory)
                         .build())
                 .build();
