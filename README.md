@@ -13,7 +13,7 @@
 
 ## 一、功能特性
 
-### Dashscope4j-Client 客户端
+### Dashscope4j 客户端
 
 #### 客户端独有功能特性
 
@@ -57,7 +57,7 @@
   - 拦截器
 
 
-### Dashscope4j-Agent 智能体
+### Dashscope4j 智能体
 
 - **ReAct智能体**：采用了通用的ReAct模式
 - **Dashscope智能体**：不采用任何模式，由大模型自行处理
@@ -79,7 +79,7 @@
 
 <dependency>
     <groupId>io.github.oldmanpushcart</groupId>
-    <artifactId>dashscope4j-client</artifactId>
+    <artifactId>dashscope4j</artifactId>
     <version>3.2.0</version>
 </dependency>
 ```
@@ -127,7 +127,7 @@ public static void main(String... args) {
 
 <dependency>
     <groupId>io.github.oldmanpushcart</groupId>
-    <artifactId>dashscope4j-agent</artifactId>
+    <artifactId>dashscope4j</artifactId>
     <version>3.2.0</version>
 </dependency>
 ```
