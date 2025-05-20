@@ -46,6 +46,7 @@
         <slf4j.version>2.0.11</slf4j.version>
         <logback.version>1.5.18</logback.version>
         <rxjava.version>3.1.10</rxjava.version>
+        <mcp.version>0.10.0</mcp.version>
     </properties>
 
     <profiles>
@@ -247,6 +248,11 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp</artifactId>
+                <version>${mcp.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>

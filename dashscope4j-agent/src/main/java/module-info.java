@@ -6,5 +6,6 @@ open module dashscope4j.agent {
     requires org.slf4j;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.annotation;
+    requires io.modelcontextprotocol.sdk.mcp;
 
 }

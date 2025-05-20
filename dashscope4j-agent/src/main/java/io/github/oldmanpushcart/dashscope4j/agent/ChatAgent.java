@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
@@ -18,6 +19,11 @@ public interface ChatAgent extends ChatOp {
      * @return 智能体摘要
      */
     String summary();
+
+    /**
+     * @return 客户端
+     */
+    DashscopeClient client();
 
     /**
      * @return 创建函数工具构建器

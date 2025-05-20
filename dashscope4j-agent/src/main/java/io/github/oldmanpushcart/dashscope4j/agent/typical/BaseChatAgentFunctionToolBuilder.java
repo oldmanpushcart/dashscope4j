@@ -46,8 +46,11 @@ class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder 
 
     private String buildingDescription() {
         return PromptTemplate.newBuilder()
-                .template("## ${summary}\n" +
-                          "${detail}")
+                .template("""
+                        ## ${summary}
+                        ${detail}
+                        """
+                )
                 .variable("summary", summary)
                 .variable("detail", () -> {
                     final StringBuilder stringBuf = new StringBuilder();
