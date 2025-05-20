@@ -1,0 +1,90 @@
+package io.github.oldmanpushcart.dashscope4j.client.internal.api;
+
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
+import io.github.oldmanpushcart.dashscope4j.client.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiOp;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.task.Task;
+import io.reactivex.rxjava3.core.Flowable;
+import lombok.AllArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+
+@AllArgsConstructor
+public class InterceptionApiOp implements ApiOp {
+
+    private final DashscopeClient client;
+    private final ApiOp apiOp;
+    private final Interceptor interceptor;
+
+    @Override
+    public <T extends ApiRequest<R>, R extends ApiResponse<?>>
+    CompletionStage<R> executeAsync(T request) {
+        final Interceptor.Chain chain = new ChainImpl(client, request, apiOp::executeAsync);
+        return interceptor.intercept(chain)
+                .thenApply(InterceptionApiOp::cast);
+    }
+
+    @Override
+    public <T extends ApiRequest<R>, R extends ApiResponse<?>>
+    CompletionStage<Flowable<R>> executeFlow(T request) {
+        final Interceptor.Chain chain = new ChainImpl(client, request, apiOp::executeFlow);
+        return interceptor.intercept(chain)
+                .thenApply(InterceptionApiOp::cast);
+    }
+
+    @Override
+    public <T extends ApiRequest<R>, R extends ApiResponse<?>>
+    CompletionStage<Exchange<T>> executeExchange(T request, Exchange.Mode mode, Exchange.Listener<T, R> listener) {
+        final Interceptor.Chain chain = new ChainImpl(client, request, r -> apiOp.executeExchange(cast(r), mode, listener));
+        return interceptor.intercept(chain)
+                .thenApply(InterceptionApiOp::cast);
+    }
+
+    @Override
+    public <T extends ApiRequest<R>, R extends ApiResponse<?>> CompletionStage<Task.Half<R>> executeTask(T request) {
+        final Interceptor.Chain chain = new ChainImpl(client, request, apiOp::executeTask);
+        return interceptor.intercept(chain)
+                .thenApply(InterceptionApiOp::cast);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <V> V cast(Object obj) {
+        return (V) obj;
+    }
+
+    private record ChainImpl(
+            DashscopeClient client,
+            ApiRequest<?> request,
+            Function<ApiRequest<?>, CompletionStage<?>> applier
+    ) implements Interceptor.Chain {
+
+        @Override
+        public CompletionStage<?> process(ApiRequest<?> request) {
+            return applier.apply(request);
+        }
+
+    }
+
+    public static ApiOp group(DashscopeClient client, ApiOp apiOp, Collection<Interceptor> interceptors) {
+
+        final List<Interceptor> cloneInterceptors = new ArrayList<>(interceptors);
+
+        // 倒置顺序，因为拦截生效的顺序为倒序
+        Collections.reverse(cloneInterceptors);
+
+        ApiOp op = apiOp;
+        for (Interceptor interceptor : cloneInterceptors) {
+            op = new InterceptionApiOp(client, op, interceptor);
+        }
+        return op;
+    }
+
+}
