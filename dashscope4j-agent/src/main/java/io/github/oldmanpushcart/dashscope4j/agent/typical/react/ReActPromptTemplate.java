@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
 import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -65,7 +65,7 @@ class ReActPromptTemplate extends PromptTemplate {
          * @param tools 工具列表
          * @return this
          */
-        public Builder tools(List<ChatFunctionTool> tools) {
+        public Builder tools(List<FunctionTool> tools) {
 
             /*
              * 列出所有注册到智能体的工具
@@ -80,7 +80,7 @@ class ReActPromptTemplate extends PromptTemplate {
              * 参数定义（JSON-SCHEMA）
              */
             variable(NAME_TOOLS, tools.stream()
-                    .map(ChatFunctionTool::meta)
+                    .map(FunctionTool::meta)
                     .map(meta ->
                             PromptTemplate.newBuilder()
                                     .template("""
@@ -92,17 +92,18 @@ class ReActPromptTemplate extends PromptTemplate {
                                             """)
                                     .variable("name", meta.name())
                                     .variable("summary", meta.description())
-                                    .variable("parameter-schema", meta.parameterTs().schema())
-                                    .build())
-                    .collect(Collectors.toList()));
+                                    .variable("parameter-schema", meta.parameterSchema())
+                                    .build()
+                                    .render())
+                    .collect(Collectors.joining("\n")));
 
             /*
              * 工具名清单
              * ['工具1','工具2',...,'工具N']
              */
             variable(NAME_TOOL_NAMES, tools.stream()
-                    .map(ChatFunctionTool::meta)
-                    .map(ChatFunctionTool.Meta::name)
+                    .map(FunctionTool::meta)
+                    .map(FunctionTool.Meta::name)
                     .collect(Collectors.toList()));
 
             return this;

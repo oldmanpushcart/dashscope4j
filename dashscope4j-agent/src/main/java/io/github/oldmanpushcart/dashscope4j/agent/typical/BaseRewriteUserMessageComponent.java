@@ -55,13 +55,15 @@ class BaseRewriteUserMessageComponent implements Component {
         final Message message = request.requireLastMessageFromUser();
         final String prompt = PromptTemplate.newBuilder()
                 .template("""
-                        ### INPUT
+                        ## INPUT
                         ${input}
                         
-                        ### PARTS
-                        ${parts}""")
+                        ## RESOURCES
+                        ${resources}
+                        """
+                )
                 .variable("input", message::text)
-                .variable("parts", message.mediaContents()
+                .variable("resources", message.mediaContents()
                         .stream()
                         .map(content -> String.format("- **%s**: %s", content.type(), content.data()))
                         .collect(Collectors.joining("\n")))

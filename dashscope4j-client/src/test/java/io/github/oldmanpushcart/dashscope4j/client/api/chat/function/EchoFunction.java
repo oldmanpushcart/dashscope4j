@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.function;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import lombok.AccessLevel;
@@ -18,7 +19,7 @@ import java.util.concurrent.CompletionStage;
 public class EchoFunction implements ChatFunction<EchoFunction.Echo, EchoFunction.Echo> {
 
     @Override
-    public CompletionStage<Echo> call(Caller caller, Echo echo) {
+    public CompletionStage<Echo> call(Tool.Caller caller, Echo echo) {
         return CompletableFuture.completedFuture(new Echo(echo.words()));
     }
 

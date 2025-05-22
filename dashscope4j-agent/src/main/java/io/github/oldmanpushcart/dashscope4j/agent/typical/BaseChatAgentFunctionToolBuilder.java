@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -54,7 +55,7 @@ class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder 
                 .variable("summary", summary)
                 .variable("detail", () -> {
                     final StringBuilder stringBuf = new StringBuilder();
-                    for (final ChatFunctionTool tool : agent.functionTools()) {
+                    for (final FunctionTool tool : agent.functionTools()) {
                         stringBuf
                                 .append("\n")
                                 .append(tool.meta().description())
@@ -67,7 +68,7 @@ class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder 
     }
 
     @Override
-    public ChatFunctionTool build() {
+    public FunctionTool build() {
         requireNonNull(agent);
         requireNonBlankString(name, "name is blank!");
         requireNonBlankString(summary, "summary is blank");

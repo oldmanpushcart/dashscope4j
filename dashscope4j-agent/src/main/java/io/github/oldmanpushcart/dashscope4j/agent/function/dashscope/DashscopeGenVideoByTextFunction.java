@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.function.dashscope;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
@@ -28,7 +29,7 @@ public class DashscopeGenVideoByTextFunction implements ChatFunction<DashscopeGe
     );
 
     @Override
-    public CompletionStage<Result> call(Caller caller, Parameter parameter) {
+    public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
 
         final TextGenVideoRequest request = TextGenVideoRequest.newBuilder()
                 .model(TextGenVideoModel.WANX_V2_1_T2V_TURBO)

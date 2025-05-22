@@ -7,8 +7,8 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionToolNotFoundException;
 import io.reactivex.rxjava3.core.Flowable;
 
@@ -73,8 +73,8 @@ public class ReActChatAgent extends BaseChatAgent {
 
         final String functionName = reAct.getAction();
         final String argumentJson = reAct.getActionInput();
-        final ChatFunctionTool functionTool = requireFunctionTool(functionTools(), functionName);
-        final ChatFunction.Caller functionCaller = newFunctionCaller(client(), request);
+        final FunctionTool functionTool = requireFunctionTool(functionTools(), functionName);
+        final Tool.Caller functionCaller = newFunctionCaller(client(), request);
 
         // 调用函数
         return functionTool.call(functionCaller, argumentJson)
@@ -171,8 +171,8 @@ public class ReActChatAgent extends BaseChatAgent {
              */
             final String functionName = reAct.getAction();
             final String argumentJson = reAct.getActionInput();
-            final ChatFunctionTool functionTool = requireFunctionTool(functionTools(), functionName);
-            final ChatFunction.Caller functionCaller = newFunctionCaller(client(), request);
+            final FunctionTool functionTool = requireFunctionTool(functionTools(), functionName);
+            final Tool.Caller functionCaller = newFunctionCaller(client(), request);
             return Flowable
                     .just(response)
                     .concatWith(Flowable.defer(() -> {
@@ -205,8 +205,8 @@ public class ReActChatAgent extends BaseChatAgent {
                     final Message lastUserMessage = request.requireLastMessageFromUser();
                     final Message newLastUserMessage = ReActPromptTemplate.newBuilder()
                             .tools(request.tools().stream()
-                                    .filter(tool-> tool instanceof ChatFunctionTool)
-                                    .map(ChatFunctionTool.class::cast)
+                                    .filter(tool-> tool instanceof FunctionTool)
+                                    .map(FunctionTool.class::cast)
                                     .collect(Collectors.toList()))
                             .question(lastUserMessage.text())
                             .build()
@@ -228,15 +228,15 @@ public class ReActChatAgent extends BaseChatAgent {
                 .build();
     }
 
-    private static ChatFunctionTool requireFunctionTool(List<ChatFunctionTool> functionTools, String functionName) {
+    private static FunctionTool requireFunctionTool(List<FunctionTool> functionTools, String functionName) {
         return functionTools.stream()
                 .filter(v -> v.meta().name().equals(functionName))
                 .findFirst()
                 .orElseThrow(() -> new FunctionToolNotFoundException(functionName));
     }
 
-    private static ChatFunction.Caller newFunctionCaller(DashscopeClient client, ChatRequest request) {
-        return new ChatFunction.Caller() {
+    private static Tool.Caller newFunctionCaller(DashscopeClient client, ChatRequest request) {
+        return new Tool.Caller() {
 
             @Override
             public DashscopeClient client() {

@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.function;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
@@ -24,7 +25,7 @@ public class SystemDateTimeFunction implements ChatFunction<SystemDateTimeFuncti
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
 
     @Override
-    public CompletionStage<Result> call(Caller caller, Parameter parameter) {
+    public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
         return completedFuture(
                 new Result(
                         LocalDateTime.now().format(formatter),

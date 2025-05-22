@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
@@ -27,7 +28,7 @@ public class DashscopeUnderstandingVisualFunction
         implements ChatFunction<DashscopeUnderstandingVisualFunction.Parameter, DashscopeUnderstandingVisualFunction.Result> {
 
     @Override
-    public CompletionStage<Result> call(Caller caller, Parameter parameter) {
+    public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)

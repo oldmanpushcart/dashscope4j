@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatSearchOption;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
@@ -20,7 +21,7 @@ public class DashscopeWebSearchFunction
         implements ChatFunction<DashscopeWebSearchFunction.Parameter, DashscopeWebSearchFunction.Result> {
 
     @Override
-    public CompletionStage<Result> call(Caller caller, Parameter parameter) {
+    public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
         final String prompt = PromptTemplate.newBuilder()
                 .template("""
                         ## 根据关键词搜索

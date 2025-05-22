@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function;
 
-import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 
 import java.util.concurrent.CompletionStage;
 
@@ -29,25 +28,6 @@ public interface ChatFunction<T, R> {
      * @param t      参数
      * @return 返回值
      */
-    CompletionStage<R> call(Caller caller, T t);
-
-    /**
-     * 函数调用者
-     *
-     * @since 3.1.0
-     */
-    interface Caller {
-
-        /**
-         * @return 客户端
-         */
-        DashscopeClient client();
-
-        /**
-         * @return 触发对话请求
-         */
-        ChatRequest request();
-
-    }
+    CompletionStage<R> call(Tool.Caller caller, T t);
 
 }

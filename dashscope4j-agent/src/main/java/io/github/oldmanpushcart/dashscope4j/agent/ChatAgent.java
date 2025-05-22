@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 /**
@@ -33,7 +33,7 @@ public interface ChatAgent extends ChatOp {
     /**
      * 函数工具构建器
      */
-    interface FunctionToolBuilder extends Buildable<ChatFunctionTool, FunctionToolBuilder> {
+    interface FunctionToolBuilder extends Buildable<FunctionTool, FunctionToolBuilder> {
 
         /**
          * 设置函数名称

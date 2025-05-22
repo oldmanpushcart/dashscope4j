@@ -29,7 +29,7 @@ public class DashscopeChatAgent extends BaseChatAgent {
         return client().chat().flow(newRequest);
     }
 
-    private ChatRequest newDashscopeChatRequest(ChatRequest request) {
+    private static ChatRequest newDashscopeChatRequest(ChatRequest request) {
         return ChatRequest.newBuilder(request)
                 .option(ChatOptions.ENABLE_PARALLEL_TOOL_CALLS, true)
                 .build();

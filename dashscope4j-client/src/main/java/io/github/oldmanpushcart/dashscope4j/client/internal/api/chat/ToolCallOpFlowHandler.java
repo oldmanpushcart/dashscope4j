@@ -8,7 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolCallMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.AllArgsConstructor;
 
@@ -83,8 +83,8 @@ class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
         final Map<Integer, FunctionToolCallBuilder> builderMap = new HashMap<>();
         toolCallMessages.stream()
                 .flatMap(message -> message.calls().stream())
-                .filter(ChatFunctionTool.Call.class::isInstance)
-                .map(ChatFunctionTool.Call.class::cast)
+                .filter(FunctionTool.Call.class::isInstance)
+                .map(FunctionTool.Call.class::cast)
                 .forEach(call -> builderMap
                         .computeIfAbsent(call.index(), FunctionToolCallBuilder::new)
                         .reduce(isIncrementalOutput, call));
@@ -114,7 +114,7 @@ class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
          * @param isIncrementalOutput 是否为增量输出
          * @param call                函数调用
          */
-        public void reduce(boolean isIncrementalOutput, ChatFunctionTool.Call call) {
+        public void reduce(boolean isIncrementalOutput, FunctionTool.Call call) {
 
             /*
              * 如果是非增量输出，则每次Call中携带的都是最新全量消息
@@ -149,10 +149,10 @@ class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
          * @return 函数调用
          */
         public Tool.Call build() {
-            return new ChatFunctionTool.Call(
+            return new FunctionTool.Call(
                     index,
                     idBuf.toString(),
-                    new ChatFunctionTool.Call.Stub(
+                    new FunctionTool.Call.Stub(
                             nameBuf.toString(),
                             argsBuf.toString()
                     ));

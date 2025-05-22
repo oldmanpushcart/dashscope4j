@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.ObjectMap;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -99,7 +100,7 @@ public class ChatToolChoice {
      * @param tool 函数工具
      * @return 工具选择
      */
-    public static ChatToolChoice ofFunctionToll(ChatFunctionTool tool) {
+    public static ChatToolChoice ofFunctionToll(FunctionTool tool) {
         return ofFunctionName(tool.meta().name());
     }
 

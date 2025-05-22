@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.function;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
@@ -20,7 +21,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 public class QueryScoreFunction implements ChatFunction<QueryScoreFunction.Parameter, QueryScoreFunction.Result> {
 
     @Override
-    public CompletionStage<Result> call(Caller caller, Parameter parameter) {
+    public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
         final Subject subject = parameter.getSubject();
         return switch (subject) {
             case MATCH -> completedFuture(new Result(subject, 88));

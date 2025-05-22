@@ -36,12 +36,12 @@ class ChatFunctionToolHelper {
         final String fnName = parseFnName(functionClass);
         final String fnDesc = parseFnDesc(functionClass);
         final Type parameterType = interfaceType.getActualTypeArguments()[0];
-        final ChatFunctionTool.Meta.TypeSchema schema = new ChatFunctionTool.Meta.TypeSchema(parameterType);
-
-        return new ChatFunctionTool(
-                new ChatFunctionTool.Meta(fnName, fnDesc, schema),
-                function
-        );
+        return ChatFunctionTool.newBuilder()
+                .name(fnName)
+                .description(fnDesc)
+                .parameterType(parameterType)
+                .function(function)
+                .build();
 
     }
 

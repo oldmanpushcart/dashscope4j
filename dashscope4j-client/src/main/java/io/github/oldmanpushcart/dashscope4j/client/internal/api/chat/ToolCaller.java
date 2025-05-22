@@ -7,14 +7,13 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolCallMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolMessage;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionToolNotFoundException;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.extern.slf4j.Slf4j;
 
-import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -23,7 +22,7 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.concurrent.CompletableFuture.failedStage;
 
 @Slf4j
-class ToolCaller implements ChatFunction.Caller {
+class ToolCaller implements Tool.Caller {
 
     private final DashscopeClient client;
     private final ChatOp chatOp;
@@ -45,7 +44,7 @@ class ToolCaller implements ChatFunction.Caller {
     private static void preCheck(ToolCallMessage message) {
 
         // 检查工具调用中是否只有函数调用，当前只支持函数调用
-        if (!message.calls().stream().allMatch(call -> call instanceof ChatFunctionTool.Call)) {
+        if (!message.calls().stream().allMatch(call -> call instanceof FunctionTool.Call)) {
             throw new UnsupportedOperationException("Only support function call in tool call.");
         }
 
@@ -140,11 +139,11 @@ class ToolCaller implements ChatFunction.Caller {
     private Map<String, CompletableFuture<String>> parallelCallFunction() {
         final Map<String, CompletableFuture<String>> futureMap = new HashMap<>();
         message.calls().stream()
-                .map(ChatFunctionTool.Call.class::cast)
+                .map(FunctionTool.Call.class::cast)
                 .forEach(call -> {
                     CompletionStage<String> future;
                     try {
-                        final ChatFunctionTool tool = switchFunctionTool(call);
+                        final FunctionTool tool = switchFunctionTool(call);
                         future = callFunction(tool, call);
                     } catch (Throwable ex) {
                         future = failedStage(ex);
@@ -158,9 +157,9 @@ class ToolCaller implements ChatFunction.Caller {
     }
 
     // 函数调用
-    private CompletionStage<String> callFunction(ChatFunctionTool tool, ChatFunctionTool.Call call) {
+    private CompletionStage<String> callFunction(FunctionTool tool, FunctionTool.Call call) {
 
-        final Type parameterType = tool.meta().parameterTs().type();
+
         final String argumentsJson = call.stub().arguments();
 
         if (log.isDebugEnabled()) {
@@ -183,9 +182,8 @@ class ToolCaller implements ChatFunction.Caller {
                     });
         } catch (Throwable cause) {
             throw new RuntimeException(
-                    String.format("Function call error! fn=%s;arguments[type=%s]=%s",
+                    String.format("Function call error! fn=%s;argument=%s",
                             call.stub().name(),
-                            parameterType.getTypeName(),
                             argumentsJson
                     ),
                     cause
@@ -193,23 +191,11 @@ class ToolCaller implements ChatFunction.Caller {
         }
     }
 
-    /*
-     * 转换为参数
-     * 这里需要处理传递的参数直接为null的情况，null -> null
-     * 不要拿null到jackson进行转换
-     */
-    private <T> T toArgument(String parameterJson, Type parameterType) {
-        if (null == parameterJson || parameterJson.trim().isEmpty()) {
-            return null;
-        }
-        return JacksonJsonUtils.toObject(parameterJson, parameterType);
-    }
-
     // 找到函数工具
-    private ChatFunctionTool switchFunctionTool(ChatFunctionTool.Call functionCall) {
+    private FunctionTool switchFunctionTool(FunctionTool.Call functionCall) {
         return request.tools().stream()
-                .filter(ChatFunctionTool.class::isInstance)
-                .map(ChatFunctionTool.class::cast)
+                .filter(FunctionTool.class::isInstance)
+                .map(FunctionTool.class::cast)
                 .filter(tool -> Objects.equals(tool.meta().name(), functionCall.stub().name()))
                 .findFirst()
                 .orElseThrow(() -> new FunctionToolNotFoundException(functionCall.stub().name()));

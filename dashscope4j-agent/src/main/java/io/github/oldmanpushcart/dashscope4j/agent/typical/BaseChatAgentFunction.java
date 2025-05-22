@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import lombok.Builder;
 import lombok.Data;
@@ -31,7 +32,7 @@ class BaseChatAgentFunction
     }
 
     @Override
-    public CompletionStage<Result> call(Caller caller, Parameter parameter) {
+    public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(caller.request().model())
                 .copyContextFrom(caller.request())
@@ -55,15 +56,20 @@ class BaseChatAgentFunction
         @JsonProperty(required = true)
         String input;
 
-        @JsonPropertyDescription("执行任务所必须的信息")
+        @JsonPropertyDescription("""
+                执行任务所必须的URI
+                - 必须严格符合URI格式：scheme://username:password@hostname:port/path?query#fragment
+                - 可接受本地文件URI格式：file://hose/path
+                """
+        )
         @JsonProperty(required = true)
-        List<Part> parts;
+        List<Resource> resources;
 
         @Value
         @Accessors(fluent = true)
         @Jacksonized
         @Builder
-        public static class Part {
+        public static class Resource {
 
             @JsonPropertyDescription("类型")
             @JsonProperty(required = true)
@@ -108,8 +114,8 @@ class BaseChatAgentFunction
          */
         public Message toMessage() {
 
-            final List<Content<?>> mediaContents = parts.stream()
-                    .map(Part::toContent)
+            final List<Content<?>> mediaContents = resources.stream()
+                    .map(Resource::toContent)
                     .collect(Collectors.toList());
 
             final List<Content<?>> contents = new ArrayList<>();

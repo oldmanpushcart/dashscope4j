@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.AccessLevel;
@@ -15,10 +16,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,10 +42,9 @@ public abstract class BaseChatAgent implements ChatAgent {
     private final ChatModel model;
     private final boolean flowBridge;
     private final List<Interceptor> interceptors;
-    private final List<ChatFunctionTool> functionTools;
+    private final List<FunctionTool> functionTools;
     private final List<Component> components;
-
-    @Getter(AccessLevel.PROTECTED)
+    private final List<ChatAgent> agents;
     private final DashscopeClient client;
 
     @Getter(AccessLevel.NONE)
@@ -66,6 +63,7 @@ public abstract class BaseChatAgent implements ChatAgent {
         this.interceptors = unmodifiableList(builder.interceptors);
         this.functionTools = unmodifiableList(builder.functionTools);
         this.components = unmodifiableList(builder.components);
+        this.agents = unmodifiableList(builder.agents);
         this.chatOp = newChatOp(this, components);
 
     }
@@ -161,11 +159,26 @@ public abstract class BaseChatAgent implements ChatAgent {
                             .addMessages(nonSystemMessages);
                 })
 
-                // 阻断拦截器，仅生效智能体声明的拦截器
-                .interceptors(interceptors)
+                /*
+                 * 设置智能体拦截器、工具生效边界
+                 * 1. 阻断上游拦截器，仅生效全局+智能体声明的拦截器
+                 * 2. 阻断工具，仅生效全局+智能体声明的工具
+                 */
+                .building(builder -> {
 
-                // 阻断工具，仅生效智能体声明的工具
-                .tools(functionTools)
+                    // 寻找或初始化基础对话上下文
+                    final var context = Optional
+                            .ofNullable(request.context(BaseChatContext.class))
+                            .orElseGet(() -> new BaseChatContext().originalRequest(request));
+
+                    builder.self()
+                            .context(BaseChatContext.class, context)
+                            .interceptors(context.originalRequest().interceptors())
+                            .addInterceptors(interceptors)
+                            .tools(context.originalRequest().tools())
+                            .addTools(functionTools);
+
+                })
 
                 // 构造对话请求
                 .build();
@@ -209,7 +222,8 @@ public abstract class BaseChatAgent implements ChatAgent {
         private boolean flowBridge;
         private final List<Component> components = new ArrayList<>();
         private final List<Interceptor> interceptors = new ArrayList<>();
-        private final List<ChatFunctionTool> functionTools = new ArrayList<>();
+        private final List<FunctionTool> functionTools = new ArrayList<>();
+        private final List<ChatAgent> agents = new ArrayList<>();
 
         public Builder() {
 
@@ -224,6 +238,7 @@ public abstract class BaseChatAgent implements ChatAgent {
             this.components.addAll(agent.components);
             this.interceptors.addAll(agent.interceptors);
             this.functionTools.addAll(agent.functionTools);
+            this.agents.addAll(agent.agents);
         }
 
         /**
@@ -335,7 +350,7 @@ public abstract class BaseChatAgent implements ChatAgent {
          * @param functionTool 函数工具
          * @return this
          */
-        public B addFunctionTool(ChatFunctionTool functionTool) {
+        public B addFunctionTool(FunctionTool functionTool) {
             this.functionTools.add(functionTool);
             return self();
         }
@@ -346,7 +361,7 @@ public abstract class BaseChatAgent implements ChatAgent {
          * @param functionTools 函数工具集合
          * @return this
          */
-        public B addFunctionTools(Collection<? extends ChatFunctionTool> functionTools) {
+        public B addFunctionTools(Collection<? extends FunctionTool> functionTools) {
             this.functionTools.addAll(functionTools);
             return self();
         }
@@ -357,7 +372,7 @@ public abstract class BaseChatAgent implements ChatAgent {
          * @param functionTools 函数工具列表
          * @return this
          */
-        public B functionTools(Collection<? extends ChatFunctionTool> functionTools) {
+        public B functionTools(Collection<? extends FunctionTool> functionTools) {
             this.functionTools.clear();
             this.functionTools.addAll(functionTools);
             return self();
@@ -380,9 +395,9 @@ public abstract class BaseChatAgent implements ChatAgent {
          * @return this
          */
         public B addFunctions(Collection<? extends ChatFunction<?, ?>> functions) {
-            final List<ChatFunctionTool> functionTools = functions.stream()
+            final var functionTools = functions.stream()
                     .map(ChatFunctionTool::of)
-                    .collect(Collectors.toList());
+                    .toList();
             return addFunctionTools(functionTools);
         }
 
@@ -393,9 +408,9 @@ public abstract class BaseChatAgent implements ChatAgent {
          * @return this
          */
         public B functions(Collection<? extends ChatFunction<?, ?>> functions) {
-            final List<ChatFunctionTool> functionTools = functions.stream()
+            final var functionTools = functions.stream()
                     .map(ChatFunctionTool::of)
-                    .collect(Collectors.toList());
+                    .toList();
             return functionTools(functionTools);
         }
 

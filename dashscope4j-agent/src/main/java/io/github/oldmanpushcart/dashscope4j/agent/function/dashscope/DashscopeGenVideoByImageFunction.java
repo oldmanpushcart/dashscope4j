@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.function.dashscope;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
@@ -30,7 +31,7 @@ public class DashscopeGenVideoByImageFunction
     );
 
     @Override
-    public CompletionStage<Result> call(Caller caller, Parameter parameter) {
+    public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
 
         final ImageGenVideoRequest request = ImageGenVideoRequest.newBuilder()
                 .model(ImageGenVideoModel.WANX_V2_1_I2V_TURBO)

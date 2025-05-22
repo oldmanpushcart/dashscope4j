@@ -12,6 +12,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -385,7 +386,7 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
          */
         public Builder functions(Collection<? extends ChatFunction<?, ?>> functions) {
             requireNonNull(functions);
-            this.tools.removeIf(tool -> tool instanceof ChatFunctionTool);
+            this.tools.removeIf(tool -> tool instanceof FunctionTool);
             this.tools.addAll(toTools(functions));
             return this;
         }

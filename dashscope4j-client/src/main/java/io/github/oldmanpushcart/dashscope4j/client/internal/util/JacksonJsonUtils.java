@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -82,6 +83,22 @@ public class JacksonJsonUtils {
     public static <T> T toObject(String json, Class<T> type) {
         try {
             return mapper.readValue(json, type);
+        } catch (JsonProcessingException cause) {
+            throw new IllegalArgumentException("parse json to object failed!", cause);
+        }
+    }
+
+    /**
+     * {@code json -> TypeRef}
+     *
+     * @param json    json
+     * @param typeRef 对象类型
+     * @param <T>     对象类型
+     * @return 目标对象
+     */
+    public static <T> T toObject(String json, TypeReference<T> typeRef) {
+        try {
+            return mapper.readValue(json, typeRef);
         } catch (JsonProcessingException cause) {
             throw new IllegalArgumentException("parse json to object failed!", cause);
         }

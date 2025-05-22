@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.component;
 
 import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
-import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.reactivex.rxjava3.core.Flowable;
