@@ -27,13 +27,13 @@ class QwenTokenizer {
     private static final Map<Integer, byte[]> reverseBpeMerges = initReverseBpeMerges();
 
     private static Map<String, Integer> initSpecialBpeMerges() {
-        final Map<String,Integer> map = new LinkedHashMap<>();
+        final Map<String, Integer> map = new LinkedHashMap<>();
         int specialStartIndex = SPECIAL_START_ID;
         map.put(SPECIAL_EOT, specialStartIndex++);
         map.put(SPECIAL_IM_START, specialStartIndex++);
         map.put(SPECIAL_IM_END, specialStartIndex++);
         for (int i = 0; i < 205; i++) {
-            String specialToken = String.format("<|extra_%d|>", i);
+            String specialToken = "<|extra_%d|>".formatted(i);
             map.put(specialToken, specialStartIndex++);
         }
         return Collections.unmodifiableMap(map);
@@ -242,13 +242,9 @@ class QwenTokenizer {
     private static Map<String, Integer> initUsedSpecialBpeMerges(String text, SpecialTokenMode mode) {
         Map<String, Integer> specialTokensUse;
         switch (mode) {
-            case ALL:
-                specialTokensUse = specialBpeMerges;
-                break;
-            case NONE:
-                specialTokensUse = new LinkedHashMap<>();
-                break;
-            case NONE_RAISE:
+            case ALL -> specialTokensUse = specialBpeMerges;
+            case NONE -> specialTokensUse = new LinkedHashMap<>();
+            case NONE_RAISE -> {
                 specialTokensUse = new LinkedHashMap<>();
                 boolean isSpecialTokenExists = false;
                 for (String token : specialBpeMerges.keySet()) {
@@ -258,11 +254,10 @@ class QwenTokenizer {
                     }
                 }
                 if (!isSpecialTokenExists) {
-                    throw new NoSpecialTokenExistsException(String.format("No special token in %s", text));
+                    throw new NoSpecialTokenExistsException("No special token in %s".formatted(text));
                 }
-                break;
-            default:
-                throw new UnSupportedSpecialTokenModeException(String.format("UnSupport allowedSpecial: %s", mode));
+            }
+            default -> throw new UnSupportedSpecialTokenModeException("UnSupport allowedSpecial: %s".formatted(mode));
         }
         return specialTokensUse;
     }
@@ -340,7 +335,7 @@ class QwenTokenizer {
         @Override
         public boolean equals(Object obj) {
             return obj instanceof EncodeBytesEntity
-                   && Arrays.equals(bytes, ((EncodeBytesEntity) obj).bytes);
+                    && Arrays.equals(bytes, ((EncodeBytesEntity) obj).bytes);
         }
 
         @Override
@@ -360,8 +355,8 @@ class QwenTokenizer {
 
         final List<Integer> list = tokenizer.encodeOrdinary(
                 "北京有哪些好玩地方？" +
-                "故宫、颐和园、天坛等都是可以去游玩的景点哦。" +
-                "帮我安排一些行程"
+                        "故宫、颐和园、天坛等都是可以去游玩的景点哦。" +
+                        "帮我安排一些行程"
         );
 
         System.out.println(tokenizer.decode(list));

@@ -29,7 +29,7 @@ class ChatFunctionToolHelper {
         // 找到ChatFunction接口
         final ParameterizedType interfaceType = Optional
                 .ofNullable(GenericReflectUtils.findFirst(functionClass, ChatFunction.class))
-                .orElseThrow(() -> new IllegalArgumentException(String.format("required implements interface: %s",
+                .orElseThrow(() -> new IllegalArgumentException("required implements interface: %s".formatted(
                         ChatFunction.class.getName()
                 )));
 
@@ -50,7 +50,7 @@ class ChatFunctionToolHelper {
         final String fnName = Objects.nonNull(anChatFnName)
                 ? anChatFnName.value()
                 : toSnakeCase(functionClass.getSimpleName());
-        requireNonBlankString(fnName, () -> String.format("ChatFunction name is blank in class: %s", functionClass.getName()));
+        requireNonBlankString(fnName, () -> "ChatFunction name is blank in class: %s".formatted(functionClass.getName()));
         return fnName;
     }
 

@@ -79,23 +79,12 @@ class ReAct {
         final State current = stateRef.get();
         if (current != State.NONE) {
             switch (current) {
-                case THOUGHT:
-                    reAct.thought = stringBuf.toString();
-                    break;
-                case OBSERVATION:
-                    reAct.observation = stringBuf.toString();
-                    break;
-                case ACTION:
-                    reAct.action = stringBuf.toString();
-                    break;
-                case ACTION_INPUT:
-                    reAct.actionInput = stringBuf.toString();
-                    break;
-                case FINAL_ANSWER:
-                    reAct.finalAnswer = stringBuf.toString();
-                    break;
-                default:
-                    throw new IllegalStateException("Unreachable state: " + current);
+                case THOUGHT -> reAct.thought = stringBuf.toString();
+                case OBSERVATION -> reAct.observation = stringBuf.toString();
+                case ACTION -> reAct.action = stringBuf.toString();
+                case ACTION_INPUT -> reAct.actionInput = stringBuf.toString();
+                case FINAL_ANSWER -> reAct.finalAnswer = stringBuf.toString();
+                default -> throw new IllegalStateException("Unreachable state: " + current);
             }
         }
         stateRef.set(next);

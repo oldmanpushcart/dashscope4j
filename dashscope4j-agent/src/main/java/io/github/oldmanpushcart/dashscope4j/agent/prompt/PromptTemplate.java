@@ -93,7 +93,7 @@ public class PromptTemplate {
             final boolean isEscaped = matcher.start() > 0 && template.charAt(matcher.start() - 1) == '\\';
             final String placeholder = matcher.group(1);
             final String replacement = isEscaped || !variables.containsKey(placeholder)
-                    ? String.format("${%s}", placeholder)
+                    ? "${%s}".formatted(placeholder)
                     : String.valueOf(variables.get(placeholder));
             matcher.appendReplacement(stringBuf, Matcher.quoteReplacement(replacement));
         }

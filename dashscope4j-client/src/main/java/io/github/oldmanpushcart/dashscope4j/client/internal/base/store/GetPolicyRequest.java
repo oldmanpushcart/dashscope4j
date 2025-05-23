@@ -31,7 +31,7 @@ class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {
     public Request newHttpRequest() {
         log.debug("dashscope-client://base/store/get-policy >>> model={}", model.name());
         return new Request.Builder()
-                .url(String.format("https://dashscope.aliyuncs.com/api/v1/uploads?action=getPolicy&model=%s", model.name()))
+                .url("https://dashscope.aliyuncs.com/api/v1/uploads?action=getPolicy&model=%s".formatted(model.name()))
                 .get()
                 .build();
     }

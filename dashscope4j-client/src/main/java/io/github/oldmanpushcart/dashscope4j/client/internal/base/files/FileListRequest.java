@@ -34,10 +34,10 @@ class FileListRequest extends OpenAiRequest<FileListResponse> {
     private URI genQueryURI() {
         final StringBuilder builder = new StringBuilder("https://dashscope.aliyuncs.com/compatible-mode/v1/files?1=1");
         if (limit > 0) {
-            builder.append(String.format("&limit=%s", limit));
+            builder.append("&limit=%s".formatted(limit));
         }
         if (Objects.nonNull(after)) {
-            builder.append(String.format("&after=%s", after));
+            builder.append("&after=%s".formatted(after));
         }
         return URI.create(builder.toString());
     }

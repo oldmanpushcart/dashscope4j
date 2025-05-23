@@ -40,7 +40,7 @@ public class TaskGetRequest extends ApiRequest<TaskGetResponse> {
     public Request newHttpRequest() {
         log.debug("dashscope-client://base/task/get/{} >>> GET", taskId);
         return new Request.Builder()
-                .url(String.format("https://dashscope.aliyuncs.com/api/v1/tasks/%s", taskId))
+                .url("https://dashscope.aliyuncs.com/api/v1/tasks/%s".formatted(taskId))
                 .get()
                 .build();
     }

@@ -117,7 +117,7 @@ public class JacksonJsonUtils {
     public static <T> T toObject(String json, Class<T> type, Request request, okhttp3.Response httpResponse) {
         final Map<String, Object> variableMap = new HashMap<>();
         httpResponse.headers().forEach(header -> variableMap.put(
-                String.format("http/header/%s", header.getFirst()),
+                "http/header/%s".formatted(header.getFirst()),
                 header.getSecond()
         ));
         variableMap.put("dashscope/request", request);
@@ -184,7 +184,7 @@ public class JacksonJsonUtils {
             return schemaNode;
         } catch (JsonProcessingException cause) {
             throw new IllegalArgumentException(
-                    String.format("failed to generate schema for class: %s", type.getTypeName()),
+                    "Failed to generate schema for class: %s".formatted(type.getTypeName()),
                     cause
             );
         }

@@ -182,7 +182,7 @@ class ToolCaller implements Tool.Caller {
                     });
         } catch (Throwable cause) {
             throw new RuntimeException(
-                    String.format("Function call error! fn=%s;argument=%s",
+                    "Function call error! fn=%s;argument=%s".formatted(
                             call.stub().name(),
                             argumentsJson
                     ),

@@ -32,7 +32,7 @@ class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
     public Request newHttpRequest() {
         log.debug("dashscope-client://base/files/detail/{} >>> GET", identity);
         return new Request.Builder()
-                .url(String.format("https://dashscope.aliyuncs.com/compatible-mode/v1/files/%s", identity))
+                .url("https://dashscope.aliyuncs.com/compatible-mode/v1/files/%s".formatted(identity))
                 .get()
                 .build();
     }

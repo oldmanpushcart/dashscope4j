@@ -67,7 +67,7 @@ public class RecognitionConnectorImpl extends AbstractExchangeConnector implemen
 
             // 启动IO调度线程
             new Thread(() -> scheduleIo(exchange)) {{
-                setName(String.format("%s/io-scheduler/%s", RecognitionConnectorImpl.this, exchange.uuid()));
+                setName("%s/io-scheduler/%s".formatted(RecognitionConnectorImpl.this, exchange.uuid()));
                 setDaemon(true);
             }}.start();
 

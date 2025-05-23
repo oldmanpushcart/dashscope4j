@@ -34,7 +34,7 @@ public class TaskCancelRequest extends ApiRequest<TaskCancelResponse> {
     public Request newHttpRequest() {
         log.debug("dashscope-client://base/task/cancel/{} >>> POST", taskId);
         return new Request.Builder()
-                .url(String.format("https://dashscope.aliyuncs.com/api/v1/tasks/%s/cancel", taskId))
+                .url("https://dashscope.aliyuncs.com/api/v1/tasks/%s/cancel".formatted(taskId))
                 .post(RequestBody.create("", MT_APPLICATION_JSON))
                 .build();
     }

@@ -68,7 +68,7 @@ class PostUploadRequest extends ApiRequest<PostUploadResponse> {
             final String uuid = httpResponse.header("x-oss-request-id");
             return StringUtils.isNotBlank(bodyJson)
                     ? JacksonXmlUtils.toObject(bodyJson, PostUploadResponse.class, this, httpResponse)
-                    : new PostUploadResponse(this, uuid).output(URI.create(String.format("oss://%s", ossKey)));
+                    : new PostUploadResponse(this, uuid).output(URI.create("oss://%s".formatted(ossKey)));
         };
     }
 
@@ -78,7 +78,7 @@ class PostUploadRequest extends ApiRequest<PostUploadResponse> {
         final String name = path.substring(path.lastIndexOf('/') + 1);
         final int index = name.lastIndexOf('.');
         final String suffix = index == -1 ? "" : name.substring(index + 1);
-        return String.format("%s/%s.%s",
+        return "%s/%s.%s".formatted(
                 policy.oss().directory(),
                 UUID.randomUUID(),
                 suffix

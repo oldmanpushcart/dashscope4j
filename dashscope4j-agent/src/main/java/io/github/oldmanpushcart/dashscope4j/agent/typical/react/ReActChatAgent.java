@@ -79,7 +79,7 @@ public class ReActChatAgent extends BaseChatAgent {
                 .thenCompose(resultJson -> {
                     final ChatRequest nextRequest = ChatRequest.newBuilder(request)
                             .addMessage(previousResponseMessage)
-                            .addMessage(Message.ofUser(String.format("%s:%s", ReAct.NAME_OBSERVATION, resultJson)))
+                            .addMessage(Message.ofUser("%s:%s".formatted(ReAct.NAME_OBSERVATION, resultJson)))
                             .build();
                     return client().chat().async(nextRequest);
                 })
@@ -101,7 +101,7 @@ public class ReActChatAgent extends BaseChatAgent {
      * 但外部其实并不关心 Final Answer: ，只需要后边的真正答案，所以这里就需要进行对内容解包
      */
     private Flowable<ChatResponse> unpackingReActResponseFlow(Flowable<ChatResponse> responseFlow) {
-        final StreamSubstringDetector detector = new StreamSubstringDetector(String.format("%s: ", ReAct.NAME_FINAL_ANSWER));
+        final var detector = new StreamSubstringDetector("%s: ".formatted(ReAct.NAME_FINAL_ANSWER));
         return responseFlow
                 .map(response ->
                         response.changeChoice(choice ->
@@ -179,7 +179,7 @@ public class ReActChatAgent extends BaseChatAgent {
                                 .thenCompose(resultJson -> {
                                     final ChatRequest nextRequest = ChatRequest.newBuilder(request)
                                             .addMessage(Message.ofAi(responseText))
-                                            .addMessage(Message.ofAi(String.format("%s:%s", ReAct.NAME_OBSERVATION, resultJson)))
+                                            .addMessage(Message.ofAi("%s:%s".formatted(ReAct.NAME_OBSERVATION, resultJson)))
                                             .build();
                                     return client().chat().flow(nextRequest);
                                 })

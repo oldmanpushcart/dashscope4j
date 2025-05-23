@@ -28,7 +28,7 @@ class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder 
     public BaseChatAgentFunctionToolBuilder(BaseChatAgent agent) {
         requireNonNull(agent, "agent is required!");
         this.agent = agent;
-        this.name = String.format("agent_chat_function_%s", identityGen.getAndIncrement());
+        this.name = "agent_chat_function_%s".formatted(identityGen.getAndIncrement());
     }
 
     @Override

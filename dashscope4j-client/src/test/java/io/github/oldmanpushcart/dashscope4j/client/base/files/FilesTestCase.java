@@ -125,7 +125,7 @@ public class FilesTestCase extends ClientSupport {
         if (isTestFilename(filename)) {
             return filename;
         }
-        return String.format("%s_test_%s", System.currentTimeMillis(), filename);
+        return "%s_test_%s".formatted(System.currentTimeMillis(), filename);
     }
 
     private static boolean isTestFilename(String filename) {

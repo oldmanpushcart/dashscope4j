@@ -129,7 +129,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
         final List<Choice> currChoices = output().choices();
         final List<Choice> nextChoices = next.output().choices();
         if (currChoices.size() != nextChoices.size()) {
-            throw new IllegalArgumentException(String.format("The number of choices is not equal! expect:%s but %s",
+            throw new IllegalArgumentException("The number of choices is not equal! expect:%s but %s".formatted(
                     currChoices.size(),
                     nextChoices.size()
             ));

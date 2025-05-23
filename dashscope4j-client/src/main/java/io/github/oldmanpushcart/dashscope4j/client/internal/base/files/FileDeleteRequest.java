@@ -32,7 +32,7 @@ class FileDeleteRequest extends OpenAiRequest<FileDeleteResponse> {
     public Request newHttpRequest() {
         log.debug("dashscope-client://base/files/delete/{} >>> DELETE", identity);
         return new Request.Builder()
-                .url(String.format("https://dashscope.aliyuncs.com/compatible-mode/v1/files/%s", identity))
+                .url("https://dashscope.aliyuncs.com/compatible-mode/v1/files/%s".formatted(identity))
                 .delete()
                 .build();
     }

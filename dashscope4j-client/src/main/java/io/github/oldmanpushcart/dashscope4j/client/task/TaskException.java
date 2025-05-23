@@ -34,7 +34,7 @@ public class TaskException extends RuntimeException {
          * @param taskId 任务ID
          */
         public TaskCancelledException(String taskId) {
-            super(taskId, String.format("task: %s cancelled", taskId));
+            super(taskId, "Task: %s cancelled".formatted(taskId));
         }
 
     }
@@ -56,11 +56,7 @@ public class TaskException extends RuntimeException {
          * @param response 应答
          */
         public TaskFailedException(String taskId, ApiResponse<?> response) {
-            super(taskId, String.format("task: %s failed! code=%s;desc=%s;",
-                    taskId,
-                    response.code(),
-                    response.desc()
-            ));
+            super(taskId, "Task: %s failed! code=%s;desc=%s;".formatted(taskId, response.code(), response.desc()));
             this.code = response.code();
             this.desc = response.desc();
         }

@@ -27,14 +27,9 @@ public class MessageCodec {
         final JsonNode messageNode = JacksonJsonUtils.toNode(message);
         if (messageNode instanceof ObjectNode node) {
             switch (mode) {
-                case TEXT:
-                    node.put("content", message.text());
-                    break;
-                case MULTIMODAL:
-                    node.putPOJO("content", message.contents());
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported mode: " + mode);
+                case TEXT -> node.put("content", message.text());
+                case MULTIMODAL -> node.putPOJO("content", message.contents());
+                default -> throw new IllegalArgumentException("Unsupported mode: " + mode);
             }
         }
         return mapper.apply(messageNode);

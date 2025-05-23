@@ -142,7 +142,7 @@ public class Message {
 
         // 只有角色相同的消息才能合并
         if (role != next.role) {
-            throw new IllegalArgumentException(String.format("role not match! expect: %s but was: %s",
+            throw new IllegalArgumentException("role not match! expect: %s but was: %s".formatted(
                     role,
                     next.role
             ));

@@ -24,7 +24,7 @@ public class ApiException extends RuntimeException {
      * @param desc   应答消息
      */
     public ApiException(int status, String uuid, String code, String desc) {
-        super(String.format("api response failed! status=%s;uuid=%s;code=%s;desc=%s", status, uuid, code, desc));
+        super("api response failed! status=%s;uuid=%s;code=%s;desc=%s".formatted(status, uuid, code, desc));
         this.status = status;
         this.uuid = uuid;
         this.code = code;

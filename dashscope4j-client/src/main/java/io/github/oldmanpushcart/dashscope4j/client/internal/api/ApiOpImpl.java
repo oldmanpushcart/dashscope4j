@@ -68,7 +68,7 @@ public class ApiOpImpl implements ApiOp {
          * 否则应该尽量依靠外部的设置
          */
         if (Objects.nonNull(ak)) {
-            builder.addHeader(HTTP_HEADER_AUTHORIZATION, String.format("Bearer %s", ak));
+            builder.addHeader(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak));
         }
 
         consumer.accept(builder);
@@ -145,7 +145,7 @@ public class ApiOpImpl implements ApiOp {
                                 throw new ApiException(httpResponse.code(), response);
                             }
                         } else {
-                            throw new IllegalStateException(String.format("Unexpected event type: %s", type));
+                            throw new IllegalStateException("Unexpected event type: %s".formatted(type));
                         }
                     } catch (Throwable cause) {
                         if (!emitter.isCancelled()) {
@@ -183,7 +183,7 @@ public class ApiOpImpl implements ApiOp {
                             if (null != event) {
                                 onEvent(eventSource, event.id(), event.type(), event.data());
                             } else {
-                                emitter.onError(new RuntimeException(String.format("dashscope-client://flow error! code: %d, body: %s",
+                                emitter.onError(new RuntimeException("dashscope-client://flow error! code: %d, body: %s".formatted(
                                         httpResponse.code(),
                                         body
                                 )));
@@ -197,7 +197,7 @@ public class ApiOpImpl implements ApiOp {
                     /*
                      * 走到这一步则说明获取body失败，则直接抛出异常
                      */
-                    emitter.onError(new RuntimeException(String.format("dashscope-client://flow error! code: %d",
+                    emitter.onError(new RuntimeException("dashscope-client://flow error! code: %d".formatted(
                             httpResponse.code()
                     )));
 

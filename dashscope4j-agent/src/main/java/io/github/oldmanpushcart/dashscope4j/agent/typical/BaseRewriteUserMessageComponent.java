@@ -65,7 +65,7 @@ class BaseRewriteUserMessageComponent implements Component {
                 .variable("input", message::text)
                 .variable("resources", message.mediaContents()
                         .stream()
-                        .map(content -> String.format("- **%s**: %s", content.type(), content.data()))
+                        .map(content -> "- **%s**: %s".formatted(content.type(), content.data()))
                         .collect(Collectors.joining("\n")))
                 .build()
                 .render();

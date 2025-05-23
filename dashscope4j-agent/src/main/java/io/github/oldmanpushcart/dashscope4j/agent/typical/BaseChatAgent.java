@@ -81,7 +81,7 @@ public abstract class BaseChatAgent implements ChatAgent {
     private static String buildingName(String name) {
         return (null != name && !name.isBlank())
                 ? name
-                : String.format("chat-agent-%s", identityGen.incrementAndGet());
+                : "chat-agent-%s".formatted(identityGen.incrementAndGet());
     }
 
     @Override

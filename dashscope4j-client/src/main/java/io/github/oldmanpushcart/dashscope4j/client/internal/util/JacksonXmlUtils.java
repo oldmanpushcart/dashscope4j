@@ -45,7 +45,7 @@ public class JacksonXmlUtils {
     public static <T> T toObject(String xml, Class<T> type, Request request, okhttp3.Response httpResponse) {
         final Map<String, Object> variableMap = new HashMap<>();
         httpResponse.headers().forEach(header -> variableMap.put(
-                String.format("http/header/%s", header.getFirst()),
+                "http/header/%s".formatted(header.getFirst()),
                 header.getSecond()
         ));
         variableMap.put("dashscope/request", request);

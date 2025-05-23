@@ -35,7 +35,7 @@ public abstract class AbstractExchangeConnector implements ExchangeConnector {
     private void updateState(State expect, State value) {
         final State actual = stateRef.get();
         if (actual != expect || !stateRef.compareAndSet(expect, value)) {
-            throw new IllegalStateException(String.format("Update state error! expect: %s, actual: %s!",
+            throw new IllegalStateException("Update state error! expect: %s, actual: %s!".formatted(
                     expect,
                     actual
             ));

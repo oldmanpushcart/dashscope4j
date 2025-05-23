@@ -80,7 +80,7 @@ class ExchangeWebSocketListenerImpl<T extends ApiRequest<R>, R extends ApiRespon
             listener.onCompleted();
             closeF.complete(null);
         } else {
-            final Exception ex = new IOException(String.format("Internal closed! code=%s;reason=%s;",
+            final Exception ex = new IOException("Internal closed! code=%s;reason=%s;".formatted(
                     code,
                     reason
             ));

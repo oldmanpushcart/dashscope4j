@@ -34,7 +34,7 @@ public class FileMeta {
      * @return URI
      */
     public URI toURI() {
-        return URI.create(String.format("fileid://%s", identity));
+        return URI.create("fileid://%s".formatted(identity));
     }
 
 }

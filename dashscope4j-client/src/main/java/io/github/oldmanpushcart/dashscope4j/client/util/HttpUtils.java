@@ -52,7 +52,7 @@ public class HttpUtils {
         final CompletableFutureCallback<String> callback = new CompletableFutureCallback<>((call, response) -> {
 
             if (!response.isSuccessful()) {
-                throw new IOException(String.format("Unexpected code: %s", response.code()));
+                throw new IOException("Unexpected code: %s".formatted(response.code()));
             }
 
             final ResponseBody responseBody = response.body();
@@ -99,7 +99,7 @@ public class HttpUtils {
         final CompletableFutureCallback<File> callback = new CompletableFutureCallback<>((call, response) -> {
 
             if (!response.isSuccessful()) {
-                throw new IOException(String.format("Unexpected code: %s", response.code()));
+                throw new IOException("Unexpected code: %s".formatted(response.code()));
             }
 
             final byte[] buffer = new byte[1024];
