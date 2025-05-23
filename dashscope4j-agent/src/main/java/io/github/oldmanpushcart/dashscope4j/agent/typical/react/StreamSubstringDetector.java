@@ -1,35 +1,43 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
 /**
- * 检测字符串
+ * 检测流式输出的子串
  */
-class StringDetector {
+class StreamSubstringDetector {
 
     private final char[] chars;
     private int index;
     private boolean detected;
 
-    public StringDetector(String target) {
+    /**
+     * 创建检测器
+     *
+     * @param target 目标子串
+     */
+    public StreamSubstringDetector(String target) {
         this.chars = target.toCharArray();
     }
 
+    /**
+     * 重置检测器
+     */
     public void reset() {
         index = 0;
         detected = false;
     }
 
     /**
-     * 检测字符串
+     * 向检测器提供一个新的字符串片段进行处理
      *
-     * @param text 待检测的字符串
-     * @return 发现的位置，-1表示未发现
+     * @param chunk 新到达的字符串片段
+     * @return 最终检测到在当前字符串片段的位置，-1表示未发现
      */
-    public int detect(String text) {
+    public int feed(String chunk) {
         int position = 0;
         if (detected) {
             return position;
         }
-        final char[] textCharArray = text.toCharArray();
+        final char[] textCharArray = chunk.toCharArray();
         for (; position < textCharArray.length; position++) {
             final char textChar = textCharArray[position];
             if (textChar == chars[index]) {

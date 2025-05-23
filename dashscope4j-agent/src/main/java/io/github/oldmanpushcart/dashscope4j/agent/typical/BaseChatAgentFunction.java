@@ -7,17 +7,10 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Value;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 
 /**
  * 基础智能体函数
@@ -46,59 +39,56 @@ class BaseChatAgentFunction
     /**
      * 函数参数
      */
-    @Value
-    @Accessors(fluent = true)
-    @Jacksonized
-    @Builder
-    public static class Parameter {
+    record Parameter(
 
-        @JsonPropertyDescription("描述希望执行的具体任务")
-        @JsonProperty(required = true)
-        String input;
-
-        @JsonPropertyDescription("""
-                执行任务所必须的URI
-                - 必须严格符合URI格式：scheme://username:password@hostname:port/path?query#fragment
-                - 可接受本地文件URI格式：file://hose/path
-                """
-        )
-        @JsonProperty(required = true)
-        List<Resource> resources;
-
-        @Value
-        @Accessors(fluent = true)
-        @Jacksonized
-        @Builder
-        public static class Resource {
-
-            @JsonPropertyDescription("类型")
+            @JsonPropertyDescription("描述希望执行的具体任务")
             @JsonProperty(required = true)
-            Type type;
+            String input,
 
-            @JsonPropertyDescription("资源URI")
+            @JsonPropertyDescription("""
+                    执行任务所必须的URI
+                    - 必须严格符合URI格式：scheme://username:password@hostname:port/path?query#fragment
+                    - 可接受本地文件URI格式：file://hose/path
+                    """
+            )
             @JsonProperty(required = true)
-            URI uri;
+            List<Resource> resources
 
+    ) {
+
+
+        /**
+         * 资源
+         *
+         * @param type 类型
+         * @param uri  地址
+         */
+        record Resource(
+
+                @JsonPropertyDescription("类型")
+                @JsonProperty(required = true)
+                Type type,
+
+                @JsonPropertyDescription("资源URI")
+                @JsonProperty(required = true)
+                URI uri
+
+        ) {
+
+            /**
+             * 资源类型
+             */
             public enum Type {
-
-                @JsonProperty("image")
-                IMAGE,
-
-                @JsonProperty("video")
-                VIDEO,
-
-                @JsonProperty("audio")
-                AUDIO,
-
-                @JsonProperty("file")
-                FILE
-
+                @JsonProperty("image") IMAGE,
+                @JsonProperty("video") VIDEO,
+                @JsonProperty("audio") AUDIO,
+                @JsonProperty("file") FILE
             }
 
             /**
              * @return 转换为媒体内容
              */
-            public Content<?> toContent() {
+            public Content.MediaContent toMediaContent() {
                 return switch (type) {
                     case IMAGE -> Content.MediaContent.ofImage(uri);
                     case VIDEO -> Content.MediaContent.ofVideo(uri);
@@ -113,16 +103,10 @@ class BaseChatAgentFunction
          * @return 转换为消息
          */
         public Message toMessage() {
-
-            final List<Content<?>> mediaContents = resources.stream()
-                    .map(Resource::toContent)
-                    .collect(Collectors.toList());
-
-            final List<Content<?>> contents = new ArrayList<>();
-            contents.add(Content.ofText(input));
-            contents.addAll(mediaContents);
-
-            return Message.ofUser(contents);
+            final var mediaContents = resources.stream()
+                    .map(Resource::toMediaContent)
+                    .toList();
+            return Message.ofUser(input, mediaContents);
         }
 
     }
@@ -130,21 +114,11 @@ class BaseChatAgentFunction
     /**
      * 函数结果
      */
-    @Data
-    @Accessors(fluent = true, chain = true)
-    public static class Result {
-
-        @JsonPropertyDescription("返回结果")
-        @JsonProperty
-        String output;
-
-        @JsonPropertyDescription("返回结果提示")
-        @JsonProperty
-        String prompt;
-
-        public Result(String output) {
-            this.output = output;
-        }
+    record Result(
+            @JsonPropertyDescription("返回结果")
+            @JsonProperty
+            String output
+    ) {
 
     }
 

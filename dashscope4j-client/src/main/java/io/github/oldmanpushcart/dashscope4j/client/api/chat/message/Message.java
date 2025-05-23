@@ -8,6 +8,7 @@ import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
@@ -161,6 +162,19 @@ public class Message {
     }
 
     /**
+     * 修改文本内容
+     *
+     * @param operator 修改函数
+     * @return 新消息
+     */
+    public Message changeText(UnaryOperator<String> operator) {
+        final List<Content<?>> newContents = new ArrayList<>();
+        newContents.add(Content.ofText(operator.apply(text())));
+        newContents.addAll(mediaContents());
+        return new Message(Role.USER, newContents);
+    }
+
+    /**
      * 创建消息
      *
      * @param role     角色
@@ -208,6 +222,20 @@ public class Message {
      * @return 消息
      */
     public static Message ofUser(List<Content<?>> contents) {
+        return new Message(Role.USER, contents);
+    }
+
+    /**
+     * 用户消息
+     *
+     * @param text          文本
+     * @param mediaContents 媒体内容集合
+     * @return 消息
+     */
+    public static Message ofUser(String text, List<Content.MediaContent> mediaContents) {
+        final List<Content<?>> contents = new ArrayList<>();
+        contents.add(Content.ofText(text));
+        contents.addAll(mediaContents);
         return new Message(Role.USER, contents);
     }
 

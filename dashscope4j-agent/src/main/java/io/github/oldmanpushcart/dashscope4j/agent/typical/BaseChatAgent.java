@@ -20,7 +20,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
@@ -150,13 +149,10 @@ public abstract class BaseChatAgent implements ChatAgent {
                     if (Objects.isNull(prompt)) {
                         return;
                     }
-                    final List<Message> nonSystemMessages = request.messages().stream()
-                            .filter(message -> message.role() != Message.Role.SYSTEM)
-                            .collect(Collectors.toList());
                     builder.self()
                             .messages(emptyList())
                             .addMessage(Message.ofSystem(prompt))
-                            .addMessages(nonSystemMessages);
+                            .addMessages(request.messages());
                 })
 
                 /*

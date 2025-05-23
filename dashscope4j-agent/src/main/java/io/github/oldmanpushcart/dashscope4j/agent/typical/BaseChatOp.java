@@ -73,7 +73,6 @@ class BaseChatOp implements ChatOp {
         return of(agent, baseChatOp, components);
     }
 
-
     private record ProcessorImpl<R>(
             ChatAgent agent,
             ChatRequest request,

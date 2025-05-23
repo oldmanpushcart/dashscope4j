@@ -5,14 +5,12 @@ import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionToolNotFoundException;
 import io.reactivex.rxjava3.core.Flowable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
@@ -103,7 +101,7 @@ public class ReActChatAgent extends BaseChatAgent {
      * 但外部其实并不关心 Final Answer: ，只需要后边的真正答案，所以这里就需要进行对内容解包
      */
     private Flowable<ChatResponse> unpackingReActResponseFlow(Flowable<ChatResponse> responseFlow) {
-        final StringDetector detector = new StringDetector(String.format("%s: ", ReAct.NAME_FINAL_ANSWER));
+        final StreamSubstringDetector detector = new StreamSubstringDetector(String.format("%s: ", ReAct.NAME_FINAL_ANSWER));
         return responseFlow
                 .map(response ->
                         response.changeChoice(choice ->
@@ -116,7 +114,7 @@ public class ReActChatAgent extends BaseChatAgent {
                                     }
 
                                     final String text = message.text();
-                                    final int position = detector.detect(text);
+                                    final int position = detector.feed(text);
 
                                     // 找到探测字符串，则修改最终答案
                                     final String newText = -1 == position
@@ -202,23 +200,28 @@ public class ReActChatAgent extends BaseChatAgent {
                 // 重写对话消息
                 .building(builder -> {
 
-                    final Message lastUserMessage = request.requireLastMessageFromUser();
-                    final Message newLastUserMessage = ReActPromptTemplate.newBuilder()
+                    final var lastUserMessage = request.requireLastMessageFromUser();
+
+                    final var newLastUserMessage = ReActPromptTemplate.newBuilder()
+                            .template("""
+                                    Question:
+                                    ${question}
+                                    """)
+                            .variable("question", lastUserMessage.text())
+                            .build()
+                            .renderTo(prompt -> lastUserMessage.changeText(v -> prompt));
+
+                    final var reActSystemMessage = ReActPromptTemplate.newBuilder()
                             .tools(request.tools().stream()
-                                    .filter(tool-> tool instanceof FunctionTool)
+                                    .filter(tool -> tool instanceof FunctionTool)
                                     .map(FunctionTool.class::cast)
                                     .collect(Collectors.toList()))
-                            .question(lastUserMessage.text())
                             .build()
-                            .renderTo(prompt-> {
-                                final List<Content<?>> newContents = new ArrayList<>();
-                                newContents.add(Content.ofText(prompt));
-                                newContents.addAll(lastUserMessage.mediaContents());
-                                return Message.ofUser(newContents);
-                            });
+                            .renderTo(Message::ofSystem);
 
                     builder.self()
                             .messages(emptyList())
+                            .addMessage(reActSystemMessage)
                             .addMessages(request.historyMessages())
                             .addMessage(newLastUserMessage);
                 })

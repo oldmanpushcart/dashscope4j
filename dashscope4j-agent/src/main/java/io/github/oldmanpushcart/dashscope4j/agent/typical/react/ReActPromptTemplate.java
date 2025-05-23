@@ -32,9 +32,6 @@ class ReActPromptTemplate extends PromptTemplate {
             Final Answer: the final answer to the original input question
             
             Please make sure that if you return JSON data, you return it in plain JSON format without using Markdown code blocks like ```json or anything similar.
-            
-            Question:
-            ${question}
             """;
 
     public static final String NAME_TOOLS = "tools";
@@ -106,17 +103,6 @@ class ReActPromptTemplate extends PromptTemplate {
                     .map(FunctionTool.Meta::name)
                     .collect(Collectors.toList()));
 
-            return this;
-        }
-
-        /**
-         * 设置问题
-         *
-         * @param question 问题
-         * @return this
-         */
-        public Builder question(String question) {
-            variable(NAME_QUESTION, question);
             return this;
         }
 
