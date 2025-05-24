@@ -10,7 +10,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionToolNotFoundException;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +36,6 @@ class FunctionToolCaller implements Tool.Caller {
      * @return 异步调用函数应答
      */
     public CompletionStage<ChatResponse> asyncCall() {
-
         final Map<String, CompletableFuture<String>> futureMap = parallelCallFunction();
         return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
                 .thenCompose(unused -> {
@@ -54,7 +52,6 @@ class FunctionToolCaller implements Tool.Caller {
      * @return 流式调用函数应答
      */
     public CompletionStage<Flowable<ChatResponse>> flowCall() {
-
         final Map<String, CompletableFuture<String>> futureMap = parallelCallFunction();
         return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
                 .thenCompose(unused -> {
@@ -122,17 +119,14 @@ class FunctionToolCaller implements Tool.Caller {
         message.calls().stream()
                 .map(FunctionTool.Call.class::cast)
                 .forEach(call -> {
-                    CompletionStage<String> future;
+                    CompletionStage<String> stage;
                     try {
-                        final FunctionTool tool = switchFunctionTool(call);
-                        future = callFunction(tool, call);
+                        final FunctionTool tool = requireFunctionTool(call);
+                        stage = callFunction(tool, call);
                     } catch (Throwable ex) {
-                        future = failedStage(ex);
+                        stage = failedStage(ex);
                     }
-                    futureMap.put(
-                            call.id(),
-                            future.toCompletableFuture()
-                    );
+                    futureMap.put(call.id(), stage.toCompletableFuture());
                 });
         return futureMap;
     }
@@ -140,23 +134,20 @@ class FunctionToolCaller implements Tool.Caller {
     // 函数调用
     private CompletionStage<String> callFunction(FunctionTool tool, FunctionTool.Call call) {
 
-
-        final String argumentsJson = call.stub().arguments();
-
         if (log.isDebugEnabled()) {
             log.debug("dashscope-client://chat/function/{} <<< {}",
                     call.stub().name(),
-                    JacksonJsonUtils.compact(argumentsJson)
+                    call.stub().arguments()
             );
         }
 
         try {
-            return tool.call(this, argumentsJson)
-                    .whenComplete((resultJson, ex) -> {
+            return tool.call(this, call.stub().arguments())
+                    .whenComplete((result, ex) -> {
                         if (log.isDebugEnabled()) {
                             log.debug("dashscope-client://chat/function/{} >>> {}",
                                     call.stub().name(),
-                                    JacksonJsonUtils.compact(resultJson),
+                                    result,
                                     ex
                             );
                         }
@@ -165,7 +156,7 @@ class FunctionToolCaller implements Tool.Caller {
             throw new RuntimeException(
                     "Function call error! fn=%s;argument=%s".formatted(
                             call.stub().name(),
-                            argumentsJson
+                            call.stub().arguments()
                     ),
                     cause
             );
@@ -173,7 +164,7 @@ class FunctionToolCaller implements Tool.Caller {
     }
 
     // 找到函数工具
-    private FunctionTool switchFunctionTool(FunctionTool.Call functionCall) {
+    private FunctionTool requireFunctionTool(FunctionTool.Call functionCall) {
         return request.tools().stream()
                 .filter(FunctionTool.class::isInstance)
                 .map(FunctionTool.class::cast)

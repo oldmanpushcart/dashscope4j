@@ -34,8 +34,8 @@ public class DemoTestCase {
 
     @Test
     public void test$demo$sync() {
-        final var params = ServerParameters.builder("npx")
-                .args("-y", "@amap/amap-maps-mcp-server")
+        final var params = ServerParameters.builder("cmd")
+                .args("/c", "npx", "-y", "@amap/amap-maps-mcp-server")
                 .addEnvVar("AMAP_MAPS_API_KEY", AMAP_AK)
                 .build();
         final var transport = new StdioClientTransport(params);

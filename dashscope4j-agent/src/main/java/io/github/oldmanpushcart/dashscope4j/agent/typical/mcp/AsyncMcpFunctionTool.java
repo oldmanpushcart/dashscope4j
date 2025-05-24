@@ -57,11 +57,11 @@ public class AsyncMcpFunctionTool implements FunctionTool {
         final var request = new McpSchema.CallToolRequest(name, argumentsMap);
 
         if (log.isDebugEnabled()) {
-            log.debug("dashscope-agent://mcp/tool/{}@{}#{} <<< {}",
+            log.debug("dashscope-agent://async/mcp/tool/{}@{}#{} <<< {}",
                     mcpClient.getServerInfo().name(),
                     mcpClient.getServerInfo().version(),
                     mcpTool.name(),
-                    JsonUtils.compact(argumentsJson)
+                    argumentsJson
             );
         }
 
@@ -81,21 +81,21 @@ public class AsyncMcpFunctionTool implements FunctionTool {
                     .thenApply(JsonUtils::toJson)
                     .whenComplete((resultJson, ex) -> {
                         if (log.isDebugEnabled()) {
-                            log.debug("dashscope-agent://mcp/tool/{}@{}#{} >>> {}",
+                            log.debug("dashscope-agent://async/mcp/tool/{}@{}#{} >>> {}",
                                     mcpClient.getServerInfo().name(),
                                     mcpClient.getServerInfo().version(),
                                     mcpTool.name(),
-                                    JsonUtils.compact(resultJson),
+                                    resultJson,
                                     ex
                             );
                         }
                     });
         } catch (Throwable ex) {
             throw new RuntimeException(
-                    "Mcp tool call error! mcp-client=%s@%s;arguments=%s".formatted(
+                    "Mcp tool async call error! mcp-client=%s@%s;arguments=%s".formatted(
                             mcpClient.getServerInfo().name(),
                             mcpClient.getServerInfo().version(),
-                            JsonUtils.compact(argumentsJson)
+                            argumentsJson
                     ),
                     ex
             );
