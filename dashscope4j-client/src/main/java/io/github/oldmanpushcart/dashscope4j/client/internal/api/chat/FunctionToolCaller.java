@@ -12,6 +12,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.Functi
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionToolNotFoundException;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
 import io.reactivex.rxjava3.core.Flowable;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -22,33 +23,13 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.concurrent.CompletableFuture.failedStage;
 
 @Slf4j
-class ToolCaller implements Tool.Caller {
+@AllArgsConstructor
+class FunctionToolCaller implements Tool.Caller {
 
     private final DashscopeClient client;
     private final ChatOp chatOp;
     private final ChatRequest request;
     private final ToolCallMessage message;
-
-    public ToolCaller(DashscopeClient client, ChatOp chatOp, ChatRequest request, ToolCallMessage message) {
-        preCheck(message);
-        this.client = client;
-        this.chatOp = chatOp;
-        this.request = request;
-        this.message = message;
-    }
-
-    /*
-     * 前置检查
-     * 当前只支持函数工具调用
-     */
-    private static void preCheck(ToolCallMessage message) {
-
-        // 检查工具调用中是否只有函数调用，当前只支持函数调用
-        if (!message.calls().stream().allMatch(call -> call instanceof FunctionTool.Call)) {
-            throw new UnsupportedOperationException("Only support function call in tool call.");
-        }
-
-    }
 
     /**
      * 异步调用函数工具

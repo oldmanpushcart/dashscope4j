@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat;
 
-import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.Model;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
@@ -29,8 +29,9 @@ class ProcessAutoUploadForChatMessageInterceptor implements Interceptor {
         }
 
         // 只处理开启了自动上传的请求
-        final AutoUploadContext autoUploadContext = chain.request().context(AutoUploadContext.class);
-        if (null == autoUploadContext || !autoUploadContext.autoUpload()) {
+        if (chain.request().optionalContext(ConfigContext.class)
+                .filter(ConfigContext::autoUpload)
+                .isEmpty()) {
             return chain.process(chain.request());
         }
 
@@ -48,9 +49,9 @@ class ProcessAutoUploadForChatMessageInterceptor implements Interceptor {
 
     private CompletionStage<Message> processMessage(Chain chain, ChatRequest request, Message message) {
         if (message instanceof ToolCallMessage
-            || message instanceof ToolMessage
-            || message instanceof PluginCallMessage
-            || message instanceof PluginMessage) {
+                || message instanceof ToolMessage
+                || message instanceof PluginCallMessage
+                || message instanceof PluginMessage) {
             return completedFuture(message);
         }
         return thenIterateCompose(message.contents(), content -> processContent(chain, request, content))

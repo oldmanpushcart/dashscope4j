@@ -16,7 +16,7 @@ public class ChatOpImpl implements ChatOp {
     private static final List<Interceptor> interceptors = Arrays.asList(
             new ProcessAutoUploadForChatMessageInterceptor(),
             new ProcessContentForQwenLongInterceptor(),
-            new ProcessToolCallForChatInterceptor()
+            new ProcessFunctionToolCallForChatInterceptor()
     );
     private final ApiOp apiOp;
 

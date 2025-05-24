@@ -16,6 +16,9 @@ import java.util.concurrent.CompletionStage;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedStage;
 
+/**
+ * 同步MCP函数工具
+ */
 @Slf4j
 @Accessors(fluent = true)
 public class SyncMcpFunctionTool implements FunctionTool {
@@ -56,8 +59,8 @@ public class SyncMcpFunctionTool implements FunctionTool {
 
         if (log.isDebugEnabled()) {
             log.debug("dashscope-agent://mcp/tool/{}@{}#{} <<< {}",
-                    mcpClient.getClientInfo().name(),
-                    mcpClient.getClientInfo().version(),
+                    mcpClient.getServerInfo().name(),
+                    mcpClient.getServerInfo().version(),
                     mcpTool.name(),
                     JsonUtils.compact(argumentsJson)
             );
@@ -66,7 +69,7 @@ public class SyncMcpFunctionTool implements FunctionTool {
         try {
             return completedStage(mcpClient.callTool(request))
                     .thenApply(result -> {
-                        if (result.isError()) {
+                        if (null != result && null != result.isError() && result.isError()) {
                             throw new IllegalStateException("Sync calling Mcp.Tool: %s occur error: %s".formatted(
                                     name,
                                     result.content()
@@ -79,8 +82,8 @@ public class SyncMcpFunctionTool implements FunctionTool {
                     .whenComplete((resultJson, ex) -> {
                         if (log.isDebugEnabled()) {
                             log.debug("dashscope-agent://mcp/tool/{}@{}#{} >>> {}",
-                                    mcpClient.getClientInfo().name(),
-                                    mcpClient.getClientInfo().version(),
+                                    mcpClient.getServerInfo().name(),
+                                    mcpClient.getServerInfo().version(),
                                     mcpTool.name(),
                                     JsonUtils.compact(resultJson)
                             );
@@ -89,8 +92,8 @@ public class SyncMcpFunctionTool implements FunctionTool {
         } catch (Throwable ex) {
             throw new RuntimeException(
                     "Mcp tool call error! mcp-client=%s@%s;arguments=%s".formatted(
-                            mcpClient.getClientInfo().name(),
-                            mcpClient.getClientInfo().version(),
+                            mcpClient.getServerInfo().name(),
+                            mcpClient.getServerInfo().version(),
                             JsonUtils.compact(argumentsJson)
                     ),
                     ex
@@ -108,12 +111,24 @@ public class SyncMcpFunctionTool implements FunctionTool {
         private McpSyncClient mcpClient;
         private McpSchema.Tool mcpTool;
 
+        /**
+         * 设置同步MCP客户端
+         *
+         * @param mcpClient MCP 同步客户端
+         * @return this
+         */
         public Builder mcpClient(McpSyncClient mcpClient) {
             requireNonNull(mcpClient, "McpClient must not be null");
             this.mcpClient = mcpClient;
             return this;
         }
 
+        /**
+         * 设置MCP工具
+         *
+         * @param mcpTool MCP工具
+         * @return this
+         */
         public Builder mcpTool(McpSchema.Tool mcpTool) {
             requireNonNull(mcpTool, "McpTool must not be null");
             this.mcpTool = mcpTool;

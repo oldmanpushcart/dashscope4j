@@ -10,9 +10,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * 对话请求处理工具调用
+ * 对话请求处理函数工具调用
  */
-class ProcessToolCallForChatInterceptor implements Interceptor {
+class ProcessFunctionToolCallForChatInterceptor implements Interceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain) {
@@ -33,15 +33,14 @@ class ProcessToolCallForChatInterceptor implements Interceptor {
 
         // 处理Async应答
         if (v instanceof ChatResponse) {
-            return new ToolCallOpAsyncHandler(client, client.chat())
+            return new FunctionToolCallOpAsyncHandler(client, client.chat())
                     .apply((ChatResponse) v);
         }
 
         // 处理Flow应答
         else if (v instanceof Flowable<?>) {
-            @SuppressWarnings("unchecked")
-            final Flowable<ChatResponse> responseFlow = (Flowable<ChatResponse>) v;
-            final Flowable<ChatResponse> tcFlow = new ToolCallOpFlowHandler(client, client.chat())
+            @SuppressWarnings("unchecked") final Flowable<ChatResponse> responseFlow = (Flowable<ChatResponse>) v;
+            final Flowable<ChatResponse> tcFlow = new FunctionToolCallOpFlowHandler(client, client.chat())
                     .apply(responseFlow);
             return CompletableFuture.completedFuture(tcFlow);
         }

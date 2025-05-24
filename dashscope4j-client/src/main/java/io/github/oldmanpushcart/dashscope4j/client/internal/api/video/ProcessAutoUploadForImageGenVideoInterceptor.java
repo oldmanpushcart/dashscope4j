@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.video;
 
-import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.ImageGenVideoRequest;
 
@@ -23,8 +23,9 @@ class ProcessAutoUploadForImageGenVideoInterceptor implements Interceptor {
         }
 
         // 只处理开启了自动上传的请求
-        final AutoUploadContext autoUploadContext = chain.request().context(AutoUploadContext.class);
-        if (null == autoUploadContext || !autoUploadContext.autoUpload()) {
+        if (chain.request().optionalContext(ConfigContext.class)
+                .filter(ConfigContext::autoUpload)
+                .isEmpty()) {
             return chain.process(chain.request());
         }
 

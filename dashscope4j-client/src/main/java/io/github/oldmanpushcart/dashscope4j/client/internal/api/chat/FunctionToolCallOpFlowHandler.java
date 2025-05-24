@@ -21,7 +21,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
-class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
+class FunctionToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
 
     private final DashscopeClient client;
     private final ChatOp chatOp;
@@ -61,7 +61,7 @@ class ToolCallOpFlowHandler implements UnaryOperator<Flowable<ChatResponse>> {
                         final boolean isIncrementalOutput = request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true);
                         final ToolCallMessage toolCallMessage = mergeToolCallMessage(isIncrementalOutput, toolCallMessages);
                         final CompletionStage<Flowable<ChatResponse>> tcFlow
-                                = new ToolCaller(client, chatOp, request, toolCallMessage)
+                                = new FunctionToolCaller(client, chatOp, request, toolCallMessage)
                                 .flowCall();
                         return Flowable
                                 .fromCompletionStage(tcFlow)

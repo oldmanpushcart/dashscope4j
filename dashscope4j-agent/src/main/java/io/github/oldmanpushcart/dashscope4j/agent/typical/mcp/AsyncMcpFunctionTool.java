@@ -15,6 +15,9 @@ import java.util.concurrent.CompletionStage;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 异步MCP函数工具
+ */
 @Slf4j
 @Accessors(fluent = true)
 public class AsyncMcpFunctionTool implements FunctionTool {
@@ -55,8 +58,8 @@ public class AsyncMcpFunctionTool implements FunctionTool {
 
         if (log.isDebugEnabled()) {
             log.debug("dashscope-agent://mcp/tool/{}@{}#{} <<< {}",
-                    mcpClient.getClientInfo().name(),
-                    mcpClient.getClientInfo().version(),
+                    mcpClient.getServerInfo().name(),
+                    mcpClient.getServerInfo().version(),
                     mcpTool.name(),
                     JsonUtils.compact(argumentsJson)
             );
@@ -66,7 +69,7 @@ public class AsyncMcpFunctionTool implements FunctionTool {
             return mcpClient.callTool(request)
                     .toFuture()
                     .thenApply(result -> {
-                        if (result.isError()) {
+                        if (null != result && null != result.isError() && result.isError()) {
                             throw new IllegalStateException("Async calling Mcp.Tool: %s occur error: %s".formatted(
                                     name,
                                     result.content()
@@ -79,8 +82,8 @@ public class AsyncMcpFunctionTool implements FunctionTool {
                     .whenComplete((resultJson, ex) -> {
                         if (log.isDebugEnabled()) {
                             log.debug("dashscope-agent://mcp/tool/{}@{}#{} >>> {}",
-                                    mcpClient.getClientInfo().name(),
-                                    mcpClient.getClientInfo().version(),
+                                    mcpClient.getServerInfo().name(),
+                                    mcpClient.getServerInfo().version(),
                                     mcpTool.name(),
                                     JsonUtils.compact(resultJson),
                                     ex
@@ -90,8 +93,8 @@ public class AsyncMcpFunctionTool implements FunctionTool {
         } catch (Throwable ex) {
             throw new RuntimeException(
                     "Mcp tool call error! mcp-client=%s@%s;arguments=%s".formatted(
-                            mcpClient.getClientInfo().name(),
-                            mcpClient.getClientInfo().version(),
+                            mcpClient.getServerInfo().name(),
+                            mcpClient.getServerInfo().version(),
                             JsonUtils.compact(argumentsJson)
                     ),
                     ex
@@ -109,12 +112,24 @@ public class AsyncMcpFunctionTool implements FunctionTool {
         private McpAsyncClient mcpClient;
         private McpSchema.Tool mcpTool;
 
+        /**
+         * 设置异步MCP客户端
+         *
+         * @param mcpClient 异步MCP客户端
+         * @return this
+         */
         public Builder mcpClient(McpAsyncClient mcpClient) {
             requireNonNull(mcpClient, "McpClient must not be null");
             this.mcpClient = mcpClient;
             return this;
         }
 
+        /**
+         * 设置MCP工具
+         *
+         * @param mcpTool MCP工具
+         * @return this
+         */
         public Builder mcpTool(McpSchema.Tool mcpTool) {
             requireNonNull(mcpTool, "McpSchema.Tool must not be null");
             this.mcpTool = mcpTool;

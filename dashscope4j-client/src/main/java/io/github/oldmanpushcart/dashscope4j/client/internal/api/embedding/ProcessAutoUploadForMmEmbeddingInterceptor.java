@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.embedding;
 
-import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.embedding.mm.MmEmbeddingRequest;
@@ -25,8 +25,9 @@ class ProcessAutoUploadForMmEmbeddingInterceptor implements Interceptor {
         }
 
         // 只处理开启了自动上传的请求
-        final AutoUploadContext autoUploadContext = chain.request().context(AutoUploadContext.class);
-        if (null == autoUploadContext || !autoUploadContext.autoUpload()) {
+        if (chain.request().optionalContext(ConfigContext.class)
+                .filter(ConfigContext::autoUpload)
+                .isEmpty()) {
             return chain.process(chain.request());
         }
 

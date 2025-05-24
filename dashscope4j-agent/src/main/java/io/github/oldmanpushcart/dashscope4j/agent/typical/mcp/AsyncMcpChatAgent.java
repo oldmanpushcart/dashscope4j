@@ -13,6 +13,9 @@ import java.util.concurrent.CompletionStage;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedStage;
 
+/**
+ * 异步MCP智能体
+ */
 public class AsyncMcpChatAgent extends BaseChatAgent {
 
     private final McpAsyncClient mcpClient;
@@ -25,20 +28,12 @@ public class AsyncMcpChatAgent extends BaseChatAgent {
 
     @Override
     protected CompletionStage<ChatResponse> baseAsync(ChatRequest request) {
-        final ChatRequest newRequest = newAsyncMcpChatRequest(request);
-        return client().chat().async(newRequest);
+        return client().chat().async(request);
     }
 
     @Override
     protected CompletionStage<Flowable<ChatResponse>> baseFlow(ChatRequest request) {
-        final ChatRequest newRequest = newAsyncMcpChatRequest(request);
-        return client().chat().flow(newRequest);
-    }
-
-    private static ChatRequest newAsyncMcpChatRequest(ChatRequest request) {
-        return ChatRequest.newBuilder(request)
-                .option(ChatOptions.ENABLE_PARALLEL_TOOL_CALLS, true)
-                .build();
+        return client().chat().flow(request);
     }
 
 
@@ -59,11 +54,22 @@ public class AsyncMcpChatAgent extends BaseChatAgent {
             this.mcpClient = agent.mcpClient;
         }
 
+        /**
+         * 设置异步MCP客户端
+         *
+         * @param mcpClient 异步MCP客户端
+         * @return this
+         */
         public Builder mcpClient(McpAsyncClient mcpClient) {
             this.mcpClient = mcpClient;
             return this;
         }
 
+        /**
+         * 同步构建
+         *
+         * @return 异步MCP智能体
+         */
         @Override
         public AsyncMcpChatAgent build() {
             return asyncBuild()
@@ -71,6 +77,11 @@ public class AsyncMcpChatAgent extends BaseChatAgent {
                     .join();
         }
 
+        /**
+         * 异步构建
+         *
+         * @return 异步MCP智能体
+         */
         public CompletionStage<AsyncMcpChatAgent> asyncBuild() {
             requireNonNull(mcpClient, "McpClient must not be null");
             return completedStage(mcpClient)

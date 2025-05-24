@@ -29,7 +29,7 @@ import java.util.function.UnaryOperator;
  */
 @Data
 @Accessors(fluent = true)
-public abstract class Content<T> {
+public sealed abstract class Content<T> permits Content.TextContent,  Content.MediaContent {
 
     private final Type type;
     private final T data;
@@ -171,7 +171,7 @@ public abstract class Content<T> {
      */
     @Getter
     @Accessors(fluent = true)
-    public static class TextContent extends Content<String> {
+    public static final class TextContent extends Content<String> {
 
         private TextContent(String data) {
             super(Type.TEXT, data, new Option());
@@ -199,7 +199,7 @@ public abstract class Content<T> {
      */
     @Getter
     @Accessors(fluent = true)
-    public static class MediaContent extends Content<URI> {
+    public static final class MediaContent extends Content<URI> {
 
         private MediaContent(Type type, URI data) {
             super(type, data, new Option());

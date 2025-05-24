@@ -20,7 +20,7 @@ import static java.util.Collections.singletonList;
 @Accessors(fluent = true)
 @AllArgsConstructor
 @JsonDeserialize(using = MessageJsonDeserializer.class)
-public class Message {
+public sealed class Message permits PluginMessage, PluginCallMessage, ToolMessage, ToolCallMessage {
 
     /**
      * 角色

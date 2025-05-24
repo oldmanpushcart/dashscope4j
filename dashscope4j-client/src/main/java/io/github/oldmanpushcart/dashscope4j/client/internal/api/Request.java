@@ -7,6 +7,7 @@ import lombok.ToString;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 请求基类
@@ -44,6 +45,17 @@ public abstract class Request {
     @SuppressWarnings("unchecked")
     public <C> C context(Class<C> type) {
         return (C) contextMap.get(type);
+    }
+
+    /**
+     * 获取上下文
+     *
+     * @param type 上下文类型
+     * @param <C>  上下文类型
+     * @return 上下文
+     */
+    public <C> Optional<C> optionalContext(Class<C> type) {
+        return Optional.ofNullable(context(type));
     }
 
     /**

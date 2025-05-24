@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
-import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.QueryScoreFunction;
@@ -16,7 +16,7 @@ public class ChatToolCallTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
-                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
+                .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .option(ENABLE_PARALLEL_TOOL_CALLS, true)
                 .addFunction(new QueryScoreFunction())
                 .addMessage(Message.ofUser("查询数学和语文的成绩"))
@@ -35,7 +35,7 @@ public class ChatToolCallTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
-                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
+                .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .option(ENABLE_PARALLEL_TOOL_CALLS, true)
                 .addFunction(new QueryScoreFunction())
                 .addMessage(Message.ofUser("查询数学和语文的成绩"))
@@ -56,7 +56,7 @@ public class ChatToolCallTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
-                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
+                .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .option(ChatOptions.ENABLE_PARALLEL_TOOL_CALLS, true)
                 .addFunction(new QueryScoreFunction())

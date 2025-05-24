@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.audio.voice;
 
-import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.Model;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiOp;
@@ -32,7 +32,7 @@ public class VoiceOpImpl implements VoiceOp {
     public CompletionStage<Voice> create(String group, Model targetModel, URI resource) {
         final VoiceCreateRequest request = VoiceCreateRequest.newBuilder()
                 .model(VoiceModel.VOICE_ENROLLMENT)
-                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
+                .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .group(group)
                 .targetModel(targetModel)
                 .resource(resource)
@@ -76,7 +76,7 @@ public class VoiceOpImpl implements VoiceOp {
     public CompletionStage<?> update(String voiceId, URI resource) {
         final VoiceUpdateRequest request = VoiceUpdateRequest.newBuilder()
                 .model(VoiceModel.VOICE_ENROLLMENT)
-                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
+                .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .voiceId(voiceId)
                 .resource(resource)
                 .addInterceptors(interceptors)

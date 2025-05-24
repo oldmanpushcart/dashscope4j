@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.audio.asr;
 
-import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
@@ -58,7 +58,7 @@ public class TranscriptionTestCase extends ClientSupport {
 
         final TranscriptionRequest request = TranscriptionRequest.newBuilder()
                 .model(TranscriptionModel.PARAFORMER_V2)
-                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
+                .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .addResource(new File("./test-data/poetry-DengHuangHeLou.wav").toURI())
                 .build();
 

@@ -60,8 +60,8 @@ public class DemoTestCase {
     @Test
     public void test$demo$async() {
         final var params = ServerParameters.builder("npx")
-                .args("-y", "@amap/amap-maps-mcp-server")
-                .addEnvVar("AMAP_MAPS_API_KEY", AMAP_AK)
+                .args("-y", "@browsermcp/mcp@latest")
+                //.addEnvVar("AMAP_MAPS_API_KEY", AMAP_AK)
                 .build();
         final var transport = new StdioClientTransport(params);
         final var mcpClient = McpClient.async(transport)
@@ -71,10 +71,10 @@ public class DemoTestCase {
                 .toFuture()
                 .join();
 
-        mcpClient.listPrompts()
+        mcpClient.listTools()
                 .toFuture()
                 .join()
-                .prompts().forEach(System.out::println);
+                .tools().forEach(System.out::println);
 
         mcpClient.close();
     }

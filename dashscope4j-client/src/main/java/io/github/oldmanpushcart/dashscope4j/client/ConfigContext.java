@@ -4,13 +4,13 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 /**
- * 自动上传上下文
+ * 配置上下文
  *
  * @since 3.2.0
  */
 @Data
 @Accessors(fluent = true, chain = true)
-public class AutoUploadContext {
+public class ConfigContext {
 
     /**
      * 是否自动上传

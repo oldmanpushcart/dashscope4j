@@ -19,20 +19,12 @@ public class DashscopeChatAgent extends BaseChatAgent {
 
     @Override
     protected CompletionStage<ChatResponse> baseAsync(ChatRequest request) {
-        final ChatRequest newRequest = newDashscopeChatRequest(request);
-        return client().chat().async(newRequest);
+        return client().chat().async(request);
     }
 
     @Override
     protected CompletionStage<Flowable<ChatResponse>> baseFlow(ChatRequest request) {
-        final ChatRequest newRequest = newDashscopeChatRequest(request);
-        return client().chat().flow(newRequest);
-    }
-
-    private static ChatRequest newDashscopeChatRequest(ChatRequest request) {
-        return ChatRequest.newBuilder(request)
-                .option(ChatOptions.ENABLE_PARALLEL_TOOL_CALLS, true)
-                .build();
+        return client().chat().flow(request);
     }
 
     public static Builder newBuilder() {

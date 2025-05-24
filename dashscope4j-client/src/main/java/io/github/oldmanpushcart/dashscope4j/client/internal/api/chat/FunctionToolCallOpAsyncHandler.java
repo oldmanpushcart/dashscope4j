@@ -12,7 +12,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 @AllArgsConstructor
-class ToolCallOpAsyncHandler implements Function<ChatResponse, CompletionStage<ChatResponse>> {
+class FunctionToolCallOpAsyncHandler implements Function<ChatResponse, CompletionStage<ChatResponse>> {
 
     private final DashscopeClient client;
     private final ChatOp chatOp;
@@ -27,7 +27,7 @@ class ToolCallOpAsyncHandler implements Function<ChatResponse, CompletionStage<C
 
         final ChatRequest request = (ChatRequest) response.request();
         final ToolCallMessage message = (ToolCallMessage) choice.message();
-        return new ToolCaller(client, chatOp, request, message)
+        return new FunctionToolCaller(client, chatOp, request, message)
                 .asyncCall();
     }
 

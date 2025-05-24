@@ -11,6 +11,9 @@ import java.util.concurrent.CompletionStage;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 同步MCP智能体
+ */
 public class SyncMcpChatAgent extends BaseChatAgent {
 
     private final McpSyncClient mcpClient;
@@ -23,20 +26,12 @@ public class SyncMcpChatAgent extends BaseChatAgent {
 
     @Override
     protected CompletionStage<ChatResponse> baseAsync(ChatRequest request) {
-        final ChatRequest newRequest = newSyncMcpChatRequest(request);
-        return client().chat().async(newRequest);
+        return client().chat().async(request);
     }
 
     @Override
     protected CompletionStage<Flowable<ChatResponse>> baseFlow(ChatRequest request) {
-        final ChatRequest newRequest = newSyncMcpChatRequest(request);
-        return client().chat().flow(newRequest);
-    }
-
-    private static ChatRequest newSyncMcpChatRequest(ChatRequest request) {
-        return ChatRequest.newBuilder(request)
-                .option(ChatOptions.ENABLE_PARALLEL_TOOL_CALLS, true)
-                .build();
+        return client().chat().flow(request);
     }
 
     public static class Builder extends BaseChatAgent.Builder<SyncMcpChatAgent, Builder> {
@@ -52,6 +47,12 @@ public class SyncMcpChatAgent extends BaseChatAgent {
             this.mcpClient = agent.mcpClient;
         }
 
+        /**
+         * 设置同步MCP客户端
+         *
+         * @param mcpClient 同步MCP客户端
+         * @return this
+         */
         public Builder mcpClient(McpSyncClient mcpClient) {
             requireNonNull(mcpClient, "McpClient must not be null");
             this.mcpClient = mcpClient;

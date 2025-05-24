@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
-import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
@@ -77,7 +77,7 @@ public class ChatRequestTestCase {
     public void test$chat$request$tool() {
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
-                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
+                .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .addFunction(new EchoFunction())
                 .addMessage(Message.ofUser("Hello!"))
                 .build();

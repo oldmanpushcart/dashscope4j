@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
-import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
@@ -49,7 +49,7 @@ public class DashscopeAssertions {
                             + "不要添加任何解释或其他多余内容。";
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
-                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
+                .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText(text),
                         Content.ofImage(imageURI)

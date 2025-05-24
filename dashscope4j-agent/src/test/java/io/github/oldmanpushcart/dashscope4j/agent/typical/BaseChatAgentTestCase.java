@@ -6,7 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.agent.function.dashscope.DashscopeUnderstandingVisualFunction;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeChatAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActChatAgent;
-import io.github.oldmanpushcart.dashscope4j.client.AutoUploadContext;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
@@ -85,7 +85,7 @@ public class BaseChatAgentTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(model)
-                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
+                .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("图片中有几辆自行车?"),
                         Content.ofImage(new File("./test-data/image-002.jpeg").toURI())
@@ -108,7 +108,7 @@ public class BaseChatAgentTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(model)
-                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
+                .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("有几辆自行车?"),
                         Content.ofImage(new File("./test-data/image-002.jpeg").toURI())
@@ -132,7 +132,7 @@ public class BaseChatAgentTestCase extends ClientSupport {
 
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(model)
-                .context(AutoUploadContext.class, new AutoUploadContext().autoUpload(true))
+                .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
                         Content.ofText("有几辆自行车?"),
                         Content.ofImage(new File("./test-data/image-002.jpeg").toURI())
