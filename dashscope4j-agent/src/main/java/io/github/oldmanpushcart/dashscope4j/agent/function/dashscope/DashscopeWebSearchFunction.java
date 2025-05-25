@@ -34,6 +34,7 @@ public class DashscopeWebSearchFunction
                 .build()
                 .render();
         final ChatRequest request = ChatRequest.newBuilder()
+                .copyContextFrom(caller.request())
                 .model(ChatModel.QWEN_PLUS)
                 .option(ChatOptions.ENABLE_WEB_SEARCH, true)
                 .option(ChatOptions.SEARCH_OPTIONS, new ChatSearchOption() {{

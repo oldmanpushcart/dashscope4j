@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.agent.function.dashscope;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
@@ -31,8 +30,8 @@ public class DashscopeUnderstandingVisualFunction
     public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
 
         final ChatRequest request = ChatRequest.newBuilder()
+                .copyContextFrom(caller.request())
                 .model(ChatModel.QWEN_VL_MAX)
-                .context(ConfigContext.class, caller.request().context(ConfigContext.class))
                 .addMessage(newUserMessage(parameter))
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .build();

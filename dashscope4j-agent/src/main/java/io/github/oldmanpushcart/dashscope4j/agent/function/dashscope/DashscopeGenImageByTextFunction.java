@@ -37,6 +37,7 @@ public class DashscopeGenImageByTextFunction implements ChatFunction<DashscopeGe
     public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
 
         final GenImageRequest request = GenImageRequest.newBuilder()
+                .copyContextFrom(caller.request())
                 .model(GenImageModel.WANX_V2_1_PLUS)
                 .option(GenImageOptions.NUMBER, 1)
                 .prompt(parameter.prompt())

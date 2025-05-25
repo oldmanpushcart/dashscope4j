@@ -43,7 +43,6 @@ public abstract class BaseChatAgent implements ChatAgent {
     private final List<Interceptor> interceptors;
     private final List<FunctionTool> functionTools;
     private final List<Component> components;
-    private final List<ChatAgent> agents;
     private final DashscopeClient client;
 
     @Getter(AccessLevel.NONE)
@@ -62,7 +61,6 @@ public abstract class BaseChatAgent implements ChatAgent {
         this.interceptors = unmodifiableList(builder.interceptors);
         this.functionTools = unmodifiableList(builder.functionTools);
         this.components = unmodifiableList(builder.components);
-        this.agents = unmodifiableList(builder.agents);
         this.chatOp = newChatOp(this, components);
 
     }
@@ -219,7 +217,6 @@ public abstract class BaseChatAgent implements ChatAgent {
         private final List<Component> components = new ArrayList<>();
         private final List<Interceptor> interceptors = new ArrayList<>();
         private final List<FunctionTool> functionTools = new ArrayList<>();
-        private final List<ChatAgent> agents = new ArrayList<>();
 
         public Builder() {
 
@@ -234,7 +231,6 @@ public abstract class BaseChatAgent implements ChatAgent {
             this.components.addAll(agent.components);
             this.interceptors.addAll(agent.interceptors);
             this.functionTools.addAll(agent.functionTools);
-            this.agents.addAll(agent.agents);
         }
 
         /**

@@ -49,11 +49,11 @@ class BaseChatAgentFunction
             @JsonProperty(required = true)
             String prompt,
 
-            @JsonPropertyDescription("任务执行所需要的文本信息")
+            @JsonPropertyDescription("任务执行所需要的文本部件")
             @JsonProperty()
             List<Part.Text> texts,
 
-            @JsonPropertyDescription("任务执行所需要的多模态信息")
+            @JsonPropertyDescription("任务执行所需要的多媒体部件")
             @JsonProperty()
             List<Part.Media> medias
 
@@ -80,7 +80,7 @@ class BaseChatAgentFunction
     }
 
     /**
-     * 信息
+     * 部件
      */
     sealed interface Part<T> permits Part.Text, Part.Media {
 
@@ -90,6 +90,11 @@ class BaseChatAgentFunction
 
         T data();
 
+        /**
+         * 文本部件
+         *
+         * @param data 文本数据
+         */
         record Text(
                 @JsonPropertyDescription("文本数据")
                 @JsonProperty(value = "data", required = true)
@@ -103,6 +108,12 @@ class BaseChatAgentFunction
 
         }
 
+        /**
+         * 多媒体部件
+         *
+         * @param type 类型
+         * @param data URI数据
+         */
         record Media(
 
                 Content.Type type,

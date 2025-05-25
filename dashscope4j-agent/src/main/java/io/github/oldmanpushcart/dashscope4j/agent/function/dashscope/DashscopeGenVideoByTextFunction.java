@@ -32,6 +32,7 @@ public class DashscopeGenVideoByTextFunction implements ChatFunction<DashscopeGe
     public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
 
         final TextGenVideoRequest request = TextGenVideoRequest.newBuilder()
+                .copyContextFrom(caller.request())
                 .model(TextGenVideoModel.WANX_V2_1_T2V_TURBO)
                 .option(TextGenVideoOptions.ENABLE_PROMPT_EXTEND, true)
                 .prompt(parameter.prompt())

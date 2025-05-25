@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.agent.function.dashscope;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
@@ -39,8 +38,8 @@ public class DashscopeGenImageByImageFunction
     public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
 
         final GenImageRequest request = GenImageRequest.newBuilder()
+                .copyContextFrom(caller.request())
                 .model(GenImageModel.WANX_V1)
-                .context(ConfigContext.class, caller.request().context(ConfigContext.class))
                 .option(GenImageOptions.NUMBER, 1)
                 .prompt(parameter.prompt())
                 .reference(parameter.referenceImage())
