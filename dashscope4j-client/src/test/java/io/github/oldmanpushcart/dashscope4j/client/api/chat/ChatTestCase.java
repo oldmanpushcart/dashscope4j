@@ -1,7 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
-import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
@@ -142,7 +143,7 @@ public class ChatTestCase extends ClientSupport {
                     assertApiResponseSuccessful(response);
                     final String text = response.output().best().message().text();
                     assertNotNull(text);
-                    assertTrue(text.contains("五年规划") || text.contains("十四五"));
+                    DashscopeAssertions.dashscopeAssertText(client, "文章描述了关于中国第十四个五年规划的内容", text);
                 })
                 .toCompletableFuture()
                 .join();

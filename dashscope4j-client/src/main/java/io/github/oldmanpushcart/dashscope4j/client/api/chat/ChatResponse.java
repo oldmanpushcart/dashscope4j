@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.client.Usage;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -32,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 @Accessors(fluent = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
+public class ChatResponse extends AlgoResponse<ChatResponse.Output> implements Accumulator<ChatResponse> {
 
     @JsonProperty("output")
     Output output;
@@ -120,6 +121,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
      * @param next 等待被合并的对话应答
      * @return 合并后的应答
      */
+    @Override
     public ChatResponse accumulate(ChatResponse next) {
 
         /*
@@ -231,7 +233,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
     @Accessors(fluent = true)
     @ToString
     @EqualsAndHashCode
-    public static class Choice implements Comparable<Choice> {
+    public static class Choice implements Comparable<Choice>, Accumulator<Choice> {
 
         Finish finish;
         List<Message> messages;
@@ -293,6 +295,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> {
          * @param next 合并对象
          * @return 合并后的候选结果
          */
+        @Override
         public Choice accumulate(Choice next) {
             final List<Message> newMessage = new ArrayList<>();
             newMessage.addAll(history());

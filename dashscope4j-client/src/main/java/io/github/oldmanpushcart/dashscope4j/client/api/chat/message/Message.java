@@ -2,14 +2,18 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
 
@@ -20,7 +24,9 @@ import static java.util.Collections.singletonList;
 @Accessors(fluent = true)
 @AllArgsConstructor
 @JsonDeserialize(using = MessageJsonDeserializer.class)
-public sealed class Message permits PluginMessage, PluginCallMessage, ToolMessage, ToolCallMessage {
+public sealed class Message
+        implements Accumulator<Message>
+        permits PluginMessage, PluginCallMessage, ToolMessage, ToolCallMessage {
 
     /**
      * 角色
@@ -138,23 +144,24 @@ public sealed class Message permits PluginMessage, PluginCallMessage, ToolMessag
      * @param next 待合并的消息
      * @return 合并后的消息
      */
+    @Override
     public Message accumulate(Message next) {
 
         // 只有角色相同的消息才能合并
         if (role != next.role) {
-            throw new IllegalArgumentException("role not match! expect: %s but was: %s".formatted(
+            throw new IllegalArgumentException("Role not match! expect: %s but was: %s".formatted(
                     role,
                     next.role
             ));
         }
 
         // 合并所有内容
-        final List<Content<?>> newContents = new ArrayList<>();
-        newContents.addAll(contents);
-        newContents.addAll(next.contents);
+        final List<Content<?>> newContents = Stream.of(contents, next.contents)
+                .flatMap(Collection::stream)
+                .toList();
 
         // 合并理论推理内容
-        final String newReasoningContent = reasoningContent + next.reasoningContent;
+        final String newReasoningContent = StringUtils.concat(reasoningContent, next.reasoningContent);
 
         // 返回新消息
         return new Message(role, newContents, newReasoningContent);

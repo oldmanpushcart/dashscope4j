@@ -29,7 +29,7 @@ import java.util.function.UnaryOperator;
  */
 @Data
 @Accessors(fluent = true)
-public sealed abstract class Content<T> permits Content.TextContent,  Content.MediaContent {
+public sealed abstract class Content<T> permits Content.TextContent, Content.MediaContent {
 
     private final Type type;
     private final T data;

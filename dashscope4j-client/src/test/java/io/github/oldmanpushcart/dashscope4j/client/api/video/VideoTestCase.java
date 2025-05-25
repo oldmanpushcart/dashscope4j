@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.video;
 
-import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.*;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
 import org.junit.jupiter.api.Assertions;

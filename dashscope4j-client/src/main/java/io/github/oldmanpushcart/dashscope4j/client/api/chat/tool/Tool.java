@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 
 import java.util.concurrent.CompletionStage;
 
@@ -75,7 +76,7 @@ public interface Tool {
     @JsonSubTypes({
             @JsonSubTypes.Type(value = FunctionTool.Call.class, name = "function")
     })
-    interface Call {
+    interface Call extends Accumulator<Call> {
 
         /**
          * @return 工具调用索引

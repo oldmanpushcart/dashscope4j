@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.embedding.mm;
 
-import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

@@ -10,7 +10,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFu
 
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toUnmodifiableList;
 
 /**
  * 基础智能体函数
@@ -41,72 +45,79 @@ class BaseChatAgentFunction
      */
     record Parameter(
 
-            @JsonPropertyDescription("描述希望执行的具体任务")
+            @JsonPropertyDescription("执行的任务内容")
             @JsonProperty(required = true)
-            String input,
+            String prompt,
 
-            @JsonPropertyDescription("""
-                    执行任务所必须的URI
-                    - 必须严格符合URI格式：scheme://username:password@hostname:port/path?query#fragment
-                    - 可接受本地文件URI格式：file://hose/path
-                    """
-            )
-            @JsonProperty(required = true)
-            List<Resource> resources
+            @JsonPropertyDescription("任务执行所需要的文本信息")
+            @JsonProperty()
+            List<Part.Text> texts,
+
+            @JsonPropertyDescription("任务执行所需要的多模态信息")
+            @JsonProperty()
+            List<Part.Media> medias
 
     ) {
 
+        private Message toMessage() {
 
-        /**
-         * 资源
-         *
-         * @param type 类型
-         * @param uri  地址
-         */
-        record Resource(
+            final List<Content<?>> contents = Stream.of(List.of(new Part.Text(prompt)), texts, medias)
+                    .filter(Objects::nonNull)
+                    .flatMap(List::stream)
+                    .map(part ->
+                            switch (part.type()) {
+                                case TEXT -> Content.ofText((String) part.data());
+                                case IMAGE -> Content.ofImage((URI) part.data());
+                                case VIDEO -> Content.ofVideo((URI) part.data());
+                                case AUDIO -> Content.ofAudio((URI) part.data());
+                                case FILE -> Content.ofFile((URI) part.data());
+                            })
+                    .collect(toUnmodifiableList());
 
-                @JsonPropertyDescription("类型")
-                @JsonProperty(required = true)
-                Type type,
+            return Message.ofUser(contents);
+        }
 
-                @JsonPropertyDescription("资源URI")
-                @JsonProperty(required = true)
-                URI uri
+    }
 
-        ) {
+    /**
+     * 信息
+     */
+    sealed interface Part<T> permits Part.Text, Part.Media {
 
-            /**
-             * 资源类型
-             */
-            public enum Type {
-                @JsonProperty("image") IMAGE,
-                @JsonProperty("video") VIDEO,
-                @JsonProperty("audio") AUDIO,
-                @JsonProperty("file") FILE
-            }
+        @JsonPropertyDescription("类型")
+        @JsonProperty(value = "type", required = true)
+        Content.Type type();
 
-            /**
-             * @return 转换为媒体内容
-             */
-            public Content.MediaContent toMediaContent() {
-                return switch (type) {
-                    case IMAGE -> Content.MediaContent.ofImage(uri);
-                    case VIDEO -> Content.MediaContent.ofVideo(uri);
-                    case AUDIO -> Content.MediaContent.ofAudio(uri);
-                    case FILE -> Content.MediaContent.ofFile(uri);
-                };
+        T data();
+
+        record Text(
+                @JsonPropertyDescription("文本数据")
+                @JsonProperty(value = "data", required = true)
+                String data
+        ) implements Part<String> {
+
+            @Override
+            public Content.Type type() {
+                return Content.Type.TEXT;
             }
 
         }
 
-        /**
-         * @return 转换为消息
-         */
-        public Message toMessage() {
-            final var mediaContents = resources.stream()
-                    .map(Resource::toMediaContent)
-                    .toList();
-            return Message.ofUser(input, mediaContents);
+        record Media(
+
+                Content.Type type,
+
+                @JsonPropertyDescription("""
+                        URI数据
+                        - 必须严格符合URI格式：scheme://username:password@hostname:port/path?query#fragment
+                        - 可接受本地文件URI格式：file://hose/path
+                        """
+                )
+                @JsonProperty(value = "data", required = true)
+                URI data
+
+        ) implements Part<URI> {
+
         }
 
     }

@@ -3,6 +3,9 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
+
+import static io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils.concat;
 
 /**
  * 函数工具
@@ -58,6 +61,28 @@ public interface FunctionTool extends Tool {
             return Classify.FUNCTION;
         }
 
+        @Override
+        public Tool.Call accumulate(Tool.Call call) {
+
+            // index 必须相等
+            if (index != call.index()) {
+                throw new IllegalArgumentException("except index : %s but was: %s".formatted(index, index));
+            }
+
+            // 类型必须一致
+            if (!(call instanceof FunctionTool.Call next)) {
+                throw new IllegalArgumentException("Not a function tool call");
+            }
+
+            // 合并Call
+            return new FunctionTool.Call(
+                    index,
+                    concat(id, next.id()),
+                    stub().accumulate(next.stub())
+            );
+
+        }
+
         /**
          * 存根信息
          *
@@ -67,7 +92,15 @@ public interface FunctionTool extends Tool {
         public record Stub(
                 @JsonProperty("name") String name,
                 @JsonProperty("arguments") String arguments
-        ) {
+        ) implements Accumulator<Stub> {
+
+            @Override
+            public Stub accumulate(Stub next) {
+                return new Stub(
+                        concat(name, next.name),
+                        concat(arguments, next.arguments)
+                );
+            }
 
         }
 

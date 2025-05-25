@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
-import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.ClientSupport;
+import io.github.oldmanpushcart.dashscope4j.client.ConfigContext;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.QueryScoreFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;

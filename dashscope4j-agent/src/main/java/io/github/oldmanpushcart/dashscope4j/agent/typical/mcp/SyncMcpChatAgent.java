@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.mcp;
 
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseChatAgent;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.modelcontextprotocol.client.McpSyncClient;

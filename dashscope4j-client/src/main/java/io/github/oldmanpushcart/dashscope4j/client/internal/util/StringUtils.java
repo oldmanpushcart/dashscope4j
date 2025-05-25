@@ -1,5 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.util;
 
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 public class StringUtils {
 
     public static String toSnakeCase(String camelCase) {
@@ -27,6 +31,15 @@ public class StringUtils {
             return null;
         }
         return str.replaceAll("^\"|\"$", "");
+    }
+
+    public static String concat(String... strings) {
+        if (null == strings) {
+            return null;
+        }
+        return Arrays.stream(strings)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining());
     }
 
 }

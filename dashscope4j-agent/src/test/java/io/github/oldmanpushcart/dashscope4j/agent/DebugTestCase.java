@@ -9,7 +9,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.modelcontextprotocol.client.McpClient;
-import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.client.transport.ServerParameters;
 import io.modelcontextprotocol.client.transport.StdioClientTransport;
 import org.junit.jupiter.api.Test;
@@ -19,15 +18,15 @@ public class DebugTestCase extends ClientSupport {
     @Test
     public void test$debug() {
 
-//        final var params = ServerParameters.builder("cmd")
-//                .args("/c", "npx", "-y", "@amap/amap-maps-mcp-server")
-//                .addEnvVar("AMAP_MAPS_API_KEY", System.getenv("AMAP_MAPS_API_KEY"))
-//                .build();
-//        final var transport = new StdioClientTransport(params);
-
-        final var transport = HttpClientSseClientTransport.builder("https://mcp.amap.com")
-                .sseEndpoint("/sse?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+        final var params = ServerParameters.builder("cmd")
+                .args("/c", "npx", "-y", "@amap/amap-maps-mcp-server")
+                .addEnvVar("AMAP_MAPS_API_KEY", System.getenv("AMAP_MAPS_API_KEY"))
                 .build();
+        final var transport = new StdioClientTransport(params);
+
+//        final var transport = HttpClientSseClientTransport.builder("https://mcp.amap.com")
+//                .sseEndpoint("/sse?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+//                .build();
 
         final var mcpClient = McpClient.async(transport)
                 .build();
@@ -36,7 +35,7 @@ public class DebugTestCase extends ClientSupport {
                 .toFuture()
                 .join();
 
-        final var agent = DashscopeChatAgent.newBuilder()
+        final var agent = ReActChatAgent.newBuilder()
                 .client(client)
                 .name("master")
                 .flowBridge(true)
@@ -53,9 +52,9 @@ public class DebugTestCase extends ClientSupport {
                 .build();
 
         final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_MAX)
-                //.option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                .addMessage(Message.ofUser("规划从阿里巴巴西溪园区A9门到复地黄龙和山东南门的骑车路线"))
+                .model(ChatModel.QWEN_PLUS)
+                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .addMessage(Message.ofUser("我明天想去杭州西湖赏花，请帮我规划一日游路线。我计划从杭州市\"复地黄龙和山东南门\"出发。需要根据当时的天气情况推荐我合适的出行方案。"))
                 .build();
 
         final var response = agent.async(request)
@@ -71,9 +70,9 @@ public class DebugTestCase extends ClientSupport {
     @Test
     public void test$debug3() {
 
-        final var params = ServerParameters.builder("npx")
-                // .args("-y", "@browsermcp/mcp@latest")
-                .args("-y", "@playwright/mcp@latest")
+        final var params = ServerParameters.builder("cmd")
+                .args("/c", "npx", "-y", "@browsermcp/mcp@latest")
+                // .args("/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "D:\\home\\ubuntu\\workspace")
                 .build();
 
         final var transport = new StdioClientTransport(params);
@@ -100,7 +99,7 @@ public class DebugTestCase extends ClientSupport {
 
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN3_235B_A22B)
-                .addMessage(Message.ofUser("从京东网上找苹果16手机的最新价格"))
+                .addMessage(Message.ofUser("新浪热点总结?"))
                 .build();
 
         final var response = agent.async(request)
