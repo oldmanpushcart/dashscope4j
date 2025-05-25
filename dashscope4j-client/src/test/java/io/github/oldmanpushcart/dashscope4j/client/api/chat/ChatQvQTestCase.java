@@ -40,7 +40,7 @@ public class ChatQvQTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        DashscopeAssertions.dashscopeAssertText(client, "图片中一共有5个男孩", stringBuf.toString());
+        DashscopeAssertions.dashscopeAssertText(client, stringBuf.toString(), "图片中一共有5个男孩");
 
     }
 

@@ -50,7 +50,7 @@ public class MemoryComponentTestCase extends ClientSupport {
                     .join();
 
             final int expect = index + index;
-            DashscopeAssertions.dashscopeAssertText(client, "答案是" + expect, response.output().best().message().text());
+            DashscopeAssertions.dashscopeAssertText(client, response.output().best().message().text(), "答案是" + expect);
 
         }
 
@@ -66,7 +66,7 @@ public class MemoryComponentTestCase extends ClientSupport {
             Assertions.assertNotNull(fragment.requestMessage());
             Assertions.assertEquals(text, fragment.requestMessage().text());
             Assertions.assertNotNull(fragment.responseMessage());
-            DashscopeAssertions.dashscopeAssertText(client, "答案是" + expect, fragment.responseMessage().text());
+            DashscopeAssertions.dashscopeAssertText(client, fragment.responseMessage().text(), "答案是" + expect);
             index --;
         }
 

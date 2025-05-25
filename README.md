@@ -1,7 +1,7 @@
 # Dashscope4j：灵积 / 通义千问 Java SDK
 
 ![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)
-![JDK8+](https://img.shields.io/badge/JDK-8+-blue.svg)
+![JDK17+](https://img.shields.io/badge/JDK-17+-blue.svg)
 ![LLM-通义千问](https://img.shields.io/badge/LLM-%E9%80%9A%E4%B9%89%E5%8D%83%E9%97%AE-blue.svg)
 
 **Dashscope4j** 是一个开源的灵积非官方 Java SDK，基于 JDK8 构建。 它旨在提供一个功能丰富、易于集成和使用的Java库，
@@ -13,21 +13,26 @@
 
 ## 一、功能特性
 
-### Dashscope4j 客户端
+### 独有功能特性
 
-#### 客户端独有功能特性
+- **对话智能体**
+  - 支持MCP
 
 - **增强FunctionCall**
   - 本地函数：注解或构造器方式声明 FunctionCall
   - 多级调用：当大模型需要串联、并行调用多个函数时，自动帮你完成多级请求串联
-- **支持请求拦截器**
+
+- **增强拦截器**
   - OkHttp拦截器
-  - Dashscope请求拦截器（请求、全局）
-- 增强对话请求：多模态的对话生成编码统一风格
+  - Dashscope拦截器。支持按照请求、全局两个范围设置拦截器
+
+- **增强对话请求**：统一的多模态对话编码风格
+
 - 响应式编程风格：友好的任务、同步、异步、流、数据双工通讯请求API
+
 - 支持请求上下文透传
 
-#### 客户端支持以下阿里云百炼平台以下API功能
+### 支持以下阿里云百炼平台以下API功能
 
 - **对话（Chat）**
   - 提供用户与灵积进行多模态(图、音、文)对话
@@ -54,13 +59,6 @@
 - **基础功能**
   - Tokenizer计算（远程、本地）
   - 灵积提供的临时空间、文件管理
-  - 拦截器
-
-
-### Dashscope4j 智能体
-
-- **ReAct智能体**：采用了通用的ReAct模式
-- **Dashscope智能体**：不采用任何模式，由大模型自行处理
 
 
 ## 二、快速使用
@@ -79,7 +77,7 @@
 
 <dependency>
     <groupId>io.github.oldmanpushcart</groupId>
-    <artifactId>dashscope4j</artifactId>
+    <artifactId>dashscope4j-client</artifactId>
     <version>3.2.0</version>
 </dependency>
 ```

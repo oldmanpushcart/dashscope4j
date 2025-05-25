@@ -59,7 +59,7 @@ public class RecognitionConnectorTestCase extends ClientSupport {
 
         }
 
-        DashscopeAssertions.dashscopeAssertText(client, "是否是这句诗：白日依山尽，黄河入海流。欲穷千里目，更上一层楼。", stringBuilder.toString());
+        DashscopeAssertions.dashscopeAssertText(client, stringBuilder.toString(), "是否是这句诗：白日依山尽，黄河入海流。欲穷千里目，更上一层楼。");
 
     }
 

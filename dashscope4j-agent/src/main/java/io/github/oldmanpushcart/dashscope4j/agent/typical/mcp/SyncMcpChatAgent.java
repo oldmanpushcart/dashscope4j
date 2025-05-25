@@ -33,6 +33,10 @@ public class SyncMcpChatAgent extends BaseChatAgent {
         return client().chat().flow(request);
     }
 
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
     public static class Builder extends BaseChatAgent.Builder<SyncMcpChatAgent, Builder> {
 
         private McpSyncClient mcpClient;

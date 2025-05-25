@@ -97,7 +97,7 @@ public class BaseChatAgentTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        DashscopeAssertions.dashscopeAssertText(client, "有两辆自行车", result);
+        DashscopeAssertions.dashscopeAssertText(client, result, "有两辆自行车");
     }
 
     @ParameterizedTest
@@ -120,7 +120,7 @@ public class BaseChatAgentTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        DashscopeAssertions.dashscopeAssertText(client, "有两辆自行车", result);
+        DashscopeAssertions.dashscopeAssertText(client, result, "有两辆自行车");
     }
 
 
@@ -153,7 +153,7 @@ public class BaseChatAgentTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        DashscopeAssertions.dashscopeAssertText(client, "有2辆自行车", result);
+        DashscopeAssertions.dashscopeAssertText(client, result, "有2辆自行车");
     }
 
 }

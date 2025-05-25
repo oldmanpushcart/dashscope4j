@@ -143,7 +143,7 @@ public class ChatTestCase extends ClientSupport {
                     assertApiResponseSuccessful(response);
                     final String text = response.output().best().message().text();
                     assertNotNull(text);
-                    DashscopeAssertions.dashscopeAssertText(client, "文章描述了关于中国第十四个五年规划的内容", text);
+                    DashscopeAssertions.dashscopeAssertText(client, text, "文章描述了关于中国第十四个五年规划的内容");
                 })
                 .toCompletableFuture()
                 .join();

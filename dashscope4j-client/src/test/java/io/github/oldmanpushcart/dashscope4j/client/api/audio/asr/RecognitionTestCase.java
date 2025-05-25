@@ -70,7 +70,7 @@ public class RecognitionTestCase extends ClientSupport {
             exchange.finishing();
         }
 
-        DashscopeAssertions.dashscopeAssertText(client, "是否是这句诗：白日依山尽，黄河入海流。欲穷千里目，更上一层楼。", completed.join().toString());
+        DashscopeAssertions.dashscopeAssertText(client, completed.join().toString(), "是否是这句诗：白日依山尽，黄河入海流。欲穷千里目，更上一层楼。");
 
     }
 

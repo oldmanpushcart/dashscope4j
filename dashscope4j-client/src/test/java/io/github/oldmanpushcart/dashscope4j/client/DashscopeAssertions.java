@@ -11,7 +11,7 @@ import java.util.Arrays;
 
 public class DashscopeAssertions {
 
-    public static void dashscopeAssertText(DashscopeClient dashscope, String condition, String target) {
+    public static void dashscopeAssertText(DashscopeClient dashscope, String target, String condition) {
         final String text = "请严格比较以下内容\n"
                             + "### 实际结果\n"
                             + target
@@ -38,7 +38,7 @@ public class DashscopeAssertions {
         }
     }
 
-    public static void dashscopeAssertImage(DashscopeClient client, String condition, URI imageURI) {
+    public static void dashscopeAssertImage(DashscopeClient client, URI imageURI, String condition) {
         final String text = "请根据提供的图片内容和以下判断条件进行严格比对\n"
                             + "### 判断条件\n"
                             + condition

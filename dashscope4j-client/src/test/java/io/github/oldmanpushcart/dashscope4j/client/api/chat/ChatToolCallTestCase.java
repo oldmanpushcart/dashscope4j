@@ -26,7 +26,7 @@ public class ChatToolCallTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        DashscopeAssertions.dashscopeAssertText(client, "数学的成绩是88.0分，语文的成绩是100.0分", response.output().best().message().text());
+        DashscopeAssertions.dashscopeAssertText(client, response.output().best().message().text(), "数学的成绩是88.0分，语文的成绩是100.0分");
 
     }
 
@@ -47,7 +47,7 @@ public class ChatToolCallTestCase extends ClientSupport {
                 .doOnNext(stringBuf::append)
                 .blockingSubscribe();
 
-        DashscopeAssertions.dashscopeAssertText(client, "数学的成绩是88.0分，语文的成绩是100.0分", stringBuf.toString());
+        DashscopeAssertions.dashscopeAssertText(client, stringBuf.toString(), "数学的成绩是88.0分，语文的成绩是100.0分");
 
     }
 
@@ -69,7 +69,7 @@ public class ChatToolCallTestCase extends ClientSupport {
                 .doOnNext(stringBuf::append)
                 .blockingSubscribe();
 
-        DashscopeAssertions.dashscopeAssertText(client, "数学的成绩是88.0分，语文的成绩是100.0分", stringBuf.toString());
+        DashscopeAssertions.dashscopeAssertText(client, stringBuf.toString(), "数学的成绩是88.0分，语文的成绩是100.0分");
 
     }
 
