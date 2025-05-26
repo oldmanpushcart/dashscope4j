@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
 import java.util.concurrent.CompletionStage;
 
+import static io.github.oldmanpushcart.dashscope4j.agent.typical.mcp.McpHelper.isErrorResult;
+import static io.github.oldmanpushcart.dashscope4j.agent.typical.mcp.McpHelper.parseResultText;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedStage;
 
@@ -29,6 +31,7 @@ public class SyncMcpFunctionTool implements FunctionTool {
 
     private final McpSyncClient mcpClient;
     private final McpSchema.Tool mcpTool;
+    private final String _toString;
 
     @Getter
     private final Meta meta;
@@ -39,6 +42,11 @@ public class SyncMcpFunctionTool implements FunctionTool {
         this.mcpClient = builder.mcpClient;
         this.mcpTool = builder.mcpTool;
         this.meta = newFunctionMeta(builder);
+        this._toString = "%s@%s/%s".formatted(
+                mcpClient.getServerInfo().name(),
+                mcpClient.getServerInfo().version(),
+                mcpTool.name()
+        );
     }
 
     private static Meta newFunctionMeta(Builder builder) {
@@ -51,6 +59,11 @@ public class SyncMcpFunctionTool implements FunctionTool {
     }
 
     @Override
+    public String toString() {
+        return _toString;
+    }
+
+    @Override
     public CompletionStage<String> call(Caller caller, String argumentsJson) {
 
         final var argumentsMap = JsonUtils.toObject(argumentsJson, mapTypeRef);
@@ -58,21 +71,16 @@ public class SyncMcpFunctionTool implements FunctionTool {
         final var request = new McpSchema.CallToolRequest(name, argumentsMap);
 
         if (log.isDebugEnabled()) {
-            log.debug("dashscope-agent://sync/mcp/tool/{}@{}#{} <<< {}",
-                    mcpClient.getServerInfo().name(),
-                    mcpClient.getServerInfo().version(),
-                    mcpTool.name(),
-                    JsonUtils.compact(argumentsJson)
-            );
+            log.debug("dashscope-agent://mcp/tool/{} <<< {}", this, JsonUtils.compact(argumentsJson));
         }
 
         try {
             return completedStage(mcpClient.callTool(request))
                     .thenApply(result -> {
-                        if (null != result && null != result.isError() && result.isError()) {
-                            throw new IllegalStateException("Sync calling Mcp.Tool: %s occur error: %s".formatted(
+                        if (isErrorResult(result)) {
+                            throw new IllegalStateException("Mcp calling tool: %s failed: %s".formatted(
                                     name,
-                                    result.content()
+                                    parseResultText(result)
                             ));
                         }
                         return result;
@@ -81,19 +89,13 @@ public class SyncMcpFunctionTool implements FunctionTool {
                     .thenApply(JsonUtils::toJson)
                     .whenComplete((resultJson, ex) -> {
                         if (log.isDebugEnabled()) {
-                            log.debug("dashscope-agent://sync/mcp/tool/{}@{}#{} >>> {}",
-                                    mcpClient.getServerInfo().name(),
-                                    mcpClient.getServerInfo().version(),
-                                    mcpTool.name(),
-                                    JsonUtils.compact(resultJson)
-                            );
+                            log.debug("dashscope-agent://mcp/tool/{} >>> {}", this, JsonUtils.compact(resultJson));
                         }
                     });
         } catch (Throwable ex) {
             throw new RuntimeException(
-                    "Mcp tool sync call error! mcp-client=%s@%s;arguments=%s".formatted(
-                            mcpClient.getServerInfo().name(),
-                            mcpClient.getServerInfo().version(),
+                    "Mcp calling tool: %s occur error! arguments=%s".formatted(
+                            this,
                             JsonUtils.compact(argumentsJson)
                     ),
                     ex

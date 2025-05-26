@@ -18,7 +18,9 @@ class ReActPromptTemplate extends PromptTemplate {
             = """
             Answer the following questions as best you can. You have access to the following tools:
             
+            --------------------
             ${tools}
+            --------------------
             
             Use the following format:
             
@@ -81,14 +83,17 @@ class ReActPromptTemplate extends PromptTemplate {
                     .map(meta ->
                             PromptTemplate.newBuilder()
                                     .template("""
-                                            ## ${name}
-                                            ### SUMMARY
-                                            ${summary}
-                                            ### PARAMETER-SCHEMA
+                                            ## 工具名称: ${name}
+                                            
+                                            ### 功能描述
+                                            ${description}
+                                            
+                                            ### 参数格式
                                             ${parameter-schema}
-                                            """)
+                                            """
+                                    )
                                     .variable("name", meta.name())
-                                    .variable("summary", meta.description())
+                                    .variable("description", meta.description())
                                     .variable("parameter-schema", meta.parameterSchema())
                                     .build()
                                     .render())

@@ -36,7 +36,7 @@ public abstract class BaseChatAgent implements ChatAgent {
     private static final AtomicInteger identityGen = new AtomicInteger(100);
 
     private final String name;
-    private final String summary;
+    private final String description;
     private final String prompt;
     private final ChatModel model;
     private final boolean flowBridge;
@@ -53,7 +53,7 @@ public abstract class BaseChatAgent implements ChatAgent {
         requireNonNull(builder.client, "client is required!");
 
         this.name = buildingName(builder.name);
-        this.summary = builder.summary;
+        this.description = builder.description;
         this.prompt = builder.prompt;
         this.client = builder.client;
         this.model = builder.model;
@@ -209,11 +209,11 @@ public abstract class BaseChatAgent implements ChatAgent {
     public static abstract class Builder<T extends BaseChatAgent, B extends Builder<T, B>> implements Buildable<T, B> {
 
         private String name;
-        private String summary;
+        private String description;
         private String prompt;
         private DashscopeClient client;
         private ChatModel model;
-        private boolean flowBridge;
+        private boolean flowBridge = true;
         private final List<Component> components = new ArrayList<>();
         private final List<Interceptor> interceptors = new ArrayList<>();
         private final List<FunctionTool> functionTools = new ArrayList<>();
@@ -224,7 +224,7 @@ public abstract class BaseChatAgent implements ChatAgent {
 
         public Builder(BaseChatAgent agent) {
             this.name = agent.name;
-            this.summary = agent.summary;
+            this.description = agent.description;
             this.prompt = agent.prompt;
             this.client = agent.client;
             this.model = agent.model;
@@ -245,13 +245,13 @@ public abstract class BaseChatAgent implements ChatAgent {
         }
 
         /**
-         * 设置智能体摘要
+         * 设置智能体描述
          *
-         * @param summary 智能体摘要
+         * @param description 智能体描述
          * @return this
          */
-        public B summary(String summary) {
-            this.summary = summary;
+        public B description(String description) {
+            this.description = description;
             return self();
         }
 

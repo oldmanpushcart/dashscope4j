@@ -144,10 +144,12 @@ public class McpAgentTestCase extends ClientSupport {
             final var agent = ReActChatAgent.newBuilder()
                     .client(client)
                     .name("master")
+                    .flowBridge(true)
                     .addFunction(new SystemDateTimeFunction())
                     .addFunctionTool(DashscopeChatAgent.newBuilder()
                             .client(client)
                             .name("dashscope-tools")
+                            .flowBridge(true)
                             .addFunction(new DashscopeGenImageByTextFunction())
                             .build()
                             .newFunctionToolBuilder()
@@ -155,6 +157,7 @@ public class McpAgentTestCase extends ClientSupport {
                     .addFunctionTool(SyncMcpChatAgent.newBuilder()
                             .client(client)
                             .name("amap")
+                            .flowBridge(true)
                             .mcpClient(mcpClient)
                             .build()
                             .newFunctionToolBuilder()
@@ -162,7 +165,7 @@ public class McpAgentTestCase extends ClientSupport {
                     .build();
 
             final var request = ChatRequest.newBuilder()
-                    .model(ChatModel.QWEN_PLUS)
+                    .model(ChatModel.QWEN3_235B_A22B)
                     .addMessage(Message.ofUser("""
                             请根据杭州明天天气情况画一副水墨山水画
                             """

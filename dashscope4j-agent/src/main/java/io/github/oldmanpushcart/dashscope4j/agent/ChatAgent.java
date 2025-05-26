@@ -16,9 +16,9 @@ public interface ChatAgent extends ChatOp {
     String name();
 
     /**
-     * @return 智能体摘要
+     * @return 智能体描述
      */
-    String summary();
+    String description();
 
     /**
      * @return 客户端
@@ -44,12 +44,12 @@ public interface ChatAgent extends ChatOp {
         FunctionToolBuilder name(String name);
 
         /**
-         * 设置函数摘要
+         * 设置函数描述
          *
-         * @param summary 函数摘要
+         * @param summary 函数描述
          * @return this
          */
-        FunctionToolBuilder summary(String summary);
+        FunctionToolBuilder description(String summary);
 
     }
 

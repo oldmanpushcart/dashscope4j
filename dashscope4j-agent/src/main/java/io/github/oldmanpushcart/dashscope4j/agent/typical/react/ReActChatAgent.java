@@ -136,17 +136,21 @@ public class ReActChatAgent extends BaseChatAgent {
             final ChatRequest request = (ChatRequest) response.request();
 
             /*
-             * 如果不是增量输出，则清空缓存
+             * 判断当前对话是否增量输出
+             * - 全量输出：清空缓存
+             * - 增量输出：添加当前文本片段到缓存
              */
             if (!request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)) {
                 stringBuf.setLength(0);
             }
             stringBuf.append(choice.message().text());
 
+            // 创建回复流
+            final Flowable<ChatResponse> replyFlow = Flowable.just(response);
 
             // 如果不是最后一个消息，则直接返回当前对话流
             if (choice.finish() == ChatResponse.Finish.NONE) {
-                return Flowable.just(response);
+                return replyFlow;
             }
 
             /*
@@ -157,7 +161,7 @@ public class ReActChatAgent extends BaseChatAgent {
             final String responseText = stringBuf.toString();
             final ReAct reAct = ReAct.valueOf(responseText);
             if (reAct.hasFinalAnswer()) {
-                return Flowable.just(response);
+                return replyFlow;
             }
             if (!reAct.hasAction()) {
                 throw new IllegalArgumentException("Action is required!");
@@ -171,8 +175,7 @@ public class ReActChatAgent extends BaseChatAgent {
             final String argumentJson = reAct.getActionInput();
             final FunctionTool functionTool = requireFunctionTool(functionTools(), functionName);
             final Tool.Caller functionCaller = newFunctionCaller(client(), request);
-            return Flowable
-                    .just(response)
+            return replyFlow
                     .concatWith(Flowable.defer(() -> {
                         final CompletionStage<Flowable<ChatResponse>> nextFlow = completedFuture(null)
                                 .thenCompose(unused -> functionTool.call(functionCaller, argumentJson))
@@ -205,8 +208,11 @@ public class ReActChatAgent extends BaseChatAgent {
                     final var newLastUserMessage = ReActPromptTemplate.newBuilder()
                             .template("""
                                     Question:
+                                    --------------------
                                     ${question}
-                                    """)
+                                    --------------------
+                                    """
+                            )
                             .variable("question", lastUserMessage.text())
                             .build()
                             .renderTo(prompt -> lastUserMessage.changeText(v -> prompt));
