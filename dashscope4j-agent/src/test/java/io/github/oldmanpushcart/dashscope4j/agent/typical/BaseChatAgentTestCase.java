@@ -87,8 +87,8 @@ public class BaseChatAgentTestCase extends ClientSupport {
                 .model(model)
                 .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
-                        Content.ofText("图片中有几辆自行车?"),
-                        Content.ofImage(new File("./test-data/image-002.jpeg").toURI())
+                        Content.ofText("图片中有几个人戴着帽子?"),
+                        Content.ofImage(new File("./test-data/IMG_0942.JPG").toURI())
                 )))
                 .build();
 
@@ -97,7 +97,7 @@ public class BaseChatAgentTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        DashscopeAssertions.dashscopeAssertText(client, result, "有两辆自行车");
+        DashscopeAssertions.dashscopeAssertText(client, result, "有两个");
     }
 
     @ParameterizedTest
@@ -110,8 +110,8 @@ public class BaseChatAgentTestCase extends ClientSupport {
                 .model(model)
                 .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
-                        Content.ofText("有几辆自行车?"),
-                        Content.ofImage(new File("./test-data/image-002.jpeg").toURI())
+                        Content.ofText("图片中有几个人戴着帽子?"),
+                        Content.ofImage(new File("./test-data/IMG_0942.JPG").toURI())
                 )))
                 .build();
 
@@ -120,7 +120,7 @@ public class BaseChatAgentTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        DashscopeAssertions.dashscopeAssertText(client, result, "有两辆自行车");
+        DashscopeAssertions.dashscopeAssertText(client, result, "有两个");
     }
 
 
@@ -134,8 +134,8 @@ public class BaseChatAgentTestCase extends ClientSupport {
                 .model(model)
                 .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
-                        Content.ofText("有几辆自行车?"),
-                        Content.ofImage(new File("./test-data/image-002.jpeg").toURI())
+                        Content.ofText("图片中有几个人戴着帽子?"),
+                        Content.ofImage(new File("./test-data/IMG_0942.JPG").toURI())
                 )))
                 .build();
 
@@ -153,7 +153,7 @@ public class BaseChatAgentTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        DashscopeAssertions.dashscopeAssertText(client, result, "有2辆自行车");
+        DashscopeAssertions.dashscopeAssertText(client, result, "有2个");
     }
 
 }

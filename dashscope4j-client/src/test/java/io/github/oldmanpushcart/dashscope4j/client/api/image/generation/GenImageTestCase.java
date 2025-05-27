@@ -77,7 +77,7 @@ public class GenImageTestCase extends ClientSupport {
                 .model(GenImageModel.WANX_V1)
                 .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .prompt("将图片转为卡通风格")
-                .reference(new File("./test-data/image-002.jpeg").toURI())
+                .reference(new File("./test-data/IMG_0942.JPG").toURI())
                 .option(GenImageOptions.NUMBER, 1)
                 .option(GenImageOptions.SIZE, GenImageOptions.Size.S_1024_1024)
                 .option(GenImageOptions.STYLE, GenImageOptions.Style.CARTOON_3D)
@@ -89,7 +89,7 @@ public class GenImageTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        DashscopeAssertions.dashscopeAssertImage(client, genImageURI, "有两辆自行车");
+        DashscopeAssertions.dashscopeAssertImage(client, genImageURI, "有两个戴帽子的人");
 
     }
 

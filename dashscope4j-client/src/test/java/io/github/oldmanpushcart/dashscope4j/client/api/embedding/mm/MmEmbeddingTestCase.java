@@ -20,9 +20,9 @@ public class MmEmbeddingTestCase extends ClientSupport {
                 .model(MmEmbeddingModel.MM_EMBEDDING_V1)
                 .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .contents(Arrays.asList(
-                        Content.ofImage(new File("./test-data/image-002.jpeg").toURI()),
+                        Content.ofImage(new File("./test-data/lingzhiling.jpg").toURI()),
                         Content.ofText("一个帅哥在骑自行车念经"),
-                        Content.ofText("有两个自行车")
+                        Content.ofText("有两个戴帽子的人")
                 ))
                 .build();
 

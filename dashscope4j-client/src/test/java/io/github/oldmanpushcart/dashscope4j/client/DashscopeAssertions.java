@@ -11,45 +11,70 @@ import java.util.Arrays;
 
 public class DashscopeAssertions {
 
-    public static void dashscopeAssertText(DashscopeClient dashscope, String target, String condition) {
-        final String text = "请严格比较以下内容\n"
-                            + "### 实际结果\n"
-                            + target
-                            + "\n\n"
-                            + "### 预期条件\n"
-                            + condition
-                            + "\n\n"
-                            + "请你仔细判断实际结果是否完全满足预期条件。如果满足，请只输出 TRUE；如果不满足，请只输出 FALSE。不要添加任何解释或额外信息。";
+    /**
+     * 断言文本是否符合预期描述
+     *
+     * @param dashscope client
+     * @param text      文本
+     * @param expect    预期描述
+     */
+    public static void dashscopeAssertText(DashscopeClient dashscope, String text, String expect) {
+        final String prompt = """
+                请你判断文本内容符合预期描述。如果符合，请只输出 TRUE；如果不满足，请只输出 FALSE。不要添加任何解释或额外信息。
+                
+                文本内容
+                ----------
+                %s
+                ----------
+                
+                预期描述
+                ----------
+                %s
+                ----------
+                """.formatted(text, expect);
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
-                .addMessage(Message.ofUser(text))
+                .addMessage(Message.ofUser(prompt))
                 .build();
         final ChatResponse response = dashscope.chat().async(request)
                 .toCompletableFuture()
                 .join();
         if (!response.output().best().message().text().contains("TRUE")) {
-            throw new AssertionError("预期与实际不符\n"
-                                     + "预期条件：\n"
-                                     + condition
-                                     + "\n\n"
-                                     + "实际结果：\n"
-                                     + target
+            throw new AssertionError("""
+                    预期描述与文本内容不符
+                    
+                    预期描述:
+                    %s
+                    
+                    文本内容:
+                    %s
+                    """.formatted(expect, text)
             );
         }
     }
 
-    public static void dashscopeAssertImage(DashscopeClient client, URI imageURI, String condition) {
-        final String text = "请根据提供的图片内容和以下判断条件进行严格比对\n"
-                            + "### 判断条件\n"
-                            + condition
-                            + "\n\n请仔细检查图片中的信息是否完全符合上述条件。\n"
-                            + "如果完全符合，请仅输出 TRUE；否则，请仅输出 FALSE。\n"
-                            + "不要添加任何解释或其他多余内容。";
+
+    /**
+     * 断言图片是否符合预期描述
+     *
+     * @param client   client
+     * @param imageURI 图片
+     * @param expect   预期描述
+     */
+    public static void dashscopeAssertImage(DashscopeClient client, URI imageURI, String expect) {
+        final String prompt = """
+                请你判断图片内容符合预期描述。如果符合，请只输出 TRUE；如果不满足，请只输出 FALSE。不要添加任何解释或额外信息。
+                
+                预期描述
+                ----------
+                %s
+                ----------
+                """.formatted(expect);
         final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_TURBO)
+                .model(ChatModel.QWEN_VL_MAX)
                 .context(ConfigContext.class, new ConfigContext().autoUpload(true))
                 .addMessage(Message.ofUser(Arrays.asList(
-                        Content.ofText(text),
+                        Content.ofText(prompt),
                         Content.ofImage(imageURI)
                 )))
                 .build();
@@ -57,9 +82,12 @@ public class DashscopeAssertions {
                 .toCompletableFuture()
                 .join();
         if (!response.output().best().message().text().contains("TRUE")) {
-            throw new AssertionError("期待情况与实际不符\n"
-                                     + "期待情况：\n"
-                                     + condition
+            throw new AssertionError("""
+                    预期描述与实际图片不符
+                    
+                    预期描述：
+                    %s
+                    """.formatted(expect)
             );
         }
     }
