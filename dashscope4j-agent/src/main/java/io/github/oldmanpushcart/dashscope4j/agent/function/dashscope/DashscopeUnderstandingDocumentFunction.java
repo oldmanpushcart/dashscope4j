@@ -11,6 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
+import lombok.Builder;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
@@ -18,25 +19,30 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.UnaryOperator;
 
 @ChatFnName("dashscope_understanding_document")
 @ChatFnDescription("可根据提示词要求对文档进行理解")
-@Setter
-@Accessors(fluent = true, chain = true)
+@Builder(builderMethodName = "newBuilder")
 public class DashscopeUnderstandingDocumentFunction
         implements ChatFunction<DashscopeUnderstandingDocumentFunction.Parameter, DashscopeUnderstandingDocumentFunction.Result> {
+
+    @Builder.Default
+    private UnaryOperator<ChatRequest> requestTransformer = t -> t;
 
     @Override
     public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
 
-        final ChatRequest request = ChatRequest.newBuilder()
+        final var request = ChatRequest.newBuilder()
                 .copyContextFrom(caller.request())
                 .model(ChatModel.QWEN_LONG)
                 .addMessage(newUserMessage(parameter))
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
                 .build();
 
-        return caller.client().chat().directFlow(request)
+        final var newRequest = requestTransformer.apply(request);
+
+        return caller.client().chat().directFlow(newRequest)
                 .map(response -> response.output().best().message().text())
                 .reduce(new StringBuilder(), StringBuilder::append)
                 .toCompletionStage()

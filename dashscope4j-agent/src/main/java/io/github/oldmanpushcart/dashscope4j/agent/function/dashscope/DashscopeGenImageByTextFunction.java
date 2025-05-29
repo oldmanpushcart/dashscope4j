@@ -11,32 +11,35 @@ import io.github.oldmanpushcart.dashscope4j.client.api.image.generation.GenImage
 import io.github.oldmanpushcart.dashscope4j.client.api.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
-import lombok.Setter;
-import lombok.experimental.Accessors;
+import lombok.Builder;
 
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 
 @ChatFnName("dashscope_gen_image_by_text")
 @ChatFnDescription("根据文本提示生成图片")
-@Setter
-@Accessors(fluent = true, chain = true)
+@Builder(builderMethodName = "newBuilder")
 public class DashscopeGenImageByTextFunction implements ChatFunction<DashscopeGenImageByTextFunction.Parameter, DashscopeGenImageByTextFunction.Result> {
 
+    @Builder.Default
     private Task.WaitStrategy waitStrategy = Task.WaitStrategies.until(
             Duration.ofSeconds(5),
             Duration.ofMinutes(1)
     );
 
+    @Builder.Default
+    private UnaryOperator<GenImageRequest> requestTransformer = t -> t;
+
     @Override
     public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
 
-        final GenImageRequest request = GenImageRequest.newBuilder()
+        final var request = GenImageRequest.newBuilder()
                 .copyContextFrom(caller.request())
                 .model(GenImageModel.WANX_V2_1_PLUS)
                 .option(GenImageOptions.NUMBER, 1)
@@ -44,7 +47,9 @@ public class DashscopeGenImageByTextFunction implements ChatFunction<DashscopeGe
                 .building(builder -> ofNullable(parameter.negative()).ifPresent(builder::negative))
                 .build();
 
-        return caller.client().image().generation().task(request)
+        final var newRequest = requestTransformer.apply(request);
+
+        return caller.client().image().generation().task(newRequest)
                 .thenCompose(this::waitingFor)
                 .thenApply(this::responseToImageURIs)
                 .thenApply(Result::new);

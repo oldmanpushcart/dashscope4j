@@ -10,36 +10,43 @@ import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenV
 import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenVideoOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenVideoRequest;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
+import lombok.Builder;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
+import java.util.function.UnaryOperator;
 
 @ChatFnName("dashscope_gen_video_by_text")
 @ChatFnDescription("根据文本提示生成视频")
-@Setter
-@Accessors(fluent = true, chain = true)
+@Builder(builderMethodName = "newBuilder")
 public class DashscopeGenVideoByTextFunction implements ChatFunction<DashscopeGenVideoByTextFunction.Parameter, DashscopeGenVideoByTextFunction.Result> {
 
+    @Builder.Default
     private Task.WaitStrategy waitStrategy = Task.WaitStrategies.until(
             Duration.ofMinutes(1),
             Duration.ofMinutes(5)
     );
 
+    @Builder.Default
+    private UnaryOperator<TextGenVideoRequest> requestTransformer = t -> t;
+
     @Override
     public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
 
-        final TextGenVideoRequest request = TextGenVideoRequest.newBuilder()
+        final var request = TextGenVideoRequest.newBuilder()
                 .copyContextFrom(caller.request())
                 .model(TextGenVideoModel.WANX_V2_1_T2V_TURBO)
                 .option(TextGenVideoOptions.ENABLE_PROMPT_EXTEND, true)
                 .prompt(parameter.prompt())
                 .build();
 
+        final var newRequest = requestTransformer.apply(request);
+
         return caller.client().video().genByText()
-                .task(request)
+                .task(newRequest)
                 .thenCompose(this::waitingFor)
                 .thenApply(response -> response.output().video())
                 .thenApply(Result::new);

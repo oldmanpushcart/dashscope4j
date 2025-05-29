@@ -150,7 +150,7 @@ public class McpAgentTestCase extends ClientSupport {
                             .client(client)
                             .name("dashscope-tools")
                             .flowBridge(true)
-                            .addFunction(new DashscopeGenImageByTextFunction())
+                            .addFunction(DashscopeGenImageByTextFunction.newBuilder().build())
                             .build()
                             .newFunctionToolBuilder()
                             .build())
