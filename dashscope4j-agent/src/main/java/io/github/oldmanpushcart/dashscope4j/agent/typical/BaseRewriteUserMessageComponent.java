@@ -55,7 +55,7 @@ class BaseRewriteUserMessageComponent implements Component {
         final Message message = request.requireLastMessageFromUser();
         final String prompt = PromptTemplate.newBuilder()
                 .template("""
-                        用户问题如下：
+                        用户问题：
                         --------------------
                         ${input}
                         --------------------

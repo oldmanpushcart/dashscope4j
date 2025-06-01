@@ -12,8 +12,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFn
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import lombok.Builder;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.util.ArrayList;

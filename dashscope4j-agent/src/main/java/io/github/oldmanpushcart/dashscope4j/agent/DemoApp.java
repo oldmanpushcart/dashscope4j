@@ -3,7 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.oldmanpushcart.dashscope4j.agent.function.SystemDateTimeFunction;
 import io.github.oldmanpushcart.dashscope4j.agent.function.dashscope.DashscopeGenImageByTextFunction;
-import io.github.oldmanpushcart.dashscope4j.agent.typical.mcp.SyncMcpChatAgent;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.mcp.McpChatAgent;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.mcp.McpClientKeeper;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
@@ -18,12 +19,7 @@ import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportPro
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.DebugHandler;
-import org.eclipse.jetty.util.Callback;
 
 import java.util.List;
 
@@ -35,7 +31,7 @@ public class DemoApp {
         final var transportProvider = new HttpServletSseServerTransportProvider(new ObjectMapper(), "/mcp/message");
 
         final var mcpServer = McpServer.sync(transportProvider)
-                .serverInfo("test","0.0.1")
+                .serverInfo("test", "0.0.1")
                 .capabilities(McpSchema.ServerCapabilities
                         .builder()
                         .tools(true)
@@ -46,22 +42,19 @@ public class DemoApp {
                 .ak(System.getenv("DASHSCOPE_AK"))
                 .build();
 
+        final var keeper = new McpClientKeeper();
         final var agent = ReActChatAgent.newBuilder()
                 .client(dashscope)
                 .addFunction(new SystemDateTimeFunction())
                 .addFunction(DashscopeGenImageByTextFunction.newBuilder().build())
-                .addFunctionTool(SyncMcpChatAgent.newBuilder()
+                .addFunctionTool(McpChatAgent.newBuilder()
                         .client(dashscope)
-                        .building(builder-> {
-                            final var mcpClient = McpClient
-                                    .sync(HttpClientSseClientTransport
-                                            .builder("https://mcp.amap.com")
-                                            .sseEndpoint("/sse?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
-                                            .build())
-                                    .build();
-                            mcpClient.initialize();
-                            builder.mcpClient(mcpClient);
-                        })
+                        .mcpClientRegistration(keeper.register("amap", () -> McpClient
+                                .async(HttpClientSseClientTransport
+                                        .builder("https://mcp.amap.com")
+                                        .sseEndpoint("/sse?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+                                        .build())
+                                .build()))
                         .build()
                         .newFunctionToolBuilder()
                         .build())

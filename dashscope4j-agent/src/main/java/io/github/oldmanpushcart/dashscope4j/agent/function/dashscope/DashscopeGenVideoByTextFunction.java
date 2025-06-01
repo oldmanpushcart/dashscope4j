@@ -11,8 +11,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenV
 import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.TextGenVideoRequest;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
 import lombok.Builder;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.time.Duration;

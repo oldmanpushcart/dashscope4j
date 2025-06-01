@@ -65,6 +65,14 @@ public class CheckUtils {
         return requireNonEmptyCollection(collection, () -> message);
     }
 
+    public static <T> T requireNonDuplicate(Collection<T> collection, T target, String message) {
+        return requireNonDuplicate( collection, target, () -> message);
+    }
+
+    public static <T> T requireNonDuplicate(Collection<T> collection, T target, Supplier<String> messageSupplier) {
+        return check(target, obj -> !collection.contains(obj), messageSupplier);
+    }
+
     /**
      * 检查
      *
@@ -75,8 +83,12 @@ public class CheckUtils {
      * @return 对象
      */
     public static <T> T check(T t, Predicate<T> predicate, String message) {
+        return check(t, predicate, () -> message);
+    }
+
+    public static <T> T check(T t, Predicate<T> predicate, Supplier<String> messageSupplier) {
         if (!predicate.test(t)) {
-            throw new IllegalArgumentException(message);
+            throw new IllegalArgumentException(messageSupplier.get());
         }
         return t;
     }

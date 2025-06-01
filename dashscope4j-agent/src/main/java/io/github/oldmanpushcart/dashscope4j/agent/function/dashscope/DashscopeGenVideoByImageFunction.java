@@ -6,14 +6,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
-import io.github.oldmanpushcart.dashscope4j.client.api.image.generation.GenImageRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.ImageGenVideoModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.ImageGenVideoOptions;
 import io.github.oldmanpushcart.dashscope4j.client.api.video.generation.ImageGenVideoRequest;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
 import lombok.Builder;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.time.Duration;

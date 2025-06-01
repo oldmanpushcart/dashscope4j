@@ -12,7 +12,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.image.generation.GenImage
 import io.github.oldmanpushcart.dashscope4j.client.api.image.generation.GenImageResponse;
 import io.github.oldmanpushcart.dashscope4j.client.task.Task;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 
 import java.net.URI;
 import java.time.Duration;

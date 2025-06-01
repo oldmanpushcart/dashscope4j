@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical.mcp;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.reactivex.rxjava3.core.Flowable;
 
@@ -15,14 +14,14 @@ import static java.util.concurrent.CompletableFuture.completedStage;
 /**
  * 异步MCP智能体
  */
-public class AsyncMcpChatAgent extends BaseChatAgent {
+public class McpChatAgent extends BaseChatAgent {
 
-    private final McpAsyncClient mcpClient;
+    private final McpClientKeeper.ClientRegistration mcpClientRegistration;
 
-    protected AsyncMcpChatAgent(Builder builder) {
+    protected McpChatAgent(Builder builder) {
         super(builder);
-        requireNonNull(builder.mcpClient, "McpClient must not be null");
-        this.mcpClient = builder.mcpClient;
+        requireNonNull(builder.mcpClientRegistration, "mcpClientRegistration must not be null");
+        this.mcpClientRegistration = builder.mcpClientRegistration;
     }
 
     @Override
@@ -40,27 +39,21 @@ public class AsyncMcpChatAgent extends BaseChatAgent {
         return new Builder();
     }
 
-    public static class Builder extends BaseChatAgent.Builder<AsyncMcpChatAgent, Builder> {
+    public static class Builder extends BaseChatAgent.Builder<McpChatAgent, Builder> {
 
-        private McpAsyncClient mcpClient;
+        private McpClientKeeper.ClientRegistration mcpClientRegistration;
 
         public Builder() {
 
         }
 
-        public Builder(AsyncMcpChatAgent agent) {
+        public Builder(McpChatAgent agent) {
             super(agent);
-            this.mcpClient = agent.mcpClient;
+            this.mcpClientRegistration = agent.mcpClientRegistration;
         }
 
-        /**
-         * 设置异步MCP客户端
-         *
-         * @param mcpClient 异步MCP客户端
-         * @return this
-         */
-        public Builder mcpClient(McpAsyncClient mcpClient) {
-            this.mcpClient = mcpClient;
+        public Builder mcpClientRegistration(McpClientKeeper.ClientRegistration mcpClientRegistration) {
+            this.mcpClientRegistration = mcpClientRegistration;
             return this;
         }
 
@@ -70,7 +63,7 @@ public class AsyncMcpChatAgent extends BaseChatAgent {
          * @return 异步MCP智能体
          */
         @Override
-        public AsyncMcpChatAgent build() {
+        public McpChatAgent build() {
             return asyncBuild()
                     .toCompletableFuture()
                     .join();
@@ -81,20 +74,18 @@ public class AsyncMcpChatAgent extends BaseChatAgent {
          *
          * @return 异步MCP智能体
          */
-        public CompletionStage<AsyncMcpChatAgent> asyncBuild() {
-            requireNonNull(mcpClient, "McpClient must not be null");
-            return completedStage(mcpClient)
+        public CompletionStage<McpChatAgent> asyncBuild() {
+            requireNonNull(mcpClientRegistration, "mcpClientMeta must not be null");
+            return completedStage(mcpClientRegistration)
+                    .thenCompose(McpClientKeeper.ClientRegistration::fetch)
                     .thenCompose(client -> client.listTools().toFuture())
                     .thenApply(McpSchema.ListToolsResult::tools)
                     .thenApply(tools -> {
                         final var functionTools = tools.stream()
-                                .map(tool -> AsyncMcpFunctionTool.newBuilder()
-                                        .mcpClient(mcpClient)
-                                        .mcpTool(tool)
-                                        .build())
+                                .map(tool -> new McpFunctionTool(tool, mcpClientRegistration))
                                 .toList();
                         addFunctionTools(functionTools);
-                        return new AsyncMcpChatAgent(this);
+                        return new McpChatAgent(this);
                     });
         }
 

@@ -14,6 +14,7 @@ open module dashscope4j.agent {
     requires org.eclipse.jetty.server;
     requires org.eclipse.jetty.ee10.servlet;
     requires org.eclipse.jetty.ee10.servlets;
+    requires annotations;
 
     exports io.github.oldmanpushcart.dashscope4j.agent;
     exports io.github.oldmanpushcart.dashscope4j.agent.typical;
