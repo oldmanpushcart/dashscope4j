@@ -31,7 +31,7 @@ public class ReActChatAgent extends BaseChatAgent {
     protected CompletionStage<ChatResponse> baseAsync(ChatRequest request) {
         final ChatRequest newRequest = newReActChatRequest(request);
         return client().chat().async(newRequest)
-                .thenCompose(this::asyncReAct)
+                .thenCompose(this::reActAsync)
                 .thenApply(this::unpackingReActResponse);
     }
 
@@ -52,7 +52,7 @@ public class ReActChatAgent extends BaseChatAgent {
     }
 
     // 异步 ReAct
-    private CompletionStage<ChatResponse> asyncReAct(ChatResponse previousResponse) {
+    private CompletionStage<ChatResponse> reActAsync(ChatResponse previousResponse) {
 
         final Message previousResponseMessage = previousResponse.output().best().message();
         final ReAct reAct = ReAct.valueOf(previousResponseMessage.text());
@@ -71,7 +71,7 @@ public class ReActChatAgent extends BaseChatAgent {
 
         final String functionName = reAct.getAction();
         final String argumentJson = reAct.getActionInput();
-        final FunctionTool functionTool = requireFunctionTool(functionTools(), functionName);
+        final FunctionTool functionTool = requireFunctionTool(baseFunctionTools(), functionName);
         final Tool.Caller functionCaller = newFunctionCaller(client(), request);
 
         // 调用函数
@@ -83,14 +83,14 @@ public class ReActChatAgent extends BaseChatAgent {
                             .build();
                     return client().chat().async(nextRequest);
                 })
-                .thenCompose(this::asyncReAct);
+                .thenCompose(this::reActAsync);
     }
 
     @Override
     protected CompletionStage<Flowable<ChatResponse>> baseFlow(ChatRequest request) {
         final ChatRequest newRequest = newReActChatRequest(request);
         return client().chat().flow(newRequest)
-                .thenApply(this::flowReAct)
+                .thenApply(this::reActFlow)
                 .thenApply(this::unpackingReActResponseFlow);
     }
 
@@ -128,7 +128,7 @@ public class ReActChatAgent extends BaseChatAgent {
     }
 
     // 流式 ReAct
-    private Flowable<ChatResponse> flowReAct(Flowable<ChatResponse> responseFlow) {
+    private Flowable<ChatResponse> reActFlow(Flowable<ChatResponse> responseFlow) {
         final StringBuilder stringBuf = new StringBuilder();
         return responseFlow.concatMap(response -> {
 
@@ -173,7 +173,7 @@ public class ReActChatAgent extends BaseChatAgent {
              */
             final String functionName = reAct.getAction();
             final String argumentJson = reAct.getActionInput();
-            final FunctionTool functionTool = requireFunctionTool(functionTools(), functionName);
+            final FunctionTool functionTool = requireFunctionTool(baseFunctionTools(), functionName);
             final Tool.Caller functionCaller = newFunctionCaller(client(), request);
             return replyFlow
                     .concatWith(Flowable.defer(() -> {
@@ -186,7 +186,7 @@ public class ReActChatAgent extends BaseChatAgent {
                                             .build();
                                     return client().chat().flow(nextRequest);
                                 })
-                                .thenApply(this::flowReAct);
+                                .thenApply(this::reActFlow);
                         return Flowable
                                 .fromCompletionStage(nextFlow)
                                 .flatMap(Flowable::fromPublisher);
@@ -268,14 +268,6 @@ public class ReActChatAgent extends BaseChatAgent {
     }
 
     public static class Builder extends BaseChatAgent.Builder<ReActChatAgent, Builder> {
-
-        public Builder() {
-
-        }
-
-        public Builder(ReActChatAgent agent) {
-            super(agent);
-        }
 
         @Override
         public ReActChatAgent build() {

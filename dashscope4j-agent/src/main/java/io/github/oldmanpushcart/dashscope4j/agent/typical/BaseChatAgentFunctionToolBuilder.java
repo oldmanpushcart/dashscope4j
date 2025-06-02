@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -52,7 +53,7 @@ class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder 
 
     private String buildingDescription() {
         return Objects.requireNonNullElseGet(description, () ->
-                agent.functionTools().stream()
+                agent.baseFunctionTools().stream()
                         .map(FunctionTool::meta)
                         .map(FunctionTool.Meta::description)
                         .collect(Collectors.joining("\n\n")));
@@ -61,12 +62,31 @@ class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder 
     @Override
     public FunctionTool build() {
         requireNonNull(agent);
-        return ChatFunctionTool.newBuilder()
-                .name(buildingName())
-                .description(buildingDescription())
-                .parameterType(BaseChatAgentFunction.Parameter.class)
-                .function(new BaseChatAgentFunction(agent))
-                .build();
+        return new FunctionTool() {
+
+            private final FunctionTool delegate = ChatFunctionTool.newBuilder()
+                    .name(buildingName())
+                    .description(buildingDescription())
+                    .parameterType(BaseChatAgentFunction.Parameter.class)
+                    .function(new BaseChatAgentFunction(agent))
+                    .build();
+
+            @Override
+            public Meta meta() {
+                return new Meta(
+                        delegate.meta().name(),
+                        buildingDescription(),
+                        delegate.meta().parameterSchema()
+                );
+            }
+
+            @Override
+            public CompletionStage<String> call(Caller caller, String argument) {
+                return delegate.call(caller, argument);
+            }
+
+        };
+
     }
 
 }

@@ -25,13 +25,13 @@ class McpFunctionTool implements FunctionTool {
 
     };
 
-    private final McpClientKeeper.ClientRegistration mcpClientRegistration;
+    private final McpChatAgent agent;
     private final McpSchema.Tool mcpTool;
     private final Meta meta;
 
-    public McpFunctionTool(McpSchema.Tool mcpTool, McpClientKeeper.ClientRegistration mcpClientRegistration) {
+    public McpFunctionTool(McpChatAgent agent, McpSchema.Tool mcpTool) {
+        this.agent = agent;
         this.mcpTool = mcpTool;
-        this.mcpClientRegistration = mcpClientRegistration;
         this.meta = newFunctionMeta(mcpTool);
     }
 
@@ -50,7 +50,7 @@ class McpFunctionTool implements FunctionTool {
         final var name = mcpTool.name();
         final var request = new McpSchema.CallToolRequest(name, argumentsMap);
 
-        return mcpClientRegistration.fetch().thenCompose(client -> {
+        return agent.fetch().thenCompose(client -> {
 
             final var serverInfo = client.getServerInfo();
             final var prefix = "%s@%s/%s".formatted(serverInfo.name(), serverInfo.version(), mcpTool.name());

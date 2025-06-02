@@ -36,6 +36,7 @@ public class DashscopeUnderstandingVisualFunction
                 .model(ChatModel.QWEN_VL_MAX)
                 .addMessage(newUserMessage(parameter))
                 .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
+                .option("vl_high_resolution_images", true)
                 .build();
 
         final var newRequest = requestTransformer.apply(request);

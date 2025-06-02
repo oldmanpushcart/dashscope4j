@@ -4,15 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.oldmanpushcart.dashscope4j.agent.function.SystemDateTimeFunction;
 import io.github.oldmanpushcart.dashscope4j.agent.function.dashscope.DashscopeGenImageByTextFunction;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.mcp.McpChatAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.typical.mcp.McpClientKeeper;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.util.JsonUtils;
-import io.modelcontextprotocol.client.McpClient;
-import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
@@ -42,19 +39,18 @@ public class DemoApp {
                 .ak(System.getenv("DASHSCOPE_AK"))
                 .build();
 
-        final var keeper = new McpClientKeeper();
         final var agent = ReActChatAgent.newBuilder()
                 .client(dashscope)
                 .addFunction(new SystemDateTimeFunction())
                 .addFunction(DashscopeGenImageByTextFunction.newBuilder().build())
                 .addFunctionTool(McpChatAgent.newBuilder()
                         .client(dashscope)
-                        .mcpClientRegistration(keeper.register("amap", () -> McpClient
-                                .async(HttpClientSseClientTransport
-                                        .builder("https://mcp.amap.com")
-                                        .sseEndpoint("/sse?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
-                                        .build())
-                                .build()))
+//                        .mcpClientRegistration(keeper.register("amap", () -> McpClient
+//                                .async(HttpClientSseClientTransport
+//                                        .builder("https://mcp.amap.com")
+//                                        .sseEndpoint("/sse?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+//                                        .build())
+//                                .build()))
                         .build()
                         .newFunctionToolBuilder()
                         .build())

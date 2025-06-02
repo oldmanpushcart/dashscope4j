@@ -6,155 +6,120 @@ import io.github.oldmanpushcart.dashscope4j.agent.function.SystemDateTimeFunctio
 import io.github.oldmanpushcart.dashscope4j.agent.function.dashscope.DashscopeGenImageByTextFunction;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeChatAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.mcp.McpChatAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.typical.mcp.McpClientKeeper;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
-import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import io.modelcontextprotocol.spec.McpClientTransport;
 import org.junit.jupiter.api.Test;
 
 public class McpAgentTestCase extends ClientSupport {
 
     private static final String AMA_MAP_API_KEY = System.getenv("AMAP_MAPS_API_KEY");
 
-    private static McpClientKeeper pool;
-
-    @BeforeAll
-    public static void beforeAll() {
-        pool = new McpClientKeeper();
-        pool.register("amap", () -> McpClient
-                .async(HttpClientSseClientTransport
-                        .builder("https://mcp.amap.com")
-                        .sseEndpoint("/sse?key=%s".formatted(AMA_MAP_API_KEY))
-                        .build())
-                .build());
-    }
-
-    @AfterAll
-    public static void afterAll() {
-        pool.shutdown();
-    }
+    private final McpClientTransport transport = HttpClientSseClientTransport
+            .builder("https://mcp.amap.com")
+            .sseEndpoint("/sse?key=%s".formatted(AMA_MAP_API_KEY))
+            .build();
 
     @Test
     public void test$mcp$amap$async() {
 
-        final var mcpClient = McpClient
-                .async(HttpClientSseClientTransport
-                        .builder("https://mcp.amap.com")
-                        .sseEndpoint("/sse?key=%s".formatted(AMA_MAP_API_KEY))
+        final var mcpAgent = McpChatAgent.newBuilder()
+                .client(client)
+                .name("amap")
+                .transport(transport)
+                .build();
+
+        final var agent = ReActChatAgent.newBuilder()
+                .client(client)
+                .name("master")
+                .addFunction(new SystemDateTimeFunction())
+                .addFunctionTool(mcpAgent.newFunctionToolBuilder()
                         .build())
                 .build();
 
-        try {
+        mcpAgent.lazy()
+                .toCompletableFuture()
+                .join();
 
-            mcpClient.initialize()
-                    .toFuture()
-                    .join();
-
-            final var agent = ReActChatAgent.newBuilder()
-                    .client(client)
-                    .name("master")
-                    .addFunction(new SystemDateTimeFunction())
-                    .addFunctionTool(McpChatAgent.newBuilder()
-                            .client(client)
-                            .name("amap")
-                            .mcpClientRegistration(pool.lookup("amap"))
-                            .build()
-                            .newFunctionToolBuilder()
-                            .build())
-                    .build();
-
-            final var request = ChatRequest.newBuilder()
-                    .model(ChatModel.QWEN_PLUS)
-                    .addMessage(Message.ofUser("""
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_PLUS)
+                .addMessage(Message.ofUser("""
                             明天想去杭州西湖赏花，请规划一日游路线。
                             计划从杭州复地黄龙和山小区出发。需要根据当时的天气情况推荐我合适的出行方案。
                             """
-                    ))
-                    .build();
+                ))
+                .build();
 
-            final var response = agent.async(request)
-                    .toCompletableFuture()
-                    .join();
+        final var response = agent.async(request)
+                .toCompletableFuture()
+                .join();
 
-
-            DashscopeAssertions.dashscopeAssertText(
-                    client,
-                    response.output().best().message().text(),
-                    """
-                            1. 描述的是杭州西湖游玩出行方案
-                            2. 至少一种出行方案
-                            """
-            );
-
-        } finally {
-            mcpClient.close();
-        }
+        DashscopeAssertions.dashscopeAssertText(
+                client,
+                response.output().best().message().text(),
+                """
+                        1. 描述的是杭州西湖游玩出行方案
+                        2. 至少一种出行方案
+                        """
+        );
 
     }
 
     @Test
     public void test$mcp$amap$weather() {
 
-        try (final var mcpClient = McpClient
-                .sync(HttpClientSseClientTransport
-                        .builder("https://mcp.amap.com")
-                        .sseEndpoint("/sse?key=%s".formatted(AMA_MAP_API_KEY))
+        final var mcpAgent = McpChatAgent.newBuilder()
+                .client(client)
+                .name("amap")
+                .flowBridge(true)
+                .transport(transport)
+                .build();
+
+        final var agent = ReActChatAgent.newBuilder()
+                .client(client)
+                .name("master")
+                .flowBridge(true)
+                .addFunction(new SystemDateTimeFunction())
+                .addFunctionTool(DashscopeChatAgent.newBuilder()
+                        .client(client)
+                        .name("dashscope-tools")
+                        .flowBridge(true)
+                        .addFunction(DashscopeGenImageByTextFunction.newBuilder().build())
+                        .build()
+                        .newFunctionToolBuilder()
                         .build())
-                .build()) {
+                .addFunctionTool(mcpAgent.newFunctionToolBuilder()
+                        .build())
+                .build();
 
-            mcpClient.initialize();
+        mcpAgent.lazy()
+                .toCompletableFuture()
+                .join();
 
-            final var agent = ReActChatAgent.newBuilder()
-                    .client(client)
-                    .name("master")
-                    .flowBridge(true)
-                    .addFunction(new SystemDateTimeFunction())
-                    .addFunctionTool(DashscopeChatAgent.newBuilder()
-                            .client(client)
-                            .name("dashscope-tools")
-                            .flowBridge(true)
-                            .addFunction(DashscopeGenImageByTextFunction.newBuilder().build())
-                            .build()
-                            .newFunctionToolBuilder()
-                            .build())
-                    .addFunctionTool(McpChatAgent.newBuilder()
-                            .client(client)
-                            .name("amap")
-                            .flowBridge(true)
-                            .mcpClientRegistration(pool.lookup("amap"))
-                            .build()
-                            .newFunctionToolBuilder()
-                            .build())
-                    .build();
-
-            final var request = ChatRequest.newBuilder()
-                    .model(ChatModel.QWEN3_235B_A22B)
-                    .addMessage(Message.ofUser("""
-                            请根据杭州明天天气情况画一副水墨山水画
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN3_235B_A22B)
+                .addMessage(Message.ofUser("""
+                            请播报播报杭州明天天气情况，并根据天气情况画一副水墨山水画
                             """
-                    ))
-                    .build();
+                ))
+                .build();
 
-            final var response = agent.async(request)
-                    .toCompletableFuture()
-                    .join();
+        final var response = agent.async(request)
+                .toCompletableFuture()
+                .join();
 
 
-            DashscopeAssertions.dashscopeAssertText(
-                    client,
-                    response.output().best().message().text(),
-                    """
-                            1. 描述了天气信息
-                            2. 至少包含了一张图片的URL
-                            """
-            );
-
-        }
+        DashscopeAssertions.dashscopeAssertText(
+                client,
+                response.output().best().message().text(),
+                """
+                        1. 描述了天气信息
+                        2. 至少包含了一张图片的URL
+                        """
+        );
 
     }
 

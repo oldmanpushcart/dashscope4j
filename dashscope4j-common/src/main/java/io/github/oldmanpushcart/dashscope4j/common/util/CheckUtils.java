@@ -20,10 +20,7 @@ public class CheckUtils {
      */
     public static String requireNonBlankString(String str, Supplier<String> messageSupplier) {
         requireNonNull(messageSupplier);
-        if (null != str && !str.isBlank()) {
-            return str;
-        }
-        throw new IllegalArgumentException(messageSupplier.get());
+        return check(str, CommonUtils::isNotBlankString, messageSupplier);
     }
 
     /**
@@ -47,10 +44,7 @@ public class CheckUtils {
      */
     public static <T extends Collection<?>> T requireNonEmptyCollection(T collection, Supplier<String> messageSupplier) {
         requireNonNull(messageSupplier);
-        if (null == collection || collection.isEmpty()) {
-            throw new IllegalArgumentException(messageSupplier.get());
-        }
-        return collection;
+        return check(collection, CommonUtils::isNotEmptyCollection, messageSupplier);
     }
 
     /**
@@ -63,14 +57,6 @@ public class CheckUtils {
      */
     public static <T extends Collection<?>> T requireNonEmptyCollection(T collection, String message) {
         return requireNonEmptyCollection(collection, () -> message);
-    }
-
-    public static <T> T requireNonDuplicate(Collection<T> collection, T target, String message) {
-        return requireNonDuplicate( collection, target, () -> message);
-    }
-
-    public static <T> T requireNonDuplicate(Collection<T> collection, T target, Supplier<String> messageSupplier) {
-        return check(target, obj -> !collection.contains(obj), messageSupplier);
     }
 
     /**

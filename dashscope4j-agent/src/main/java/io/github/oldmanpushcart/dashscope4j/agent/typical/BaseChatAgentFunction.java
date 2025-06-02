@@ -30,7 +30,7 @@ class BaseChatAgentFunction
 
     @Override
     public CompletionStage<Result> call(Tool.Caller caller, Parameter parameter) {
-        final ChatRequest request = ChatRequest.newBuilder()
+        final var request = ChatRequest.newBuilder()
                 .model(caller.request().model())
                 .copyContextFrom(caller.request())
                 .addMessage(parameter.toMessage())

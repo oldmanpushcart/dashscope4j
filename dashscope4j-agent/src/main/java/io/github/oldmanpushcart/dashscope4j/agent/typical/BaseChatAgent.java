@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.component.Component;
+import io.github.oldmanpushcart.dashscope4j.agent.prompt.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
@@ -11,7 +12,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFu
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import io.reactivex.rxjava3.core.Flowable;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -20,33 +20,38 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
+import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.isBlankString;
+import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.isNotBlankString;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 /**
  * 抽象的智能体实现
  */
 @Slf4j
-@Getter
 @Accessors(fluent = true)
 public abstract class BaseChatAgent implements ChatAgent {
 
     private static final AtomicInteger identityGen = new AtomicInteger(100);
 
+    @Getter
     private final String name;
+
+    @Getter
     private final String description;
+
+    @Getter
+    private final DashscopeClient client;
+
     private final String prompt;
     private final ChatModel model;
     private final boolean flowBridge;
     private final List<Interceptor> interceptors;
     private final List<FunctionTool> functionTools;
-    private final List<Component> components;
-    private final DashscopeClient client;
-
-    @Getter(AccessLevel.NONE)
     private final ChatOp chatOp;
+    private final String _toString;
 
     protected BaseChatAgent(Builder<?, ?> builder) {
 
@@ -58,11 +63,15 @@ public abstract class BaseChatAgent implements ChatAgent {
         this.client = builder.client;
         this.model = builder.model;
         this.flowBridge = builder.flowBridge;
-        this.interceptors = unmodifiableList(builder.interceptors);
-        this.functionTools = unmodifiableList(builder.functionTools);
-        this.components = unmodifiableList(builder.components);
-        this.chatOp = newChatOp(this, components);
+        this.interceptors = builder.interceptors;
+        this.functionTools = builder.functionTools;
+        this.chatOp = newChatOp(this, builder.components);
+        this._toString = "dashscope-agent://%s".formatted(name);
 
+    }
+
+    protected List<FunctionTool> baseFunctionTools() {
+        return functionTools;
     }
 
     /*
@@ -71,15 +80,18 @@ public abstract class BaseChatAgent implements ChatAgent {
      * 2. 代理智能体的Plugin
      */
     private static ChatOp newChatOp(BaseChatAgent agent, List<Component> components) {
-        final List<Component> merged = new ArrayList<>(components);
-        merged.add(new BaseRewriteUserMessageComponent());
-        return BaseChatOp.of(agent, merged);
+        return BaseChatOp.of(agent, components);
     }
 
-    private static String buildingName(String name) {
-        return (null != name && !name.isBlank())
-                ? name
-                : "chat-agent-%s".formatted(identityGen.incrementAndGet());
+    private String buildingName(String name) {
+        return isBlankString(name)
+                ? "%s-%s".formatted(getClass().getSimpleName(), identityGen.incrementAndGet())
+                : name;
+    }
+
+    @Override
+    public String toString() {
+        return _toString;
     }
 
     @Override
@@ -95,9 +107,7 @@ public abstract class BaseChatAgent implements ChatAgent {
                         : chatOp.async(newRequest))
 
                 // 记录日志
-                .whenComplete((r, ex) ->
-                        log.debug("dashscope-agent://{}/async completed.", name(), ex))
-                ;
+                .whenComplete((r, ex) -> log.debug("{}/async completed.", this, ex));
     }
 
     // 流式桥接异步
@@ -121,8 +131,7 @@ public abstract class BaseChatAgent implements ChatAgent {
         return CompletableFuture.completedFuture(request)
                 .thenApply(this::newChatRequest)
                 .thenCompose(chatOp::flow)
-                .whenComplete((r, ex) ->
-                        log.debug("dashscope-agent://{}/flow completed.", name(), ex));
+                .whenComplete((r, ex) -> log.debug("{}/flow completed.", this, ex));
     }
 
     /*
@@ -144,13 +153,12 @@ public abstract class BaseChatAgent implements ChatAgent {
 
                 // 设置提示词
                 .building(builder -> {
-                    if (Objects.isNull(prompt)) {
-                        return;
+                    if (isNotBlankString(prompt)) {
+                        builder.self()
+                                .messages(emptyList())
+                                .addMessage(Message.ofSystem(prompt))
+                                .addMessages(request.messages());
                     }
-                    builder.self()
-                            .messages(emptyList())
-                            .addMessage(Message.ofSystem(prompt))
-                            .addMessages(request.messages());
                 })
 
                 /*
@@ -167,10 +175,56 @@ public abstract class BaseChatAgent implements ChatAgent {
 
                     builder.self()
                             .context(BaseChatContext.class, context)
-                            .interceptors(context.originalRequest().interceptors())
+                            .interceptors(emptyList())
+                            .addInterceptors(context.originalRequest().interceptors())
                             .addInterceptors(interceptors)
-                            .tools(context.originalRequest().tools())
-                            .addTools(functionTools);
+                            .tools(emptyList())
+                            .addTools(context.originalRequest().tools())
+                            .addTools(baseFunctionTools());
+
+                })
+
+                /*
+                 * 将消息重写为用户的输入
+                 *
+                 * 这里之所以需要这样做，主要是消息的多媒体部分是藏在 Message#contents() 中的，
+                 * 这种情况下并不利于基于文本构建的智能体进行处理，比如ReAct。
+                 *
+                 * 所以这里得想办法将消息格式转变为文本的信息，以便于智能体后续的处理
+                 */
+                .building(builder -> {
+
+                    final Message message = request.requireLastMessageFromUser();
+                    final String prompt = PromptTemplate.newBuilder()
+                            .template("""
+                                    用户问题：
+                                    --------------------
+                                    ${input}
+                                    --------------------
+                                    
+                                    请注意，在分析和回答上述问题时，您可以使用以下资源。当需要引用或调用这些资源时，请务必使用我直接提供的链接，不要自行修改或构造链接。
+                                    
+                                    可用资源：
+                                    --------------------
+                                    ${resources}
+                                    --------------------
+                                    """
+                            )
+                            .variable("input", message::text)
+                            .variable("resources", message.mediaContents()
+                                    .stream()
+                                    .map(content -> "- **%s**: %s".formatted(content.type(), content.data()))
+                                    .collect(Collectors.joining("\n")))
+                            .build()
+                            .render();
+
+                    /*
+                     * 重组对话请求消息
+                     * 将重写的消息替换最后一个用户消息
+                     */
+                    builder.self()
+                            .messages(request.historyMessages())
+                            .addMessage(Message.ofUser(prompt));
 
                 })
 
@@ -217,21 +271,6 @@ public abstract class BaseChatAgent implements ChatAgent {
         private final List<Component> components = new ArrayList<>();
         private final List<Interceptor> interceptors = new ArrayList<>();
         private final List<FunctionTool> functionTools = new ArrayList<>();
-
-        public Builder() {
-
-        }
-
-        public Builder(BaseChatAgent agent) {
-            this.name = agent.name;
-            this.description = agent.description;
-            this.prompt = agent.prompt;
-            this.client = agent.client;
-            this.model = agent.model;
-            this.components.addAll(agent.components);
-            this.interceptors.addAll(agent.interceptors);
-            this.functionTools.addAll(agent.functionTools);
-        }
 
         /**
          * 设置智能体名称

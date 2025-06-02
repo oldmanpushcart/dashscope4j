@@ -30,19 +30,7 @@ public class DashscopeChatAgent extends BaseChatAgent {
         return new Builder();
     }
 
-    public static Builder newBuilder(DashscopeChatAgent agent) {
-        return new Builder(agent);
-    }
-
     public static class Builder extends BaseChatAgent.Builder<DashscopeChatAgent, Builder> {
-
-        public Builder() {
-
-        }
-
-        public Builder(DashscopeChatAgent agent) {
-            super(agent);
-        }
 
         @Override
         public DashscopeChatAgent build() {
