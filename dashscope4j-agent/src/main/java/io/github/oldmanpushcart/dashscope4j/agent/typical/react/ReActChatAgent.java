@@ -71,7 +71,7 @@ public class ReActChatAgent extends BaseChatAgent {
 
         final String functionName = reAct.getAction();
         final String argumentJson = reAct.getActionInput();
-        final FunctionTool functionTool = requireFunctionTool(baseFunctionTools(), functionName);
+        final FunctionTool functionTool = requireFunctionTool(functionTools(), functionName);
         final Tool.Caller functionCaller = newFunctionCaller(client(), request);
 
         // 调用函数
@@ -175,7 +175,7 @@ public class ReActChatAgent extends BaseChatAgent {
                      */
                     final String functionName = reAct.getAction();
                     final String argumentJson = reAct.getActionInput();
-                    final FunctionTool functionTool = requireFunctionTool(baseFunctionTools(), functionName);
+                    final FunctionTool functionTool = requireFunctionTool(functionTools(), functionName);
                     final Tool.Caller functionCaller = newFunctionCaller(client(), request);
                     return replyFlow
                             .concatWith(Flowable.defer(() -> {

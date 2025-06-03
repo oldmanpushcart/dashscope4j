@@ -16,7 +16,10 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,7 +28,10 @@ import java.util.stream.Collectors;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.isBlankString;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.isNotBlankString;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
+import static lombok.AccessLevel.PROTECTED;
 
 /**
  * 抽象的智能体实现
@@ -45,11 +51,19 @@ public abstract class BaseChatAgent implements ChatAgent {
     @Getter
     private final DashscopeClient client;
 
+    @Getter(PROTECTED)
     private final String prompt;
+
+    @Getter(PROTECTED)
     private final ChatModel model;
-    private final boolean flowBridge;
+
+    @Getter(PROTECTED)
     private final List<Interceptor> interceptors;
+
+    @Getter(PROTECTED)
     private final List<FunctionTool> functionTools;
+
+    private final boolean flowBridge;
     private final ChatOp chatOp;
     private final String _toString;
 
@@ -57,32 +71,32 @@ public abstract class BaseChatAgent implements ChatAgent {
 
         requireNonNull(builder.client, "client is required!");
 
-        this.name = buildingName(builder.name);
+        /*
+         * 创建新的对话操作，在这个新的对话操作中
+         * 1. 对话原有的async/flow将会被baseAsync/baseFlow所取代
+         * 2. 代理智能体的Component
+         */
+        this.chatOp = BaseChatOp.of(this, builder.components);
+
+        /*
+         * 智能体的名称
+         *
+         * 如果没有设置则采用默认命名格式
+         * 如果有指定则用指定的
+         */
+        this.name = isBlankString(builder.name)
+                ? "%s-%s".formatted(getClass().getSimpleName(), identityGen.incrementAndGet())
+                : builder.name;
+
         this.description = builder.description;
         this.prompt = builder.prompt;
         this.client = builder.client;
         this.model = builder.model;
         this.flowBridge = builder.flowBridge;
-        this.interceptors = builder.interceptors;
-        this.functionTools = builder.functionTools;
-        this.chatOp = newChatOp(this, builder.components);
+        this.interceptors = unmodifiableList(builder.interceptors);
+        this.functionTools = unmodifiableList(builder.functionTools);
         this._toString = "dashscope-agent://%s".formatted(name);
 
-    }
-
-    /*
-     * 创建新的对话操作，在这个新的对话操作中
-     * 1. 对话原有的async/flow将会被baseAsync/baseFlow所取代
-     * 2. 代理智能体的Plugin
-     */
-    private static ChatOp newChatOp(BaseChatAgent agent, List<Component> components) {
-        return BaseChatOp.of(agent, components);
-    }
-
-    private String buildingName(String name) {
-        return isBlankString(name)
-                ? "%s-%s".formatted(getClass().getSimpleName(), identityGen.incrementAndGet())
-                : name;
     }
 
     @Override
@@ -99,7 +113,7 @@ public abstract class BaseChatAgent implements ChatAgent {
 
                 // 根据流控开关选择不同的执行方式
                 .thenCompose(newRequest -> flowBridge
-                        ? asyncByFlowBridge(newRequest)
+                        ? bridgeFlow(newRequest)
                         : chatOp.async(newRequest))
 
                 // 记录日志
@@ -107,7 +121,7 @@ public abstract class BaseChatAgent implements ChatAgent {
     }
 
     // 流式桥接异步
-    private CompletionStage<ChatResponse> asyncByFlowBridge(ChatRequest request) {
+    private CompletionStage<ChatResponse> bridgeFlow(ChatRequest request) {
 
         // 强制开启增量输出模式
         final ChatRequest newRequest = ChatRequest.newBuilder(request)
@@ -115,11 +129,10 @@ public abstract class BaseChatAgent implements ChatAgent {
                 .build();
 
         // 将增量流式输出的ChatResponse合并为一个ChatResponse，并返回
-        return chatOp.flow(newRequest)
-                .thenCompose(responseFlow ->
-                        responseFlow
-                                .reduce(ChatResponse::accumulate)
-                                .toCompletionStage());
+        return chatOp.directFlow(newRequest)
+                .reduce(ChatResponse::accumulate)
+                .toCompletionStage();
+
     }
 
     @Override
@@ -142,13 +155,15 @@ public abstract class BaseChatAgent implements ChatAgent {
 
                 // 设置对话模型
                 .building(builder -> {
-                    if (Objects.nonNull(model)) {
+                    final var model = model();
+                    if (nonNull(model)) {
                         builder.model(model);
                     }
                 })
 
                 // 设置提示词
                 .building(builder -> {
+                    final var prompt = prompt();
                     if (isNotBlankString(prompt)) {
                         builder.self()
                                 .messages(emptyList())
@@ -169,14 +184,18 @@ public abstract class BaseChatAgent implements ChatAgent {
                             .ofNullable(request.context(BaseChatContext.class))
                             .orElseGet(() -> new BaseChatContext().originalRequest(request));
 
+                    /*
+                     * 设置函数工具、拦截器
+                     * 将请求和智能体的函数工具、拦截器进行合并
+                     */
                     builder.self()
                             .context(BaseChatContext.class, context)
                             .interceptors(emptyList())
                             .addInterceptors(context.originalRequest().interceptors())
-                            .addInterceptors(interceptors)
+                            .addInterceptors(interceptors())
                             .tools(emptyList())
                             .addTools(context.originalRequest().tools())
-                            .addTools(baseFunctionTools());
+                            .addTools(functionTools());
 
                 })
 
@@ -226,13 +245,6 @@ public abstract class BaseChatAgent implements ChatAgent {
 
                 // 构造对话请求
                 .build();
-    }
-
-    /**
-     * @return 获取智能体函数工具集合
-     */
-    protected List<FunctionTool> baseFunctionTools() {
-        return functionTools;
     }
 
     /**

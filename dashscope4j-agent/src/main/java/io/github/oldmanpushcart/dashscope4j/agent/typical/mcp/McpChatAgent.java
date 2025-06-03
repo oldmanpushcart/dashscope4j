@@ -103,9 +103,9 @@ public class McpChatAgent extends BaseChatAgent {
     }
 
     @Override
-    protected List<FunctionTool> baseFunctionTools() {
+    protected List<FunctionTool> functionTools() {
         return new ArrayList<>() {{
-            addAll(McpChatAgent.super.baseFunctionTools());
+            addAll(McpChatAgent.super.functionTools());
             addAll(mcpFunctionToolsRef.get());
         }};
     }
@@ -121,16 +121,6 @@ public class McpChatAgent extends BaseChatAgent {
         return fetch().thenApply(mcpClient -> this);
     }
 
-    private synchronized Mono<Void> notifyResourcesChanged(List<McpSchema.Resource> resources) {
-        log.debug("{}/mcp/changed/resources size={}", this, resources.size());
-        return Mono.empty();
-    }
-
-    private synchronized Mono<Void> notifyPromptsChanged(List<McpSchema.Prompt> prompts) {
-        log.debug("{}/mcp/changed/prompts size={}", this, prompts.size());
-        return Mono.empty();
-    }
-
     private synchronized Mono<Void> notifyToolsChanged(List<McpSchema.Tool> tools) {
         log.debug("{}/mcp/changed/tools size={}", this, tools.size());
         final var newMcpFunctionTools = tools.stream()
@@ -140,28 +130,11 @@ public class McpChatAgent extends BaseChatAgent {
         return Mono.empty();
     }
 
-    private Mono<Void> handleLogging(McpSchema.LoggingMessageNotification loggingMessage) {
-        log.debug("{}/mcp/logging/{}/{} {}", this, loggingMessage.level(), loggingMessage.logger(), loggingMessage.data());
-        return Mono.empty();
-    }
-
-    private Mono<McpSchema.CreateMessageResult> handleSampling(McpSchema.CreateMessageRequest samplingRequest) {
-        return null;
-    }
-
 
     private void initialize(Duration interval) {
 
         final var mcpClient = initializer.apply(McpClient.async(transport))
-                .capabilities(McpSchema.ClientCapabilities.builder()
-                        .roots(true)
-                        .sampling()
-                        .build())
-                .resourcesChangeConsumer(this::notifyResourcesChanged)
-                .promptsChangeConsumer(this::notifyPromptsChanged)
                 .toolsChangeConsumer(this::notifyToolsChanged)
-                .loggingConsumer(this::handleLogging)
-                .sampling(this::handleSampling)
                 .build();
 
         scheduler.schedule(() -> {
@@ -179,30 +152,6 @@ public class McpChatAgent extends BaseChatAgent {
                         return mcpClient.listTools()
                                 .map(McpSchema.ListToolsResult::tools)
                                 .flatMap(this::notifyToolsChanged)
-                                .toFuture()
-                                .thenApply(v -> initializeResult);
-                    })
-
-                    // 初始化Prompt
-                    .thenCompose(initializeResult -> {
-                        if (Objects.isNull(initializeResult.capabilities().prompts())) {
-                            return completedStage(initializeResult);
-                        }
-                        return mcpClient.listPrompts()
-                                .map(McpSchema.ListPromptsResult::prompts)
-                                .flatMap(this::notifyPromptsChanged)
-                                .toFuture()
-                                .thenApply(v -> initializeResult);
-                    })
-
-                    // 初始化Resources
-                    .thenCompose(initializeResult -> {
-                        if (Objects.isNull(initializeResult.capabilities().resources())) {
-                            return completedStage(initializeResult);
-                        }
-                        return mcpClient.listResources()
-                                .map(McpSchema.ListResourcesResult::resources)
-                                .flatMap(this::notifyResourcesChanged)
                                 .toFuture()
                                 .thenApply(v -> initializeResult);
                     })

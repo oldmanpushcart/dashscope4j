@@ -10,11 +10,6 @@ open module dashscope4j.agent {
     requires reactor.core;
     requires java.net.http;
 
-    requires jakarta.servlet;
-    requires org.eclipse.jetty.server;
-    requires org.eclipse.jetty.ee10.servlet;
-    requires org.eclipse.jetty.ee10.servlets;
-
     exports io.github.oldmanpushcart.dashscope4j.agent;
     exports io.github.oldmanpushcart.dashscope4j.agent.typical;
     exports io.github.oldmanpushcart.dashscope4j.agent.typical.mcp;

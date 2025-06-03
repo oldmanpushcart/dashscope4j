@@ -53,7 +53,7 @@ class BaseChatAgentFunctionToolBuilder implements ChatAgent.FunctionToolBuilder 
 
     private String buildingDescription() {
         return Objects.requireNonNullElseGet(description, () ->
-                agent.baseFunctionTools().stream()
+                agent.functionTools().stream()
                         .map(FunctionTool::meta)
                         .map(FunctionTool.Meta::description)
                         .collect(Collectors.joining("\n\n")));
