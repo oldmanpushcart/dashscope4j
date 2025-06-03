@@ -15,7 +15,7 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
-                    <include>dashscope4j-holder.properties</include>
+                    <include>dashscope4j-meta.properties</include>
                 </includes>
             </resource>
         </resources>

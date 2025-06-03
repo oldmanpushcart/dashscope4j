@@ -27,7 +27,7 @@ public class ChatQvQTestCase extends ClientSupport {
                 )))
                 .build();
 
-        final StringBuilder stringBuf = new StringBuilder();
+        final StringBuffer stringBuf = new StringBuffer();
         client.chat().flow(request)
                 .thenCompose(responseFlow ->
                         responseFlow

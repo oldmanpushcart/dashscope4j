@@ -129,70 +129,72 @@ public class ReActChatAgent extends BaseChatAgent {
 
     // 流式 ReAct
     private Flowable<ChatResponse> reActFlow(Flowable<ChatResponse> responseFlow) {
-        final StringBuilder stringBuf = new StringBuilder();
-        return responseFlow.concatMap(response -> {
 
-            final ChatResponse.Choice choice = response.output().best();
-            final ChatRequest request = (ChatRequest) response.request();
+        final StringBuffer stringBuf = new StringBuffer();
+        return responseFlow
+                .concatMap(response -> {
 
-            /*
-             * 判断当前对话是否增量输出
-             * - 全量输出：清空缓存
-             * - 增量输出：添加当前文本片段到缓存
-             */
-            if (!request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)) {
-                stringBuf.setLength(0);
-            }
-            stringBuf.append(choice.message().text());
+                    final ChatResponse.Choice choice = response.output().best();
+                    final ChatRequest request = (ChatRequest) response.request();
 
-            // 创建回复流
-            final Flowable<ChatResponse> replyFlow = Flowable.just(response);
+                    /*
+                     * 判断当前对话是否增量输出
+                     * - 全量输出：清空缓存
+                     * - 增量输出：添加当前文本片段到缓存
+                     */
+                    if (!request.option().has(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)) {
+                        stringBuf.setLength(0);
+                    }
+                    stringBuf.append(choice.message().text());
 
-            // 如果不是最后一个消息，则直接返回当前对话流
-            if (choice.finish() == ChatResponse.Finish.NONE) {
-                return replyFlow;
-            }
+                    // 创建回复流
+                    final Flowable<ChatResponse> replyFlow = Flowable.just(response);
 
-            /*
-             * 解析为ReAct
-             * 1. 如果有最终的答案，则直接返回
-             * 2. 如果没有动作，则抛出异常
-             */
-            final String responseText = stringBuf.toString();
-            final ReAct reAct = ReAct.valueOf(responseText);
-            if (reAct.hasFinalAnswer()) {
-                return replyFlow;
-            }
-            if (!reAct.hasAction()) {
-                throw new IllegalArgumentException("Action is required!");
-            }
+                    // 如果不是最后一个消息，则直接返回当前对话流
+                    if (choice.finish() == ChatResponse.Finish.NONE) {
+                        return replyFlow;
+                    }
 
-            /*
-             * 执行函数并将函数执行结果作为下一次对话的输入
-             * 下一次对话输出流合并到当前对话流中
-             */
-            final String functionName = reAct.getAction();
-            final String argumentJson = reAct.getActionInput();
-            final FunctionTool functionTool = requireFunctionTool(baseFunctionTools(), functionName);
-            final Tool.Caller functionCaller = newFunctionCaller(client(), request);
-            return replyFlow
-                    .concatWith(Flowable.defer(() -> {
-                        final CompletionStage<Flowable<ChatResponse>> nextFlow = completedFuture(null)
-                                .thenCompose(unused -> functionTool.call(functionCaller, argumentJson))
-                                .thenCompose(resultJson -> {
-                                    final ChatRequest nextRequest = ChatRequest.newBuilder(request)
-                                            .addMessage(Message.ofAi(responseText))
-                                            .addMessage(Message.ofAi("%s:%s".formatted(ReAct.NAME_OBSERVATION, resultJson)))
-                                            .build();
-                                    return client().chat().flow(nextRequest);
-                                })
-                                .thenApply(this::reActFlow);
-                        return Flowable
-                                .fromCompletionStage(nextFlow)
-                                .flatMap(Flowable::fromPublisher);
-                    }));
+                    /*
+                     * 解析为ReAct
+                     * 1. 如果有最终的答案，则直接返回
+                     * 2. 如果没有动作，则抛出异常
+                     */
+                    final String responseText = stringBuf.toString();
+                    final ReAct reAct = ReAct.valueOf(responseText);
+                    if (reAct.hasFinalAnswer()) {
+                        return replyFlow;
+                    }
+                    if (!reAct.hasAction()) {
+                        throw new IllegalArgumentException("Action is required!");
+                    }
 
-        });
+                    /*
+                     * 执行函数并将函数执行结果作为下一次对话的输入
+                     * 下一次对话输出流合并到当前对话流中
+                     */
+                    final String functionName = reAct.getAction();
+                    final String argumentJson = reAct.getActionInput();
+                    final FunctionTool functionTool = requireFunctionTool(baseFunctionTools(), functionName);
+                    final Tool.Caller functionCaller = newFunctionCaller(client(), request);
+                    return replyFlow
+                            .concatWith(Flowable.defer(() -> {
+                                final CompletionStage<Flowable<ChatResponse>> nextFlow = completedFuture(null)
+                                        .thenCompose(unused -> functionTool.call(functionCaller, argumentJson))
+                                        .thenCompose(resultJson -> {
+                                            final ChatRequest nextRequest = ChatRequest.newBuilder(request)
+                                                    .addMessage(Message.ofAi(responseText))
+                                                    .addMessage(Message.ofAi("%s:%s".formatted(ReAct.NAME_OBSERVATION, resultJson)))
+                                                    .build();
+                                            return client().chat().flow(nextRequest);
+                                        })
+                                        .thenApply(this::reActFlow);
+                                return Flowable
+                                        .fromCompletionStage(nextFlow)
+                                        .flatMap(Flowable::fromPublisher);
+                            }));
+
+                });
     }
 
     // 新建 ReAct 请求

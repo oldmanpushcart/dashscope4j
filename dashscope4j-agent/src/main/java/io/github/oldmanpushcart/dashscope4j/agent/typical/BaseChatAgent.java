@@ -70,10 +70,6 @@ public abstract class BaseChatAgent implements ChatAgent {
 
     }
 
-    protected List<FunctionTool> baseFunctionTools() {
-        return functionTools;
-    }
-
     /*
      * 创建新的对话操作，在这个新的对话操作中
      * 1. 对话原有的async/flow将会被baseAsync/baseFlow所取代
@@ -197,20 +193,20 @@ public abstract class BaseChatAgent implements ChatAgent {
                     final Message message = request.requireLastMessageFromUser();
                     final String prompt = PromptTemplate.newBuilder()
                             .template("""
-                                    用户问题：
+                                    用户问题
                                     --------------------
-                                    ${input}
+                                    ${question}
                                     --------------------
                                     
                                     请注意，在分析和回答上述问题时，您可以使用以下资源。当需要引用或调用这些资源时，请务必使用我直接提供的链接，不要自行修改或构造链接。
                                     
-                                    可用资源：
+                                    可用资源
                                     --------------------
                                     ${resources}
                                     --------------------
                                     """
                             )
-                            .variable("input", message::text)
+                            .variable("question", message::text)
                             .variable("resources", message.mediaContents()
                                     .stream()
                                     .map(content -> "- **%s**: %s".formatted(content.type(), content.data()))
@@ -230,6 +226,13 @@ public abstract class BaseChatAgent implements ChatAgent {
 
                 // 构造对话请求
                 .build();
+    }
+
+    /**
+     * @return 获取智能体函数工具集合
+     */
+    protected List<FunctionTool> baseFunctionTools() {
+        return functionTools;
     }
 
     /**

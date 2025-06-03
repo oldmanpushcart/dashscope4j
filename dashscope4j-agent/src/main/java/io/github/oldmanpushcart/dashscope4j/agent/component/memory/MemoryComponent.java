@@ -148,7 +148,7 @@ public class MemoryComponent implements Component {
          * 应答流式输出内容缓存
          * 所以这里需要一个字符串缓存来存储流式输出内容
          */
-        final StringBuilder stringBuf = new StringBuilder();
+        final StringBuffer stringBuf = new StringBuffer();
 
         /*
          * 从流式回复中截留应答文本

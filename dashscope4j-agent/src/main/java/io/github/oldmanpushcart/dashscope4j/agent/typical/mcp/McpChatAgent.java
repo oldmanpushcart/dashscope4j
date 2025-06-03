@@ -47,6 +47,11 @@ public class McpChatAgent extends BaseChatAgent {
     protected McpChatAgent(Builder builder) {
         super(builder);
 
+        requireNonNull(builder.transport, "transport is required!");
+        requireNonNull(builder.initializer, "initializer is required!");
+        requireNonNull(builder.reinitializeInterval, "reinitializeInterval is required!");
+        requireNonNull(builder.pingInterval, "pingInterval is required!");
+
         this.transport = builder.transport;
         this.initializer = builder.initializer;
         this.reinitializeInterval = builder.reinitializeInterval;
@@ -69,7 +74,6 @@ public class McpChatAgent extends BaseChatAgent {
             this.isInternalScheduler = false;
             this.scheduler = builder.scheduler;
         }
-
 
         /*
          * 启动调度
@@ -110,6 +114,9 @@ public class McpChatAgent extends BaseChatAgent {
         return holderRef.get();
     }
 
+    /**
+     * @return 延迟初始化
+     */
     public CompletionStage<McpChatAgent> lazy() {
         return fetch().thenApply(mcpClient -> this);
     }
@@ -138,7 +145,7 @@ public class McpChatAgent extends BaseChatAgent {
         return Mono.empty();
     }
 
-    private Mono<McpSchema.CreateMessageResult> handleSampling(McpSchema.CreateMessageRequest createMessageRequest) {
+    private Mono<McpSchema.CreateMessageResult> handleSampling(McpSchema.CreateMessageRequest samplingRequest) {
         return null;
     }
 
@@ -315,36 +322,97 @@ public class McpChatAgent extends BaseChatAgent {
         private UnaryOperator<McpClient.AsyncSpec> initializer = v -> v;
         private Duration reinitializeInterval = Duration.ofSeconds(5);
         private Duration pingInterval = Duration.ofSeconds(30);
+        private boolean lazy = false;
 
+        /**
+         * 设置调度器
+         * <p>
+         * 调度器将被用于McpClient内部维持客户端状态
+         * </p>
+         *
+         * @param scheduler 调度器
+         * @return this
+         */
         public Builder scheduler(ScheduledExecutorService scheduler) {
             this.scheduler = requireNonNull(scheduler);
             return this;
         }
 
+        /**
+         * 设置McpClientTransport
+         * <p>
+         * 将决定智能体访问Mcp服务器的网络传输方式
+         * </p>
+         *
+         * @param transport mcp client transport
+         * @return this
+         */
         public Builder transport(McpClientTransport transport) {
             this.transport = requireNonNull(transport);
             return this;
         }
 
+        /**
+         * 设置McpClient初始化
+         * <p>
+         * 将可以改变McpClient的初始化设置
+         * </p>
+         *
+         * @param initializer 初始化设置
+         * @return this
+         */
         public Builder initializer(UnaryOperator<McpClient.AsyncSpec> initializer) {
             this.initializer = requireNonNull(initializer);
             return this;
         }
 
+        /**
+         * 设置重新初始化间隔
+         * <p>
+         * 当网络中断或者初始化失败时，将会触发智能体重建McpClient。
+         * 这个参数将可以设置每次重新初始化的时间间隔
+         * </p>
+         *
+         * @param reinitializeInterval 重新初始化间隔
+         * @return this
+         */
         public Builder reinitializeInterval(Duration reinitializeInterval) {
             this.reinitializeInterval = requireNonNull(reinitializeInterval);
             return this;
         }
 
+        /**
+         * 设置心跳间隔
+         * <p>
+         * 当智能体初始化完成后会进入心跳维持阶段，
+         * 这个参数可以控制智能体心跳的时间间隔
+         * </p>
+         *
+         * @param pingInterval 心跳时间间隔
+         * @return this
+         */
         public Builder pingInterval(Duration pingInterval) {
             this.pingInterval = requireNonNull(pingInterval);
             return this;
         }
 
+        /**
+         * 设置是否延迟初始化
+         *
+         * @param lazy 是否延迟初始化
+         * @return this
+         */
+        public Builder lazy(boolean lazy) {
+            this.lazy = lazy;
+            return this;
+        }
 
         @Override
         public McpChatAgent build() {
-            return new McpChatAgent(this);
+            final var agent = new McpChatAgent(this);
+            return lazy
+                    ? agent.lazy().toCompletableFuture().join()
+                    : agent;
         }
 
     }

@@ -45,11 +45,15 @@ public class DashscopeAssertions {
             throw new AssertionError("""
                     预期描述与文本内容不符
                     
-                    预期描述:
+                    预期描述
+                    ----------
                     %s
+                    ----------
                     
-                    文本内容:
+                    文本内容
+                    ----------
                     %s
+                    ----------
                     """.formatted(expect, text)
             );
         }

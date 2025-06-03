@@ -37,7 +37,7 @@ public class DebugTestCase extends ClientSupport {
                 .option("enable_thinking", false)
                 .build();
 
-        final StringBuilder stringBuf = new StringBuilder();
+        final StringBuffer stringBuf = new StringBuffer();
         client.chat().flow(request)
                 .thenAccept(responseFlow -> responseFlow
                         .map(response -> response.output().best().message().text())
