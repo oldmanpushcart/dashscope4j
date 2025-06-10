@@ -10,6 +10,8 @@ import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
@@ -240,7 +242,9 @@ public class McpChatAgent extends BaseChatAgent {
     private void schedulingHeartbeat() {
         scheduling(() -> {
             final var holder = holder();
+
             holder.thenCompose(hold -> hold.heartbeat()
+
                     /*
                      * 心跳检测成功
                      * 说明客户端健康，需要重新创建下一次心跳任务
@@ -314,17 +318,20 @@ public class McpChatAgent extends BaseChatAgent {
     }
 
     @AllArgsConstructor
-    private class Hold {
+    class Hold {
 
-        private final McpAsyncClient mcpClient;
+        @Getter
+        @Accessors(fluent = true)
+        private final McpAsyncClient client;
         private final AtomicInteger heartbeatFailures = new AtomicInteger();
 
+        @SuppressWarnings("UnusedReturnValue")
         public CompletionStage<?> closeGracefully() {
-            return mcpClient.closeGracefully().toFuture();
+            return client.closeGracefully().toFuture();
         }
 
         public CompletionStage<?> heartbeat() {
-            return mcpClient.ping().toFuture();
+            return client.ping().toFuture();
         }
 
         public void notifyHeartbeatSuccess() {
