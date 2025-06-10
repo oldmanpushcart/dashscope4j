@@ -84,7 +84,7 @@ public class McpChatAgent extends BaseChatAgent {
          * 如初始化、心跳失败，都会回到初始化逻辑
          */
         try {
-            initialize(Duration.ZERO);
+            schedulingInitialize(Duration.ZERO);
         } catch (RuntimeException ex) {
             shutdownSchedulerIfNecessary();
             throw ex;
@@ -110,7 +110,7 @@ public class McpChatAgent extends BaseChatAgent {
         }};
     }
 
-    CompletionStage<McpAsyncClient> fetch() {
+    CompletionStage<McpAsyncClient> holder() {
         return holderRef.get();
     }
 
@@ -118,7 +118,7 @@ public class McpChatAgent extends BaseChatAgent {
      * @return 延迟初始化
      */
     public CompletionStage<McpChatAgent> lazy() {
-        return fetch().thenApply(mcpClient -> this);
+        return holder().thenApply(mcpClient -> this);
     }
 
     private synchronized Mono<Void> notifyToolsChanged(List<McpSchema.Tool> tools) {
@@ -130,64 +130,90 @@ public class McpChatAgent extends BaseChatAgent {
         return Mono.empty();
     }
 
+    /**
+     * 调度一个任务执行，根据指定的延迟时间决定是立即执行还是延迟执行。
+     *
+     * <p>如果提供的延迟时间为 {@code null} 或零，则任务会立即提交到线程池中执行；否则，任务将在指定的延迟时间后执行。</p>
+     *
+     * @param task  需要调度执行的任务
+     * @param delay 任务执行前的延迟时间；若为 null 或等于零，则任务立即执行
+     * @return 调度任务
+     * @throws RejectedExecutionException 如果任务无法被调度（例如线程池已关闭或资源不足）
+     */
+    private Future<?> scheduling(Runnable task, Duration delay) {
+        return Objects.isNull(delay) || delay.isZero()
+                ? scheduler.submit(task)
+                : scheduler.schedule(task, delay.toMillis(), TimeUnit.MILLISECONDS);
+    }
 
-    private void initialize(Duration interval) {
+
+    /**
+     * 调度{@link McpAsyncClient}初始化任务，支持失败重试
+     *
+     * @param interval 重试间隔
+     */
+    private void schedulingInitialize(Duration interval) {
 
         final var mcpClient = initializer.apply(McpClient.async(transport))
                 .toolsChangeConsumer(this::notifyToolsChanged)
                 .build();
 
-        scheduler.schedule(() -> {
+        scheduling(() -> completedStage(null)
 
-            completedStage(null)
+                // 初始化McpClient
+                .thenCompose(unused -> mcpClient.initialize().toFuture())
 
-                    // 初始化McpClient
-                    .thenCompose(unused -> mcpClient.initialize().toFuture())
+                /*
+                 * 初始化Tools通知
+                 *
+                 * 如果初始化结果中表明支持Tools变动通知，则主动进行一次初始化通知
+                 */
+                .thenCompose(initializeResult -> {
+                    if (Objects.isNull(initializeResult.capabilities().tools())) {
+                        return completedStage(initializeResult);
+                    }
+                    return mcpClient.listTools()
+                            .map(McpSchema.ListToolsResult::tools)
+                            .flatMap(this::notifyToolsChanged)
+                            .toFuture()
+                            .thenApply(v -> initializeResult);
+                })
 
-                    // 初始化Tool
-                    .thenCompose(initializeResult -> {
-                        if (Objects.isNull(initializeResult.capabilities().tools())) {
-                            return completedStage(initializeResult);
-                        }
-                        return mcpClient.listTools()
-                                .map(McpSchema.ListToolsResult::tools)
-                                .flatMap(this::notifyToolsChanged)
-                                .toFuture()
-                                .thenApply(v -> initializeResult);
-                    })
+                /*
+                 * 初始化成功
+                 *
+                 * 将初始化好的客户端注入到注册信息中，这样可以通知到所有等待获取客户端的请求拿到最新的客户端
+                 * 并创建心跳检测任务检测客户端健康状态
+                 */
+                .thenAccept(r -> {
+                    log.debug("{} initialized.", this);
+                    holderRef.get().complete(mcpClient);
+                    schedulingHeartbeat();
+                })
 
-                    /*
-                     * 初始化成功
-                     *
-                     * 将初始化好的客户端注入到注册信息中，这样可以通知到所有等待获取客户端的请求拿到最新的客户端
-                     * 并创建心跳检测任务检测客户端健康状态
-                     */
-                    .thenAccept(r -> {
-                        log.debug("{} initialized.", this);
-                        holderRef.get().complete(mcpClient);
-                        heartbeat();
-                    })
-
-                    /*
-                     * 初始化失败
-                     * 销毁临时创建的客户端
-                     * 重新创建初始化任务，继续初始化，直到成功或关闭
-                     */
-                    .exceptionally(ex -> {
-                        log.debug("{} initialize failed!", this, ex);
-                        if (mcpClient.isInitialized()) {
-                            mcpClient.close();
-                        }
-                        initialize(reinitializeInterval);
-                        return null;
-                    });
-
-        }, interval.toMillis(), TimeUnit.MILLISECONDS);
+                /*
+                 * 初始化失败
+                 *
+                 * 销毁临时创建的客户端
+                 * 重新创建初始化任务，继续初始化，直到成功或关闭
+                 */
+                .exceptionally(ex -> {
+                    log.debug("{} initialize failed!", this, ex);
+                    if (mcpClient.isInitialized()) {
+                        mcpClient.close();
+                    }
+                    schedulingInitialize(reinitializeInterval);
+                    return null;
+                }), interval);
 
     }
 
-    private void heartbeat() {
-        scheduler.schedule(() -> {
+
+    /**
+     * 调度{@link McpAsyncClient}心跳任务
+     */
+    private void schedulingHeartbeat() {
+        scheduling(() -> {
 
             final var holder = holderRef.get();
             holder
@@ -201,7 +227,7 @@ public class McpChatAgent extends BaseChatAgent {
                      */
                     .thenAccept(r -> {
                         log.debug("{}/{} heartbeat.", this, name());
-                        heartbeat();
+                        schedulingHeartbeat();
                     })
 
                     /*
@@ -218,13 +244,13 @@ public class McpChatAgent extends BaseChatAgent {
                         if (holderRef.compareAndSet(holder, new CompletableFuture<>())) {
                             log.debug("{}/{} heartbeat failed!", this, name(), ex);
                             holder.thenAccept(McpAsyncClient::close);
-                            initialize(Duration.ZERO);
+                            schedulingInitialize(Duration.ZERO);
                         }
                         return null;
 
                     });
 
-        }, pingInterval.toMillis(), TimeUnit.MILLISECONDS);
+        }, pingInterval);
     }
 
     private void shutdownSchedulerIfNecessary() {

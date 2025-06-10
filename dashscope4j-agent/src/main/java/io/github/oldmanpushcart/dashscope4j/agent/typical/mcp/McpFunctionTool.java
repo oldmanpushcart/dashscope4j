@@ -50,7 +50,7 @@ class McpFunctionTool implements FunctionTool {
         final var name = mcpTool.name();
         final var request = new McpSchema.CallToolRequest(name, argumentsMap);
 
-        return agent.fetch().thenCompose(client -> {
+        return agent.holder().thenCompose(client -> {
 
             final var serverInfo = client.getServerInfo();
             final var prefix = "%s@%s/%s".formatted(serverInfo.name(), serverInfo.version(), mcpTool.name());
