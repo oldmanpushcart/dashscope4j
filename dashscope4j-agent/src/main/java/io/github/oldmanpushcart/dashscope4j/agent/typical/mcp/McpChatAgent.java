@@ -9,6 +9,7 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.reactivex.rxjava3.core.Flowable;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
@@ -16,8 +17,10 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
@@ -31,15 +34,16 @@ import static java.util.concurrent.CompletableFuture.completedStage;
 public class McpChatAgent extends BaseChatAgent {
 
     private final McpClientTransport transport;
-    private final UnaryOperator<McpClient.AsyncSpec> initializer;
-    private final Duration reinitializeInterval;
-    private final Duration pingInterval;
+    private final UnaryOperator<McpClient.AsyncSpec> connector;
+    private final ReconnectStrategy reconnectStrategy;
+    private final Duration heartbeatInterval;
+    private final int heartbeatFailureThreshold;
 
     private final ScheduledExecutorService scheduler;
     private final boolean isInternalScheduler;
 
     private final AtomicBoolean shutdownRef = new AtomicBoolean(false);
-    private final AtomicReference<CompletableFuture<McpAsyncClient>> holderRef
+    private final AtomicReference<CompletableFuture<Hold>> holderRef
             = new AtomicReference<>(new CompletableFuture<>());
     private final AtomicReference<List<? extends FunctionTool>> mcpFunctionToolsRef
             = new AtomicReference<>(new ArrayList<>());
@@ -48,14 +52,15 @@ public class McpChatAgent extends BaseChatAgent {
         super(builder);
 
         requireNonNull(builder.transport, "transport is required!");
-        requireNonNull(builder.initializer, "initializer is required!");
-        requireNonNull(builder.reinitializeInterval, "reinitializeInterval is required!");
-        requireNonNull(builder.pingInterval, "pingInterval is required!");
+        requireNonNull(builder.connector, "connector is required!");
+        requireNonNull(builder.reconnectStrategy, "reconnectStrategy is required!");
+        requireNonNull(builder.heartbeatInterval, "heartbeatInterval is required!");
 
         this.transport = builder.transport;
-        this.initializer = builder.initializer;
-        this.reinitializeInterval = builder.reinitializeInterval;
-        this.pingInterval = builder.pingInterval;
+        this.connector = builder.connector;
+        this.reconnectStrategy = builder.reconnectStrategy;
+        this.heartbeatInterval = builder.heartbeatInterval;
+        this.heartbeatFailureThreshold = builder.heartbeatFailureThreshold;
 
         /*
          * 创建调度器
@@ -63,16 +68,16 @@ public class McpChatAgent extends BaseChatAgent {
          * 如果外部有指定则使用外部，否则内部自己创建。
          * 自己创建的调度器将由自己进行生命周期管理
          */
-        if (Objects.isNull(builder.scheduler)) {
+        if (Objects.nonNull(builder.scheduler)) {
+            this.isInternalScheduler = false;
+            this.scheduler = builder.scheduler;
+        } else {
             this.isInternalScheduler = true;
             this.scheduler = Executors.newSingleThreadScheduledExecutor(r ->
                     new Thread(r) {{
                         setName("%s/mcp/scheduler".formatted(McpChatAgent.this.name()));
                         setDaemon(true);
                     }});
-        } else {
-            this.isInternalScheduler = false;
-            this.scheduler = builder.scheduler;
         }
 
         /*
@@ -84,9 +89,9 @@ public class McpChatAgent extends BaseChatAgent {
          * 如初始化、心跳失败，都会回到初始化逻辑
          */
         try {
-            schedulingInitialize(Duration.ZERO);
+            schedulingConnectNow();
         } catch (RuntimeException ex) {
-            shutdownSchedulerIfNecessary();
+            shuttingSchedulerIfNecessary();
             throw ex;
         }
 
@@ -110,8 +115,18 @@ public class McpChatAgent extends BaseChatAgent {
         }};
     }
 
-    CompletionStage<McpAsyncClient> holder() {
+    CompletableFuture<Hold> holder() {
         return holderRef.get();
+    }
+
+    private boolean tryResetHolder(CompletableFuture<Hold> holder) {
+        if (!holderRef.compareAndSet(holder, new CompletableFuture<>())) {
+            return false;
+        }
+        if (!holder.cancel(true)) {
+            holder.thenAccept(Hold::closeGracefully);
+        }
+        return true;
     }
 
     /**
@@ -140,21 +155,33 @@ public class McpChatAgent extends BaseChatAgent {
      * @return 调度任务
      * @throws RejectedExecutionException 如果任务无法被调度（例如线程池已关闭或资源不足）
      */
+    @SuppressWarnings("UnusedReturnValue")
     private Future<?> scheduling(Runnable task, Duration delay) {
         return Objects.isNull(delay) || delay.isZero()
                 ? scheduler.submit(task)
                 : scheduler.schedule(task, delay.toMillis(), TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * 调度{@link McpAsyncClient}连接任务，立即执行
+     */
+    private void schedulingConnectNow() {
+        schedulingConnect(0, null);
+    }
 
     /**
-     * 调度{@link McpAsyncClient}初始化任务，支持失败重试
+     * 调度{@link McpAsyncClient}连接任务，支持失败重试
      *
-     * @param interval 重试间隔
+     * @param attemptCount 当前重试次数
+     * @param failureCause 上次失败原因
      */
-    private void schedulingInitialize(Duration interval) {
+    private void schedulingConnect(int attemptCount, Throwable failureCause) {
 
-        final var mcpClient = initializer.apply(McpClient.async(transport))
+        final var connectInterval = attemptCount == 0
+                ? Duration.ZERO
+                : reconnectStrategy.retryDelay(attemptCount, failureCause);
+
+        final var mcpClient = connector.apply(McpClient.async(transport))
                 .toolsChangeConsumer(this::notifyToolsChanged)
                 .build();
 
@@ -165,8 +192,7 @@ public class McpChatAgent extends BaseChatAgent {
 
                 /*
                  * 初始化Tools通知
-                 *
-                 * 如果初始化结果中表明支持Tools变动通知，则主动进行一次初始化通知
+                 * 1. 如果初始化结果中表明支持Tools变动通知，则主动进行一次初始化通知
                  */
                 .thenCompose(initializeResult -> {
                     if (Objects.isNull(initializeResult.capabilities().tools())) {
@@ -181,52 +207,47 @@ public class McpChatAgent extends BaseChatAgent {
 
                 /*
                  * 初始化成功
-                 *
-                 * 将初始化好的客户端注入到注册信息中，这样可以通知到所有等待获取客户端的请求拿到最新的客户端
-                 * 并创建心跳检测任务检测客户端健康状态
+                 * 1. 将初始化好的客户端注入到注册信息中，这样可以通知到所有等待获取客户端的请求拿到最新的客户端
+                 * 2. 创建心跳检测任务检测客户端健康状态
                  */
                 .thenAccept(r -> {
-                    log.debug("{} initialized.", this);
-                    holderRef.get().complete(mcpClient);
+                    log.debug("{} connected.", this);
+                    holderRef.get().complete(new Hold(mcpClient));
                     schedulingHeartbeat();
                 })
 
                 /*
                  * 初始化失败
-                 *
-                 * 销毁临时创建的客户端
-                 * 重新创建初始化任务，继续初始化，直到成功或关闭
+                 * 1. 销毁临时创建的客户端
+                 * 2. 重新创建初始化任务，继续初始化，直到成功或关闭
                  */
                 .exceptionally(ex -> {
-                    log.debug("{} initialize failed!", this, ex);
+                    log.debug("{} connect failed!", this, ex);
                     if (mcpClient.isInitialized()) {
                         mcpClient.close();
                     }
-                    schedulingInitialize(reinitializeInterval);
+                    schedulingConnect(attemptCount + 1, ex);
                     return null;
-                }), interval);
+                }), connectInterval);
 
     }
 
 
     /**
-     * 调度{@link McpAsyncClient}心跳任务
+     * 调度{@link McpAsyncClient}心跳任务，
+     * 支持心跳失败重链
      */
     private void schedulingHeartbeat() {
         scheduling(() -> {
-
-            final var holder = holderRef.get();
-            holder
-
-                    // 发送Ping包做心跳检测
-                    .thenCompose(client -> client.ping().toFuture())
-
+            final var holder = holder();
+            holder.thenCompose(hold -> hold.heartbeat()
                     /*
                      * 心跳检测成功
                      * 说明客户端健康，需要重新创建下一次心跳任务
                      */
                     .thenAccept(r -> {
                         log.debug("{}/{} heartbeat.", this, name());
+                        hold.notifyHeartbeatSuccess();
                         schedulingHeartbeat();
                     })
 
@@ -243,17 +264,24 @@ public class McpChatAgent extends BaseChatAgent {
                          */
                         if (holderRef.compareAndSet(holder, new CompletableFuture<>())) {
                             log.debug("{}/{} heartbeat failed!", this, name(), ex);
-                            holder.thenAccept(McpAsyncClient::close);
-                            schedulingInitialize(Duration.ZERO);
+                            hold.notifyHeartbeatFailure(() -> {
+                                if (tryResetHolder(holder)) {
+                                    schedulingConnectNow();
+                                }
+                            });
                         }
                         return null;
 
-                    });
-
-        }, pingInterval);
+                    })
+            );
+        }, heartbeatInterval);
     }
 
-    private void shutdownSchedulerIfNecessary() {
+
+    /**
+     * 关闭调度器
+     */
+    private void shuttingSchedulerIfNecessary() {
         if (isInternalScheduler) {
             scheduler.shutdownNow();
         }
@@ -266,12 +294,11 @@ public class McpChatAgent extends BaseChatAgent {
      *     <li>若客户端已经完成初始化，则销毁客户端</li>
      * </ul>
      */
-    private void closeMcpClientIfNecessary() {
-        final var future = holderRef.get();
-        if (!future.cancel(true)
-            && future.isDone()
-            && !future.isCompletedExceptionally()) {
-            future.thenAccept(McpAsyncClient::close);
+    private void shuttingMcpClientIfNecessary() {
+        final var holder = holderRef.get();
+        if (!holder.cancel(true)
+                && holder.isDone()) {
+            holder.thenAccept(Hold::closeGracefully);
         }
     }
 
@@ -282,9 +309,92 @@ public class McpChatAgent extends BaseChatAgent {
         if (!shutdownRef.compareAndSet(false, true)) {
             return;
         }
-        shutdownSchedulerIfNecessary();
-        closeMcpClientIfNecessary();
+        shuttingSchedulerIfNecessary();
+        shuttingMcpClientIfNecessary();
     }
+
+    @AllArgsConstructor
+    private class Hold {
+
+        private final McpAsyncClient mcpClient;
+        private final AtomicInteger heartbeatFailures = new AtomicInteger();
+
+        public CompletionStage<?> closeGracefully() {
+            return mcpClient.closeGracefully().toFuture();
+        }
+
+        public CompletionStage<?> heartbeat() {
+            return mcpClient.ping().toFuture();
+        }
+
+        public void notifyHeartbeatSuccess() {
+            heartbeatFailures.set(0);
+        }
+
+        public void notifyHeartbeatFailure(Runnable trigger) {
+            final int failures = heartbeatFailures.incrementAndGet();
+            final boolean shouldTrigger = heartbeatFailureThreshold <= 0 || failures > heartbeatFailureThreshold;
+            if (shouldTrigger) {
+                trigger.run();
+            }
+        }
+
+    }
+
+
+    /**
+     * 重连策略
+     */
+    public interface ReconnectStrategy {
+
+        /**
+         * 重连延迟
+         *
+         * @param attemptCount 当前重连次数
+         * @param failureCause 上次失败原因
+         * @return 重连延迟
+         */
+        Duration retryDelay(int attemptCount, Throwable failureCause);
+
+    }
+
+    /**
+     * 重连策略工厂
+     */
+    public interface ReconnectStrategies {
+
+        /**
+         * 指数退避重连策略
+         *
+         * @param baseDelay   初始延迟
+         * @param maxDelay    最大延迟
+         * @param jitterRatio 抖动比例
+         * @return 指数重连策略
+         */
+        static ReconnectStrategy exponentialBackoff(final Duration baseDelay, final Duration maxDelay, final double jitterRatio) {
+            final Random random = new Random();
+            return (attemptCount, failureCause) -> {
+
+                if (attemptCount <= 0) {
+                    return Duration.ZERO;
+                }
+
+                // exponential backoff: baseDelay * 2^(attemptCount - 1)
+                final double expBackoffMillis = baseDelay.toMillis() * Math.pow(2, attemptCount - 1);
+
+                // apply jitter: ± jitterRatio of the current exponential delay
+                final double jitter = (random.nextDouble() * 2 - 1) * jitterRatio * expBackoffMillis;
+
+                final long calculatedDelay = (long) (expBackoffMillis + jitter);
+
+                // cap at maxDelay
+                return Duration.ofMillis(Math.min(calculatedDelay, maxDelay.toMillis()));
+            };
+
+        }
+
+    }
+
 
     public static Builder newBuilder() {
         return new Builder();
@@ -294,9 +404,14 @@ public class McpChatAgent extends BaseChatAgent {
 
         private ScheduledExecutorService scheduler;
         private McpClientTransport transport;
-        private UnaryOperator<McpClient.AsyncSpec> initializer = v -> v;
-        private Duration reinitializeInterval = Duration.ofSeconds(5);
-        private Duration pingInterval = Duration.ofSeconds(30);
+        private UnaryOperator<McpClient.AsyncSpec> connector = v -> v;
+        private ReconnectStrategy reconnectStrategy = ReconnectStrategies.exponentialBackoff(
+                Duration.ofSeconds(1),
+                Duration.ofMinutes(5),
+                0.5
+        );
+        private Duration heartbeatInterval = Duration.ofSeconds(30);
+        private int heartbeatFailureThreshold;
         private boolean lazy = false;
 
         /**
@@ -337,22 +452,18 @@ public class McpChatAgent extends BaseChatAgent {
          * @return this
          */
         public Builder initializer(UnaryOperator<McpClient.AsyncSpec> initializer) {
-            this.initializer = requireNonNull(initializer);
+            this.connector = requireNonNull(initializer);
             return this;
         }
 
         /**
-         * 设置重新初始化间隔
-         * <p>
-         * 当网络中断或者初始化失败时，将会触发智能体重建McpClient。
-         * 这个参数将可以设置每次重新初始化的时间间隔
-         * </p>
+         * 设置重连策略
          *
-         * @param reinitializeInterval 重新初始化间隔
+         * @param reconnectStrategy 重连策略
          * @return this
          */
-        public Builder reinitializeInterval(Duration reinitializeInterval) {
-            this.reinitializeInterval = requireNonNull(reinitializeInterval);
+        public Builder reconnectStrategy(ReconnectStrategy reconnectStrategy) {
+            this.reconnectStrategy = requireNonNull(reconnectStrategy);
             return this;
         }
 
@@ -363,11 +474,23 @@ public class McpChatAgent extends BaseChatAgent {
          * 这个参数可以控制智能体心跳的时间间隔
          * </p>
          *
-         * @param pingInterval 心跳时间间隔
+         * @param heartbeatInterval 心跳时间间隔
          * @return this
          */
-        public Builder pingInterval(Duration pingInterval) {
-            this.pingInterval = requireNonNull(pingInterval);
+        public Builder heartbeatInterval(Duration heartbeatInterval) {
+            this.heartbeatInterval = requireNonNull(heartbeatInterval);
+            return this;
+        }
+
+
+        /**
+         * 设置心跳失败阈值
+         *
+         * @param heartbeatFailureThreshold 心跳失败阈值
+         * @return this
+         */
+        public Builder heartbeatFailureThreshold(int heartbeatFailureThreshold) {
+            this.heartbeatFailureThreshold = heartbeatFailureThreshold;
             return this;
         }
 
