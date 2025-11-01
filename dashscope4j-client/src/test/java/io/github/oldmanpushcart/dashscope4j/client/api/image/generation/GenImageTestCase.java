@@ -89,7 +89,7 @@ public class GenImageTestCase extends ClientSupport {
                 .toCompletableFuture()
                 .join();
 
-        DashscopeAssertions.dashscopeAssertImage(client, genImageURI, "有两个戴帽子的人");
+        DashscopeAssertions.dashscopeAssertImage(client, genImageURI, "这是一张卡通风格的图片");
 
     }
 
