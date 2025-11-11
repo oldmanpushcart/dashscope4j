@@ -1,47 +1,39 @@
 package io.github.oldmanpushcart.dashscope4j.client.api;
 
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.Response;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-import lombok.experimental.Accessors;
-
 /**
- * API应答
- * <pre><code>
- *     {
- *         "request_id":"",
- *         "code":"",
- *         "message":""
- *     }
- * </code></pre>
- *
- * @param <D> 应答数据
+ * 应答
  */
-@Getter
-@Accessors(fluent = true)
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-public abstract class ApiResponse<D> extends Response {
+public abstract class ApiResponse extends Ret {
 
+    private final ApiRequest<?> request;
     private final String uuid;
 
     /**
-     * 构建API应答
+     * 构造应答
      *
      * @param request 请求
-     * @param uuid    唯一编号
+     * @param uuid    请求唯一标识
      * @param code    应答编码
-     * @param desc    应答信息
+     * @param desc    应答描述
      */
     protected ApiResponse(ApiRequest<?> request, String uuid, String code, String desc) {
-        super(request, code, desc);
+        super(code, desc);
+        this.request = request;
         this.uuid = uuid;
     }
 
     /**
-     * @return 应答数据
+     * @return 请求
      */
-    abstract public D output();
+    public ApiRequest<?> request() {
+        return request;
+    }
+
+    /**
+     * @return 请求唯一标识
+     */
+    public String uuid() {
+        return uuid;
+    }
 
 }

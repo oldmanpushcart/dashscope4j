@@ -3,8 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
-import lombok.Getter;
-import lombok.experimental.Accessors;
 
 import java.lang.reflect.Type;
 import java.util.Optional;
@@ -16,10 +14,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * 对话函数工具
  */
-@Accessors(fluent = true)
 public class ChatFunctionTool implements FunctionTool {
 
-    @Getter
     private final Meta meta;
 
     private final ChatFunction<?, ?> function;
@@ -34,7 +30,11 @@ public class ChatFunctionTool implements FunctionTool {
         this.parameterType = builder.parameterType;
     }
 
-    private static FunctionTool.Meta newFunctionToolMeta(Builder builder) {
+    public Meta meta() {
+        return meta;
+    }
+
+    private static Meta newFunctionToolMeta(Builder builder) {
         final var parameterSchemaNode = Optional.ofNullable(builder.parameterSchema)
                 .map(JacksonJsonUtils::toNode)
                 .orElseGet(() -> JacksonJsonUtils.schema(builder.parameterType));

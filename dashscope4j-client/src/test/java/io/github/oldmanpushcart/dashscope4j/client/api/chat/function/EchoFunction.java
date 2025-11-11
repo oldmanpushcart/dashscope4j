@@ -4,34 +4,28 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnDescription;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFnName;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Value;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-//@ChatFnName("echo")
+@ChatFnName("echo")
 @ChatFnDescription("当用户输入echo:，回显后边的文字")
 public class EchoFunction implements ChatFunction<EchoFunction.Echo, EchoFunction.Echo> {
 
     @Override
     public CompletionStage<Echo> call(Tool.Caller caller, Echo echo) {
-        return CompletableFuture.completedFuture(new Echo(echo.words()));
+        return CompletableFuture.completedStage(echo);
     }
 
-    @Value
-    @Accessors(fluent = true)
-    @Builder(access = AccessLevel.PRIVATE)
-    @Jacksonized
-    public static class Echo {
+    public record Echo(
 
-        @JsonProperty
-        @JsonPropertyDescription("需要回显的文字")
-        String words;
+            @JsonProperty("text")
+            @JsonPropertyDescription("需要回显的文字")
+            String text
+
+    ) {
 
     }
 

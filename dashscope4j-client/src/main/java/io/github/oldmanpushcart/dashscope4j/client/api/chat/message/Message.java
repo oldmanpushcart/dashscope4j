@@ -1,85 +1,59 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatViews;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.experimental.Accessors;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.UnaryOperator;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.Collections.singletonList;
+@JsonDeserialize(using = Message.MessageJsonDeserializer.class)
+public sealed class Message implements Accumulator<Message> permits PluginMessage, PluginCallMessage, ToolMessage, ToolCallMessage {
 
-/**
- * 对话消息
- */
-@Data
-@Accessors(fluent = true)
-@AllArgsConstructor
-@JsonDeserialize(using = MessageJsonDeserializer.class)
-public sealed class Message
-        implements Accumulator<Message>
-        permits PluginMessage, PluginCallMessage, ToolMessage, ToolCallMessage {
-
-    /**
-     * 角色
-     */
-    @JsonProperty("role")
     private final Role role;
-
-    /**
-     * 内容列表
-     */
     private final List<Content<?>> contents;
-
-    /**
-     * 推理内容
-     */
-    @JsonProperty("reasoning_content")
     private final String reasoningContent;
 
-    /**
-     * 对话消息
-     * <p>
-     * 用于构造纯文本的消息
-     * </p>
-     *
-     * @param role 角色
-     * @param text 文本
-     */
-    public Message(Role role, String text) {
-        this(role, singletonList(Content.ofText(text)), "");
+    public Message(Role role, List<Content<?>> contents, String reasoningContent) {
+        this.role = role;
+        this.contents = contents;
+        this.reasoningContent = reasoningContent;
     }
 
-    /**
-     * 对话消息
-     *
-     * @param role             角色
-     * @param text             文本
-     * @param reasoningContent 理论推理内容
-     */
-    public Message(Role role, String text, String reasoningContent) {
-        this(role, singletonList(Content.ofText(text)), reasoningContent);
-    }
-
-    /**
-     * 对话消息
-     * <p>
-     * 用户构造多模态的消息
-     * </p>
-     *
-     * @param role     角色
-     * @param contents 多模态内容
-     */
     public Message(Role role, List<Content<?>> contents) {
         this(role, contents, "");
+    }
+
+    public Message(Role role, String text) {
+        this(role, List.of(Content.ofText(text)));
+    }
+
+    @JsonProperty("role")
+    public Role role() {
+        return role;
+    }
+
+    @JsonProperty("content")
+    @JsonSerialize(using = Message.ContentListJsonSerializer.class)
+    public List<Content<?>> contents() {
+        return contents;
+    }
+
+    @JsonProperty("reasoning_content")
+    public String reasoningContent() {
+        return reasoningContent;
     }
 
     /**
@@ -87,7 +61,7 @@ public sealed class Message
      */
     public String text() {
         return textContents().stream()
-                .map(Content.TextContent::data)
+                .map(Content.Text::data)
                 .collect(Collectors.joining());
     }
 
@@ -96,10 +70,10 @@ public sealed class Message
      *
      * @return 文本内容集合
      */
-    public List<Content.TextContent> textContents() {
+    public List<Content.Text> textContents() {
         return contents.stream()
-                .filter(Content.TextContent.class::isInstance)
-                .map(Content.TextContent.class::cast)
+                .filter(Content.Text.class::isInstance)
+                .map(Content.Text.class::cast)
                 .collect(Collectors.toList());
     }
 
@@ -109,12 +83,12 @@ public sealed class Message
      * @param types 多媒体类型
      * @return 多媒体内容集合
      */
-    public List<Content.MediaContent> mediaContents(Content.Type... types) {
+    public List<Content.Media> mediaContents(Content.Type... types) {
         return contents.stream()
 
                 // 先过滤掉非多媒体内容
-                .filter(Content.MediaContent.class::isInstance)
-                .map(Content.MediaContent.class::cast)
+                .filter(Content.Media.class::isInstance)
+                .map(Content.Media.class::cast)
 
                 // 再过滤掉不符合类型的多媒体内容
                 .filter(content -> {
@@ -138,14 +112,12 @@ public sealed class Message
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 合并消息
-     *
-     * @param next 待合并的消息
-     * @return 合并后的消息
-     */
     @Override
     public Message accumulate(Message next) {
+
+        if (null == next) {
+            return this;
+        }
 
         // 只有角色相同的消息才能合并
         if (role != next.role) {
@@ -166,19 +138,6 @@ public sealed class Message
         // 返回新消息
         return new Message(role, newContents, newReasoningContent);
 
-    }
-
-    /**
-     * 修改文本内容
-     *
-     * @param operator 修改函数
-     * @return 新消息
-     */
-    public Message changeText(UnaryOperator<String> operator) {
-        final List<Content<?>> newContents = new ArrayList<>();
-        newContents.add(Content.ofText(operator.apply(text())));
-        newContents.addAll(mediaContents());
-        return new Message(Role.USER, newContents);
     }
 
     /**
@@ -239,7 +198,7 @@ public sealed class Message
      * @param mediaContents 媒体内容集合
      * @return 消息
      */
-    public static Message ofUser(String text, List<Content.MediaContent> mediaContents) {
+    public static Message ofUser(String text, List<Content.Media> mediaContents) {
         final List<Content<?>> contents = new ArrayList<>();
         contents.add(Content.ofText(text));
         contents.addAll(mediaContents);
@@ -280,6 +239,119 @@ public sealed class Message
          */
         @JsonProperty("tool")
         TOOL
+
+    }
+
+    static class ContentListJsonSerializer extends JsonSerializer<List<Content<?>>> {
+
+        @Override
+        public void serialize(List<Content<?>> contents, JsonGenerator gen, SerializerProvider provider) throws IOException {
+
+            final var view = provider.getActiveView();
+            if (view == ChatViews.Text.class) {
+                final StringBuilder stringBuf = new StringBuilder();
+                for (Content<?> content : contents) {
+                    if (content instanceof Content.Text text) {
+                        stringBuf.append(text.data());
+                    }
+                }
+                gen.writeObject(stringBuf.toString());
+            } else if (view == ChatViews.Multimodal.class) {
+                gen.writeObject(contents);
+            } else {
+                throw new IllegalArgumentException("Unknown view: %s".formatted(view));
+            }
+
+        }
+    }
+
+    static class MessageJsonDeserializer extends JsonDeserializer<Message> {
+
+        @Override
+        public Message deserialize(JsonParser parser, DeserializationContext ctx) throws IOException, JacksonException {
+
+            // -- 读取相关JSON节点
+            final JsonNode rootNode = ctx.readTree(parser);
+            final JsonNode roleNode = rootNode.required("role");
+
+            // -- 解析相关节点为对应类型对象
+            final Message.Role role = ctx.readTreeAsValue(roleNode, Message.Role.class);
+
+            // 处理插件应答消息
+            if (role == Message.Role.PLUGIN) {
+                return ctx.readTreeAsValue(rootNode, PluginMessage.class);
+            }
+
+            // 处理插件请求消息
+            else if (role == Message.Role.AI && rootNode.hasNonNull("plugin_call")) {
+                return ctx.readTreeAsValue(rootNode, PluginCallMessage.class);
+            }
+
+            // 处理工具应答消息
+            else if (role == Message.Role.TOOL) {
+                return ctx.readTreeAsValue(rootNode, ToolMessage.class);
+            }
+
+            // 处理工具请求消息
+            else if (role == Message.Role.AI && rootNode.hasNonNull("tool_calls")) {
+                return ctx.readTreeAsValue(rootNode, ToolCallMessage.class);
+            }
+
+            // 处理普通消息
+            else {
+                return deserializeMessage(ctx, role, rootNode);
+            }
+
+        }
+
+        private Message deserializeMessage(DeserializationContext ctx, Message.Role role, JsonNode rootNode) throws IOException {
+
+            // -- 读取相关JSON节点
+            final JsonNode contentNode = rootNode.required("content");
+            final JsonNode reasoningContentNode = rootNode.get("reasoning_content");
+
+            // -- 解析相关节点为对应类型对象
+            final String reasoningContent = Optional.ofNullable(reasoningContentNode)
+                    .map(JsonNode::asText)
+                    .orElse("");
+
+            final List<Content<?>> contents = new ArrayList<>();
+
+            /*
+             * 处理多模态消息
+             * [
+             *     {"text": "图片中一共多少个男孩?"}
+             *     {“image":"http://example.com/image.png"}
+             *     {"video":"http://example.com/video.mp4"}
+             * ]
+             */
+            if (contentNode.isArray()) {
+                for (final JsonNode itemNode : contentNode) {
+                    final Content<?> content = ctx.readTreeAsValue(itemNode, Content.class);
+                    contents.add(content);
+                }
+            }
+
+            /*
+             * 处理文本模态消息
+             * {
+             *     ...
+             *     content: "图片中一共多少个男孩?",
+             *     ...
+             * }
+             */
+            else {
+                final Content<?> content = Content.ofText(contentNode.asText());
+                contents.add(content);
+            }
+
+            // 构建并返回消息
+            return new Message(
+                    role,
+                    contents,
+                    reasoningContent
+            );
+        }
 
     }
 

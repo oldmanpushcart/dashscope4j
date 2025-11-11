@@ -1,10 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.JsonNode;
-import io.github.oldmanpushcart.dashscope4j.client.Option;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.plugin.ChatPlugin;
@@ -14,45 +14,22 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFu
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-import lombok.experimental.Accessors;
-import okhttp3.Request;
 
+import java.net.http.HttpRequest;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.client.api.chat.message.MessageCodec.encodeToJsonNode;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_X_DASHSCOPE_PLUGIN;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonEmptyCollection;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 /**
  * 对话请求
- * <pre><code>
- * {
- *   "model": "qwen-turbo",
- *   "input": {
- *     "messages": [
- *       {
- *         "role": "user",
- *         "content": "hello!"
- *       }
- *     ]
- *   },
- *   "parameters": {}
- * }
- * </code></pre>
  */
-@Getter
-@Accessors(fluent = true)
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
+public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     private final List<Message> messages;
     private final List<Plugin> plugins;
@@ -66,25 +43,38 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         this.tools = unmodifiableList(builder.tools);
     }
 
-    @Override
-    public Request newHttpRequest() {
-        final Request.Builder builder = new Request.Builder(super.newHttpRequest());
-
-        /*
-         * 如果有插件，则告知插件列表
-         */
-        if (!plugins.isEmpty()) {
-            final Map<?, ?> pluginArgMap = plugins.stream()
-                    .collect(toMap(
-                            Plugin::name,
-                            Plugin::meta,
-                            (a, b) -> b
-                    ));
-            builder.addHeader(HTTP_HEADER_X_DASHSCOPE_PLUGIN, JacksonJsonUtils.toJson(pluginArgMap));
-        }
-
-        return builder.build();
+    public List<Message> messages() {
+        return messages;
     }
+
+    public List<Plugin> plugins() {
+        return plugins;
+    }
+
+    public List<Tool> tools() {
+        return tools;
+    }
+
+    @Override
+    public Function<ApiRequest<?>, HttpRequest> newHttpRequestEncoder() {
+        return super.newHttpRequestEncoder()
+                .andThen(httpRequest -> {
+                    final var builder = HttpRequest.newBuilder(httpRequest, (k, v) -> true);
+
+                    if (!plugins.isEmpty()) {
+                        final Map<?, ?> pluginArgMap = plugins.stream()
+                                .collect(toMap(
+                                        Plugin::name,
+                                        Plugin::meta,
+                                        (a, b) -> b
+                                ));
+                        builder.header(HTTP_HEADER_X_DASHSCOPE_PLUGIN, JacksonJsonUtils.toJson(pluginArgMap));
+                    }
+
+                    return builder.build();
+                });
+    }
+
 
     @Override
     protected Object input() {
@@ -92,13 +82,13 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     }
 
     @Override
-    public Option option() {
+    public Parameters parameters() {
 
-        final Option option = new Option();
+        final Parameters newParameters = new Parameters();
 
         // 插件必选参数
         if (!plugins.isEmpty()) {
-            option.option("result_format", "message");
+            newParameters.append("result_format", "message");
         }
 
         // 工具必选参数
@@ -106,104 +96,30 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
                 .filter(Tool::isEnabled)
                 .collect(Collectors.toList());
         if (!enabledTools.isEmpty()) {
-            option.option("result_format", "message");
-            option.option("tools", enabledTools);
+            newParameters.append("result_format", "message");
+            newParameters.append("tools", enabledTools);
         }
 
-        return new Option()
-                .merge(super.option())
-                .merge(option)
+        return super.parameters()
+                .merge(newParameters)
                 .unmodifiable();
     }
 
-    /**
-     * 从消息列表中获取指定角色的消息列表
-     *
-     * @param roles 角色列表
-     * @return 消息列表
-     */
-    public List<Message> messagesFromRoles(Message.Role... roles) {
-        if (null == messages || messages.isEmpty() || null == roles) {
-            return emptyList();
-        }
-        final Set<Message.Role> roleSet = new HashSet<>(Arrays.asList(roles));
-        return messages()
-                .stream()
-                .filter(message -> roleSet.contains(message.role()))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 判断最后一个消息是否是用户消息
-     *
-     * @return TRUE | FALSE
-     */
-    @JsonIgnore
-    public boolean isLastMessageFromUser() {
-        if (null == messages || messages.isEmpty()) {
-            return false;
-        }
-        final Message lastMessage = messages.get(messages.size() - 1);
-        return null != lastMessage
-               && lastMessage.role() == Message.Role.USER;
-    }
-
-    /**
-     * 获取最后一个用户消息
-     *
-     * @return 最后一个用户消息
-     * @throws IllegalArgumentException 如果没有消息或最后一个消息不是USER消息则抛出此异常
-     */
-    public Message requireLastMessageFromUser() {
-        if (null == messages || messages.isEmpty()) {
-            throw new IllegalArgumentException("Last message not existed!");
-        }
-        final Message lastMessage = messages.get(messages.size() - 1);
-        if (null == lastMessage
-            || lastMessage.role() != Message.Role.USER) {
-            throw new IllegalArgumentException("Last message not user message!");
-        }
-        return lastMessage;
-    }
-
-    /**
-     * 提取历史信息
-     * <p>
-     * 消息列表中下标范围[0,n-1]信息为历史信息
-     * </p>
-     *
-     * @return 历史信息
-     */
-    public List<Message> historyMessages() {
-        return null == messages || messages.isEmpty()
-                ? emptyList()
-                : messages.subList(0, messages.size() - 1);
-    }
-
-
     private class Input {
 
-        @JsonValue
-        Object extract() {
-            return new HashMap<>() {{
-
-                /*
-                 * 根据模式编码消息列表
-                 *
-                 * 对话模型模式有文本和多模态两种，不同模态对messages有不同的要求且无法兼容。
-                 * 更有些Plugin会根据传的内容类型来决定是否启用哪一种模式，所以这里需要根据messages的内容来切换模式。
-                 */
-                final ChatModel.Mode mode = decideMode();
-                final List<JsonNode> messageNodes = messages.stream()
-                        .map(message -> encodeToJsonNode(mode, message))
-                        .collect(Collectors.toList());
-                put("messages", messageNodes);
-
-            }};
-
+        @JsonRawValue
+        @JsonProperty("messages")
+        String expect() {
+            return switch (decideMode()) {
+                case TEXT -> JacksonJsonUtils.toJson(ChatViews.Text.class, messages);
+                case MULTIMODAL -> JacksonJsonUtils.toJson(ChatViews.Multimodal.class, messages);
+            };
         }
 
-        // 决定使用哪种对话模式
+
+        /*
+         * 决定使用哪种对话模式
+         */
         private ChatModel.Mode decideMode() {
 
             // 是否有PDFExtract插件
@@ -231,26 +147,14 @@ public final class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     }
 
 
-    /**
-     * @return 新建对话请求构建器
-     */
     public static Builder newBuilder() {
         return new Builder();
     }
 
-    /**
-     * 克隆一个对话请求并基于此新建一个对话请求构建器
-     *
-     * @param request 原始对话请求
-     * @return 对话请求构造器
-     */
     public static Builder newBuilder(ChatRequest request) {
         return new Builder(request);
     }
 
-    /**
-     * 对话请求构建器
-     */
     public static class Builder extends AlgoRequest.Builder<ChatModel, ChatRequest, Builder> {
 
         private final List<Message> messages = new LinkedList<>();

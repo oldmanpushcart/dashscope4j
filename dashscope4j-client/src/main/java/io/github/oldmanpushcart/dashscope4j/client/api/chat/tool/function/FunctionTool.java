@@ -32,9 +32,16 @@ public interface FunctionTool extends Tool {
      * @param parameterSchema 函数参数约束描述
      */
     record Meta(
-            @JsonProperty("name") String name,
-            @JsonProperty("description") String description,
-            @JsonProperty("parameters") JsonNode parameterSchema
+
+            @JsonProperty("name")
+            String name,
+
+            @JsonProperty("description")
+            String description,
+
+            @JsonProperty("parameters")
+            JsonNode parameterSchema
+
     ) implements Tool.Meta {
 
     }
@@ -47,9 +54,16 @@ public interface FunctionTool extends Tool {
      * @param stub  函数存根
      */
     record Call(
-            @JsonProperty("index") int index,
-            @JsonProperty("id") String id,
-            @JsonProperty("function") Stub stub
+
+            @JsonProperty("index")
+            int index,
+
+            @JsonProperty("id")
+            String id,
+
+            @JsonProperty("function")
+            Stub stub
+
     ) implements Tool.Call {
 
         /**
@@ -70,12 +84,12 @@ public interface FunctionTool extends Tool {
             }
 
             // 类型必须一致
-            if (!(call instanceof FunctionTool.Call next)) {
+            if (!(call instanceof Call next)) {
                 throw new IllegalArgumentException("Not a function tool call");
             }
 
             // 合并Call
-            return new FunctionTool.Call(
+            return new Call(
                     index,
                     concat(id, next.id()),
                     stub().accumulate(next.stub())
@@ -90,8 +104,13 @@ public interface FunctionTool extends Tool {
          * @param arguments 函数参数
          */
         public record Stub(
-                @JsonProperty("name") String name,
-                @JsonProperty("arguments") String arguments
+
+                @JsonProperty("name")
+                String name,
+
+                @JsonProperty("arguments")
+                String arguments
+
         ) implements Accumulator<Stub> {
 
             @Override

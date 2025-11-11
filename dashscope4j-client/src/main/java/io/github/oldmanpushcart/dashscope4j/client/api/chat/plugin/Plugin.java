@@ -1,11 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat.plugin;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Value;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.Map;
 
@@ -26,53 +21,41 @@ public interface Plugin {
 
     /**
      * 插件调用存根
+     *
+     * @param name      插件名称
+     * @param arguments 插件参数
      */
-    @Value
-    @Accessors(fluent = true)
-    @Builder(access = AccessLevel.PRIVATE)
-    @Jacksonized
-    class Call {
+    record Call(
 
-        /**
-         * 插件名称
-         */
-        @JsonProperty
-        String name;
+            @JsonProperty("name")
+            String name,
 
-        /**
-         * 调用参数
-         */
-        @JsonProperty
-        String arguments;
+            @JsonProperty("arguments")
+            String arguments
+
+    ) {
 
     }
 
     /**
      * 插件应答状态
+     *
+     * @param code 状态码
+     * @param name 状态名称
+     * @param desc 状态描述
      */
-    @Value
-    @Accessors(fluent = true)
-    @Builder(access = AccessLevel.PRIVATE)
-    @Jacksonized
-    class Status {
+    record Status(
 
-        /**
-         * 状态代码
-         */
-        @JsonProperty
-        int code;
+            @JsonProperty("code")
+            int code,
 
-        /**
-         * 状态名称
-         */
-        @JsonProperty
-        String name;
+            @JsonProperty("name")
+            String name,
 
-        /**
-         * 状态描述
-         */
-        @JsonProperty("message")
-        String desc;
+            @JsonProperty("message")
+            String desc
+
+    ) {
 
     }
 

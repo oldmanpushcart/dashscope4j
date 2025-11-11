@@ -6,10 +6,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.Value;
-import lombok.experimental.Accessors;
 
 import java.util.Collection;
 import java.util.List;
@@ -26,18 +22,11 @@ import java.util.stream.Stream;
  * {@code LLM > Client}
  * </p>
  */
-@Value
-@Accessors(fluent = true)
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
 @JsonDeserialize
-public class ToolCallMessage extends Message {
+public final class ToolCallMessage extends Message {
 
-    /**
-     * 工具调用存根集合
-     */
-    @JsonProperty("tool_calls")
-    List<Tool.Call> calls;
+
+    private final List<Tool.Call> calls;
 
     @JsonCreator
     public ToolCallMessage(
@@ -53,8 +42,13 @@ public class ToolCallMessage extends Message {
         this.calls = calls;
     }
 
+    @JsonProperty("tool_calls")
+    public List<Tool.Call> calls() {
+        return calls;
+    }
+
     @Override
-    public ToolCallMessage accumulate(Message message) {
+    public Message accumulate(Message message) {
 
         if (!(message instanceof ToolCallMessage next)) {
             throw new IllegalArgumentException("Not a tool call message");
@@ -74,6 +68,7 @@ public class ToolCallMessage extends Message {
                 .toList();
         final var mergedText = StringUtils.concat(text(), next.text());
         return new ToolCallMessage(mergedText, mergedCalls);
+
     }
 
 }

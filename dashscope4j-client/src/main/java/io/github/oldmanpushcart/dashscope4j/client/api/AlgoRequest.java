@@ -1,30 +1,23 @@
 package io.github.oldmanpushcart.dashscope4j.client.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.Model;
-import io.github.oldmanpushcart.dashscope4j.client.Option;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-import lombok.experimental.Accessors;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Collections;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.MT_APPLICATION_JSON;
 import static java.util.Objects.requireNonNull;
 
 /**
  * 算法请求
  * <pre><code>
  *     {
- *          "model":"",
+ *          "model":"...",
  *          "input":{
  *              // ...
  *          },
@@ -34,32 +27,61 @@ import static java.util.Objects.requireNonNull;
  *     }
  * </code></pre>
  *
- * @param <M> 模型类型
- * @param <R> 应答类型
+ * @param <M> 算法模型
+ * @param <R> 响应类型
  */
-@Getter
-@Accessors(fluent = true)
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-@Slf4j
-public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> extends ApiRequest<R> {
+public abstract class AlgoRequest<M extends AlgoModel, R extends AlgoResponse<?>> extends ApiRequest<R> {
 
-    @JsonProperty
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final M model;
-
-    private final Option option;
+    private final Parameters parameters;
 
     /**
-     * 构建算法请求
+     * 构造请求
      *
-     * @param responseType 应答类型
-     * @param builder      算法构建器
+     * @param responseType 响应类型
+     * @param builder      构建者
      */
     protected AlgoRequest(Class<R> responseType, Builder<M, ?, ?> builder) {
         super(responseType, builder);
-        requireNonNull(builder.model, "model is required!");
+        requireNonNull(builder.model, "model is null!");
         this.model = builder.model;
-        this.option = builder.option;
+        this.parameters = builder.parameters;
+    }
+
+    @Override
+    public Function<ApiRequest<?>, HttpRequest> newHttpRequestEncoder() {
+        return apiRequest -> {
+            final var body = JacksonJsonUtils.toJson(this);
+            logger.debug("dashscope-client://algo/{} >>> {}", model.name(), body);
+            return HttpRequest.newBuilder()
+                    .uri(model.endpoint())
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+        };
+    }
+
+    @Override
+    public BiFunction<HttpResponse<?>, String, R> newHttpResponseDecoder() {
+        return (httpResponse, body) -> {
+            logger.debug("dashscope-client://algo/{} <<< {}", model.name(), body);
+            return JacksonJsonUtils.toObject(body, responseType(), this, httpResponse);
+        };
+    }
+
+    /**
+     * 生成请求模型
+     * <pre><code>
+     *     {
+     *         "model":"..."
+     *     }
+     * </code></pre>
+     *
+     * @return 请求模型
+     */
+    @JsonProperty("model")
+    public M model() {
+        return model;
     }
 
     /**
@@ -70,154 +92,89 @@ public abstract class AlgoRequest<M extends Model, R extends AlgoResponse<?>> ex
      *     }
      * </code></pre>
      *
-     * @return Parameters
+     * @return 请求参数
      */
     @JsonProperty("parameters")
-    public Option option() {
-        /*
-         * 由请求中的model和option属性先后拼接而成
-         * 后者优先级最高
-         */
-        return new Option()
-                .merge(model.option())
-                .merge(option)
-                .unmodifiable();
+    public Parameters parameters() {
+        return new Parameters()
+                .merge(model.parameters())
+                .merge(parameters);
     }
 
     /**
-     * 生成Api请求中的数据
+     * 生成请求数据
      * <pre><code>
      *     {
      *         "input":{}
      *     }
      * </code></pre>
      *
-     * @return Input
+     * @return 请求数据
      */
     @JsonProperty("input")
     protected Object input() {
         return Collections.emptyMap();
     }
 
-    @Override
-    public Request newHttpRequest() {
-        return new Request.Builder()
-                .url(model.remote().toString())
-                .post(RequestBody.create(newRequestEncoder().apply(this), MT_APPLICATION_JSON))
-                .build();
-    }
-
-    /**
-     * 构建 Request 解码器
-     * <p>{@code T -> JSON}</p>
-     *
-     * @return Request 解码器
-     */
-    protected Function<? super ApiRequest<R>, String> newRequestEncoder() {
-        return request -> {
-            final String bodyJson = JacksonJsonUtils.toJson(this);
-            log.debug("dashscope-client://algo/{} >>> {}", model.name(), bodyJson);
-            return bodyJson;
-        };
-    }
-
-    @Override
-    public BiFunction<Response, String, R> newResponseDecoder() {
-        return (httpResponse, bodyJson) -> {
-            log.debug("dashscope-client://algo/{} <<< {}", model.name(), bodyJson);
-            return JacksonJsonUtils.toObject(bodyJson, responseType(), this, httpResponse);
-        };
-    }
 
     /**
      * 算法请求构建器
      *
      * @param <M> 算法模型
      * @param <T> 请求类型
-     * @param <B> 构建器类型
+     * @param <B> 构建者类型
      */
-    public static abstract class Builder<M extends Model, T extends AlgoRequest<M, ?>, B extends Builder<M, T, B>>
+    public static abstract class Builder<M extends AlgoModel, T extends AlgoRequest<M, ?>, B extends Builder<M, T, B>>
             extends ApiRequest.Builder<T, B> {
 
         private M model;
-        private final Option option = new Option();
+        private final Parameters parameters = new Parameters();
 
         protected Builder() {
-
         }
 
         protected Builder(AlgoRequest<M, ?> request) {
             super(request);
             this.model = request.model;
-            this.option.merge(request.option);
+            this.parameters.merge(request.parameters);
         }
 
         /**
          * 设置算法模型
          *
-         * @param model 算法模型
+         * @param model 模型
          * @return this
          */
         public B model(M model) {
-            requireNonNull(model, "model is required!");
+            requireNonNull(model, "model is null!");
             this.model = model;
             return self();
         }
 
         /**
-         * 设置选项
+         * 添加参数
          *
-         * @param opt   选项类型
-         * @param value 选项值
-         * @param <OT>  选项值类型
-         * @param <OR>  选项值类型（转换后）
+         * @param parameterKey 参数项
+         * @param value        参数值
+         * @param <PT>         参数项类型
+         * @param <PR>         参数项转换后的类型
          * @return this
          */
-        public <OT, OR> B option(Option.Opt<OT, OR> opt, OT value) {
-            this.option.option(opt, value);
+        public <PT, PR> B parameter(Parameters.ParameterKey<PT, PR> parameterKey, PT value) {
+            parameters.append(parameterKey, value);
             return self();
         }
 
         /**
-         * 如果选项值不为空，则设置选项
+         * 添加参数
          *
-         * @param opt   选项类型
-         * @param value 选项值
-         * @param <OT>  选项值类型
-         * @param <OR>  选项值类型（转换后）
-         * @return this
-         * @since 3.2.0
-         */
-        public <OT, OR> B optionIfNotNull(Option.Opt<OT, OR> opt, OT value) {
-            return null != value
-                    ? option(opt, value)
-                    : self();
-        }
-
-        /**
-         * 设置选项
-         *
-         * @param name  选项名
-         * @param value 选项值
+         * @param name  参数名
+         * @param value 参数值
          * @return this
          */
-        public B option(String name, Object value) {
-            this.option.option(name, value);
+        public B parameter(String name, Object value) {
+            parameters.append(name, value);
             return self();
-        }
-
-        /**
-         * 如果选项值不为空，则设置选项
-         *
-         * @param name  选项名
-         * @param value 选项值
-         * @return this
-         * @since 3.2.0
-         */
-        public B optionIfNotNull(String name, Object value) {
-            return null != value
-                    ? option(name, value)
-                    : self();
         }
 
     }

@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat;
 
-import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
@@ -10,9 +9,8 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionToolNotFoundException;
-import io.reactivex.rxjava3.core.Flowable;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -21,20 +19,19 @@ import java.util.concurrent.CompletionStage;
 import static java.util.Collections.unmodifiableList;
 import static java.util.concurrent.CompletableFuture.failedStage;
 
-@Slf4j
-@AllArgsConstructor
 class FunctionToolCaller implements Tool.Caller {
 
-    private final DashscopeClient client;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ChatOp chatOp;
     private final ChatRequest request;
     private final ToolCallMessage message;
 
-    /**
-     * 异步调用函数工具
-     *
-     * @return 异步调用函数应答
-     */
+    public FunctionToolCaller(ChatOp chatOp, ChatRequest request, ToolCallMessage message) {
+        this.chatOp = chatOp;
+        this.request = request;
+        this.message = message;
+    }
+
     public CompletionStage<ChatResponse> asyncCall() {
         final Map<String, CompletableFuture<String>> futureMap = parallelCallFunction();
         return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
@@ -43,22 +40,6 @@ class FunctionToolCaller implements Tool.Caller {
                     final ChatRequest newRequest = newHistoryRequest(history);
                     return chatOp.async(newRequest)
                             .thenApply(response -> newHistoryResponse(history, response));
-                });
-    }
-
-    /**
-     * 流式调用函数工具
-     *
-     * @return 流式调用函数应答
-     */
-    public CompletionStage<Flowable<ChatResponse>> flowCall() {
-        final Map<String, CompletableFuture<String>> futureMap = parallelCallFunction();
-        return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
-                .thenCompose(unused -> {
-                    final List<Message> history = newHistory(futureMap);
-                    final ChatRequest newRequest = newHistoryRequest(history);
-                    return chatOp.flow(newRequest)
-                            .thenApply(flow -> flow.map(r -> newHistoryResponse(history, r)));
                 });
     }
 
@@ -113,6 +94,11 @@ class FunctionToolCaller implements Tool.Caller {
 
     }
 
+    @Override
+    public ChatRequest request() {
+        return request;
+    }
+
     // 并行调用函数
     private Map<String, CompletableFuture<String>> parallelCallFunction() {
         final Map<String, CompletableFuture<String>> futureMap = new HashMap<>();
@@ -134,8 +120,8 @@ class FunctionToolCaller implements Tool.Caller {
     // 函数调用
     private CompletionStage<String> callFunction(FunctionTool tool, FunctionTool.Call call) {
 
-        if (log.isDebugEnabled()) {
-            log.debug("dashscope-client://chat/function/{} <<< {}",
+        if (logger.isDebugEnabled()) {
+            logger.debug("dashscope-client://chat/function/{} <<< {}",
                     call.stub().name(),
                     call.stub().arguments()
             );
@@ -144,8 +130,8 @@ class FunctionToolCaller implements Tool.Caller {
         try {
             return tool.call(this, call.stub().arguments())
                     .whenComplete((result, ex) -> {
-                        if (log.isDebugEnabled()) {
-                            log.debug("dashscope-client://chat/function/{} >>> {}",
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("dashscope-client://chat/function/{} >>> {}",
                                     call.stub().name(),
                                     result,
                                     ex
@@ -171,16 +157,6 @@ class FunctionToolCaller implements Tool.Caller {
                 .filter(tool -> Objects.equals(tool.meta().name(), functionCall.stub().name()))
                 .findFirst()
                 .orElseThrow(() -> new FunctionToolNotFoundException(functionCall.stub().name()));
-    }
-
-    @Override
-    public DashscopeClient client() {
-        return client;
-    }
-
-    @Override
-    public ChatRequest request() {
-        return request;
     }
 
 }

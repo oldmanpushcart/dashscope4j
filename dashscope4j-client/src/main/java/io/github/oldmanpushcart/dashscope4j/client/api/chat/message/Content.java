@@ -1,116 +1,144 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
-import io.github.oldmanpushcart.dashscope4j.client.Option;
-import lombok.Data;
-import lombok.Getter;
-import lombok.experimental.Accessors;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.UnaryOperator;
 
 /**
- * 多模态内容
- * <p>
- * 只有两个实现类
- * <li>{@link TextContent} : 负责处理文本内容</li>
- * <li>{@link MediaContent} : 负责处理多媒体内容</li>
- * </p>
+ * 内容
  *
- * <p>
- * 多模态 = 纯文本 + 多媒体
- * </p>
- *
- * @param <T> 类型
+ * @param <T> 数据类型
  */
-@Data
-@Accessors(fluent = true)
-public sealed abstract class Content<T> permits Content.TextContent, Content.MediaContent {
+@JsonSerialize(using = Content.ContentJsonSerializer.class)
+@JsonDeserialize(using = Content.ContentJsonDeserializer.class)
+public sealed abstract class Content<T> permits Content.Text, Content.Media {
 
     private final Type type;
     private final T data;
-    private final Option option;
+    private final Parameters parameters;
 
-    private Content(Type type, T data, Option option) {
+    private Content(Type type, T data, Parameters parameters) {
         this.type = type;
         this.data = data;
-        this.option = option.unmodifiable();
+        this.parameters = new Parameters()
+                .merge(parameters)
+                .unmodifiable();
     }
 
     private Content(Type type, T data) {
-        this.type = type;
-        this.data = data;
-        this.option = new Option().unmodifiable();
+        this(type, data, new Parameters());
     }
 
     /**
-     * 更改数据
-     *
-     * @param data 新数据
-     * @return 修改后的内容
+     * @return 类型
      */
-    abstract public Content<T> changeData(T data);
+    public Type type() {
+        return type;
+    }
 
     /**
-     * 改变选项
-     *
-     * @param operator 改变选项操作
-     * @return 修改后的内容
+     * @return 数据
      */
-    abstract public Content<T> changeOption(UnaryOperator<Option> operator);
+    public T data() {
+        return data;
+    }
 
     /**
-     * 构造文本内容
+     * @return 参数项
+     */
+    public Parameters parameters() {
+        return parameters;
+    }
+
+    static class ContentJsonSerializer extends JsonSerializer<Content<?>> {
+
+        @Override
+        public void serialize(Content<?> content, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            final var map = new HashMap<>();
+            map.put(content.type, content.data);
+            gen.writeObject(map);
+        }
+
+    }
+
+    static class ContentJsonDeserializer extends JsonDeserializer<Content<?>> {
+
+        @Override
+        public Content<?> deserialize(JsonParser parser, DeserializationContext ctx) throws IOException, JacksonException {
+            final var entry = parser.getCodec().readValue(parser, new TypeReference<Map.Entry<Type, String>>() {
+            });
+            return switch (entry.getKey()) {
+                case TEXT -> new Text(entry.getValue());
+                case IMAGE, AUDIO, VIDEO, FILE -> new Media(entry.getKey(), URI.create(entry.getValue()));
+            };
+        }
+
+    }
+
+
+    /**
+     * 创建文本内容
      *
      * @param text 文本
-     * @return 文本内容
+     * @return 内容
      */
-    public static TextContent ofText(String text) {
-        return new TextContent(text);
+    public static Text ofText(String text) {
+        return new Text(text);
     }
 
     /**
-     * 构造图像内容
+     * 创建媒体内容：图片
      *
-     * @param image 图片URI
-     * @return 图像内容
+     * @param image 图片
+     * @return 内容
      */
-    public static MediaContent ofImage(URI image) {
-        return new MediaContent(Type.IMAGE, image);
+    public static Media ofImage(URI image) {
+        return new Media(Type.IMAGE, image);
+    }
+
+
+    /**
+     * 创建媒体内容：音频
+     *
+     * @param audio 音频
+     * @return 内容
+     */
+    public static Media ofAudio(URI audio) {
+        return new Media(Type.AUDIO, audio);
     }
 
     /**
-     * 构造音频内容
+     * 创建媒体内容：视频
      *
-     * @param audio 音频URI
-     * @return 音频内容
+     * @param video 视频
+     * @return 内容
      */
-    public static MediaContent ofAudio(URI audio) {
-        return new MediaContent(Type.AUDIO, audio);
+    public static Media ofVideo(URI video) {
+        return new Media(Type.VIDEO, video);
     }
 
     /**
-     * 构造视频内容
+     * 创建媒体内容：文件
      *
-     * @param video 视频URI
-     * @return 视频内容
+     * @param file 文件
+     * @return 内容
      */
-    public static MediaContent ofVideo(URI video) {
-        return new MediaContent(Type.VIDEO, video);
-    }
-
-    /**
-     * 构造文件内容
-     *
-     * @param file 文件URI
-     * @return 文件内容
-     */
-    public static MediaContent ofFile(URI file) {
-        return new MediaContent(Type.FILE, file);
+    public static Media ofFile(URI file) {
+        return new Media(Type.FILE, file);
     }
 
     /**
@@ -148,76 +176,34 @@ public sealed abstract class Content<T> permits Content.TextContent, Content.Med
     }
 
 
-    // 序列化
-    @JsonValue
-    Map<Object, Object> extract() {
-        final Map<Object, Object> extactMap = new HashMap<>();
-        extactMap.put(type, data);
-        option.forEach(extactMap::put);
-        return extactMap;
-    }
-
-    // 反序列化
-    @JsonCreator
-    static Content<?> of(Map.Entry<Type, String> entry) {
-        return switch (entry.getKey()) {
-            case TEXT -> new TextContent(entry.getValue());
-            case IMAGE, AUDIO, VIDEO, FILE -> new MediaContent(entry.getKey(), URI.create(entry.getValue()));
-        };
-    }
-
     /**
      * 文本内容
      */
-    @Getter
-    @Accessors(fluent = true)
-    public static final class TextContent extends Content<String> {
+    public static final class Text extends Content<String> {
 
-        private TextContent(String data) {
-            super(Type.TEXT, data, new Option());
+
+        private Text(String data, Parameters parameters) {
+            super(Type.TEXT, data, parameters);
         }
 
-        private TextContent(String data, Option option) {
-            super(Type.TEXT, data, option);
-        }
-
-        @Override
-        public TextContent changeData(String data) {
-            return new TextContent(data, option());
-        }
-
-        @Override
-        public Content<String> changeOption(UnaryOperator<Option> operator) {
-            final Option newOption = operator.apply(new Option().merge(option()));
-            return new TextContent(data(), newOption);
+        private Text(String data) {
+            super(Type.TEXT, data);
         }
 
     }
 
+
     /**
-     * 多媒体内容
+     * 媒体内容
      */
-    @Getter
-    @Accessors(fluent = true)
-    public static final class MediaContent extends Content<URI> {
+    public static final class Media extends Content<URI> {
 
-        private MediaContent(Type type, URI data) {
-            super(type, data, new Option());
+        private Media(Type type, URI data) {
+            super(type, data);
         }
 
-        private MediaContent(Type type, URI data, Option option) {
-            super(type, data, option);
-        }
-
-        @Override
-        public MediaContent changeData(URI data) {
-            return new MediaContent(type(), data, option());
-        }
-
-        @Override
-        public Content<URI> changeOption(UnaryOperator<Option> operator) {
-            final Option newOption = operator.apply(new Option().merge(option()));
-            return new MediaContent(type(), data(), newOption);
+        private Media(Type type, URI data, Parameters parameters) {
+            super(type, data, parameters);
         }
 
     }

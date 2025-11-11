@@ -2,15 +2,15 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchemaGenerator;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.Request;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 
 import java.lang.reflect.Type;
+import java.net.http.HttpResponse;
 import java.util.*;
 
 public class JacksonJsonUtils {
@@ -21,27 +21,12 @@ public class JacksonJsonUtils {
             .setTimeZone(TimeZone.getTimeZone("GMT+8"))
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-    /**
-     * 压缩Json字符串
-     *
-     * @param json json
-     * @return json
-     */
-    public static String compact(String json) {
-        if (null == json) {
-            return null;
+    public static String toJson(Class<?> view, Object object) {
+        try {
+            return mapper.writerWithView(view).writeValueAsString(object);
+        } catch (JsonProcessingException cause) {
+            throw new IllegalArgumentException("parse object to json failed!", cause);
         }
-        return toJson(toNode(json));
-    }
-
-    /**
-     * {@code object -> node}
-     *
-     * @param object object
-     * @return node
-     */
-    public static JsonNode toNode(Object object) {
-        return mapper.valueToTree(object);
     }
 
     /**
@@ -80,62 +65,6 @@ public class JacksonJsonUtils {
      * @param <T>  对象类型
      * @return 目标对象
      */
-    public static <T> T toObject(String json, Class<T> type) {
-        try {
-            return mapper.readValue(json, type);
-        } catch (JsonProcessingException cause) {
-            throw new IllegalArgumentException("parse json to object failed!", cause);
-        }
-    }
-
-    /**
-     * {@code json -> TypeRef}
-     *
-     * @param json    json
-     * @param typeRef 对象类型
-     * @param <T>     对象类型
-     * @return 目标对象
-     */
-    public static <T> T toObject(String json, TypeReference<T> typeRef) {
-        try {
-            return mapper.readValue(json, typeRef);
-        } catch (JsonProcessingException cause) {
-            throw new IllegalArgumentException("parse json to object failed!", cause);
-        }
-    }
-
-    /**
-     * {@code json -> T}
-     *
-     * @param json         json
-     * @param type         对象类型
-     * @param request      请求
-     * @param httpResponse HTTP响应
-     * @param <T>          对象类型
-     * @return 对象
-     */
-    public static <T> T toObject(String json, Class<T> type, Request request, okhttp3.Response httpResponse) {
-        final Map<String, Object> variableMap = new HashMap<>();
-        httpResponse.headers().forEach(header -> variableMap.put(
-                "http/header/%s".formatted(header.getFirst()),
-                header.getSecond()
-        ));
-        variableMap.put("dashscope/request", request);
-        try {
-            return mapper.reader(new NullableInjectableValues(variableMap)).forType(type).readValue(json);
-        } catch (JsonProcessingException cause) {
-            throw new IllegalArgumentException("parse json to object failed!", cause);
-        }
-    }
-
-    /**
-     * {@code json -> T}
-     *
-     * @param json json
-     * @param type 对象类型
-     * @param <T>  对象类型
-     * @return 目标对象
-     */
     public static <T> T toObject(String json, Type type) {
         try {
             final JavaType jType = mapper.constructType(type);
@@ -145,17 +74,13 @@ public class JacksonJsonUtils {
         }
     }
 
-    /**
-     * {@code node -> T}
-     *
-     * @param node json node
-     * @param type 对象类型
-     * @param <T>  对象类型
-     * @return 目标对象
-     */
-    public static <T> T toObject(JsonNode node, Class<T> type) {
+    public static <T> T toObject(String json, Class<T> type, ApiRequest<?> request, HttpResponse<?> httpResponse) {
+        final Map<String, Object> variableMap = new HashMap<>();
+        httpResponse.headers().map()
+                .forEach((name, values) -> variableMap.put("http/header/%s".formatted(name), values));
+        variableMap.put("dashscope/request", request);
         try {
-            return mapper.treeToValue(node, type);
+            return mapper.reader(new NullableInjectableValues(variableMap)).forType(type).readValue(json);
         } catch (JsonProcessingException cause) {
             throw new IllegalArgumentException("parse json to object failed!", cause);
         }

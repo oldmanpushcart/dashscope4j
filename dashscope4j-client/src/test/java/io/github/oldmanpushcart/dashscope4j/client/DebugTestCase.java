@@ -1,65 +1,83 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOptions;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatSearchOption;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolCallMessage;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.util.List;
+import java.net.http.HttpClient;
+import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Flow;
 
-public class DebugTestCase extends ClientSupport {
+public class DebugTestCase implements LoadingEnv {
+
+    private final HttpClient http = HttpClient.newHttpClient();
 
     @Test
-    public void test$debug$text() {
+    public void debug() throws InterruptedException {
 
-        final ChatRequest request = ChatRequest.newBuilder()
-                .model(new ChatModel.BaseChatModel(
-                        ChatModel.Mode.TEXT,
-                        "qwen3-235b-a22b",
-                        ChatModel.TEXT_REMOTE,
-                        new Option()
-                                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                                .unmodifiable())
-                )
-                //.model(ChatModel.QWEN_MAX)
-                .addMessage(Message.ofUser("遵化未来5天天气情况?"))
-                .option(ChatOptions.ENABLE_WEB_SEARCH, true)
-                .option(ChatOptions.ENABLE_INCREMENTAL_OUTPUT, true)
-                .option("n", 2)
-                .option("result_format", "message")
-                .option(ChatOptions.SEARCH_OPTIONS, new ChatSearchOption() {{
-                    forcedSearch(true);
-                }})
-                .option("enable_thinking", false)
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_PLUS)
+                .addMessage(Message.ofUser("你好呀！"))
+                .addFunction(new EchoFunction())
+                .parameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
                 .build();
 
-        final StringBuffer stringBuf = new StringBuffer();
-        client.chat().flow(request)
-                .thenAccept(responseFlow -> responseFlow
-                        .map(response -> response.output().best().message().text())
-                        .blockingForEach(stringBuf::append))
-                .toCompletableFuture()
-                .join();
-        System.out.println(stringBuf);
+        final var chatOp = ChatOp.newBuilder()
+                .ak(AK)
+                .http(http)
+                .build();
+
+        final var latch = new CountDownLatch(1);
+        chatOp.flow(request).subscribe(new Flow.Subscriber<>() {
+
+            private Flow.Subscription subscription;
+
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                this.subscription = subscription;
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(ChatResponse item) {
+                System.out.println(item.output().best().message().text());
+                subscription.request(1);
+            }
+
+            @Override
+            public void onError(Throwable ex) {
+                ex.printStackTrace();
+                latch.countDown();
+            }
+
+            @Override
+            public void onComplete() {
+                latch.countDown();
+            }
+
+        });
+
+        latch.await();
 
     }
 
     @Test
-    public void test$debug2() {
-        final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_VL_MAX)
-                .addMessage(Message.ofUser(List.of(
-                        Content.ofText("图片中戴帽子的一共几个人?"),
-                        Content.ofImage(new File("./test-data/IMG_0942.JPG").toURI())
-                )))
-                .context(ConfigContext.class, new ConfigContext().autoUpload(true))
-                .build();
-        final var response = client.chat().async(request).toCompletableFuture().join();
-        System.out.println(response.output().best().message().text());
+    public void debug2() {
+
+        final var calls = new ArrayList<Tool.Call>();
+        Tool.Call call = new FunctionTool.Call(0, "echo", new FunctionTool.Call.Stub("echo", "{\"text\":\"HELLO!\"}"));
+        calls.add(call);
+
+        final var message = new ToolCallMessage("echo: HELLO!", calls);
+        final var json = JacksonJsonUtils.toJson(ChatViews.Text.class, message);
+        System.out.println(json);
+
     }
 
 }

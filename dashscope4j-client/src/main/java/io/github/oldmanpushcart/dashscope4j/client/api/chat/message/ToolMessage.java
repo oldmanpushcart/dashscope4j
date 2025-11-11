@@ -3,10 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.Value;
-import lombok.experimental.Accessors;
 
 /**
  * 工具应答消息
@@ -15,20 +11,11 @@ import lombok.experimental.Accessors;
  * {@code Client > LLM}
  * </p>
  */
-@Value
-@Accessors(fluent = true)
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
 @JsonDeserialize
-public class ToolMessage extends Message {
+public final class ToolMessage extends Message {
 
-    /**
-     * 调用ID
-     *
-     * @since 3.1.0
-     */
     @JsonProperty("tool_call_id")
-    String id;
+    private final String id;
 
     /**
      * 构造工具应答消息
@@ -48,6 +35,13 @@ public class ToolMessage extends Message {
     ) {
         super(Role.TOOL, content);
         this.id = id;
+    }
+
+    /**
+     * @return 调用ID
+     */
+    public String id() {
+        return id;
     }
 
 }

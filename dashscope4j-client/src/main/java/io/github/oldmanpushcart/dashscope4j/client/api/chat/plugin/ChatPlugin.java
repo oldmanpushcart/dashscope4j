@@ -1,8 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat.plugin;
 
-import lombok.Value;
-import lombok.experimental.Accessors;
-
 import java.util.Map;
 
 import static java.util.Collections.emptyMap;
@@ -10,12 +7,7 @@ import static java.util.Collections.emptyMap;
 /**
  * 对话插件
  */
-@Value
-@Accessors(fluent = true)
-public class ChatPlugin implements Plugin {
-
-    String name;
-    Map<String, Object> meta;
+public record ChatPlugin(String name, Map<String, Object> meta) implements Plugin {
 
     /**
      * OCR 插件

@@ -1,49 +1,30 @@
 package io.github.oldmanpushcart.dashscope4j.client.api;
 
-import io.github.oldmanpushcart.dashscope4j.client.Usage;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-import lombok.experimental.Accessors;
-
-/**
- * 算法应答
- * <pre><code>
- *     {
- *         "request_id":"",
- *         "code":"",
- *         "message":"",
- *         "output":{
- *             // ...
- *         },
- *         "usage":{
- *             // ...
- *         }
- *     }
- * </code></pre>
- *
- * @param <D> 应答数据类型
- */
-@Getter
-@Accessors(fluent = true)
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-public abstract class AlgoResponse<D> extends ApiResponse<D> {
+public abstract class AlgoResponse<D> extends ApiResponse {
 
     private final Usage usage;
 
     /**
-     * 构建算法应答结果
+     * 构造应答
      *
      * @param request 请求
-     * @param uuid    唯一编号
+     * @param uuid    请求唯一标识
      * @param code    应答编码
-     * @param desc    应答信息
-     * @param usage   用量
+     * @param desc    应答描述
+     * @param usage   使用情况
      */
-    protected AlgoResponse(AlgoRequest<?, ?> request, String uuid, String code, String desc, Usage usage) {
+    protected AlgoResponse(ApiRequest<?> request, String uuid, String code, String desc, Usage usage) {
         super(request, uuid, code, desc);
-        this.usage = null != usage ? usage : Usage.empty();
+        this.usage = usage;
     }
+
+    public Usage usage() {
+        return usage;
+    }
+
+    /**
+     * @return 应答数据
+     */
+    abstract public D output();
 
 }

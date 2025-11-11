@@ -1,43 +1,61 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat;
 
-import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.reactivex.rxjava3.core.Flowable;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.HttpAsyncExecutor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.HttpFlowExecutor;
 
-import java.util.Arrays;
-import java.util.List;
+import java.net.http.HttpClient;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Flow;
 
 public class ChatOpImpl implements ChatOp {
 
-    private static final List<Interceptor> interceptors = Arrays.asList(
-            new ProcessAutoUploadForChatMessageInterceptor(),
-            new ProcessContentForQwenLongInterceptor(),
-            new ProcessFunctionToolCallForChatInterceptor()
-    );
-    private final ApiOp apiOp;
+    private final HttpAsyncExecutor async;
+    private final HttpFlowExecutor flow;
 
-    public ChatOpImpl(ApiOp apiOp) {
-        this.apiOp = apiOp;
+    public ChatOpImpl(HttpAsyncExecutor async, HttpFlowExecutor flow) {
+        this.async = async;
+        this.flow = flow;
     }
 
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
-        final ChatRequest newRequest = ChatRequest.newBuilder(request)
-                .addInterceptors(interceptors)
-                .build();
-        return apiOp.executeAsync(newRequest);
+        return async.execute(request)
+                .thenCompose(new FunctionToolCallOpAsyncHandler(this));
     }
 
     @Override
-    public CompletionStage<Flowable<ChatResponse>> flow(ChatRequest request) {
-        final ChatRequest newRequest = ChatRequest.newBuilder(request)
-                .addInterceptors(interceptors)
-                .build();
-        return apiOp.executeFlow(newRequest);
+    public Flow.Publisher<ChatResponse> flow(ChatRequest request) {
+        return flow.execute(request);
+    }
+
+
+    public static class BuilderImpl implements ChatOp.Builder {
+
+        private String ak;
+        private HttpClient http;
+
+        @Override
+        public Builder ak(String ak) {
+            this.ak = ak;
+            return this;
+        }
+
+        @Override
+        public Builder http(HttpClient http) {
+            this.http = http;
+            return this;
+        }
+
+        @Override
+        public ChatOp build() {
+            final var async = new HttpAsyncExecutor(ak, http);
+            final var flow = new HttpFlowExecutor(ak, http);
+            return new ChatOpImpl(async, flow);
+        }
+
     }
 
 }

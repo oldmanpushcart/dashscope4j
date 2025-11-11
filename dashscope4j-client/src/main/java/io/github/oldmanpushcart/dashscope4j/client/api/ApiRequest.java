@@ -1,141 +1,121 @@
 package io.github.oldmanpushcart.dashscope4j.client.api;
 
-import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.Request;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-import lombok.experimental.Accessors;
-import okhttp3.Response;
+import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
-import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
-import static lombok.AccessLevel.PROTECTED;
 
 /**
- * API请求
- *
- * @param <R> 应答类型
+ * 请求
  */
-@Getter
-@Accessors(fluent = true)
-@ToString
-@EqualsAndHashCode(callSuper = true)
-public abstract class ApiRequest<R extends ApiResponse<?>> extends Request {
+public abstract class ApiRequest<R extends ApiResponse> {
 
-    @ToString.Exclude
-    @Getter(PROTECTED)
     private final Class<R> responseType;
-
-    @ToString.Exclude
-    private final List<Interceptor> interceptors;
+    private final Map<Class<?>, Object> contextMap;
 
     /**
-     * 构建Api请求
+     * 构造请求
      *
-     * @param responseType 应答类型
-     * @param builder      构建器
+     * @param responseType 响应类型
+     * @param builder      构建者
      */
     protected ApiRequest(Class<R> responseType, Builder<?, ?> builder) {
-        super(builder);
-        requireNonNull(responseType, "responseType is required!");
+        requireNonNull(responseType, "responseType is null!");
         this.responseType = responseType;
-        this.interceptors = unmodifiableList(builder.interceptors);
+        this.contextMap = builder.contextMap;
     }
 
     /**
-     * 构建 HttpRequest
-     * <p>
-     * 允许实现者自定义实现HTTP请求，DashScope协议要求了多种方式（GET、POST）。
-     * 不同的协议下采用的方式不一样，所以这里直接将HTTP请求的构造开放出来，确保足够的灵活性。
-     * </p>
-     * <p>{@code T -> JSON}</p>
-     *
-     * @return 构建HTTP请求
+     * @return 响应类型
      */
-    abstract public okhttp3.Request newHttpRequest();
+    protected Class<R> responseType() {
+        return responseType;
+    }
 
     /**
-     * 构建 Response 解码器
-     * <p>{@code JSON -> R}</p>
-     *
-     * @return Response 解码器
+     * @return HTTP请求编码器
      */
-    abstract public BiFunction<Response, String, R> newResponseDecoder();
+    abstract public Function<ApiRequest<?>, HttpRequest> newHttpRequestEncoder();
 
     /**
-     * API请求构造器
-     *
-     * @param <T> 请求类型
-     * @param <B> 构造器类型
+     * @return HTTP应答解码器
      */
-    public static abstract class Builder<T extends ApiRequest<?>, B extends Builder<T, B>> extends Request.Builder<T, B> {
+    abstract public BiFunction<HttpResponse<?>, String, R> newHttpResponseDecoder();
 
-        private final List<Interceptor> interceptors = new ArrayList<>();
+    /**
+     * 获取上下文
+     *
+     * @param <C> 上下文类型
+     * @return 上下文
+     */
+    @SuppressWarnings("unchecked")
+    public <C> C context() {
+        return (C) context(Object.class);
+    }
+
+    /**
+     * 获取上下文
+     *
+     * @param type 上下文类型
+     * @param <C>  上下文类型
+     * @return 上下文
+     */
+    @SuppressWarnings("unchecked")
+    public <C> C context(Class<C> type) {
+        return (C) contextMap.get(type);
+    }
+
+
+    /**
+     * 请求构建器
+     *
+     * @param <T> 构建目标类型
+     * @param <B> 构建者类型
+     */
+    public static abstract class Builder<T extends ApiRequest<?>, B extends Builder<T, B>> implements Buildable<T, B> {
+
+        private final Map<Class<?>, Object> contextMap = new HashMap<>();
 
         protected Builder() {
 
         }
 
         protected Builder(ApiRequest<?> request) {
-            super(request);
-            this.interceptors.addAll(request.interceptors);
+            this.contextMap.putAll(request.contextMap);
         }
 
         /**
-         * 设置拦截器列表
+         * 设置上下文
          *
-         * @param interceptors 拦截器列表
+         * @param context 上下文
          * @return this
-         * @since 3.1.1
          */
-        public B interceptors(List<Interceptor> interceptors) {
-            requireNonNull(interceptors);
-            this.interceptors.clear();
-            this.interceptors.addAll(interceptors);
-            return self();
+        public B context(Object context) {
+            return context(Object.class, context);
         }
 
         /**
-         * 添加拦截器
+         * 设置上下文
          *
-         * @param interceptor 拦截器
+         * @param type    上下文类型
+         * @param context 上下文
+         * @param <C>     上下文类型
          * @return this
-         * @since 3.1.1
          */
-        public B addInterceptor(Interceptor interceptor) {
-            requireNonNull(interceptor);
-            this.interceptors.add(interceptor);
-            return self();
-        }
-
-        /**
-         * 添加拦截器列表
-         *
-         * @param interceptors 拦截器列表
-         * @return this
-         * @since 3.1.1
-         */
-        public B addInterceptors(List<Interceptor> interceptors) {
-            requireNonNull(interceptors);
-            this.interceptors.addAll(interceptors);
-            return self();
-        }
-
-        /**
-         * 根据拦截器类型移除
-         *
-         * @param interceptorType 拦截器类型
-         * @return this
-         * @since 3.2.0
-         */
-        public B removeInterceptorByType(Class<? extends Interceptor> interceptorType) {
-            requireNonNull(interceptorType);
-            this.interceptors.removeIf(interceptorType::isInstance);
+        public <C> B context(Class<C> type, C context) {
+            if (Objects.isNull(context)) {
+                this.contextMap.remove(type);
+            } else {
+                this.contextMap.put(type, context);
+            }
             return self();
         }
 
