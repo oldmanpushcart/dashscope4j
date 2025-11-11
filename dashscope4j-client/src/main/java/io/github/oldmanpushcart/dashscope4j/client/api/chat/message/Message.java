@@ -250,7 +250,7 @@ public sealed class Message implements Accumulator<Message> permits PluginMessag
             final var view = provider.getActiveView();
             if (view == ChatViews.Text.class) {
                 final StringBuilder stringBuf = new StringBuilder();
-                for (Content<?> content : contents) {
+                for (final Content<?> content : contents) {
                     if (content instanceof Content.Text text) {
                         stringBuf.append(text.data());
                     }

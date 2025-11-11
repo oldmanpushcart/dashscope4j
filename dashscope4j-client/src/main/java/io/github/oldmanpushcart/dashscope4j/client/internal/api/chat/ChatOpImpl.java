@@ -28,7 +28,9 @@ public class ChatOpImpl implements ChatOp {
 
     @Override
     public Flow.Publisher<ChatResponse> flow(ChatRequest request) {
-        return flow.execute(request);
+        final var publisher = flow.execute(request);
+        return new FunctionToolCallOpFlowHandler(this)
+                .apply(publisher);
     }
 
 

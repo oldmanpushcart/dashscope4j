@@ -23,7 +23,7 @@ public class DebugTestCase implements LoadingEnv {
 
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_PLUS)
-                .addMessage(Message.ofUser("你好呀！"))
+                .addMessage(Message.ofUser("echo:你好呀！"))
                 .addFunction(new EchoFunction())
                 .parameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
                 .build();
@@ -46,7 +46,7 @@ public class DebugTestCase implements LoadingEnv {
 
             @Override
             public void onNext(ChatResponse item) {
-                System.out.println(item.output().best().message().text());
+                System.out.println("===="+item.output().best().message().text());
                 subscription.request(1);
             }
 

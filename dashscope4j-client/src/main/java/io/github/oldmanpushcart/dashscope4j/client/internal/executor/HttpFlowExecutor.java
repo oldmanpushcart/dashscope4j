@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.executor;
 
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.HttpHeader;
@@ -69,22 +70,23 @@ public class HttpFlowExecutor {
                                     @Override
                                     public void onSubscribe(Flow.Subscription subscription) {
                                         this.subscription = subscription;
-
-                                        // HTTP连接建立，通知下游可订阅
                                         submissionPublisher.subscribe(subscriber);
-
-                                        // 开始向上游订阅数据
                                         subscription.request(1);
-
                                     }
 
                                     @Override
                                     public void onNext(Item item) {
 
                                         try {
+
                                             final var response = decoder.apply(httpResponse, item.data());
+                                            if (!response.isSuccess()) {
+                                                throw new ApiException(response);
+                                            }
+
                                             submissionPublisher.submit(response);
                                             subscription.request(1);
+
                                         } catch (Throwable ex) {
                                             onError(ex);
                                         }

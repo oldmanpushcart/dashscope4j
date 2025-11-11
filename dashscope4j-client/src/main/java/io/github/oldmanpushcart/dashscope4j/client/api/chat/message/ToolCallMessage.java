@@ -48,7 +48,7 @@ public final class ToolCallMessage extends Message {
     }
 
     @Override
-    public Message accumulate(Message message) {
+    public ToolCallMessage accumulate(Message message) {
 
         if (!(message instanceof ToolCallMessage next)) {
             throw new IllegalArgumentException("Not a tool call message");

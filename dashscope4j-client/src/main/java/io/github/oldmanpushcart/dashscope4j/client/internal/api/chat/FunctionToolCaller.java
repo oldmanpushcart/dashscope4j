@@ -9,12 +9,14 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionToolNotFoundException;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.MapPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Flow;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.concurrent.CompletableFuture.failedStage;
@@ -40,6 +42,17 @@ class FunctionToolCaller implements Tool.Caller {
                     final ChatRequest newRequest = newHistoryRequest(history);
                     return chatOp.async(newRequest)
                             .thenApply(response -> newHistoryResponse(history, response));
+                });
+    }
+
+    public CompletionStage<Flow.Publisher<ChatResponse>> flowCall() {
+        final Map<String, CompletableFuture<String>> futureMap = parallelCallFunction();
+        return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
+                .thenApply(unused -> {
+                    final var history = newHistory(futureMap);
+                    final var newRequest = newHistoryRequest(history);
+                    final var publisher = chatOp.flow(newRequest);
+                    return new MapPublisher<>(publisher, response -> newHistoryResponse(history, response));
                 });
     }
 
