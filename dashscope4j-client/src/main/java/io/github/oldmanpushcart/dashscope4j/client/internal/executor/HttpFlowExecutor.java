@@ -6,6 +6,8 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.HttpHeader;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetection;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.net.http.HttpClient;
@@ -19,13 +21,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils.isNotBlank;
 
+/**
+ * 流式执行器
+ */
 public class HttpFlowExecutor {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String ak;
     private final HttpClient http;
 
@@ -37,7 +42,7 @@ public class HttpFlowExecutor {
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request) {
 
 
-        return new Flow.Publisher<R>() {
+        return new Flow.Publisher<>() {
 
             @Override
             public void subscribe(Flow.Subscriber<? super R> subscriber) {
@@ -174,15 +179,20 @@ public class HttpFlowExecutor {
 
     }
 
+
+    /**
+     * SSE订阅者
+     */
     private static class ServerSentEventBodySubscriber implements HttpResponse.BodySubscriber<Flow.Publisher<Item>> {
 
+        private final Logger logger = LoggerFactory.getLogger(getClass());
         private final Charset charset;
 
         private final SubmissionPublisher<Item> publisher = new SubmissionPublisher<>();
         private final ByteArrayOutputStream output = new ByteArrayOutputStream();
         private final byte[] bytes = new byte[10240];
-        private final AtomicReference<Flow.Subscription> subscriptionRef = new AtomicReference<>();
         private final FeatureDetection detection = new FeatureDetection(new byte[]{'\n', '\n'});
+        private volatile Flow.Subscription subscription;
 
         private ServerSentEventBodySubscriber(Charset charset) {
             this.charset = charset;
@@ -195,11 +205,8 @@ public class HttpFlowExecutor {
 
         @Override
         public void onSubscribe(Flow.Subscription subscription) {
-            if (subscriptionRef.compareAndSet(null, subscription)) {
-                subscription.request(1);
-            } else {
-                subscription.cancel();
-            }
+            this.subscription = subscription;
+            subscription.request(1);
         }
 
         @Override
@@ -223,7 +230,7 @@ public class HttpFlowExecutor {
                         }
                     }
                 }
-                subscriptionRef.get().request(1);
+                subscription.request(1);
             } catch (Throwable ex) {
                 onError(ex);
             }
@@ -251,6 +258,13 @@ public class HttpFlowExecutor {
             }
             try {
                 final var body = output.toString(charset).trim();
+
+                /*
+                 * 这里记录下SSE的数据日志
+                 * 因为非常消耗性能，所以用trace
+                 */
+                logger.trace("dashscope-client://flow/sse <<< \n{}", body);
+
                 final var item = Item.parse(body);
                 publisher.submit(item);
             } finally {
@@ -313,7 +327,8 @@ public class HttpFlowExecutor {
                 }// while
             }// try
 
-            return new Item(id, event, dataBuf.toString());
+            final var data = dataBuf.toString().trim();
+            return new Item(id, event, data);
 
         }
 

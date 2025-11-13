@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolCallMess
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Flow;
+import java.util.concurrent.SubmissionPublisher;
 import java.util.function.UnaryOperator;
 
 import static io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT;
@@ -26,38 +27,27 @@ class FunctionToolCallOpFlowHandler implements UnaryOperator<Flow.Publisher<Chat
 
     @Override
     public Flow.Publisher<ChatResponse> apply(Flow.Publisher<ChatResponse> source) {
-        return downstream -> source.subscribe(new ToolCallSubscriber(downstream));
+        return subscriber -> {
+            final var output = new SubmissionPublisher<ChatResponse>();
+            output.subscribe(subscriber);
+            source.subscribe(new ToolCallSubscriber(output));
+        };
     }
 
 
     private class ToolCallSubscriber implements Flow.Subscriber<ChatResponse> {
 
-        private final Flow.Subscriber<? super ChatResponse> downstream;
+        private final SubmissionPublisher<ChatResponse> output;
         private final List<ToolCallMessage> tcMessageSegments = new ArrayList<>();
-
-        private Flow.Subscription upstream;
         private ChatRequest request;
 
-        private ToolCallSubscriber(Flow.Subscriber<? super ChatResponse> downstream) {
-            this.downstream = downstream;
+        private ToolCallSubscriber(SubmissionPublisher<ChatResponse> output) {
+            this.output = output;
         }
 
         @Override
         public void onSubscribe(Flow.Subscription subscription) {
-            this.upstream = subscription;
-            downstream.onSubscribe(new Flow.Subscription() {
-
-                @Override
-                public void request(long n) {
-                    subscription.request(n);
-                }
-
-                @Override
-                public void cancel() {
-                    subscription.cancel();
-                }
-
-            });
+            subscription.request(Long.MAX_VALUE);
         }
 
         @Override
@@ -81,19 +71,17 @@ class FunctionToolCallOpFlowHandler implements UnaryOperator<Flow.Publisher<Chat
                 if (message instanceof ToolCallMessage tcMessage) {
                     tcMessageSegments.add(tcMessage);
                 } else {
-                    downstream.onNext(response);
+                    output.submit(response);
                 }
 
-                upstream.request(1);
-
             } catch (Throwable ex) {
-                downstream.onError(ex);
+                onError(ex);
             }
         }
 
         @Override
         public void onError(Throwable ex) {
-            downstream.onError(ex);
+            output.closeExceptionally(ex);
         }
 
         private ToolCallMessage parseToolCallMessage() {
@@ -119,59 +107,42 @@ class FunctionToolCallOpFlowHandler implements UnaryOperator<Flow.Publisher<Chat
                 if (null != tcMessage) {
                     new FunctionToolCaller(chatOp, request, tcMessage)
                             .flowCall()
-                            .thenAccept(publisher -> {
-                                final var forwarding = new ForwardingSubscriber(downstream);
-                                publisher.subscribe(forwarding);
-                            })
+                            .thenAccept(publisher ->
+                                    publisher.subscribe(new Flow.Subscriber<>() {
+
+                                        @Override
+                                        public void onSubscribe(Flow.Subscription subscription) {
+                                            subscription.request(Long.MAX_VALUE);
+                                        }
+
+                                        @Override
+                                        public void onNext(ChatResponse item) {
+                                            output.submit(item);
+                                        }
+
+                                        @Override
+                                        public void onError(Throwable ex) {
+                                            output.closeExceptionally(ex);
+                                        }
+
+                                        @Override
+                                        public void onComplete() {
+                                            output.close();
+                                        }
+                                        
+                                    }))
                             .exceptionally(ex -> {
-                                downstream.onError(ex);
+                                output.closeExceptionally(ex);
                                 return null;
                             });
-                    return;
+                } else {
+                    output.close();
                 }
 
             } catch (Throwable ex) {
                 onError(ex);
             }
 
-            downstream.onComplete();
-        }
-
-    }
-
-
-    /**
-     * 简单的转发订阅者，用于将任意 Publisher<T> 的内容转发给 Subscriber<T>
-     */
-    private static class ForwardingSubscriber implements Flow.Subscriber<ChatResponse> {
-
-        private final Flow.Subscriber<? super ChatResponse> target;
-        private Flow.Subscription subscription;
-
-        public ForwardingSubscriber(Flow.Subscriber<? super ChatResponse> target) {
-            this.target = target;
-        }
-
-        @Override
-        public void onSubscribe(Flow.Subscription subscription) {
-            this.subscription = subscription;
-            subscription.request(1);
-        }
-
-        @Override
-        public void onNext(ChatResponse item) {
-            target.onNext(item);
-            subscription.request(1);
-        }
-
-        @Override
-        public void onError(Throwable ex) {
-            target.onError(ex);
-        }
-
-        @Override
-        public void onComplete() {
-            target.onComplete();
         }
 
     }
