@@ -30,7 +30,6 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUt
  */
 public class HttpFlowExecutor {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String ak;
     private final HttpClient http;
 

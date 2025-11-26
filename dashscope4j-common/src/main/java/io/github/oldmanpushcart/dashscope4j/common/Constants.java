@@ -31,7 +31,9 @@ public class Constants {
     /**
      * WEBSOCKET服务器地址
      */
-    public static final URI WSS_REMOTE = URI.create("wss://dashscope.aliyuncs.com/api-ws/v1/inference/");
+    public static final URI WSS_ENDPOINT = URI.create("wss://dashscope.aliyuncs.com/api-ws/v1/inference/");
+
+    public static final URI REALTIME_ENDPOINT = URI.create("wss://dashscope.aliyuncs.com/api-ws/v1/realtime");
 
     /**
      * 采样率：48K

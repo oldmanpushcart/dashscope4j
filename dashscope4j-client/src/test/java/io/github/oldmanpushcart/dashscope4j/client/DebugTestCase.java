@@ -1,16 +1,22 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
+import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolCallMessage;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeConversation;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeModel;
 import org.junit.jupiter.api.Test;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.TargetDataLine;
+import java.io.IOException;
 import java.net.http.HttpClient;
-import java.util.ArrayList;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
 
@@ -46,7 +52,7 @@ public class DebugTestCase implements LoadingEnv {
 
             @Override
             public void onNext(ChatResponse item) {
-                System.out.println("===="+item.output().best().message().text());
+                System.out.println("====" + item.output().best().message().text());
                 subscription.request(1);
             }
 
@@ -68,15 +74,79 @@ public class DebugTestCase implements LoadingEnv {
     }
 
     @Test
-    public void debug2() {
+    public void debug2() throws IOException {
 
-        final var calls = new ArrayList<Tool.Call>();
-        Tool.Call call = new FunctionTool.Call(0, "echo", new FunctionTool.Call.Stub("echo", "{\"text\":\"HELLO!\"}"));
-        calls.add(call);
+        final var omniOp = OmniOp.newBuilder()
+                .ak(AK)
+                .http(http)
+                .build();
 
-        final var message = new ToolCallMessage("echo: HELLO!", calls);
-        final var json = JacksonJsonUtils.toJson(ChatViews.Text.class, message);
-        System.out.println(json);
+        final var conversation = omniOp.newRealtimeConversation(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME);
+
+        conversation
+                .open(new OmniRealtimeConversation.Handler() {
+
+                    @Override
+                    public void onOpen() {
+
+                    }
+
+                    @Override
+                    public CompletionStage<Void> onData(String json) {
+                        System.out.println(json);
+                        return CompletableFuture.completedStage(null);
+                    }
+
+                    @Override
+                    public CompletionStage<Void> onClosed(Throwable ex) {
+                        return CompletableFuture.completedStage(null);
+                    }
+
+                })
+                .thenAccept(exg-> {
+                    exg.config(new Parameters());
+                })
+                .toCompletableFuture()
+                .join();
+
+        new Thread(() -> {
+            try {
+
+                final AudioFormat format = new AudioFormat(
+                        8000,
+                        16,
+                        2,
+                        true,
+                        false
+                );
+
+                final byte[] bytes = new byte[10240];
+                TargetDataLine target = null;
+                try {
+                    target = AudioSystem.getTargetDataLine(format);
+                    target.open(format);
+                    target.start();
+
+                    while (!Thread.currentThread().isInterrupted()) {
+                        final int nBytesRead = target.read(bytes, 0, bytes.length);
+                        final var buffer = ByteBuffer.wrap(bytes, 0, nBytesRead);
+                        conversation.buffer().append(buffer);
+                    }
+
+                } finally {
+                    if (null != target) {
+                        target.stop();
+                        target.close();
+                    }
+                }
+
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }).start();
+
+        System.in.read();
 
     }
 

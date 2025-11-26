@@ -20,7 +20,6 @@ class FunctionToolCallOpFlowHandler implements UnaryOperator<Flow.Publisher<Chat
 
     private final ChatOp chatOp;
 
-
     FunctionToolCallOpFlowHandler(ChatOp chatOp) {
         this.chatOp = chatOp;
     }
@@ -35,12 +34,21 @@ class FunctionToolCallOpFlowHandler implements UnaryOperator<Flow.Publisher<Chat
     }
 
 
+    /**
+     * 工具调用订阅者
+     * <p>
+     * 在这个订阅中会处理工具调用请求，并将工具调用的结果连接到当前流中
+     * </p>
+     */
     private class ToolCallSubscriber implements Flow.Subscriber<ChatResponse> {
 
         private final SubmissionPublisher<ChatResponse> output;
         private final List<ToolCallMessage> tcMessageSegments = new ArrayList<>();
         private ChatRequest request;
 
+        /**
+         * @param output 输出流
+         */
         private ToolCallSubscriber(SubmissionPublisher<ChatResponse> output) {
             this.output = output;
         }
@@ -84,7 +92,7 @@ class FunctionToolCallOpFlowHandler implements UnaryOperator<Flow.Publisher<Chat
             output.closeExceptionally(ex);
         }
 
-        private ToolCallMessage parseToolCallMessage() {
+        private ToolCallMessage mergeToolCallMessages() {
             if (null == request) {
                 return null;
             }
@@ -103,41 +111,50 @@ class FunctionToolCallOpFlowHandler implements UnaryOperator<Flow.Publisher<Chat
                  * 发起工具调用，产生子流
                  * 并将工具调用产生的流转发到下游接收方
                  */
-                final var tcMessage = parseToolCallMessage();
-                if (null != tcMessage) {
-                    new FunctionToolCaller(chatOp, request, tcMessage)
-                            .flowCall()
-                            .thenAccept(publisher ->
-                                    publisher.subscribe(new Flow.Subscriber<>() {
+                final var tcMessage = mergeToolCallMessages();
 
-                                        @Override
-                                        public void onSubscribe(Flow.Subscription subscription) {
-                                            subscription.request(Long.MAX_VALUE);
-                                        }
-
-                                        @Override
-                                        public void onNext(ChatResponse item) {
-                                            output.submit(item);
-                                        }
-
-                                        @Override
-                                        public void onError(Throwable ex) {
-                                            output.closeExceptionally(ex);
-                                        }
-
-                                        @Override
-                                        public void onComplete() {
-                                            output.close();
-                                        }
-                                        
-                                    }))
-                            .exceptionally(ex -> {
-                                output.closeExceptionally(ex);
-                                return null;
-                            });
-                } else {
+                /*
+                 * 如果没有找到工具调用消息，说明本次流中不需要进行工具调用处理。
+                 * 这种情况下直接关闭输出流即可
+                 */
+                if (null == tcMessage) {
                     output.close();
                 }
+
+                /*
+                 * 找到了工具调用消息，则向LLM发起工具调用
+                 * 输出流将交由工具调用处理程序处理
+                 */
+                new FunctionToolCaller(chatOp, request, tcMessage)
+                        .flowCall()
+                        .thenAccept(publisher ->
+                                publisher.subscribe(new Flow.Subscriber<>() {
+
+                                    @Override
+                                    public void onSubscribe(Flow.Subscription subscription) {
+                                        subscription.request(Long.MAX_VALUE);
+                                    }
+
+                                    @Override
+                                    public void onNext(ChatResponse item) {
+                                        output.submit(item);
+                                    }
+
+                                    @Override
+                                    public void onError(Throwable ex) {
+                                        output.closeExceptionally(ex);
+                                    }
+
+                                    @Override
+                                    public void onComplete() {
+                                        output.close();
+                                    }
+
+                                }))
+                        .exceptionally(ex -> {
+                            output.closeExceptionally(ex);
+                            return null;
+                        });
 
             } catch (Throwable ex) {
                 onError(ex);

@@ -11,5 +11,6 @@ open module dashscope4j.client {
     requires com.fasterxml.jackson.dataformat.xml;
     requires java.net.http;
     requires com.fasterxml.jackson.core;
+    requires java.desktop;
 
 }
