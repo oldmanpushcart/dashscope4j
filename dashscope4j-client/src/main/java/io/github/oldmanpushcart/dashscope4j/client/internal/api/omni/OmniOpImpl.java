@@ -1,32 +1,30 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeConversation;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeModel;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.event.OmniRealtimeEvent;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.HttpWsExchangeExecutor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
 
 import java.net.http.HttpClient;
 
 public class OmniOpImpl implements OmniOp {
 
-    private final HttpWsExchangeExecutor exchangeExecutor;
+    private final String ak;
+    private final HttpClient http;
 
-    public OmniOpImpl(HttpWsExchangeExecutor exchangeExecutor) {
-        this.exchangeExecutor = exchangeExecutor;
+    public OmniOpImpl(String ak, HttpClient http) {
+        this.ak = ak;
+        this.http = http;
     }
-
 
     @Override
-    public OmniRealtimeConversation newRealtimeConversation(OmniRealtimeModel model) {
-        final var exchange = exchangeExecutor.<OmniRealtimeEvent, String>newExchange(
-                model.endpoint(),
-                JacksonJsonUtils::toJson,
-                s -> s
-        );
-        return new OmniRealtimeConversationImpl(exchange);
+    public OmniRealtimeExchange newRealtimeExchange(OmniRealtimeModel model) {
+        return OmniRealtimeExchange.newBuilder()
+                .ak(ak)
+                .http(http)
+                .model(model)
+                .build();
     }
+
 
     public static class BuilderImpl implements OmniOp.Builder {
 
@@ -47,8 +45,7 @@ public class OmniOpImpl implements OmniOp {
 
         @Override
         public OmniOp build() {
-            final var exchangeExecutor = new HttpWsExchangeExecutor(ak, http);
-            return new OmniOpImpl(exchangeExecutor);
+            return new OmniOpImpl(ak, http);
         }
 
     }

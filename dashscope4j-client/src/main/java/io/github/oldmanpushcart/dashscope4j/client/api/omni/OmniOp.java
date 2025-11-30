@@ -7,7 +7,7 @@ import java.net.http.HttpClient;
 
 public interface OmniOp {
 
-    OmniRealtimeConversation newRealtimeConversation(OmniRealtimeModel model);
+    OmniRealtimeExchange newRealtimeExchange(OmniRealtimeModel model);
 
     static Builder newBuilder() {
         return new OmniOpImpl.BuilderImpl();

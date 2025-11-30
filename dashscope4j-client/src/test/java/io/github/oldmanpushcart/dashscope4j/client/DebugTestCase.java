@@ -1,12 +1,14 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeConversation;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.client.OmniRealtimeClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
 import org.junit.jupiter.api.Test;
 
 import javax.sound.sampled.AudioFormat;
@@ -81,30 +83,33 @@ public class DebugTestCase implements LoadingEnv {
                 .http(http)
                 .build();
 
-        final var conversation = omniOp.newRealtimeConversation(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME);
+        final var exchange = omniOp.newRealtimeExchange(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME);
 
-        conversation
-                .open(new OmniRealtimeConversation.Handler() {
+        exchange
+                .open(new Exchange.Handler<>() {
 
                     @Override
-                    public void onOpen() {
+                    public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> exchange) {
 
                     }
 
                     @Override
-                    public CompletionStage<Void> onData(String json) {
-                        System.out.println(json);
+                    public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
+                        System.out.println(data);
+                        return CompletableFuture.completedStage(null);
+                    }
+
+                    @Override
+                    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
                         return CompletableFuture.completedStage(null);
                     }
 
                     @Override
                     public CompletionStage<Void> onClosed(Throwable ex) {
+                        ex.printStackTrace();
                         return CompletableFuture.completedStage(null);
                     }
 
-                })
-                .thenAccept(exg-> {
-                    exg.config(new Parameters());
                 })
                 .toCompletableFuture()
                 .join();
@@ -130,7 +135,7 @@ public class DebugTestCase implements LoadingEnv {
                     while (!Thread.currentThread().isInterrupted()) {
                         final int nBytesRead = target.read(bytes, 0, bytes.length);
                         final var buffer = ByteBuffer.wrap(bytes, 0, nBytesRead);
-                        conversation.buffer().append(buffer);
+                        exchange.buffer().append(buffer);
                     }
 
                 } finally {
@@ -147,6 +152,41 @@ public class DebugTestCase implements LoadingEnv {
         }).start();
 
         System.in.read();
+
+    }
+
+    @Test
+    public void debug3() {
+
+        final var json = """
+                {
+                	"event_id": "event_VfTTCDwBUosNDKSz9uBJL",
+                	"type": "session.created",
+                	"session": {
+                		"object": "realtime.session",
+                		"model": "qwen3-omni-flash-realtime",
+                		"modalities": ["text", "audio"],
+                		"voice": "Cherry",
+                		"input_audio_format": "pcm16",
+                		"output_audio_format": "pcm24",
+                		"input_audio_transcription": {
+                			"model": "gummy-realtime-v1"
+                		},
+                		"turn_detection": {
+                			"type": "server_vad",
+                			"threshold": 0.5,
+                			"prefix_padding_ms": 300,
+                			"silence_duration_ms": 800,
+                			"create_response": true,
+                			"interrupt_response": true
+                		},
+                		"id": "sess_FjsxxALC8R7xDYIpnsGPf"
+                	}
+                }
+                """;
+
+        final var event = JacksonJsonUtils.toObject(json, OmniRealtimeServerEvent.class);
+        System.out.println(event);
 
     }
 

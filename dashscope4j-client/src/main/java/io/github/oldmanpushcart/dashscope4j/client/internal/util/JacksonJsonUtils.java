@@ -21,6 +21,10 @@ public class JacksonJsonUtils {
             .setTimeZone(TimeZone.getTimeZone("GMT+8"))
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
+    public static ObjectMapper newMapper() {
+        return mapper.copy();
+    }
+
     public static String toJson(Class<?> view, Object object) {
         try {
             return mapper.writerWithView(view).writeValueAsString(object);

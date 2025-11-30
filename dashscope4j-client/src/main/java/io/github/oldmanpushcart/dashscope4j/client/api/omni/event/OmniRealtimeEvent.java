@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.event;
+package io.github.oldmanpushcart.dashscope4j.client.api.omni.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
