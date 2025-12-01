@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.exchange;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -82,17 +83,17 @@ public interface Exchange<T, R> {
 
         @Override
         public CompletionStage<Void> onData(R data) {
-            return null;
+            return CompletableFuture.completedStage(null);
         }
 
         @Override
         public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-            return null;
+            return CompletableFuture.completedStage(null);
         }
 
         @Override
         public CompletionStage<Void> onClosed(Throwable ex) {
-            return null;
+            return CompletableFuture.completedStage(null);
         }
 
     }
