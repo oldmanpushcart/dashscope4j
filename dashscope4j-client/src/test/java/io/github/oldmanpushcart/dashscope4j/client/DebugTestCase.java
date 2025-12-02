@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
+import io.github.oldmanpushcart.dashscope4j.client.api.Usage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
@@ -7,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.handler.OmniRealtimeExchangeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
 import org.junit.jupiter.api.Test;
@@ -86,28 +88,48 @@ public class DebugTestCase implements LoadingEnv {
         final var exchange = omniOp.newRealtimeExchange(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME);
 
         exchange
-                .open(new Exchange.Handler<>() {
-
+                .open(new OmniRealtimeExchangeHandler() {
                     @Override
-                    public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> exchange) {
-
+                    public CompletionStage<Void> onResponseBegin(String responseId) {
+                        return CompletableFuture.completedFuture(null);
                     }
 
                     @Override
-                    public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
-                        System.out.println(data);
-                        return CompletableFuture.completedStage(null);
+                    public CompletionStage<Void> onResponseItemText(String responseId, String itemId, Index index, String delta) {
+                        System.out.println(delta);
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                    @Override
+                    public CompletionStage<Void> onResponseItemAudio(String responseId, String itemId, Index index, ByteBuffer delta) {
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                    @Override
+                    public CompletionStage<Void> onResponseItemAudioTranscript(String responseId, String itemId, Index index, String delta) {
+                        System.out.println("=="+delta);
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                    @Override
+                    public CompletionStage<Void> onResponseEnd(String responseId, Usage usage) {
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                    @Override
+                    public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> exchange) {
+                        super.onOpen(exchange);
                     }
 
                     @Override
                     public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                        return CompletableFuture.completedStage(null);
+                        return super.onBinary(buffer);
                     }
 
                     @Override
                     public CompletionStage<Void> onClosed(Throwable ex) {
                         ex.printStackTrace();
-                        return CompletableFuture.completedStage(null);
+                        return super.onClosed(ex);
                     }
 
                 })
