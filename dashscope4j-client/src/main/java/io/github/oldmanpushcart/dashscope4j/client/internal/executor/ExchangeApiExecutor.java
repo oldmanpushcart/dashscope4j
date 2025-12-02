@@ -17,13 +17,13 @@ import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
 
-public class HttpWsExchangeExecutor {
+public class ExchangeApiExecutor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String ak;
     private final HttpClient http;
 
-    public HttpWsExchangeExecutor(String ak, HttpClient http) {
+    public ExchangeApiExecutor(String ak, HttpClient http) {
         this.ak = ak;
         this.http = http;
     }
@@ -46,7 +46,7 @@ public class HttpWsExchangeExecutor {
                         .header(HTTP_HEADER_X_DASHSCOPE_SSE, DISABLE)
                         .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
                         .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
-                        .buildAsync(endpoint, new WsListenerImpl<>(decoder, this, handler))
+                        .buildAsync(endpoint, new WsListenerImpl<>(endpoint, decoder, this, handler))
                         .thenApply(ws -> {
 
                             /*
@@ -90,21 +90,21 @@ public class HttpWsExchangeExecutor {
             @Override
             public CompletionStage<Void> send(T data) {
                 final var connection = requireActiveConnection();
-                return CompletableFuture.completedStage(data)
-                        .thenApply(encoder)
-                        .thenCompose(body -> {
-                            logger.trace("dashscope-client/exchange/send >>> {}", body);
-                            return connection.ws().sendText(body, true);
-                        })
+                final var body = encoder.apply(data);
+                logger.trace("dashscope-client://execute/exchange {} <<< {}", endpoint, body);
+                return connection.ws()
+                        .sendText(body, true)
                         .thenAccept(unused -> {
+
                         });
             }
 
             @Override
             public CompletionStage<Void> send(ByteBuffer buffer) {
                 final var connection = requireActiveConnection();
-                logger.trace("dashscope-client/exchange/send >>> bytes[{}]", buffer.capacity());
-                return connection.ws().sendBinary(buffer, true)
+                logger.trace("dashscope-client://execute/exchange {} <<< bytes[{}]", endpoint, buffer.capacity());
+                return connection.ws()
+                        .sendBinary(buffer, true)
                         .thenAccept(unused -> {
                         });
             }
@@ -115,17 +115,19 @@ public class HttpWsExchangeExecutor {
     private static class WsListenerImpl<T, R> implements WebSocket.Listener {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
+        private final URI endpoint;
         private final Function<String, R> decoder;
         private final Exchange<T, R> exchange;
         private final Exchange.Handler<T, R> handler;
         private final StringBuilder stringBuf = new StringBuilder();
-        private final AtomicBoolean closed = new AtomicBoolean(false);
 
         private WsListenerImpl(
+                final URI endpoint,
                 final Function<String, R> decoder,
                 final Exchange<T, R> exchange,
                 final Exchange.Handler<T, R> handler
         ) {
+            this.endpoint = endpoint;
             this.decoder = decoder;
             this.exchange = exchange;
             this.handler = handler;
@@ -133,19 +135,16 @@ public class HttpWsExchangeExecutor {
 
         @Override
         public void onOpen(WebSocket ws) {
-            logger.trace("dashscope-client/exchange/handler/open");
+            logger.trace("dashscope-client://execute/exchange {} opened!", endpoint);
             handler.onOpen(exchange);
             ws.request(1);
         }
 
         private CompletionStage<Void> fireClosed(Throwable ex) {
-            if (!closed.compareAndSet(false, true)) {
-                return CompletableFuture.completedStage(null);
-            }
             return CompletableFuture.completedStage(null)
                     .thenCompose(unused -> handler.onClosed(ex))
                     .exceptionally(closeEx -> {
-                        // TODO : log the exception
+                        logger.trace("dashscope-client://execute/exchange {} occur error when fire closed!", endpoint, closeEx);
                         return null;
                     });
         }
@@ -162,26 +161,24 @@ public class HttpWsExchangeExecutor {
             final var body = stringBuf.toString();
             stringBuf.setLength(0);
 
-            logger.trace("dashscope-client/exchange/handler/text >>> {}", body);
             return CompletableFuture.completedStage(body)
                     .thenApply(decoder)
                     .thenCompose(handler::onData)
                     .thenAccept(unused -> ws.request(1))
-                    .exceptionallyCompose(this::fireClosed);
+                    .whenComplete((unused, ex) -> logger.trace("dashscope-client://execute/exchange {} >>> {}", endpoint, body, ex));
         }
 
         @Override
         public CompletionStage<?> onBinary(WebSocket ws, ByteBuffer data, boolean last) {
-            logger.trace("dashscope-client/exchange/handler/binary bytes[{}]", data.capacity());
             return CompletableFuture.completedStage(data)
                     .thenCompose(handler::onBinary)
                     .thenAccept(unused -> ws.request(1))
-                    .exceptionallyCompose(this::fireClosed);
+                    .whenComplete((unused, ex) -> logger.trace("dashscope-client://execute/exchange {} >>> bytes[{}]", endpoint, data.capacity(), ex));
         }
 
         @Override
         public CompletionStage<?> onPing(WebSocket ws, ByteBuffer message) {
-            return WebSocket.Listener.super.onPing(ws, message);
+            return ws.sendPong(message);
         }
 
         @Override
@@ -191,16 +188,16 @@ public class HttpWsExchangeExecutor {
 
         @Override
         public CompletionStage<?> onClose(WebSocket ws, int status, String reason) {
-            logger.trace("dashscope-client/exchange/handler/close status={};reason={};", status, reason);
-            final Throwable cause = (status == WebSocket.NORMAL_CLOSURE)
+            logger.trace("dashscope-client://execute/exchange {} closed by status={};reason={};", endpoint, status, reason);
+            final var ex = status == WebSocket.NORMAL_CLOSURE
                     ? null
                     : new WebSocketCloseException(status, reason);
-            return fireClosed(cause)
-                    .exceptionally(ignored -> null);
+            return fireClosed(ex);
         }
 
         @Override
         public void onError(WebSocket webSocket, Throwable ex) {
+            logger.trace("dashscope-client://execute/exchange {} closed by error!", endpoint, ex);
             fireClosed(ex);
         }
 

@@ -49,26 +49,6 @@ public abstract class AlgoRequest<M extends AlgoModel, R extends AlgoResponse<?>
         this.parameters = builder.parameters;
     }
 
-    @Override
-    public Function<ApiRequest<?>, HttpRequest> newHttpRequestEncoder() {
-        return apiRequest -> {
-            final var body = JacksonJsonUtils.toJson(this);
-            logger.debug("dashscope-client://algo/{} >>> {}", model.name(), body);
-            return HttpRequest.newBuilder()
-                    .uri(model.endpoint())
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
-                    .build();
-        };
-    }
-
-    @Override
-    public BiFunction<HttpResponse<?>, String, R> newHttpResponseDecoder() {
-        return (httpResponse, body) -> {
-            logger.debug("dashscope-client://algo/{} <<< {}", model.name(), body);
-            return JacksonJsonUtils.toObject(body, responseType(), this, httpResponse);
-        };
-    }
-
     /**
      * 生成请求模型
      * <pre><code>

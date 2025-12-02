@@ -29,24 +29,6 @@ public abstract class OmniRealtimeExchangeHandler
             );
         }
 
-        if(event instanceof OmniRealtimeResponseContentPartAddedServerEvent responseContentPartAddedEvent) {
-            return onResponseItemText(
-                    responseContentPartAddedEvent.responseId(),
-                    responseContentPartAddedEvent.itemId(),
-                    new Index(responseContentPartAddedEvent.outputIndex(), responseContentPartAddedEvent.contentIndex()),
-                    responseContentPartAddedEvent.part().text()
-            );
-        }
-
-        if (event instanceof OmniRealtimeResponseContentPartDoneServerEvent responseContentPartDoneEvent) {
-            return onResponseItemText(
-                    responseContentPartDoneEvent.responseId(),
-                    responseContentPartDoneEvent.itemId(),
-                    new Index(responseContentPartDoneEvent.outputIndex(), responseContentPartDoneEvent.contentIndex()),
-                    responseContentPartDoneEvent.part().text()
-            );
-        }
-
         if (event instanceof OmniRealtimeResponseAudioDeltaServerEvent responseAudioDeltaEvent) {
             return onResponseItemAudio(
                     responseAudioDeltaEvent.responseId(),
@@ -57,7 +39,7 @@ public abstract class OmniRealtimeExchangeHandler
         }
 
         if (event instanceof OmniRealtimeResponseAudioTranscriptDeltaServerEvent responseAudioTranscriptDeltaEvent) {
-            return onResponseItemAudioTranscript(
+            return onResponseItemText(
                     responseAudioTranscriptDeltaEvent.responseId(),
                     responseAudioTranscriptDeltaEvent.itemId(),
                     new Index(responseAudioTranscriptDeltaEvent.outputIndex(), responseAudioTranscriptDeltaEvent.contentIndex()),
@@ -72,6 +54,13 @@ public abstract class OmniRealtimeExchangeHandler
             );
         }
 
+        if (event instanceof OmniRealtimeErrorServerEvent errorEvent) {
+            return onClosed(new RuntimeException("code=%s;message=%s;".formatted(
+                    errorEvent.error().code(),
+                    errorEvent.error().message()
+            )));
+        }
+
         return CompletableFuture.completedStage(null);
     }
 
@@ -80,8 +69,6 @@ public abstract class OmniRealtimeExchangeHandler
     abstract public CompletionStage<Void> onResponseItemText(String responseId, String itemId, Index index, String delta);
 
     abstract public CompletionStage<Void> onResponseItemAudio(String responseId, String itemId, Index index, ByteBuffer delta);
-
-    abstract public CompletionStage<Void> onResponseItemAudioTranscript(String responseId, String itemId, Index index, String delta);
 
     abstract public CompletionStage<Void> onResponseEnd(String responseId, Usage usage);
 

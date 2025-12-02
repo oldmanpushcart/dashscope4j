@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.HttpAsyncExecutor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.HttpFlowExecutor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApiExecutor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowApiExecutor;
 
 import java.net.http.HttpClient;
 import java.util.concurrent.CompletionStage;
@@ -12,23 +12,25 @@ import java.util.concurrent.Flow;
 
 public class ChatOpImpl implements ChatOp {
 
-    private final HttpAsyncExecutor async;
-    private final HttpFlowExecutor flow;
+    private final AsyncApiExecutor asyncApi;
+    private final FlowApiExecutor flowApi;
 
-    public ChatOpImpl(HttpAsyncExecutor async, HttpFlowExecutor flow) {
-        this.async = async;
-        this.flow = flow;
+    public ChatOpImpl(AsyncApiExecutor asyncApi, FlowApiExecutor flowApi) {
+        this.asyncApi = asyncApi;
+        this.flowApi = flowApi;
     }
 
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
-        return async.execute(request)
+        final var endpoint = request.model().endpoint();
+        return asyncApi.execute(endpoint, request)
                 .thenCompose(new FunctionToolCallOpAsyncHandler(this));
     }
 
     @Override
     public Flow.Publisher<ChatResponse> flow(ChatRequest request) {
-        final var publisher = flow.execute(request);
+        final var endpoint = request.model().endpoint();
+        final var publisher = flowApi.execute(endpoint, request);
         return new FunctionToolCallOpFlowHandler(this)
                 .apply(publisher);
     }
@@ -53,8 +55,8 @@ public class ChatOpImpl implements ChatOp {
 
         @Override
         public ChatOp build() {
-            final var async = new HttpAsyncExecutor(ak, http);
-            final var flow = new HttpFlowExecutor(ak, http);
+            final var async = new AsyncApiExecutor(ak, http);
+            final var flow = new FlowApiExecutor(ak, http);
             return new ChatOpImpl(async, flow);
         }
 

@@ -56,27 +56,6 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     }
 
     @Override
-    public Function<ApiRequest<?>, HttpRequest> newHttpRequestEncoder() {
-        return super.newHttpRequestEncoder()
-                .andThen(httpRequest -> {
-                    final var builder = HttpRequest.newBuilder(httpRequest, (k, v) -> true);
-
-                    if (!plugins.isEmpty()) {
-                        final Map<?, ?> pluginArgMap = plugins.stream()
-                                .collect(toMap(
-                                        Plugin::name,
-                                        Plugin::meta,
-                                        (a, b) -> b
-                                ));
-                        builder.header(HTTP_HEADER_X_DASHSCOPE_PLUGIN, JacksonJsonUtils.toJson(pluginArgMap));
-                    }
-
-                    return builder.build();
-                });
-    }
-
-
-    @Override
     protected Object input() {
         return new Input();
     }

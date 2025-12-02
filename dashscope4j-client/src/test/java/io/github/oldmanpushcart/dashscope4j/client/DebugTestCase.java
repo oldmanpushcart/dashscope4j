@@ -106,12 +106,6 @@ public class DebugTestCase implements LoadingEnv {
                     }
 
                     @Override
-                    public CompletionStage<Void> onResponseItemAudioTranscript(String responseId, String itemId, Index index, String delta) {
-                        System.out.println("=="+delta);
-                        return CompletableFuture.completedFuture(null);
-                    }
-
-                    @Override
                     public CompletionStage<Void> onResponseEnd(String responseId, Usage usage) {
                         return CompletableFuture.completedFuture(null);
                     }

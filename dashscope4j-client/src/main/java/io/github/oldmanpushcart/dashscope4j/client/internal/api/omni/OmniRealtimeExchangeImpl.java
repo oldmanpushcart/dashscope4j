@@ -9,11 +9,14 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.HttpWsExchangeExecutor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApiExecutor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -23,16 +26,28 @@ import java.util.function.Function;
 
 public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Exchange<String, String> origin;
+    private final OmniRealtimeModel model;
     private final ObjectMapper mapper;
 
     private final SessionOp sessionOp = new SessionOpImpl();
     private final BufferOp bufferOp = new BufferOpImpl();
     private final ResponseOp responseOp = new ResponseOpImpl();
 
-    public OmniRealtimeExchangeImpl(Exchange<String, String> origin, ObjectMapper mapper) {
-        this.origin = origin;
+    public OmniRealtimeExchangeImpl(String ak, HttpClient http, OmniRealtimeModel model, ObjectMapper mapper) {
+        this.origin = newOriginExchange(ak, http, model.endpoint());
+        this.model = model;
         this.mapper = mapper;
+    }
+
+    private Exchange<String, String> newOriginExchange(String ak, HttpClient http, URI endpoint) {
+        return new ExchangeApiExecutor(ak, http)
+                .newExchange(
+                        endpoint,
+                        Function.identity(),
+                        Function.identity()
+                );
     }
 
     @Override
@@ -41,11 +56,13 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
                 .open(new Handler<>() {
                     @Override
                     public void onOpen(Exchange<String, String> exchange) {
+                        logger.debug("dashscope-client://exchange/omni/realtime/{} opened! endpoint={}", model.name(), model.endpoint());
                         handler.onOpen(OmniRealtimeExchangeImpl.this);
                     }
 
                     @Override
                     public CompletionStage<Void> onData(String data) {
+                        logger.debug("dashscope-client://exchange/omni/realtime/{} <<< {}", model.name(), data);
                         final OmniRealtimeServerEvent event;
                         try {
                             event = mapper.reader().readValue(data, OmniRealtimeServerEvent.class);
@@ -57,11 +74,13 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
 
                     @Override
                     public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+                        logger.debug("dashscope-client://exchange/omni/realtime/{} <<< bytes[{}]", model.name(), buffer.limit());
                         return CompletableFuture.completedStage(null);
                     }
 
                     @Override
                     public CompletionStage<Void> onClosed(Throwable ex) {
+                        logger.debug("dashscope-client://exchange/omni/realtime/{} closed!", model.name(), ex);
                         return handler.onClosed(ex);
                     }
                 })
@@ -109,7 +128,8 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
 
     private CompletionStage<Void> proxySend(OmniRealtimeClientEvent event) {
         final var body = JacksonJsonUtils.toJson(event);
-        return origin.send(body);
+        return origin.send(body)
+                .thenAccept(unused -> logger.debug("dashscope-client://exchange/omni/realtime/{} >>> {}", model.name(), body));
     }
 
     private class SessionOpImpl implements SessionOp {
@@ -194,9 +214,7 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
 
         @Override
         public OmniRealtimeExchange build() {
-            final var origin = new HttpWsExchangeExecutor(ak, http)
-                    .newExchange(model.endpoint(), Function.identity(), Function.identity());
-            return new OmniRealtimeExchangeImpl(origin, mapper);
+            return new OmniRealtimeExchangeImpl(ak, http, model, mapper);
         }
 
     }

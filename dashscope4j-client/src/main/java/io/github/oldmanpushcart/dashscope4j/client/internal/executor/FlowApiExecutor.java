@@ -5,11 +5,13 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.HttpHeader;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetection;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -28,17 +30,18 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUt
 /**
  * 流式执行器
  */
-public class HttpFlowExecutor {
+public class FlowApiExecutor {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String ak;
     private final HttpClient http;
 
-    public HttpFlowExecutor(String ak, HttpClient http) {
+    public FlowApiExecutor(String ak, HttpClient http) {
         this.ak = ak;
         this.http = http;
     }
 
-    public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request) {
+    public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(URI endpoint, T request) {
 
 
         return new Flow.Publisher<>() {
@@ -50,16 +53,18 @@ public class HttpFlowExecutor {
 
                 try {
 
-                    final var encoder = request.newHttpRequestEncoder();
-                    final var decoder = request.newHttpResponseDecoder();
+                    final var requestBody = JacksonJsonUtils.toJson(request);
+                    logger.trace("dashscope-client://execute/flow {} <<< {}", endpoint, requestBody);
 
-                    final var httpRequest = HttpRequest.newBuilder(encoder.apply(request), (k, v) -> true)
+                    final var httpRequest = HttpRequest.newBuilder()
+                            .uri(endpoint)
                             .header(HTTP_HEADER_CONTENT_TYPE, "application/json")
                             .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
                             .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
                             .header(HTTP_HEADER_X_DASHSCOPE_SSE, ENABLE)
                             .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
                             .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
+                            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                             .build();
 
                     http.sendAsync(httpRequest, new ServerSentEventBodyHandler())
@@ -73,6 +78,7 @@ public class HttpFlowExecutor {
 
                                     @Override
                                     public void onSubscribe(Flow.Subscription subscription) {
+                                        logger.trace("dashscope-client://execute/flow {} subscribed!", endpoint);
                                         this.subscription = subscription;
                                         submissionPublisher.subscribe(subscriber);
                                         subscription.request(1);
@@ -83,7 +89,11 @@ public class HttpFlowExecutor {
 
                                         try {
 
-                                            final var response = decoder.apply(httpResponse, item.data());
+                                            final var responseBody = item.data();
+                                            final var responseType = request.responseType();
+                                            logger.trace("dashscope-client://execute/flow {} >>> {}", endpoint, responseBody);
+
+                                            final var response = JacksonJsonUtils.toObject(responseBody, responseType);
                                             if (!response.isSuccess()) {
                                                 throw new ApiException(response);
                                             }
@@ -99,11 +109,13 @@ public class HttpFlowExecutor {
 
                                     @Override
                                     public void onError(Throwable ex) {
+                                        logger.trace("dashscope-client://execute/flow {} closed by error!", endpoint, ex);
                                         submissionPublisher.closeExceptionally(ex);
                                     }
 
                                     @Override
                                     public void onComplete() {
+                                        logger.trace("dashscope-client://execute/flow {} closed by normal!", endpoint);
                                         submissionPublisher.close();
                                     }
 

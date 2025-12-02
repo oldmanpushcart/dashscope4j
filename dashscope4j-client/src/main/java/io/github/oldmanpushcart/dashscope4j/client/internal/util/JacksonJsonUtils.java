@@ -78,6 +78,14 @@ public class JacksonJsonUtils {
         }
     }
 
+    public static <T> T toObject(String json, Class<T> type) {
+        try {
+            return mapper.readValue(json, type);
+        } catch (JsonProcessingException cause) {
+            throw new IllegalArgumentException("parse json to object failed!", cause);
+        }
+    }
+
     public static <T> T toObject(String json, Class<T> type, ApiRequest<?> request, HttpResponse<?> httpResponse) {
         final Map<String, Object> variableMap = new HashMap<>();
         httpResponse.headers().map()
