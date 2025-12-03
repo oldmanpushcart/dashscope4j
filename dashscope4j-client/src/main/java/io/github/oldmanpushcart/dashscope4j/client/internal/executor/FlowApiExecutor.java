@@ -5,7 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.HttpHeader;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetection;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +93,7 @@ public class FlowApiExecutor {
                                             final var responseType = request.responseType();
                                             logger.trace("dashscope-client://execute/flow {} >>> {}", endpoint, responseBody);
 
-                                            final var response = JacksonJsonUtils.toObject(responseBody, responseType);
+                                            final var response = JacksonJsonUtils.toApiResponse(responseBody, responseType, request, httpResponse);
                                             if (!response.isSuccess()) {
                                                 throw new ApiException(response);
                                             }

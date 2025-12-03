@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
@@ -13,14 +12,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 
-import java.net.http.HttpRequest;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_X_DASHSCOPE_PLUGIN;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonEmptyCollection;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;

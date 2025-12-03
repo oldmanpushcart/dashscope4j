@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.executor;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +12,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.HashMap;
 import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
@@ -49,7 +50,7 @@ public class AsyncApiExecutor {
                     final var responseType = request.responseType();
                     logger.trace("dashscope-client://execute/async {} >>> {}", endpoint, responseBody);
 
-                    return JacksonJsonUtils.toObject(responseBody, responseType);
+                    return JacksonJsonUtils.toApiResponse(responseBody, responseType, request, httpResponse);
                 })
                 .thenApply(response -> {
 

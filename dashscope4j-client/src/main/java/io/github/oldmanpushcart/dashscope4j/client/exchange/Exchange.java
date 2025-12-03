@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.exchange;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -10,7 +11,7 @@ import java.util.concurrent.CompletionStage;
  * @param <T> 发送数据类型
  * @param <R> 接收数据类型
  */
-public interface Exchange<T, R> {
+public interface Exchange<T, R> extends Closeable {
 
     /**
      * 打开数据交换
@@ -32,7 +33,10 @@ public interface Exchange<T, R> {
      * @return 关闭完成的Stage，当关闭完成时，返回结果为{@code null}
      * @throws IllegalStateException 数据交换已关闭
      */
-    CompletionStage<Void> close();
+    CompletionStage<Void> closing();
+
+    @Override
+    void close();
 
     /**
      * 发送应用数据

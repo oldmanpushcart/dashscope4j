@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.junit.jupiter.api.Test;
 
 public class ChatRequestTestCase {

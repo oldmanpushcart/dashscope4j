@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.util;
+package io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.jakarta.JsonSchemaGenerator;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 
 import java.lang.reflect.Type;
 import java.net.http.HttpResponse;
@@ -79,6 +80,10 @@ public class JacksonJsonUtils {
     }
 
     public static <T> T toObject(String json, Class<T> type) {
+        return toObject(mapper, json, type);
+    }
+
+    public static <T> T toObject(ObjectMapper mapper, String json, Class<T> type) {
         try {
             return mapper.readValue(json, type);
         } catch (JsonProcessingException cause) {
@@ -86,7 +91,7 @@ public class JacksonJsonUtils {
         }
     }
 
-    public static <T> T toObject(String json, Class<T> type, ApiRequest<?> request, HttpResponse<?> httpResponse) {
+    public static <T extends ApiResponse> T toApiResponse(String json, Class<T> type, ApiRequest<?> request, HttpResponse<?> httpResponse) {
         final Map<String, Object> variableMap = new HashMap<>();
         httpResponse.headers().map()
                 .forEach((name, values) -> variableMap.put("http/header/%s".formatted(name), values));

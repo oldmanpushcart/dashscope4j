@@ -7,15 +7,15 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeExchange
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.client.*;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server.OmniRealtimeErrorServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApiExecutor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
@@ -54,6 +54,7 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
     public CompletionStage<Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent>> open(Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handler) {
         return origin
                 .open(new Handler<>() {
+
                     @Override
                     public void onOpen(Exchange<String, String> exchange) {
                         logger.debug("dashscope-client://exchange/omni/realtime/{} opened! endpoint={}", model.name(), model.endpoint());
@@ -63,12 +64,7 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
                     @Override
                     public CompletionStage<Void> onData(String data) {
                         logger.debug("dashscope-client://exchange/omni/realtime/{} <<< {}", model.name(), data);
-                        final OmniRealtimeServerEvent event;
-                        try {
-                            event = mapper.reader().readValue(data, OmniRealtimeServerEvent.class);
-                        } catch (IOException e) {
-                            throw new RuntimeException("Failed to parse ServerEvent json!", e);
-                        }
+                        final var event = JacksonJsonUtils.toObject(mapper, data, OmniRealtimeServerEvent.class);
                         return handler.onData(event);
                     }
 
@@ -83,6 +79,7 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
                         logger.debug("dashscope-client://exchange/omni/realtime/{} closed!", model.name(), ex);
                         return handler.onClosed(ex);
                     }
+
                 })
                 .thenApply(v -> this);
     }
@@ -93,8 +90,13 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
     }
 
     @Override
-    public CompletionStage<Void> close() {
-        return origin.close();
+    public CompletionStage<Void> closing() {
+        return origin.closing();
+    }
+
+    @Override
+    public void close() {
+        origin.close();
     }
 
     @Override

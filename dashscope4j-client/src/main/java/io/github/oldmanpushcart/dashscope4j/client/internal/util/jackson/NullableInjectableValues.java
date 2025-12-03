@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.util;
+package io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson;
 
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;

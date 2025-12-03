@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function;
 
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 

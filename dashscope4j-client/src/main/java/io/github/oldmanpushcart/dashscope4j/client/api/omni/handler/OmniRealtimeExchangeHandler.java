@@ -12,6 +12,13 @@ import java.util.concurrent.CompletionStage;
 public abstract class OmniRealtimeExchangeHandler
         extends Exchange.HandlerAdapter<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
+    private volatile Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> exchange;
+
+    @Override
+    public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> exchange) {
+        super.onOpen(exchange);
+        this.exchange = exchange;
+    }
 
     @Override
     final public CompletionStage<Void> onData(OmniRealtimeServerEvent event) {
@@ -55,10 +62,12 @@ public abstract class OmniRealtimeExchangeHandler
         }
 
         if (event instanceof OmniRealtimeErrorServerEvent errorEvent) {
-            return onClosed(new RuntimeException("code=%s;message=%s;".formatted(
+            final var ex = new RuntimeException("code=%s;message=%s;".formatted(
                     errorEvent.error().code(),
                     errorEvent.error().message()
-            )));
+            ));
+            return onClosed(ex)
+                    .whenComplete((unused, closeEx) -> exchange.close());
         }
 
         return CompletableFuture.completedStage(null);
@@ -71,7 +80,6 @@ public abstract class OmniRealtimeExchangeHandler
     abstract public CompletionStage<Void> onResponseItemAudio(String responseId, String itemId, Index index, ByteBuffer delta);
 
     abstract public CompletionStage<Void> onResponseEnd(String responseId, Usage usage);
-
 
     public record Index(int output, int content) {
 

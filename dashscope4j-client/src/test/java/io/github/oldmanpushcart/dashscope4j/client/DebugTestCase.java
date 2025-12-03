@@ -10,7 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.client.OmniRea
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.handler.OmniRealtimeExchangeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.junit.jupiter.api.Test;
 
 import javax.sound.sampled.AudioFormat;
@@ -88,44 +88,26 @@ public class DebugTestCase implements LoadingEnv {
         final var exchange = omniOp.newRealtimeExchange(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME);
 
         exchange
-                .open(new OmniRealtimeExchangeHandler() {
-                    @Override
-                    public CompletionStage<Void> onResponseBegin(String responseId) {
-                        return CompletableFuture.completedFuture(null);
-                    }
-
-                    @Override
-                    public CompletionStage<Void> onResponseItemText(String responseId, String itemId, Index index, String delta) {
-                        System.out.println(delta);
-                        return CompletableFuture.completedFuture(null);
-                    }
-
-                    @Override
-                    public CompletionStage<Void> onResponseItemAudio(String responseId, String itemId, Index index, ByteBuffer delta) {
-                        return CompletableFuture.completedFuture(null);
-                    }
-
-                    @Override
-                    public CompletionStage<Void> onResponseEnd(String responseId, Usage usage) {
-                        return CompletableFuture.completedFuture(null);
-                    }
-
+                .open(new Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent>() {
                     @Override
                     public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> exchange) {
-                        super.onOpen(exchange);
+
+                    }
+
+                    @Override
+                    public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
+                        return CompletableFuture.completedStage(null);
                     }
 
                     @Override
                     public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                        return super.onBinary(buffer);
+                        return CompletableFuture.completedStage(null);
                     }
 
                     @Override
                     public CompletionStage<Void> onClosed(Throwable ex) {
-                        ex.printStackTrace();
-                        return super.onClosed(ex);
+                        return CompletableFuture.completedStage(null);
                     }
-
                 })
                 .toCompletableFuture()
                 .join();
