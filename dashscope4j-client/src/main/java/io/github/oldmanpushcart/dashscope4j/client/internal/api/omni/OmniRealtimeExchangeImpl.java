@@ -11,8 +11,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server.OmniRea
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApiExecutor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.awt.image.BufferedImage;
 import java.net.URI;
@@ -140,13 +138,19 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
     private class BufferOpImpl implements BufferOp {
 
         @Override
-        public CompletionStage<Void> append(BufferedImage image) {
+        public CompletionStage<Void> appendImage(BufferedImage image) {
             return proxySend(new OmniRealtimeBufferAppendImageClientEvent(genEventId(), image));
         }
 
         @Override
-        public CompletionStage<Void> append(ByteBuffer buffer) {
+        public CompletionStage<Void> appendAudio(ByteBuffer buffer) {
             return proxySend(new OmniRealtimeBufferAppendAudioClientEvent(genEventId(), buffer));
+        }
+
+        @Override
+        public CompletionStage<Void> appendAudio(byte[] bytes, int offset, int length) {
+            final var buffer = ByteBuffer.wrap(bytes, offset, length);
+            return appendAudio(buffer);
         }
 
         @Override

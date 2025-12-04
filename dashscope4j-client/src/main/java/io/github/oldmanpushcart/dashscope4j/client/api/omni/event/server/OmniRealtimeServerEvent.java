@@ -61,7 +61,8 @@ public class OmniRealtimeServerEvent extends OmniRealtimeEvent {
         @JsonProperty("in_progress") IN_PROGRESS,
         @JsonProperty("failed") FAILED,
         @JsonProperty("completed") COMPLETED,
-        @JsonProperty("incomplete") INCOMPLETE
+        @JsonProperty("incomplete") INCOMPLETE,
+        @JsonProperty("cancelled") CANCELLED
     }
 
     public static class Part {

@@ -136,7 +136,7 @@ public class DebugTestCase implements LoadingEnv {
                     while (!Thread.currentThread().isInterrupted()) {
                         final int nBytesRead = target.read(bytes, 0, bytes.length);
                         final var buffer = ByteBuffer.wrap(bytes, 0, nBytesRead);
-                        exchange.buffer().append(buffer);
+                        exchange.buffer().appendAudio(buffer);
                     }
 
                 } finally {
@@ -216,19 +216,25 @@ public class DebugTestCase implements LoadingEnv {
                             null
                     ));
 
-            exchange.parameters(parameters);
+            exchange.parameters(parameters)
+                    .toCompletableFuture()
+                    .join();
+
+            Thread.sleep(1000*5);
+
+            exchange.buffer().clear();
 
             int bytesRead;
             final var bytes = new byte[10240];
             while ((bytesRead = ais.read(bytes)) != -1) {
-                exchange.buffer().append(ByteBuffer.wrap(bytes, 0, bytesRead));
+                exchange.buffer().appendAudio(bytes, 0, bytesRead);
             }
 
-            exchange.buffer().append(image);
+
+            exchange.buffer().appendImage(image);
             exchange.buffer().commit();
             exchange.response().create();
 
-            exchange.buffer().append(image);
             latch.await();
         }
 

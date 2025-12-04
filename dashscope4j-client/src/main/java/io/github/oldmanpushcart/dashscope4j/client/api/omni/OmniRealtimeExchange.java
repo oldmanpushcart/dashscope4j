@@ -34,9 +34,11 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent, 
 
     interface BufferOp {
 
-        CompletionStage<Void> append(BufferedImage image);
+        CompletionStage<Void> appendImage(BufferedImage image);
 
-        CompletionStage<Void> append(ByteBuffer buffer);
+        CompletionStage<Void> appendAudio(ByteBuffer buffer);
+
+        CompletionStage<Void> appendAudio(byte[] bytes, int offset, int length);
 
         CompletionStage<Void> commit();
 

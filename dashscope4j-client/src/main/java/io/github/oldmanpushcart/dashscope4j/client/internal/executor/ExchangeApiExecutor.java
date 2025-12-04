@@ -155,7 +155,6 @@ public class ExchangeApiExecutor {
                 return CompletableFuture.completedStage(null);
             }
 
-            logger.trace("dashscope-client://exchange {} occur error!", endpoint, ex);
             return CompletableFuture.completedStage(null)
                     .thenCompose(unused -> handler.onClosed(ex))
                     .exceptionally(closeEx -> {
