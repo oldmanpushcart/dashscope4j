@@ -1,21 +1,24 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.Usage;
+import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.client.OmniRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.handler.OmniRealtimeExchangeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.client.OmniRealtimeSessionUpdateClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server.*;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.junit.jupiter.api.Test;
 
+import javax.imageio.ImageIO;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.TargetDataLine;
+import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
@@ -154,37 +157,92 @@ public class DebugTestCase implements LoadingEnv {
     }
 
     @Test
-    public void debug3() {
+    public void debug3() throws Exception {
 
-        final var json = """
-                {
-                	"event_id": "event_VfTTCDwBUosNDKSz9uBJL",
-                	"type": "session.created",
-                	"session": {
-                		"object": "realtime.session",
-                		"model": "qwen3-omni-flash-realtime",
-                		"modalities": ["text", "audio"],
-                		"voice": "Cherry",
-                		"input_audio_format": "pcm16",
-                		"output_audio_format": "pcm24",
-                		"input_audio_transcription": {
-                			"model": "gummy-realtime-v1"
-                		},
-                		"turn_detection": {
-                			"type": "server_vad",
-                			"threshold": 0.5,
-                			"prefix_padding_ms": 300,
-                			"silence_duration_ms": 800,
-                			"create_response": true,
-                			"interrupt_response": true
-                		},
-                		"id": "sess_FjsxxALC8R7xDYIpnsGPf"
-                	}
-                }
-                """;
+        final var image = ImageIO.read(new File("./test-data/image/red-cup.jpeg"));
+        final var audioFile = new File("./test-data/audio/say-what-you-see.wav");
 
-        final var event = JacksonJsonUtils.toObject(json, OmniRealtimeServerEvent.class);
-        System.out.println(event);
+        final var latch = new CountDownLatch(1);
+
+        final var exchange = OmniOp.newBuilder()
+                .ak(AK)
+                .http(http)
+                .build()
+                .newRealtimeExchange(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME);
+
+        try (exchange; final var ais = AudioSystem.getAudioInputStream(audioFile)) {
+
+            exchange
+                    .open(new Exchange.Handler<>() {
+
+                        @Override
+                        public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> exchange) {
+
+                        }
+
+                        @Override
+                        public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
+
+                            if (data instanceof OmniRealtimeResponseAudioTranscriptDeltaServerEvent event) {
+                                System.out.println(event.delta());
+                            }
+
+                            if (data instanceof OmniRealtimeResponseDoneServerEvent) {
+                                latch.countDown();
+                            }
+
+                            return CompletableFuture.completedStage(null);
+                        }
+
+                        @Override
+                        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+                            return CompletableFuture.completedStage(null);
+                        }
+
+                        @Override
+                        public CompletionStage<Void> onClosed(Throwable ex) {
+                            latch.countDown();
+                            return CompletableFuture.completedStage(null);
+                        }
+
+                    })
+                    .toCompletableFuture()
+                    .join();
+
+            final var parameters = new Parameters()
+                    .append(OmniRealtimeParameterKeys.TURN_DETECTION, new OmniRealtimeParameterKeys.TurnDetection(
+                            OmniRealtimeParameterKeys.TurnDetection.Type.MANUAL_VAD,
+                            null,
+                            null
+                    ));
+
+            exchange.parameters(parameters);
+
+            int bytesRead;
+            final var bytes = new byte[10240];
+            while ((bytesRead = ais.read(bytes)) != -1) {
+                exchange.buffer().append(ByteBuffer.wrap(bytes, 0, bytesRead));
+            }
+
+            exchange.buffer().append(image);
+            exchange.buffer().commit();
+            exchange.response().create();
+
+            exchange.buffer().append(image);
+            latch.await();
+        }
+
+
+    }
+
+    @Test
+    public void debug4() {
+
+        final var parameters = new Parameters()
+                .append(OmniRealtimeParameterKeys.VOICE, "OMPC");
+        final var event = new OmniRealtimeSessionUpdateClientEvent("1", parameters);
+        final var json = JacksonJsonUtils.toJson(event);
+        System.out.println(json);
 
     }
 

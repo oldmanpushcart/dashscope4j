@@ -54,7 +54,7 @@ public class FlowApiExecutor {
                 try {
 
                     final var requestBody = JacksonJsonUtils.toJson(request);
-                    logger.trace("dashscope-client://execute/flow {} <<< {}", endpoint, requestBody);
+                    logger.trace("dashscope-client://flow {} <<< {}", endpoint, requestBody);
 
                     final var httpRequest = HttpRequest.newBuilder()
                             .uri(endpoint)
@@ -78,7 +78,7 @@ public class FlowApiExecutor {
 
                                     @Override
                                     public void onSubscribe(Flow.Subscription subscription) {
-                                        logger.trace("dashscope-client://execute/flow {} subscribed!", endpoint);
+                                        logger.trace("dashscope-client://flow {} subscribed!", endpoint);
                                         this.subscription = subscription;
                                         submissionPublisher.subscribe(subscriber);
                                         subscription.request(1);
@@ -91,7 +91,7 @@ public class FlowApiExecutor {
 
                                             final var responseBody = item.data();
                                             final var responseType = request.responseType();
-                                            logger.trace("dashscope-client://execute/flow {} >>> {}", endpoint, responseBody);
+                                            logger.trace("dashscope-client://flow {} >>> {}", endpoint, responseBody);
 
                                             final var response = JacksonJsonUtils.toApiResponse(responseBody, responseType, request, httpResponse);
                                             if (!response.isSuccess()) {
@@ -109,13 +109,13 @@ public class FlowApiExecutor {
 
                                     @Override
                                     public void onError(Throwable ex) {
-                                        logger.trace("dashscope-client://execute/flow {} closed by error!", endpoint, ex);
+                                        logger.trace("dashscope-client://flow {} closed by error!", endpoint, ex);
                                         submissionPublisher.closeExceptionally(ex);
                                     }
 
                                     @Override
                                     public void onComplete() {
-                                        logger.trace("dashscope-client://execute/flow {} closed by normal!", endpoint);
+                                        logger.trace("dashscope-client://flow {} closed by normal!", endpoint);
                                         submissionPublisher.close();
                                     }
 

@@ -13,6 +13,10 @@ import java.util.Set;
 
 public interface OmniRealtimeParameterKeys {
 
+    Parameters.SimpleParameterKey<String> SESSION_ID = new Parameters.SimpleParameterKey<>("id", String.class);
+    Parameters.SimpleParameterKey<String> SESSION_OBJECT = new Parameters.SimpleParameterKey<>("object", String.class);
+    Parameters.SimpleParameterKey<String> SESSION_MODEL = new Parameters.SimpleParameterKey<>("model", String.class);
+
     Parameters.SimpleParameterKey<OmniRealtimeModality[]> MODALITIES = new Parameters.SimpleParameterKey<>("modalities", OmniRealtimeModality[].class);
     Parameters.SimpleParameterKey<String> VOICE = new Parameters.SimpleParameterKey<>("voice", String.class);
     Parameters.SimpleParameterKey<String> INPUT_AUDIO_FORMAT = new Parameters.SimpleParameterKey<>("input_audio_format", String.class);
@@ -53,6 +57,9 @@ public interface OmniRealtimeParameterKeys {
     }
 
     Set<Parameters.StdParameterKey<?, ?>> REGISTRIES = Collections.synchronizedSet(Set.of(
+            SESSION_ID,
+            SESSION_OBJECT,
+            SESSION_MODEL,
             MODALITIES,
             VOICE,
             INPUT_AUDIO_FORMAT,

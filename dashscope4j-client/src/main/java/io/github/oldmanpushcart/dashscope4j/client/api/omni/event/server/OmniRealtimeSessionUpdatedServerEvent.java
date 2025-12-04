@@ -2,11 +2,12 @@ package io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeSession;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 
 public class OmniRealtimeSessionUpdatedServerEvent extends OmniRealtimeServerEvent {
 
-    private final OmniRealtimeSession session;
+    private final Parameters session;
 
     @JsonCreator
     public OmniRealtimeSessionUpdatedServerEvent(
@@ -15,14 +16,15 @@ public class OmniRealtimeSessionUpdatedServerEvent extends OmniRealtimeServerEve
             @JsonProperty("type") String type,
 
             @JsonProperty("session")
-            OmniRealtimeSession session
+            @JsonDeserialize(using = SessionJsonDeserializer.class)
+            Parameters session
 
     ) {
         super(id, type);
         this.session = session;
     }
 
-    public OmniRealtimeSession session() {
+    public Parameters session() {
         return session;
     }
 

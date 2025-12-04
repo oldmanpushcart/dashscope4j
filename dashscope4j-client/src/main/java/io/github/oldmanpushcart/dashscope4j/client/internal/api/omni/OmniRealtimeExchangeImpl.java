@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server.OmniRealtimeErrorServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server.OmniRealtimeServerEvent;
@@ -26,18 +25,14 @@ import java.util.function.Function;
 
 public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Exchange<String, String> origin;
-    private final OmniRealtimeModel model;
     private final ObjectMapper mapper;
 
-    private final SessionOp sessionOp = new SessionOpImpl();
     private final BufferOp bufferOp = new BufferOpImpl();
     private final ResponseOp responseOp = new ResponseOpImpl();
 
     public OmniRealtimeExchangeImpl(String ak, HttpClient http, OmniRealtimeModel model, ObjectMapper mapper) {
         this.origin = newOriginExchange(ak, http, model.endpoint());
-        this.model = model;
         this.mapper = mapper;
     }
 
@@ -57,26 +52,32 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
 
                     @Override
                     public void onOpen(Exchange<String, String> exchange) {
-                        logger.debug("dashscope-client://exchange/omni/realtime/{} opened! endpoint={}", model.name(), model.endpoint());
                         handler.onOpen(OmniRealtimeExchangeImpl.this);
                     }
 
                     @Override
                     public CompletionStage<Void> onData(String data) {
-                        logger.debug("dashscope-client://exchange/omni/realtime/{} <<< {}", model.name(), data);
                         final var event = JacksonJsonUtils.toObject(mapper, data, OmniRealtimeServerEvent.class);
+
+                        if (event instanceof OmniRealtimeErrorServerEvent errorEvent) {
+                            final var errorEx = new IllegalStateException("Server error! code=%s;message=%s;param=%s;".formatted(
+                                    errorEvent.error().code(),
+                                    errorEvent.error().message(),
+                                    errorEvent.error().param()
+                            ));
+                            return CompletableFuture.failedStage(errorEx);
+                        }
+
                         return handler.onData(event);
                     }
 
                     @Override
                     public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                        logger.debug("dashscope-client://exchange/omni/realtime/{} <<< bytes[{}]", model.name(), buffer.limit());
                         return CompletableFuture.completedStage(null);
                     }
 
                     @Override
                     public CompletionStage<Void> onClosed(Throwable ex) {
-                        logger.debug("dashscope-client://exchange/omni/realtime/{} closed!", model.name(), ex);
                         return handler.onClosed(ex);
                     }
 
@@ -110,11 +111,6 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
     }
 
     @Override
-    public SessionOp session() {
-        return sessionOp;
-    }
-
-    @Override
     public ResponseOp response() {
         return responseOp;
     }
@@ -124,26 +120,21 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
         return bufferOp;
     }
 
+    @Override
+    public CompletionStage<Void> parameters(Parameters parameters) {
+        return proxySend(new OmniRealtimeSessionUpdateClientEvent(
+                genEventId(),
+                parameters
+        ));
+    }
+
     private String genEventId() {
         return UUID.randomUUID().toString();
     }
 
     private CompletionStage<Void> proxySend(OmniRealtimeClientEvent event) {
         final var body = JacksonJsonUtils.toJson(event);
-        return origin.send(body)
-                .thenAccept(unused -> logger.debug("dashscope-client://exchange/omni/realtime/{} >>> {}", model.name(), body));
-    }
-
-    private class SessionOpImpl implements SessionOp {
-
-        @Override
-        public CompletionStage<Void> update(Parameters parameters) {
-            return proxySend(new OmniRealtimeSessionUpdateClientEvent(
-                    genEventId(),
-                    new OmniRealtimeSession(parameters)
-            ));
-        }
-
+        return origin.send(body);
     }
 
     private class BufferOpImpl implements BufferOp {

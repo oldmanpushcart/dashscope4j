@@ -31,7 +31,7 @@ public class AsyncApiExecutor {
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> execute(URI endpoint, T request) {
 
         final var requestBody = JacksonJsonUtils.toJson(request);
-        logger.trace("dashscope-client://execute/async {} <<< {}", endpoint, requestBody);
+        logger.trace("dashscope-client://async {} <<< {}", endpoint, requestBody);
 
         final var httpRequest = HttpRequest.newBuilder()
                 .uri(endpoint)
@@ -48,7 +48,7 @@ public class AsyncApiExecutor {
 
                     final var responseBody = httpResponse.body();
                     final var responseType = request.responseType();
-                    logger.trace("dashscope-client://execute/async {} >>> {}", endpoint, responseBody);
+                    logger.trace("dashscope-client://async {} >>> {}", endpoint, responseBody);
 
                     return JacksonJsonUtils.toApiResponse(responseBody, responseType, request, httpResponse);
                 })

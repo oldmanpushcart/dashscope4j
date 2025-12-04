@@ -14,8 +14,6 @@ import java.util.concurrent.CompletionStage;
 
 public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
-    SessionOp session();
-
     ResponseOp response();
 
     BufferOp buffer();
@@ -24,11 +22,7 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent, 
         return new OmniRealtimeExchangeImpl.BuilderImpl();
     }
 
-    interface SessionOp {
-
-        CompletionStage<Void> update(Parameters parameters);
-
-    }
+    CompletionStage<Void> parameters(Parameters parameters);
 
     interface ResponseOp {
 
