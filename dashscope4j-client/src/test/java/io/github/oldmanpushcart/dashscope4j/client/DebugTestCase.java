@@ -5,11 +5,12 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeParameterKeys;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.client.OmniRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.client.OmniRealtimeSessionUpdateClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.event.server.*;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseAudioTranscriptDeltaServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseDoneServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
+
+import static io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME;
 
 public class DebugTestCase implements LoadingEnv {
 
@@ -88,10 +91,8 @@ public class DebugTestCase implements LoadingEnv {
                 .http(http)
                 .build();
 
-        final var exchange = omniOp.newRealtimeExchange(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME);
-
-        exchange
-                .open(new Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent>() {
+        final var exchange = omniOp.realtime()
+                .newExchange(QWEN3_OMNI_FLASH_REALTIME, new Exchange.Handler<>() {
                     @Override
                     public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> exchange) {
 
@@ -168,78 +169,64 @@ public class DebugTestCase implements LoadingEnv {
                 .ak(AK)
                 .http(http)
                 .build()
-                .newRealtimeExchange(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME);
+                .realtime().newExchange(QWEN3_OMNI_FLASH_REALTIME, new Exchange.Handler<>() {
 
-        try (exchange; final var ais = AudioSystem.getAudioInputStream(audioFile)) {
+                    @Override
+                    public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> exchange) {
 
-            exchange
-                    .open(new Exchange.Handler<>() {
+                    }
 
-                        @Override
-                        public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> exchange) {
+                    @Override
+                    public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
 
+                        if (data instanceof OmniRealtimeResponseAudioTranscriptDeltaServerEvent event) {
+                            System.out.println(event.delta());
                         }
 
-                        @Override
-                        public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
-
-                            if (data instanceof OmniRealtimeResponseAudioTranscriptDeltaServerEvent event) {
-                                System.out.println(event.delta());
-                            }
-
-                            if (data instanceof OmniRealtimeResponseDoneServerEvent) {
-                                latch.countDown();
-                            }
-
-                            return CompletableFuture.completedStage(null);
-                        }
-
-                        @Override
-                        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                            return CompletableFuture.completedStage(null);
-                        }
-
-                        @Override
-                        public CompletionStage<Void> onClosed(Throwable ex) {
+                        if (data instanceof OmniRealtimeResponseDoneServerEvent) {
                             latch.countDown();
-                            return CompletableFuture.completedStage(null);
                         }
 
-                    })
-                    .toCompletableFuture()
-                    .join();
+                        return CompletableFuture.completedStage(null);
+                    }
 
-            final var parameters = new Parameters()
-                    .append(OmniRealtimeParameterKeys.TURN_DETECTION, new OmniRealtimeParameterKeys.TurnDetection(
-                            OmniRealtimeParameterKeys.TurnDetection.Type.MANUAL_VAD,
-                            null,
-                            null
-                    ));
+                    @Override
+                    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+                        return CompletableFuture.completedStage(null);
+                    }
 
-            exchange.parameters(parameters)
-                    .toCompletableFuture()
-                    .join();
+                    @Override
+                    public CompletionStage<Void> onClosed(Throwable ex) {
+                        latch.countDown();
+                        return CompletableFuture.completedStage(null);
+                    }
 
-            Thread.sleep(1000*5);
+                })
+                .toCompletableFuture()
+                .join();
 
-            exchange.buffer().clear();
+        final var parameters = new Parameters()
+                .append(OmniRealtimeParameterKeys.TURN_DETECTION, new OmniRealtimeParameterKeys.TurnDetection(
+                        OmniRealtimeParameterKeys.TurnDetection.Type.MANUAL_VAD,
+                        null,
+                        null
+                ));
 
-            int bytesRead;
-            final var bytes = new byte[10240];
-            while ((bytesRead = ais.read(bytes)) != -1) {
-                exchange.buffer().appendAudio(bytes, 0, bytesRead);
-            }
+        exchange.buffer().clear();
+
+//            int bytesRead;
+//            final var bytes = new byte[10240];
+//            while ((bytesRead = ais.read(bytes)) != -1) {
+//                exchange.buffer().appendAudio(bytes, 0, bytesRead);
+//            }
+        exchange.buffer().appendImage(image);
+        // exchange.buffer().commit();
+        // exchange.response().create();
 
 
-            exchange.buffer().appendImage(image);
-            exchange.buffer().commit();
-            exchange.response().create();
-
-            latch.await();
-        }
-
-
+        latch.await();
     }
+
 
     @Test
     public void debug4() {

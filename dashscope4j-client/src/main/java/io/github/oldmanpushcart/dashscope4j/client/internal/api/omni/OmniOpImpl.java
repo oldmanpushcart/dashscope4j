@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeExchange;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniRealtimeModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeOp;
+import io.github.oldmanpushcart.dashscope4j.client.internal.OpBuilderImpl;
 
 import java.net.http.HttpClient;
 
@@ -17,34 +17,19 @@ public class OmniOpImpl implements OmniOp {
     }
 
     @Override
-    public OmniRealtimeExchange newRealtimeExchange(OmniRealtimeModel model) {
-        return OmniRealtimeExchange.newBuilder()
+    public OmniRealtimeOp realtime() {
+        return OmniRealtimeOp.newOpBuilder()
                 .ak(ak)
                 .http(http)
-                .model(model)
                 .build();
     }
 
-
-    public static class BuilderImpl implements OmniOp.Builder {
-
-        private String ak;
-        private HttpClient http;
-
-        @Override
-        public Builder ak(String ak) {
-            this.ak = ak;
-            return this;
-        }
-
-        @Override
-        public Builder http(HttpClient http) {
-            this.http = http;
-            return this;
-        }
+    public static class BuilderImpl extends OpBuilderImpl<OmniOp, Builder> implements OmniOp.Builder {
 
         @Override
         public OmniOp build() {
+            final var ak = ak();
+            final var http = http();
             return new OmniOpImpl(ak, http);
         }
 

@@ -14,15 +14,6 @@ import java.util.concurrent.CompletionStage;
 public interface Exchange<T, R> extends Closeable {
 
     /**
-     * 打开数据交换
-     *
-     * @param handler 数据交换处理器
-     * @return 完成时返回已就绪的 {@code Exchange} 实例
-     * @throws IllegalStateException 数据交换已打开
-     */
-    CompletionStage<Exchange<T, R>> open(Handler<T, R> handler);
-
-    /**
      * @return 是否已关闭
      */
     boolean isClosed();
@@ -53,6 +44,28 @@ public interface Exchange<T, R> extends Closeable {
      * @return 发送完成的Stage，当发送完成时，返回结果为{@code null}
      */
     CompletionStage<Void> send(ByteBuffer buffer);
+
+    interface Codec<T, R> {
+
+        String encode(T t);
+
+        R decode(String s);
+
+        Codec<String, String> identity = new Codec<>() {
+
+            @Override
+            public String encode(String s) {
+                return s;
+            }
+
+            @Override
+            public String decode(String s) {
+                return s;
+            }
+
+        };
+
+    }
 
     /**
      * 连接处理器
