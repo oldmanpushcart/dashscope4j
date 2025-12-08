@@ -31,15 +31,15 @@ public class ExchangeApiExecutor {
             final Exchange.Codec<T, R> codec,
             final Exchange.Handler<T, R> handler
     ) {
-        final var exchangeF = new CompletableFuture<Exchange<T, R>>();
+        final var exchangeFutureListener = new ExchangeFutureListener<>(endpoint, codec, handler);
         return http.newWebSocketBuilder()
                 .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
                 .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
                 .header(HTTP_HEADER_X_DASHSCOPE_SSE, DISABLE)
                 .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
                 .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
-                .buildAsync(endpoint, new WsListenerImpl<>(exchangeF, endpoint, codec, handler))
-                .thenCompose(ws -> exchangeF);
+                .buildAsync(endpoint, exchangeFutureListener)
+                .thenCompose(ws -> exchangeFutureListener.getFuture());
     }
 
 
@@ -87,27 +87,29 @@ public class ExchangeApiExecutor {
 
     }
 
-    private static class WsListenerImpl<T, R> implements WebSocket.Listener {
+    private static class ExchangeFutureListener<T, R> implements WebSocket.Listener {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
-        private final CompletableFuture<Exchange<T, R>> exchangeF;
         private final URI endpoint;
         private final Exchange.Codec<T, R> codec;
         private final Exchange.Handler<T, R> handler;
 
+        private final CompletableFuture<Exchange<T, R>> exchangeF = new CompletableFuture<>();
         private final StringBuilder stringBuf = new StringBuilder();
         private final AtomicBoolean errorFlag = new AtomicBoolean(false);
 
-        private WsListenerImpl(
-                final CompletableFuture<Exchange<T, R>> exchangeF,
+        private ExchangeFutureListener(
                 final URI endpoint,
                 final Exchange.Codec<T, R> codec,
                 final Exchange.Handler<T, R> handler
         ) {
-            this.exchangeF = exchangeF;
             this.endpoint = endpoint;
             this.codec = codec;
             this.handler = handler;
+        }
+
+        public CompletionStage<Exchange<T,R>> getFuture() {
+            return exchangeF;
         }
 
         @Override

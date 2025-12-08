@@ -41,6 +41,10 @@ public class JacksonJsonUtils {
      * @return json
      */
     public static String toJson(Object object) {
+        return toJson(mapper, object);
+    }
+
+    public static String toJson(ObjectMapper mapper, Object object) {
         try {
             return mapper.writer().writeValueAsString(object);
         } catch (JsonProcessingException cause) {
