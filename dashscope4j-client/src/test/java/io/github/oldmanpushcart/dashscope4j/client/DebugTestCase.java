@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.EchoFunctio
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseAudioTranscriptDeltaServerEvent;
@@ -236,7 +237,7 @@ public class DebugTestCase implements LoadingEnv {
 
         final var parameters = new Parameters()
                 .append(OmniRealtimeParameterKeys.VOICE, "OMPC");
-        final var event = new OmniRealtimeSessionUpdateClientEvent("1", parameters);
+        final var event = new OmniRealtimeSessionUpdateClientEvent("1", new OmniRealtimeSession(parameters));
         final var json = JacksonJsonUtils.toJson(event);
         System.out.println(json);
 

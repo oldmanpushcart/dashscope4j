@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.realtime;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
@@ -16,8 +17,8 @@ import java.util.concurrent.atomic.AtomicReference;
 class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
 
     private final Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> origin;
-    private final AtomicReference<Parameters> parametersRef = new AtomicReference<>();
-    private final ParametersOp parametersOp = new ParametersOpImpl();
+    private final CompletableFuture<AtomicReference<OmniRealtimeSession>> sessionRefFuture = new CompletableFuture<>();
+    private final SessionOp sessionOp = new SessionOpImpl();
     private final BufferOp bufferOp = new BufferOpImpl();
     private final ResponseOp responseOp = new ResponseOpImpl();
 
@@ -25,8 +26,8 @@ class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
         this.origin = origin;
     }
 
-    public AtomicReference<Parameters> getParametersRef() {
-        return parametersRef;
+    public CompletableFuture<AtomicReference<OmniRealtimeSession>> getSessionRefFuture() {
+        return sessionRefFuture;
     }
 
     @Override
@@ -60,8 +61,8 @@ class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
     }
 
     @Override
-    public ParametersOp parameters() {
-        return parametersOp;
+    public SessionOp session() {
+        return sessionOp;
     }
 
     @Override
@@ -78,19 +79,18 @@ class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
         return UUID.randomUUID().toString();
     }
 
-    private class ParametersOpImpl implements ParametersOp {
+    private class SessionOpImpl implements SessionOp {
 
         @Override
-        public Parameters get() {
-            return parametersRef.get();
+        public CompletionStage<OmniRealtimeSession> get() {
+            return sessionRefFuture
+                    .thenApply(AtomicReference::get);
         }
 
         @Override
         public CompletionStage<Void> update(Parameters parameters) {
-            return origin.send(new OmniRealtimeSessionUpdateClientEvent(
-                    genEventId(),
-                    parameters
-            ));
+            final var session = new OmniRealtimeSession(parameters);
+            return origin.send(new OmniRealtimeSessionUpdateClientEvent(genEventId(), session));
         }
 
     }

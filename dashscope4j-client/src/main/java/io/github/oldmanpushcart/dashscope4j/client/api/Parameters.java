@@ -102,6 +102,10 @@ public class Parameters {
         map.forEach(consumer);
     }
 
+    public Map<String,Object> dump() {
+        return new HashMap<>(map);
+    }
+
     /**
      * @return 不可修改参数集
      */

@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeOp;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys.TurnDetection;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeSessionCreatedServerEvent;
@@ -19,14 +17,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys.SESSION_ID;
-import static io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys.TURN_DETECTION;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class OmniRealtimeOpImpl implements OmniRealtimeOp {
 
@@ -95,17 +89,10 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
         public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> origin) {
             this.exchangeImpl = new OmniRealtimeExchangeImpl(origin);
             this.exchangeF
-                    .thenAccept(impl -> {
-                        final var parameters = exchangeImpl.getParametersRef().get();
-                        final var sessionId = Optional.ofNullable(parameters)
-                                .map(p -> p.get(SESSION_ID))
-                                .orElse(null);
-                        final var mode = Optional.ofNullable(parameters)
-                                .map(v -> v.get(TURN_DETECTION))
-                                .map(TurnDetection::type)
-                                .orElse(null);
-                        logger.debug("dashscope-client://omni/realtime/{} opened. session={};mode={};", exchangeImpl.uuid(), sessionId, mode);
-                        handler.onOpen(impl);
+                    .thenCompose(unused -> exchangeImpl.getSessionRefFuture())
+                    .thenAccept(sessionRef -> {
+                        logger.debug("dashscope-client://omni/realtime opened. exchange={};", exchangeImpl.uuid());
+                        handler.onOpen(exchangeImpl);
                     })
                     .exceptionallyCompose(this::fireClosed);
         }
@@ -114,14 +101,14 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
         public CompletionStage<Void> onData(OmniRealtimeServerEvent event) {
 
             if (event instanceof OmniRealtimeSessionCreatedServerEvent sessionCreatedEvent) {
-                final var parameters = sessionCreatedEvent.session();
-                exchangeImpl.getParametersRef().set(parameters);
+                final var session = sessionCreatedEvent.session();
+                exchangeImpl.getSessionRefFuture().complete(new AtomicReference<>(session));
                 exchangeF.complete(exchangeImpl);
             }
 
             if (event instanceof OmniRealtimeSessionUpdatedServerEvent sessionUpdatedEvent) {
-                final var parameters = sessionUpdatedEvent.session();
-                exchangeImpl.getParametersRef().set(parameters);
+                final var session = sessionUpdatedEvent.session();
+                exchangeImpl.getSessionRefFuture().join().set(session);
             }
 
             return CompletableFuture.completedStage(event)
