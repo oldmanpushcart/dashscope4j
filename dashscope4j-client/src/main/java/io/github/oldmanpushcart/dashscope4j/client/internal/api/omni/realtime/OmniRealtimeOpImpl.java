@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeOp;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys.TurnDetection;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeSessionCreatedServerEvent;
@@ -13,10 +15,18 @@ import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.OpBuilderImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApiExecutor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys.SESSION_ID;
+import static io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys.TURN_DETECTION;
 
 public class OmniRealtimeOpImpl implements OmniRealtimeOp {
 
@@ -53,8 +63,10 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
 
     private static class OmniRealtimeExchangeFutureHandler implements Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
+        private final Logger logger = LoggerFactory.getLogger(getClass());
         private final Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handler;
         private final CompletableFuture<OmniRealtimeExchange> exchangeF = new CompletableFuture<>();
+        private final AtomicBoolean closedFlag = new AtomicBoolean(false);
         private volatile OmniRealtimeExchangeImpl exchangeImpl;
 
         private OmniRealtimeExchangeFutureHandler(Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handler) {
@@ -65,31 +77,56 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
             return exchangeF;
         }
 
+        private CompletionStage<Void> fireClosed(Throwable ex) {
+
+            if (!closedFlag.compareAndSet(false, true)) {
+                return CompletableFuture.completedStage(null);
+            }
+
+            if (null != exchangeImpl && !exchangeImpl.isClosed()) {
+                exchangeImpl.close();
+            }
+
+            return CompletableFuture.completedStage(null)
+                    .thenCompose(unused -> handler.onClosed(ex));
+        }
+
         @Override
         public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> origin) {
             this.exchangeImpl = new OmniRealtimeExchangeImpl(origin);
-            this.exchangeF.thenAccept(impl -> {
-                handler.onOpen(impl);
-            });
+            this.exchangeF
+                    .thenAccept(impl -> {
+                        final var parameters = exchangeImpl.getParametersRef().get();
+                        final var sessionId = Optional.ofNullable(parameters)
+                                .map(p -> p.get(SESSION_ID))
+                                .orElse(null);
+                        final var mode = Optional.ofNullable(parameters)
+                                .map(v -> v.get(TURN_DETECTION))
+                                .map(TurnDetection::type)
+                                .orElse(null);
+                        logger.debug("dashscope-client://omni/realtime/{} opened. session={};mode={};", exchangeImpl.uuid(), sessionId, mode);
+                        handler.onOpen(impl);
+                    })
+                    .exceptionallyCompose(this::fireClosed);
         }
 
         @Override
         public CompletionStage<Void> onData(OmniRealtimeServerEvent event) {
+
             if (event instanceof OmniRealtimeSessionCreatedServerEvent sessionCreatedEvent) {
                 final var parameters = sessionCreatedEvent.session();
-                exchangeImpl.updateParameters(parameters);
-                if (!exchangeF.complete(exchangeImpl)) {
-                    final var dupSessionCreatedEx = new IllegalStateException("Duplicate session created!");
-                    return CompletableFuture.failedStage(dupSessionCreatedEx);
-                }
+                exchangeImpl.getParametersRef().set(parameters);
+                exchangeF.complete(exchangeImpl);
             }
 
             if (event instanceof OmniRealtimeSessionUpdatedServerEvent sessionUpdatedEvent) {
                 final var parameters = sessionUpdatedEvent.session();
-                exchangeImpl.updateParameters(parameters);
+                exchangeImpl.getParametersRef().set(parameters);
             }
 
-            return handler.onData(event);
+            return CompletableFuture.completedStage(event)
+                    .thenCompose(handler::onData)
+                    .exceptionallyCompose(this::fireClosed);
         }
 
         @Override
@@ -99,7 +136,7 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
 
         @Override
         public CompletionStage<Void> onClosed(Throwable ex) {
-            return handler.onClosed(ex);
+            return fireClosed(ex);
         }
 
     }

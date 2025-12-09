@@ -109,6 +109,16 @@ public class Parameters {
         return new Parameters(Collections.unmodifiableMap(map));
     }
 
+    @SuppressWarnings("unchecked")
+    public <R> R get(ParameterKey<?, R> key) {
+        return (R)map.get(key.name());
+    }
+
+    @SuppressWarnings("unchecked")
+    public <R> R get(String name) {
+        return (R)map.get(name);
+    }
+
     /**
      * 参数键
      *

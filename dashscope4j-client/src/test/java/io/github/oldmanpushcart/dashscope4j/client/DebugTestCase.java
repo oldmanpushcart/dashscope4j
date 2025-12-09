@@ -214,14 +214,17 @@ public class DebugTestCase implements LoadingEnv {
 
         exchange.buffer().clear();
 
-//            int bytesRead;
-//            final var bytes = new byte[10240];
-//            while ((bytesRead = ais.read(bytes)) != -1) {
-//                exchange.buffer().appendAudio(bytes, 0, bytesRead);
-//            }
+        try(final var ais = AudioSystem.getAudioInputStream(audioFile)) {
+            int bytesRead;
+            final var bytes = new byte[10240];
+            while ((bytesRead = ais.read(bytes)) != -1) {
+                exchange.buffer().appendAudio(bytes, 0, bytesRead);
+            }
+        }
+
         exchange.buffer().appendImage(image);
-        // exchange.buffer().commit();
-        // exchange.response().create();
+        exchange.buffer().commit();
+        exchange.response().create();
 
 
         latch.await();

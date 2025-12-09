@@ -14,6 +14,11 @@ import java.util.concurrent.CompletionStage;
 public interface Exchange<T, R> extends Closeable {
 
     /**
+     * @return UUID for the exchange
+     */
+    String uuid();
+
+    /**
      * @return 是否已关闭
      */
     boolean isClosed();

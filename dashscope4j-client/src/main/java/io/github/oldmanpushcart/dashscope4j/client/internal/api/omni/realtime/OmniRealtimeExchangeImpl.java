@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
+class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
 
     private final Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> origin;
     private final AtomicReference<Parameters> parametersRef = new AtomicReference<>();
@@ -25,8 +25,13 @@ public class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
         this.origin = origin;
     }
 
-    void updateParameters(Parameters parameters) {
-        parametersRef.set(parameters);
+    public AtomicReference<Parameters> getParametersRef() {
+        return parametersRef;
+    }
+
+    @Override
+    public String uuid() {
+        return origin.uuid();
     }
 
     @Override
