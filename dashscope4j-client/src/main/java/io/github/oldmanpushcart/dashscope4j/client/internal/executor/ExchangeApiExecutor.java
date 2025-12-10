@@ -46,6 +46,7 @@ public class ExchangeApiExecutor {
 
     private static class ExchangeImpl<T, R> implements Exchange<T, R> {
 
+        private final Logger logger = LoggerFactory.getLogger(getClass());
         private final String uuid;
         private final WebSocket ws;
         private final Exchange.Codec<T, R> codec;
@@ -68,6 +69,7 @@ public class ExchangeApiExecutor {
 
         @Override
         public CompletionStage<Void> closing() {
+            logger.trace("dashscope-client://exchange/{} >>> CLOSING.", uuid);
             return ws.sendClose(WebSocket.NORMAL_CLOSURE, "bye!")
                     .thenAccept(unused -> {
                     });
@@ -75,12 +77,14 @@ public class ExchangeApiExecutor {
 
         @Override
         public void close() {
+            logger.trace("dashscope-client://exchange/{} >>> CLOSED.", uuid);
             ws.abort();
         }
 
         @Override
         public CompletionStage<Void> send(T data) {
             final var body = codec.encode(data);
+            logger.trace("dashscope-client://exchange/{}/text >>> {}", uuid, body);
             return ws.sendText(body, true)
                     .thenAccept(unused -> {
                     });
@@ -88,6 +92,7 @@ public class ExchangeApiExecutor {
 
         @Override
         public CompletionStage<Void> send(ByteBuffer buffer) {
+            logger.trace("dashscope-client://exchange/{}/binary >>> bytes[{}]", uuid, buffer.remaining());
             return ws.sendBinary(buffer, true)
                     .thenAccept(unused -> {
                     });

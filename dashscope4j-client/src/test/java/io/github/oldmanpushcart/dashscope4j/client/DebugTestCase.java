@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.EchoFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
@@ -12,6 +13,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.clien
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseAudioTranscriptDeltaServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseDoneServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.handler.OmniRealtimeExchangeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.junit.jupiter.api.Test;
@@ -87,15 +89,15 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug2() throws IOException {
 
-        final var omniOp = OmniOp.newBuilder()
+        final var omniOp = OmniOp.newOpBuilder()
                 .ak(AK)
                 .http(http)
                 .build();
 
         final var exchange = omniOp.realtime()
-                .newExchange(QWEN3_OMNI_FLASH_REALTIME, new Exchange.Handler<>() {
+                .newExchange(QWEN3_OMNI_FLASH_REALTIME, new OmniRealtimeExchangeHandler() {
                     @Override
-                    public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> exchange) {
+                    public void onOpen(OmniRealtimeExchange exchange) {
 
                     }
 
@@ -166,14 +168,15 @@ public class DebugTestCase implements LoadingEnv {
 
         final var latch = new CountDownLatch(1);
 
-        final var exchange = OmniOp.newBuilder()
+        final var exchange = OmniOp.newOpBuilder()
                 .ak(AK)
                 .http(http)
                 .build()
-                .realtime().newExchange(QWEN3_OMNI_FLASH_REALTIME, new Exchange.Handler<>() {
+                .realtime()
+                .newExchange(QWEN3_OMNI_FLASH_REALTIME, new OmniRealtimeExchangeHandler() {
 
                     @Override
-                    public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> exchange) {
+                    public void onOpen(OmniRealtimeExchange exchange) {
 
                     }
 
@@ -213,21 +216,25 @@ public class DebugTestCase implements LoadingEnv {
                         null
                 ));
 
-        exchange.buffer().clear();
+        //exchange.buffer().clear();
 
-        try(final var ais = AudioSystem.getAudioInputStream(audioFile)) {
+        try (final var ais = AudioSystem.getAudioInputStream(audioFile)) {
             int bytesRead;
             final var bytes = new byte[10240];
             while ((bytesRead = ais.read(bytes)) != -1) {
-                exchange.buffer().appendAudio(bytes, 0, bytesRead);
+                exchange.buffer().appendAudio(bytes, 0, bytesRead)
+                        .toCompletableFuture()
+                        .join();
             }
         }
 
-        exchange.buffer().appendImage(image);
-        exchange.buffer().commit();
-        exchange.response().create();
+        CompletableFuture.<Void>completedStage(null)
+                .thenCompose(v -> exchange.buffer().clear())
+                .thenCompose(v -> exchange.buffer().appendImage(image))
+                .thenCompose(v -> exchange.buffer().commit())
+                .thenCompose(v -> exchange.response().create());
 
-
+        //exchange.buffer().clear();
         latch.await();
     }
 

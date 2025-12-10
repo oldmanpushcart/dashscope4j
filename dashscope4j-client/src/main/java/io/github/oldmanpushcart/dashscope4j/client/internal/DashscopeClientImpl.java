@@ -26,7 +26,7 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     @Override
     public OmniOp omni() {
-        return OmniOp.newBuilder()
+        return OmniOp.newOpBuilder()
                 .ak(ak)
                 .http(http)
                 .build();

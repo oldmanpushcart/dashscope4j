@@ -49,11 +49,27 @@ public record OmniRealtimeSession(
             final var fields = node.fields();
             while (fields.hasNext()) {
                 final var entry = fields.next();
-                final var key = entry.getKey();
-                if (FIELD_ID.equals(key) || FIELD_OBJECT.equals(key) || FIELD_MODEL.equals(key)) {
+                final var name = entry.getKey();
+                final var valueNode = entry.getValue();
+
+                // 过滤掉固定字段
+                if (FIELD_ID.equals(name) || FIELD_OBJECT.equals(name) || FIELD_MODEL.equals(name)) {
                     continue;
                 }
-                parameters.append(key, mapper.treeToValue(entry.getValue(), Object.class));
+
+                // 其他字段根据注册的参数KEY进行反射
+                Parameters.StdParameterKey<?, ?> parameterKey = null;
+                for (var registeredKey : OmniRealtimeParameterKeys.REGISTRIES) {
+                    if (registeredKey.name().equals(name)) {
+                        parameterKey = registeredKey;
+                        break;
+                    }
+                }
+                if (null == parameterKey) {
+                    continue;
+                }
+
+                parameters.append(name, mapper.treeToValue(valueNode, parameterKey.type()));
             }
 
             return new OmniRealtimeSession(id, object, model, parameters);

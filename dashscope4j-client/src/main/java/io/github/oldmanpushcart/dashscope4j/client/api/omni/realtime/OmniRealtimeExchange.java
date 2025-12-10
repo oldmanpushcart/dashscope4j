@@ -19,7 +19,8 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent, 
 
     interface SessionOp {
 
-        CompletionStage<OmniRealtimeSession> get();
+        OmniRealtimeSession get();
+
         CompletionStage<Void> update(Parameters parameters);
 
     }

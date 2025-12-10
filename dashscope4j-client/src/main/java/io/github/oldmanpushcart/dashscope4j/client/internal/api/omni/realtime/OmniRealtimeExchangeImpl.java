@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtim
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.handler.OmniRealtimeExchangeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 
 import java.awt.image.BufferedImage;
@@ -17,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
 
     private final Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> origin;
-    private final CompletableFuture<AtomicReference<OmniRealtimeSession>> sessionRefFuture = new CompletableFuture<>();
+    private final AtomicReference<OmniRealtimeSession> sessionRef = new AtomicReference<>();
     private final SessionOp sessionOp = new SessionOpImpl();
     private final BufferOp bufferOp = new BufferOpImpl();
     private final ResponseOp responseOp = new ResponseOpImpl();
@@ -26,8 +27,8 @@ class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
         this.origin = origin;
     }
 
-    public CompletableFuture<AtomicReference<OmniRealtimeSession>> getSessionRefFuture() {
-        return sessionRefFuture;
+    public AtomicReference<OmniRealtimeSession> getSessionRef() {
+        return sessionRef;
     }
 
     @Override
@@ -82,9 +83,8 @@ class OmniRealtimeExchangeImpl implements OmniRealtimeExchange {
     private class SessionOpImpl implements SessionOp {
 
         @Override
-        public CompletionStage<OmniRealtimeSession> get() {
-            return sessionRefFuture
-                    .thenApply(AtomicReference::get);
+        public OmniRealtimeSession get() {
+            return sessionRef.get();
         }
 
         @Override

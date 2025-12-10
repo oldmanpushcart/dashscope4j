@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime;
 
-import io.github.oldmanpushcart.dashscope4j.client.OpBuilder;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.handler.OmniRealtimeExchangeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.util.OpBuildable;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
@@ -10,15 +11,15 @@ import java.util.concurrent.CompletionStage;
 
 public interface OmniRealtimeOp {
 
-    CompletionStage<OmniRealtimeExchange> newExchange(OmniRealtimeModel model, Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handler);
+    CompletionStage<OmniRealtimeExchange> newExchange(OmniRealtimeModel model, OmniRealtimeExchangeHandler handler);
 
-    static Builder newOpBuilder() {
-        return new OmniRealtimeOpImpl.BuilderImpl();
+    static OpBuilder newOpBuilder() {
+        return new OmniRealtimeOpImpl.OpBuilderImpl();
     }
 
-    interface Builder extends OpBuilder<OmniRealtimeOp, Builder> {
+    interface OpBuilder extends OpBuildable<OmniRealtimeOp, OpBuilder> {
 
-        Builder registerServerEventSubType(String subname, Class<?> subtype);
+        OpBuilder registerServerEventSubType(String subname, Class<?> subtype);
 
     }
 

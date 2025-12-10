@@ -9,8 +9,9 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.clien
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeSessionCreatedServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeSessionUpdatedServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.handler.OmniRealtimeExchangeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.internal.OpBuilderImpl;
+import io.github.oldmanpushcart.dashscope4j.client.internal.BaseOpBuilderImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApiExecutor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.slf4j.Logger;
@@ -20,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class OmniRealtimeOpImpl implements OmniRealtimeOp {
 
@@ -33,11 +33,11 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
     }
 
     @Override
-    public CompletionStage<OmniRealtimeExchange> newExchange(OmniRealtimeModel model, Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handler) {
-        final var exchangeFutureHandler = new OmniRealtimeExchangeFutureHandler(handler);
+    public CompletionStage<OmniRealtimeExchange> newExchange(OmniRealtimeModel model, OmniRealtimeExchangeHandler handler) {
+        final var futureHandler = new OmniRealtimeExchangeFutureHandler(handler);
         return exchangeApi
-                .newExchange(model.endpoint(), codec, exchangeFutureHandler)
-                .thenCompose(unused -> exchangeFutureHandler.getFuture());
+                .newExchange(model.endpoint(), codec, futureHandler)
+                .thenCompose(unused -> futureHandler.getFuture());
     }
 
     private record CodecImpl(ObjectMapper mapper)
@@ -63,7 +63,7 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
         private final AtomicBoolean closedFlag = new AtomicBoolean(false);
         private volatile OmniRealtimeExchangeImpl exchangeImpl;
 
-        private OmniRealtimeExchangeFutureHandler(Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handler) {
+        private OmniRealtimeExchangeFutureHandler(OmniRealtimeExchangeHandler handler) {
             this.handler = handler;
         }
 
@@ -88,8 +88,7 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
         @Override
         public void onOpen(Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> origin) {
             this.exchangeImpl = new OmniRealtimeExchangeImpl(origin);
-            this.exchangeF
-                    .thenCompose(unused -> exchangeImpl.getSessionRefFuture())
+            exchangeF
                     .thenAccept(sessionRef -> {
                         logger.debug("dashscope-client://omni/realtime opened. exchange={};", exchangeImpl.uuid());
                         handler.onOpen(exchangeImpl);
@@ -102,13 +101,13 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
 
             if (event instanceof OmniRealtimeSessionCreatedServerEvent sessionCreatedEvent) {
                 final var session = sessionCreatedEvent.session();
-                exchangeImpl.getSessionRefFuture().complete(new AtomicReference<>(session));
+                exchangeImpl.getSessionRef().set(session);
                 exchangeF.complete(exchangeImpl);
             }
 
             if (event instanceof OmniRealtimeSessionUpdatedServerEvent sessionUpdatedEvent) {
                 final var session = sessionUpdatedEvent.session();
-                exchangeImpl.getSessionRefFuture().join().set(session);
+                exchangeImpl.getSessionRef().set(session);
             }
 
             return CompletableFuture.completedStage(event)
@@ -129,14 +128,14 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
     }
 
 
-    public static class BuilderImpl
-            extends OpBuilderImpl<OmniRealtimeOp, OmniRealtimeOp.Builder>
-            implements OmniRealtimeOp.Builder {
+    public static class OpBuilderImpl
+            extends BaseOpBuilderImpl<OmniRealtimeOp, OpBuilder>
+            implements OpBuilder {
 
         private final ObjectMapper mapper = JacksonJsonUtils.newMapper();
 
         @Override
-        public Builder registerServerEventSubType(String subname, Class<?> subtype) {
+        public OpBuilder registerServerEventSubType(String subname, Class<?> subtype) {
             mapper.registerSubtypes(new NamedType(subtype, subname));
             return this;
         }

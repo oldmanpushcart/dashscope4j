@@ -7,7 +7,7 @@ import java.net.http.HttpClient;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
 
-public abstract class OpBuilderImpl<T, B extends Buildable<T, B>> implements Buildable<T, B> {
+public abstract class BaseOpBuilderImpl<T, B extends Buildable<T, B>> implements Buildable<T, B> {
 
     private String ak;
     private HttpClient http;

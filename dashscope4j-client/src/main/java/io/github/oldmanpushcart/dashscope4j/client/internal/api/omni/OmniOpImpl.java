@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeOp;
-import io.github.oldmanpushcart.dashscope4j.client.internal.OpBuilderImpl;
+import io.github.oldmanpushcart.dashscope4j.client.internal.BaseOpBuilderImpl;
 
 import java.net.http.HttpClient;
 
@@ -24,7 +24,7 @@ public class OmniOpImpl implements OmniOp {
                 .build();
     }
 
-    public static class BuilderImpl extends OpBuilderImpl<OmniOp, Builder> implements OmniOp.Builder {
+    public static class OpBuilderImpl extends BaseOpBuilderImpl<OmniOp, OpBuilder> implements OpBuilder {
 
         @Override
         public OmniOp build() {
