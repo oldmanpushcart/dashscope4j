@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
 
@@ -28,11 +29,12 @@ public class ExchangeApiExecutor {
 
     public <T, R> CompletionStage<Exchange<T, R>> newExchange(
             final URI endpoint,
-            final Exchange.Codec<T, R> codec,
+            final Function<T, String> encoder,
+            final Function<String, R> decoder,
             final Exchange.Handler<T, R> handler
     ) {
         final var uuid = UUID.randomUUID().toString();
-        final var exchangeFutureListener = new ExchangeFutureListener<>(uuid, endpoint, codec, handler);
+        final var exchangeFutureListener = new ExchangeFutureWeSsocketListener<>(uuid, endpoint, encoder, decoder, handler);
         return http.newWebSocketBuilder()
                 .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
                 .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
@@ -43,18 +45,19 @@ public class ExchangeApiExecutor {
                 .thenCompose(ws -> exchangeFutureListener.getFuture());
     }
 
-
     private static class ExchangeImpl<T, R> implements Exchange<T, R> {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
         private final String uuid;
         private final WebSocket ws;
-        private final Exchange.Codec<T, R> codec;
+        private final Function<T, String> encoder;
+        private final Function<String, R> decoder;
 
-        private ExchangeImpl(String uuid, WebSocket ws, Codec<T, R> codec) {
+        private ExchangeImpl(String uuid, WebSocket ws, Function<T, String> encoder, Function<String, R> decoder) {
             this.uuid = uuid;
             this.ws = ws;
-            this.codec = codec;
+            this.encoder = encoder;
+            this.decoder = decoder;
         }
 
         @Override
@@ -83,7 +86,7 @@ public class ExchangeApiExecutor {
 
         @Override
         public CompletionStage<Void> send(T data) {
-            final var body = codec.encode(data);
+            final var body = encoder.apply(data);
             logger.trace("dashscope-client://exchange/{}/text >>> {}", uuid, body);
             return ws.sendText(body, true)
                     .thenAccept(unused -> {
@@ -100,31 +103,35 @@ public class ExchangeApiExecutor {
 
     }
 
+
     /*
      * Exchange的WebSocket监听器
      * 用于驱动Exchange处理器
      */
-    private static class ExchangeFutureListener<T, R> implements WebSocket.Listener {
+    private static class ExchangeFutureWeSsocketListener<T, R> implements WebSocket.Listener {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
         private final String uuid;
         private final URI endpoint;
-        private final Exchange.Codec<T, R> codec;
+        private final Function<T, String> encoder;
+        private final Function<String, R> decoder;
         private final Exchange.Handler<T, R> handler;
 
         private final CompletableFuture<Exchange<T, R>> exchangeF = new CompletableFuture<>();
         private final StringBuilder stringBuf = new StringBuilder();
         private final AtomicBoolean closedFlag = new AtomicBoolean(false);
 
-        private ExchangeFutureListener(
+        private ExchangeFutureWeSsocketListener(
                 final String uuid,
                 final URI endpoint,
-                final Exchange.Codec<T, R> codec,
+                final Function<T, String> encoder,
+                final Function<String, R> decoder,
                 final Exchange.Handler<T, R> handler
         ) {
             this.uuid = uuid;
             this.endpoint = endpoint;
-            this.codec = codec;
+            this.encoder = encoder;
+            this.decoder = decoder;
             this.handler = handler;
         }
 
@@ -136,7 +143,7 @@ public class ExchangeApiExecutor {
         public void onOpen(WebSocket ws) {
             logger.trace("dashscope-client://exchange/{} opened. endpoint={};", uuid, endpoint);
             try {
-                final var exchange = new ExchangeImpl<>(uuid, ws, codec);
+                final var exchange = new ExchangeImpl<>(uuid, ws, encoder,  decoder);
                 handler.onOpen(exchange);
                 exchangeF.complete(exchange);
                 ws.request(1);
@@ -201,7 +208,7 @@ public class ExchangeApiExecutor {
 
             logger.trace("dashscope-client://exchange/{}/text <<< {}", uuid, body);
             return CompletableFuture.completedStage(body)
-                    .thenApply(codec::decode)
+                    .thenApply(decoder)
                     .thenCompose(handler::onData)
                     .whenComplete((unused, ex) -> {
                         if (null != ex) {
@@ -261,7 +268,7 @@ public class ExchangeApiExecutor {
     }
 
     /**
-     * WebSocket关闭异常
+     * WebSocket 关闭异常
      */
     private static class WebSocketCloseException extends Exception {
 

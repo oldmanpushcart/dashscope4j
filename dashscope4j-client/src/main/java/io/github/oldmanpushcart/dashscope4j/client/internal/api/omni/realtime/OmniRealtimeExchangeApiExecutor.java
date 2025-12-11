@@ -19,37 +19,25 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 class OmniRealtimeExchangeApiExecutor {
 
     private final ExchangeApiExecutor exchangeApi;
-    private final Exchange.Codec<OmniRealtimeClientEvent, OmniRealtimeServerEvent> codec;
+    private final Function<OmniRealtimeClientEvent, String> encoder;
+    private final Function<String, OmniRealtimeServerEvent> decoder;
 
     OmniRealtimeExchangeApiExecutor(String ak, HttpClient http, ObjectMapper mapper) {
         this.exchangeApi = new ExchangeApiExecutor(ak, http);
-        this.codec = new CodecImpl(mapper);
+        this.encoder = e -> JacksonJsonUtils.toJson(mapper, e);
+        this.decoder = s -> JacksonJsonUtils.toObject(mapper, s, OmniRealtimeServerEvent.class);
     }
 
     public CompletionStage<OmniRealtimeExchange> newExchange(OmniRealtimeModel model, OmniRealtimeExchangeHandler handler) {
         final var futureHandler = new OmniRealtimeExchangeFutureHandler(handler);
         return exchangeApi
-                .newExchange(model.endpoint(), codec, futureHandler)
+                .newExchange(model.endpoint(), encoder, decoder, futureHandler)
                 .thenCompose(unused -> futureHandler.getFuture());
-    }
-
-    private record CodecImpl(ObjectMapper mapper)
-            implements Exchange.Codec<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
-
-        @Override
-        public String encode(OmniRealtimeClientEvent event) {
-            return JacksonJsonUtils.toJson(mapper, event);
-        }
-
-        @Override
-        public OmniRealtimeServerEvent decode(String json) {
-            return JacksonJsonUtils.toObject(mapper, json, OmniRealtimeServerEvent.class);
-        }
-
     }
 
     private static class OmniRealtimeExchangeFutureHandler implements Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {

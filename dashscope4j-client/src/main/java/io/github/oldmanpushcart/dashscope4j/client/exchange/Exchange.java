@@ -50,27 +50,7 @@ public interface Exchange<T, R> extends Closeable {
      */
     CompletionStage<Void> send(ByteBuffer buffer);
 
-    interface Codec<T, R> {
 
-        String encode(T t);
-
-        R decode(String s);
-
-        Codec<String, String> identity = new Codec<>() {
-
-            @Override
-            public String encode(String s) {
-                return s;
-            }
-
-            @Override
-            public String decode(String s) {
-                return s;
-            }
-
-        };
-
-    }
 
     /**
      * 连接处理器
