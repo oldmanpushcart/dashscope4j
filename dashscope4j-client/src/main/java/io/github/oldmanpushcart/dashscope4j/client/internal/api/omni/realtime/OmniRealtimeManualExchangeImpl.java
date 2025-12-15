@@ -59,51 +59,6 @@ class OmniRealtimeManualExchangeImpl implements OmniRealtimeExchange.Manual {
         return UUID.randomUUID().toString();
     }
 
-    private class BufferOpImpl implements BufferOp {
 
-        @Override
-        public CompletionStage<BufferOp> image(BufferedImage image) {
-            final var event = new OmniRealtimeBufferAppendImageClientEvent(genEventId(), image);
-            return origin.send(event)
-                    .thenApply(unused -> this);
-        }
-
-        @Override
-        public CompletionStage<BufferOp> audio(ByteBuffer buffer) {
-            final var event = new OmniRealtimeBufferAppendAudioClientEvent(genEventId(), buffer);
-            return origin.send(event)
-                    .thenApply(unused -> this);
-        }
-
-        @Override
-        public CompletionStage<BufferOp> audio(byte[] bytes, int offset, int length) {
-            final var buffer = ByteBuffer.wrap(bytes, offset, length);
-            final var event = new OmniRealtimeBufferAppendAudioClientEvent(genEventId(), buffer);
-            return origin.send(event)
-                    .thenApply(unused -> this);
-        }
-
-        @Override
-        public CompletionStage<BufferOp> clear() {
-            final var event = new OmniRealtimeBufferClearClientEvent(genEventId());
-            return origin.send(event)
-                    .thenApply(unused -> this);
-        }
-
-        @Override
-        public CompletionStage<ResponseOp> commit() {
-            return null;
-        }
-
-    }
-
-    private class ResponseOpImpl implements ResponseOp {
-
-        @Override
-        public CompletableFuture<Void> create() {
-            return null;
-        }
-
-    }
 
 }

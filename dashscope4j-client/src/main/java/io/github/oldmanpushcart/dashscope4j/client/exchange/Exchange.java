@@ -4,14 +4,14 @@ import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 /**
  * 数据交换接口
  *
  * @param <T> 发送数据类型
- * @param <R> 接收数据类型
  */
-public interface Exchange<T, R> extends Closeable {
+public interface Exchange<T> extends Closeable {
 
     /**
      * @return UUID for the exchange
@@ -55,12 +55,11 @@ public interface Exchange<T, R> extends Closeable {
     /**
      * 连接处理器
      *
-     * @param <T> 发送数据类型
      * @param <R> 接收数据类型
      */
-    interface Handler<T, R> {
+    interface Handler<E, U, R> {
 
-        void onOpen(Exchange<T, R> exchange);
+        CompletionStage<U> onOpen(E e);
 
         CompletionStage<Void> onData(R data);
 
@@ -69,35 +68,6 @@ public interface Exchange<T, R> extends Closeable {
         CompletionStage<Void> onClosed(Throwable ex);
 
     }
-
-    /**
-     * {@link Handler} 的空实现适配器，便于选择性重写回调方法。
-     *
-     * @param <T> 发送数据类型
-     * @param <R> 接收数据类型
-     */
-    abstract class HandlerAdapter<T, R> implements Handler<T, R> {
-
-        @Override
-        public void onOpen(Exchange<T, R> exchange) {
-
-        }
-
-        @Override
-        public CompletionStage<Void> onData(R data) {
-            return CompletableFuture.completedStage(null);
-        }
-
-        @Override
-        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-            return CompletableFuture.completedStage(null);
-        }
-
-        @Override
-        public CompletionStage<Void> onClosed(Throwable ex) {
-            return CompletableFuture.completedStage(null);
-        }
-
-    }
+    
 
 }

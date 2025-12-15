@@ -27,37 +27,35 @@ public class ExchangeApiExecutor {
         this.http = http;
     }
 
-    public <T, R> CompletionStage<Exchange<T, R>> newExchange(
+    public <U, T, R> CompletionStage<U> newExchange(
             final URI endpoint,
             final Function<T, String> encoder,
             final Function<String, R> decoder,
-            final Exchange.Handler<T, R> handler
+            final Exchange.Handler<Exchange<T>, U, R> handler
     ) {
         final var uuid = UUID.randomUUID().toString();
-        final var exchangeFutureListener = new ExchangeFutureWeSsocketListener<>(uuid, endpoint, encoder, decoder, handler);
+        final var listener = new ListenerImpl<>(uuid, endpoint, encoder, decoder, handler);
         return http.newWebSocketBuilder()
                 .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
                 .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
                 .header(HTTP_HEADER_X_DASHSCOPE_SSE, DISABLE)
                 .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
                 .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
-                .buildAsync(endpoint, exchangeFutureListener)
-                .thenCompose(ws -> exchangeFutureListener.getFuture());
+                .buildAsync(endpoint, listener)
+                .thenCompose(ws -> listener.getFuture());
     }
 
-    private static class ExchangeImpl<T, R> implements Exchange<T, R> {
+    private static class ExchangeImpl<T> implements Exchange<T> {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
         private final String uuid;
         private final WebSocket ws;
         private final Function<T, String> encoder;
-        private final Function<String, R> decoder;
 
-        private ExchangeImpl(String uuid, WebSocket ws, Function<T, String> encoder, Function<String, R> decoder) {
+        private ExchangeImpl(String uuid, WebSocket ws, Function<T, String> encoder) {
             this.uuid = uuid;
             this.ws = ws;
             this.encoder = encoder;
-            this.decoder = decoder;
         }
 
         @Override
@@ -108,25 +106,25 @@ public class ExchangeApiExecutor {
      * Exchange的WebSocket监听器
      * 用于驱动Exchange处理器
      */
-    private static class ExchangeFutureWeSsocketListener<T, R> implements WebSocket.Listener {
+    private static class ListenerImpl<U, T, R> implements WebSocket.Listener {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
         private final String uuid;
         private final URI endpoint;
         private final Function<T, String> encoder;
         private final Function<String, R> decoder;
-        private final Exchange.Handler<T, R> handler;
+        private final Exchange.Handler<Exchange<T>, U, R> handler;
 
-        private final CompletableFuture<Exchange<T, R>> exchangeF = new CompletableFuture<>();
+        private final CompletableFuture<U> exchangeF = new CompletableFuture<>();
         private final StringBuilder stringBuf = new StringBuilder();
         private final AtomicBoolean closedFlag = new AtomicBoolean(false);
 
-        private ExchangeFutureWeSsocketListener(
+        private ListenerImpl(
                 final String uuid,
                 final URI endpoint,
                 final Function<T, String> encoder,
                 final Function<String, R> decoder,
-                final Exchange.Handler<T, R> handler
+                final Exchange.Handler<Exchange<T>, U, R> handler
         ) {
             this.uuid = uuid;
             this.endpoint = endpoint;
@@ -135,21 +133,24 @@ public class ExchangeApiExecutor {
             this.handler = handler;
         }
 
-        public CompletionStage<Exchange<T, R>> getFuture() {
+        public CompletionStage<U> getFuture() {
             return exchangeF;
         }
 
         @Override
         public void onOpen(WebSocket ws) {
             logger.trace("dashscope-client://exchange/{} opened. endpoint={};", uuid, endpoint);
-            try {
-                final var exchange = new ExchangeImpl<>(uuid, ws, encoder,  decoder);
-                handler.onOpen(exchange);
-                exchangeF.complete(exchange);
-                ws.request(1);
-            } catch (Throwable ex) {
-                fireClosed(ws, ex);
-            }
+            CompletableFuture.completedStage(null)
+                    .thenApply(unused-> new ExchangeImpl<>(uuid, ws, encoder))
+                    .thenCompose(handler::onOpen)
+                    .thenAccept(exchangeF::complete)
+                    .whenComplete((unused, ex) -> {
+                        if (null != ex) {
+                            fireClosed(ws, ex);
+                        } else {
+                            ws.request(1);
+                        }
+                    });
         }
 
         /**

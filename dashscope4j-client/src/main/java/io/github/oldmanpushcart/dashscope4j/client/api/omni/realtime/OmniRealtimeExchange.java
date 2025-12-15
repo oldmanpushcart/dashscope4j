@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
+public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> {
 
     interface Manual extends OmniRealtimeExchange {
 
@@ -35,15 +35,23 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent, 
 
         }
 
+        interface Handler extends Exchange.Handler<Manual, Manual, OmniRealtimeServerEvent> {
+
+        }
+
     }
 
-    interface VAD extends OmniRealtimeExchange {
+    interface Vad extends OmniRealtimeExchange {
 
-        CompletionStage<Manual.BufferOp> image(BufferedImage image);
+        CompletionStage<Void> image(BufferedImage image);
 
-        CompletionStage<Manual.BufferOp> audio(ByteBuffer buffer);
+        CompletionStage<Void> audio(ByteBuffer buffer);
 
-        CompletionStage<Manual.BufferOp> audio(byte[] bytes, int offset, int length);
+        CompletionStage<Void> audio(byte[] bytes, int offset, int length);
+
+        interface Handler extends Exchange.Handler<Vad, Vad, OmniRealtimeServerEvent> {
+
+        }
 
     }
 

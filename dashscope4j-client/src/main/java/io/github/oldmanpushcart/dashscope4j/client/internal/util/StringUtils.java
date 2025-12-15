@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.util;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class StringUtils {
@@ -49,6 +50,10 @@ public class StringUtils {
         return Arrays.stream(strings)
                 .filter(Objects::nonNull)
                 .collect(Collectors.joining());
+    }
+
+    public static String uuid() {
+        return  UUID.randomUUID().toString();
     }
 
 }
