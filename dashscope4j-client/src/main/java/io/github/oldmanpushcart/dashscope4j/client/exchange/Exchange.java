@@ -2,9 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.exchange;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 /**
  * 数据交换接口
@@ -13,10 +11,8 @@ import java.util.function.Function;
  */
 public interface Exchange<T> extends Closeable {
 
-    /**
-     * @return UUID for the exchange
-     */
-    String uuid();
+
+    String id();
 
     /**
      * @return 是否已关闭
@@ -50,24 +46,49 @@ public interface Exchange<T> extends Closeable {
      */
     CompletionStage<Void> send(ByteBuffer buffer);
 
-
-
     /**
      * 连接处理器
      *
-     * @param <R> 接收数据类型
+     * @param <R> 接收类型
      */
-    interface Handler<E, U, R> {
+    interface Handler<R> {
 
-        CompletionStage<U> onOpen(E e);
-
+        /**
+         * 处理数据接收
+         *
+         * @param data 数据
+         * @return 接收结果
+         */
         CompletionStage<Void> onData(R data);
 
+        /**
+         * 处理数据接收（二进制）
+         *
+         * @param buffer 二进制数据
+         * @return 接收结果
+         */
         CompletionStage<Void> onBinary(ByteBuffer buffer);
 
+        /**
+         * 处理数据交换关闭
+         *
+         * @param ex 导致关闭的异常
+         * @return 关闭结果
+         */
         CompletionStage<Void> onClosed(Throwable ex);
 
     }
-    
+
+    interface ConsumeHandler<T, R, E extends Exchange<T>> extends Handler<R> {
+
+        CompletionStage<Void> onOpen(E exchange);
+
+    }
+
+    interface ConnectHandler<T, R, E> extends Handler<R> {
+
+        CompletionStage<E> onConnect(Exchange<T> exchange);
+
+    }
 
 }

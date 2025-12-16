@@ -18,59 +18,46 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class ManualOmniRealtimeExchangeHandler extends OmniRealtimeExchangeHandler<OmniRealtimeExchange.Manual> {
-
-    private final OmniRealtimeExchange.Manual.Handler handler;
+public class ManualOmniRealtimeConnectHandler extends OmniRealtimeConnectHandler<OmniRealtimeExchange.Manual> {
 
     private final FutureGuard<Void> bufferOpClearGuard = new FutureGuard<>();
     private final FutureGuard<Void> bufferOpCommitGuard = new FutureGuard<>();
     private final FutureGuard<Void> responseOpCreateGuard = new FutureGuard<>();
     private final FutureGuard<Void> responseOpCancelGuard = new FutureGuard<>();
 
-    public ManualOmniRealtimeExchangeHandler(Parameters parameters, OmniRealtimeExchange.Manual.Handler handler) {
-        super(parameters);
-        this.handler = handler;
+    public ManualOmniRealtimeConnectHandler(Parameters parameters, OmniRealtimeExchange.Manual.Handler handler) {
+        super(parameters, handler);
     }
 
     @Override
-    protected CompletionStage<OmniRealtimeExchange.Manual> make(Exchange<OmniRealtimeClientEvent> exchange) {
+    protected CompletionStage<OmniRealtimeExchange.Manual> processOnConnect(Exchange<OmniRealtimeClientEvent> exchange) {
         return CompletableFuture.completedStage(new ExchangeImpl(exchange));
     }
 
     @Override
-    public CompletionStage<OmniRealtimeExchange.Manual> onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
-        return CompletableFuture.completedStage(exchange)
-                .thenCompose(super::onOpen)
-                .thenCompose(handler::onOpen);
-    }
-
-    @Override
-    public CompletionStage<Void> onData(OmniRealtimeServerEvent event) {
-
+    protected CompletionStage<Void> processOnData(OmniRealtimeServerEvent event) {
         if (event instanceof OmniRealtimeBufferClearedServerEvent) {
             bufferOpClearGuard.completed(null);
         } else if (event instanceof OmniRealtimeBufferCommittedServerEvent) {
             bufferOpCommitGuard.completed(null);
         } else if (event instanceof OmniRealtimeResponseDoneServerEvent responseDoneEvent) {
-
             switch (responseDoneEvent.response().status()) {
                 case CANCELLED -> responseOpCancelGuard.completed(null);
                 case COMPLETED -> responseOpCreateGuard.completed(null);
                 case FAILED -> responseOpCreateGuard.completeExceptionally(new RuntimeException("Response failed"));
             }
         }
-
-        return handler.onData(event);
+        return CompletableFuture.completedStage(null);
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        return handler.onBinary(buffer);
+    protected CompletionStage<Void> processOnBinary(ByteBuffer buffer) {
+        return CompletableFuture.completedStage(null);
     }
 
     @Override
-    public CompletionStage<Void> onClosed(Throwable ex) {
-        return handler.onClosed(ex);
+    protected CompletionStage<Void> processOnClose(Throwable ex) {
+        return CompletableFuture.completedStage(null);
     }
 
     private class ExchangeImpl implements OmniRealtimeExchange.Manual {
@@ -83,12 +70,12 @@ public class ManualOmniRealtimeExchangeHandler extends OmniRealtimeExchangeHandl
 
         @Override
         public CompletionStage<BufferOp> newConversation() {
-            return null;
+            return CompletableFuture.completedStage(new BufferOpImpl());
         }
 
         @Override
-        public String uuid() {
-            return origin.uuid();
+        public String id() {
+            return origin.id();
         }
 
         @Override

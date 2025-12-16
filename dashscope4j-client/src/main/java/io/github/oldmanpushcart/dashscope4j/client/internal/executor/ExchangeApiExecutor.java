@@ -27,11 +27,11 @@ public class ExchangeApiExecutor {
         this.http = http;
     }
 
-    public <U, T, R> CompletionStage<U> newExchange(
+    public <T, R, E> CompletionStage<E> newExchange(
             final URI endpoint,
             final Function<T, String> encoder,
             final Function<String, R> decoder,
-            final Exchange.Handler<Exchange<T>, U, R> handler
+            final Exchange.ConnectHandler<T, R, E> handler
     ) {
         final var uuid = UUID.randomUUID().toString();
         final var listener = new ListenerImpl<>(uuid, endpoint, encoder, decoder, handler);
@@ -59,7 +59,7 @@ public class ExchangeApiExecutor {
         }
 
         @Override
-        public String uuid() {
+        public String id() {
             return uuid;
         }
 
@@ -106,16 +106,16 @@ public class ExchangeApiExecutor {
      * Exchange的WebSocket监听器
      * 用于驱动Exchange处理器
      */
-    private static class ListenerImpl<U, T, R> implements WebSocket.Listener {
+    private static class ListenerImpl<T, R, E> implements WebSocket.Listener {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
         private final String uuid;
         private final URI endpoint;
         private final Function<T, String> encoder;
         private final Function<String, R> decoder;
-        private final Exchange.Handler<Exchange<T>, U, R> handler;
+        private final Exchange.ConnectHandler<T, R, E> handler;
 
-        private final CompletableFuture<U> exchangeF = new CompletableFuture<>();
+        private final CompletableFuture<E> exchangeF = new CompletableFuture<>();
         private final StringBuilder stringBuf = new StringBuilder();
         private final AtomicBoolean closedFlag = new AtomicBoolean(false);
 
@@ -124,7 +124,7 @@ public class ExchangeApiExecutor {
                 final URI endpoint,
                 final Function<T, String> encoder,
                 final Function<String, R> decoder,
-                final Exchange.Handler<Exchange<T>, U, R> handler
+                final Exchange.ConnectHandler<T, R, E> handler
         ) {
             this.uuid = uuid;
             this.endpoint = endpoint;
@@ -133,7 +133,7 @@ public class ExchangeApiExecutor {
             this.handler = handler;
         }
 
-        public CompletionStage<U> getFuture() {
+        public CompletionStage<E> getFuture() {
             return exchangeF;
         }
 
@@ -142,7 +142,7 @@ public class ExchangeApiExecutor {
             logger.trace("dashscope-client://exchange/{} opened. endpoint={};", uuid, endpoint);
             CompletableFuture.completedStage(null)
                     .thenApply(unused-> new ExchangeImpl<>(uuid, ws, encoder))
-                    .thenCompose(handler::onOpen)
+                    .thenCompose(handler::onConnect)
                     .thenAccept(exchangeF::complete)
                     .whenComplete((unused, ex) -> {
                         if (null != ex) {

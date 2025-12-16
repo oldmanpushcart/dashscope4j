@@ -15,26 +15,39 @@ import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils.uuid;
 
-public abstract class OmniRealtimeExchangeHandler<U>
-        implements Exchange.Handler<Exchange<OmniRealtimeClientEvent>, U, OmniRealtimeServerEvent> {
+public abstract class OmniRealtimeConnectHandler<E extends Exchange<OmniRealtimeClientEvent>>
+        implements Exchange.ConnectHandler<OmniRealtimeClientEvent, OmniRealtimeServerEvent, E> {
 
     private final Parameters parameters;
+    private final Exchange.ConsumeHandler<OmniRealtimeClientEvent, OmniRealtimeServerEvent, E> consumer;
     private final CompletableFuture<Void> sessionCreatedFuture = new CompletableFuture<>();
     private final CompletableFuture<Void> sessionUpdatedFuture = new CompletableFuture<>();
 
-    protected OmniRealtimeExchangeHandler(Parameters parameters) {
+    protected OmniRealtimeConnectHandler(Parameters parameters, Exchange.ConsumeHandler<OmniRealtimeClientEvent, OmniRealtimeServerEvent, E> consumer) {
         this.parameters = parameters;
+        this.consumer = consumer;
     }
 
-    abstract protected CompletionStage<U> make(Exchange<OmniRealtimeClientEvent> exchange);
+    abstract protected CompletionStage<E> processOnConnect(Exchange<OmniRealtimeClientEvent> exchange);
+
+    abstract protected CompletionStage<Void> processOnData(OmniRealtimeServerEvent event);
+
+    abstract protected CompletionStage<Void> processOnBinary(ByteBuffer buffer);
+
+    abstract protected CompletionStage<Void> processOnClose(Throwable ex);
 
     @Override
-    public CompletionStage<U> onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+    public CompletionStage<E> onConnect(Exchange<OmniRealtimeClientEvent> exchange) {
         return CompletableFuture.<Void>completedStage(null)
                 .thenCompose(unused -> sessionCreatedFuture)
                 .thenCompose(unused -> sessionUpdate(exchange))
                 .thenCompose(unused -> sessionUpdatedFuture)
-                .thenCompose(unused -> make(exchange));
+                .thenCompose(unused -> processOnConnect(exchange))
+                .whenComplete((e, ex) -> {
+                    if (null == ex) {
+                        consumer.onOpen(e);
+                    }
+                });
     }
 
     private CompletionStage<Void> sessionUpdate(Exchange<OmniRealtimeClientEvent> exchange) {
@@ -54,17 +67,23 @@ public abstract class OmniRealtimeExchangeHandler<U>
             sessionUpdatedFuture.complete(null);
         }
 
-        return CompletableFuture.completedStage(null);
+        return CompletableFuture.<Void>completedStage(null)
+                .thenCompose(unused -> processOnData(event))
+                .thenCompose(unused -> consumer.onData(event));
     }
 
     @Override
     public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        return CompletableFuture.completedStage(null);
+        return CompletableFuture.<Void>completedStage(null)
+                .thenCompose(unused -> processOnBinary(buffer))
+                .thenCompose(unused -> consumer.onBinary(buffer));
     }
 
     @Override
     public CompletionStage<Void> onClosed(Throwable ex) {
-        return CompletableFuture.completedStage(null);
+        return CompletableFuture.<Void>completedStage(null)
+                .thenCompose(unused -> processOnClose(ex))
+                .thenCompose(unused -> consumer.onClosed(ex));
     }
 
 }

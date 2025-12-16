@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtim
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeBufferAppendAudioClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeBufferAppendImageClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 
@@ -13,25 +14,30 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class VadOmniRealtimeExchangeHandler extends OmniRealtimeExchangeHandler<OmniRealtimeExchange.Vad> {
+public class VadOmniRealtimeConnectHandler extends OmniRealtimeConnectHandler<OmniRealtimeExchange.Vad> {
 
-    private final OmniRealtimeExchange.Vad.Handler handler;
-
-    protected VadOmniRealtimeExchangeHandler(Parameters parameters, OmniRealtimeExchange.Vad.Handler handler) {
-        super(parameters);
-        this.handler = handler;
+    protected VadOmniRealtimeConnectHandler(Parameters parameters, OmniRealtimeExchange.Vad.Handler handler) {
+        super(parameters, handler);
     }
 
     @Override
-    protected CompletionStage<OmniRealtimeExchange.Vad> make(Exchange<OmniRealtimeClientEvent> exchange) {
+    protected CompletionStage<OmniRealtimeExchange.Vad> processOnConnect(Exchange<OmniRealtimeClientEvent> exchange) {
         return CompletableFuture.completedStage(new VadImpl(exchange));
     }
 
     @Override
-    public CompletionStage<OmniRealtimeExchange.Vad> onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
-        return CompletableFuture.completedStage(exchange)
-                .thenCompose(super::onOpen)
-                .thenCompose(handler::onOpen);
+    protected CompletionStage<Void> processOnData(OmniRealtimeServerEvent event) {
+        return CompletableFuture.completedStage(null);
+    }
+
+    @Override
+    protected CompletionStage<Void> processOnBinary(ByteBuffer buffer) {
+        return CompletableFuture.completedStage(null);
+    }
+
+    @Override
+    protected CompletionStage<Void> processOnClose(Throwable ex) {
+        return CompletableFuture.completedStage(null);
     }
 
     private static class VadImpl implements OmniRealtimeExchange.Vad {
@@ -61,8 +67,8 @@ public class VadOmniRealtimeExchangeHandler extends OmniRealtimeExchangeHandler<
         }
 
         @Override
-        public String uuid() {
-            return origin.uuid();
+        public String id() {
+            return origin.id();
         }
 
         @Override
