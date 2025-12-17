@@ -35,10 +35,6 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> 
 
         }
 
-        interface Handler extends Exchange.ConsumeHandler<OmniRealtimeClientEvent, OmniRealtimeServerEvent, ManualVad> {
-
-        }
-
     }
 
     interface ServerVad extends OmniRealtimeExchange {
@@ -49,9 +45,9 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> 
 
         CompletionStage<Void> audio(byte[] bytes, int offset, int length);
 
-        interface Handler extends Exchange.ConsumeHandler<OmniRealtimeClientEvent, OmniRealtimeServerEvent, ServerVad> {
+    }
 
-        }
+    interface Handler extends Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
     }
 

@@ -51,7 +51,14 @@ public interface Exchange<T> extends Closeable {
      *
      * @param <R> 接收类型
      */
-    interface Handler<R> {
+    interface Handler<T, R> {
+
+        /**
+         * 处理连接建立
+         *
+         * @param exchange 数据交换器
+         */
+        void onOpen(Exchange<T> exchange);
 
         /**
          * 处理数据接收
@@ -73,25 +80,8 @@ public interface Exchange<T> extends Closeable {
          * 处理数据交换关闭
          *
          * @param ex 导致关闭的异常
-         * @return 关闭结果
          */
-        CompletionStage<Void> onClosed(Throwable ex);
-
-    }
-
-    interface ConsumeHandler<T, R, E extends Exchange<T>> extends Handler<R> {
-
-        CompletionStage<Void> onOpen(E exchange);
-
-    }
-
-    interface ConnectHandler<T, R, E> extends Handler<R> {
-
-        CompletionStage<E> onConnect(Exchange<T> exchange);
-
-        default long skip() {
-            return 0L;
-        }
+        void onClosed(Throwable ex);
 
     }
 
