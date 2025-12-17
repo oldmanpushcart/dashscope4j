@@ -11,7 +11,7 @@ import java.util.concurrent.CompletionStage;
 
 public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> {
 
-    interface Manual extends OmniRealtimeExchange {
+    interface ManualVad extends OmniRealtimeExchange {
 
         CompletionStage<BufferOp> newConversation();
 
@@ -35,13 +35,13 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> 
 
         }
 
-        interface Handler extends Exchange.ConsumeHandler<OmniRealtimeClientEvent, OmniRealtimeServerEvent, Manual> {
+        interface Handler extends Exchange.ConsumeHandler<OmniRealtimeClientEvent, OmniRealtimeServerEvent, ManualVad> {
 
         }
 
     }
 
-    interface Vad extends OmniRealtimeExchange {
+    interface ServerVad extends OmniRealtimeExchange {
 
         CompletionStage<Void> image(BufferedImage image);
 
@@ -49,7 +49,7 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> 
 
         CompletionStage<Void> audio(byte[] bytes, int offset, int length);
 
-        interface Handler extends Exchange.ConsumeHandler<OmniRealtimeClientEvent, OmniRealtimeServerEvent, Vad> {
+        interface Handler extends Exchange.ConsumeHandler<OmniRealtimeClientEvent, OmniRealtimeServerEvent, ServerVad> {
 
         }
 

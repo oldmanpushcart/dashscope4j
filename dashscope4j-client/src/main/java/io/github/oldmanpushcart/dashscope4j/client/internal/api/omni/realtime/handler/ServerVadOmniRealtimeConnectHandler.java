@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.realtime.h
 
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeBufferAppendAudioClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeBufferAppendImageClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
@@ -11,18 +12,37 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class VadOmniRealtimeConnectHandler extends OmniRealtimeConnectHandler<OmniRealtimeExchange.Vad> {
+public class ServerVadOmniRealtimeConnectHandler extends OmniRealtimeConnectHandler<OmniRealtimeExchange.ServerVad> {
 
-    protected VadOmniRealtimeConnectHandler(Parameters parameters, OmniRealtimeExchange.Vad.Handler handler) {
-        super(parameters, handler);
+    public ServerVadOmniRealtimeConnectHandler(Parameters parameters, OmniRealtimeExchange.ServerVad.Handler handler) {
+        super(adjustParameters(parameters), handler);
+    }
+
+    private static Parameters adjustParameters(Parameters parameters) {
+
+        final var turnDetection = Optional.ofNullable(parameters.get(OmniRealtimeParameterKeys.TURN_DETECTION))
+                .map(v-> new OmniRealtimeParameterKeys.TurnDetection(
+                        OmniRealtimeParameterKeys.TurnDetection.Type.SERVER_VAD,
+                        v.threshold(),
+                        v.silence()
+                ))
+                .orElse(new OmniRealtimeParameterKeys.TurnDetection(
+                        OmniRealtimeParameterKeys.TurnDetection.Type.SERVER_VAD,
+                        null,
+                        null
+                ));
+        parameters.append(OmniRealtimeParameterKeys.TURN_DETECTION, turnDetection);
+
+        return parameters;
     }
 
     @Override
-    protected CompletionStage<OmniRealtimeExchange.Vad> processOnConnect(Exchange<OmniRealtimeClientEvent> exchange) {
-        return CompletableFuture.completedStage(new VadImpl(exchange));
+    protected CompletionStage<OmniRealtimeExchange.ServerVad> processOnConnect(Exchange<OmniRealtimeClientEvent> exchange) {
+        return CompletableFuture.completedStage(new ServerVadImpl(exchange));
     }
 
     @Override
@@ -40,11 +60,11 @@ public class VadOmniRealtimeConnectHandler extends OmniRealtimeConnectHandler<Om
         return CompletableFuture.completedStage(null);
     }
 
-    private static class VadImpl implements OmniRealtimeExchange.Vad {
+    private static class ServerVadImpl implements OmniRealtimeExchange.ServerVad {
 
         private final Exchange<OmniRealtimeClientEvent> origin;
 
-        private VadImpl(Exchange<OmniRealtimeClientEvent> origin) {
+        private ServerVadImpl(Exchange<OmniRealtimeClientEvent> origin) {
             this.origin = origin;
         }
 

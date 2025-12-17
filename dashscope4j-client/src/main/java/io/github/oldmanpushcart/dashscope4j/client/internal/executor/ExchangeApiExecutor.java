@@ -142,13 +142,15 @@ public class ExchangeApiExecutor {
             logger.trace("dashscope-client://exchange/{} opened. endpoint={};", uuid, endpoint);
             CompletableFuture.completedStage(null)
                     .thenApply(unused-> new ExchangeImpl<>(uuid, ws, encoder))
-                    .thenCompose(handler::onConnect)
+                    .thenCompose(exchange -> {
+                        final var skipped = handler.skip();
+                        ws.request(skipped);
+                        return handler.onConnect(exchange);
+                    })
                     .thenAccept(exchangeF::complete)
                     .whenComplete((unused, ex) -> {
                         if (null != ex) {
                             fireClosed(ws, ex);
-                        } else {
-                            ws.request(1);
                         }
                     });
         }
@@ -184,6 +186,8 @@ public class ExchangeApiExecutor {
             }
 
             logger.trace("dashscope-client://exchange/{} closed.", uuid, ex);
+            exchangeF.completeExceptionally(ex);
+
             return CompletableFuture.completedStage(null)
                     .thenCompose(unused -> handler.onClosed(ex))
                     .exceptionally(closeEx -> {

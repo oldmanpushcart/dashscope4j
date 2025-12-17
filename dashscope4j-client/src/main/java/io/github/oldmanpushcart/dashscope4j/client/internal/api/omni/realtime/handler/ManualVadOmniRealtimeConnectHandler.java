@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.realtime.h
 
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeBufferClearedServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeBufferCommittedServerEvent;
@@ -14,24 +15,43 @@ import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class ManualOmniRealtimeConnectHandler extends OmniRealtimeConnectHandler<OmniRealtimeExchange.Manual> {
+public class ManualVadOmniRealtimeConnectHandler extends OmniRealtimeConnectHandler<OmniRealtimeExchange.ManualVad> {
 
     private final FutureGuard<Void> bufferOpClearGuard = new FutureGuard<>();
     private final FutureGuard<Void> bufferOpCommitGuard = new FutureGuard<>();
     private final FutureGuard<Void> responseOpCreateGuard = new FutureGuard<>();
     private final FutureGuard<Void> responseOpCancelGuard = new FutureGuard<>();
 
-    public ManualOmniRealtimeConnectHandler(Parameters parameters, OmniRealtimeExchange.Manual.Handler handler) {
-        super(parameters, handler);
+    public ManualVadOmniRealtimeConnectHandler(Parameters parameters, OmniRealtimeExchange.ManualVad.Handler handler) {
+        super(adjustParameters(parameters), handler);
+    }
+
+    private static Parameters adjustParameters(Parameters parameters) {
+
+        final var turnDetection = Optional.ofNullable(parameters.get(OmniRealtimeParameterKeys.TURN_DETECTION))
+                .map(v-> new OmniRealtimeParameterKeys.TurnDetection(
+                        OmniRealtimeParameterKeys.TurnDetection.Type.MANUAL_VAD,
+                        v.threshold(),
+                        v.silence()
+                ))
+                .orElse(new OmniRealtimeParameterKeys.TurnDetection(
+                        OmniRealtimeParameterKeys.TurnDetection.Type.MANUAL_VAD,
+                        null,
+                        null
+                ));
+        parameters.append(OmniRealtimeParameterKeys.TURN_DETECTION, turnDetection);
+
+        return parameters;
     }
 
     @Override
-    protected CompletionStage<OmniRealtimeExchange.Manual> processOnConnect(Exchange<OmniRealtimeClientEvent> exchange) {
-        return CompletableFuture.completedStage(new ExchangeImpl(exchange));
+    protected CompletionStage<OmniRealtimeExchange.ManualVad> processOnConnect(Exchange<OmniRealtimeClientEvent> exchange) {
+        return CompletableFuture.completedStage(new ManualVadImpl(exchange));
     }
 
     @Override
@@ -60,11 +80,11 @@ public class ManualOmniRealtimeConnectHandler extends OmniRealtimeConnectHandler
         return CompletableFuture.completedStage(null);
     }
 
-    private class ExchangeImpl implements OmniRealtimeExchange.Manual {
+    private class ManualVadImpl implements OmniRealtimeExchange.ManualVad {
 
         private final Exchange<OmniRealtimeClientEvent> origin;
 
-        private ExchangeImpl(Exchange<OmniRealtimeClientEvent> origin) {
+        private ManualVadImpl(Exchange<OmniRealtimeClientEvent> origin) {
             this.origin = origin;
         }
 
@@ -103,24 +123,24 @@ public class ManualOmniRealtimeConnectHandler extends OmniRealtimeConnectHandler
             return origin.send(buffer);
         }
 
-        private class BufferOpImpl implements OmniRealtimeExchange.Manual.BufferOp {
+        private class BufferOpImpl implements ManualVad.BufferOp {
 
             @Override
-            public CompletionStage<OmniRealtimeExchange.Manual.BufferOp> image(BufferedImage image) {
+            public CompletionStage<ManualVad.BufferOp> image(BufferedImage image) {
                 final var event = new OmniRealtimeBufferAppendImageClientEvent(StringUtils.uuid(), image);
                 return origin.send(event)
                         .thenApply(unused -> this);
             }
 
             @Override
-            public CompletionStage<OmniRealtimeExchange.Manual.BufferOp> audio(ByteBuffer buffer) {
+            public CompletionStage<ManualVad.BufferOp> audio(ByteBuffer buffer) {
                 final var event = new OmniRealtimeBufferAppendAudioClientEvent(StringUtils.uuid(), buffer);
                 return origin.send(event)
                         .thenApply(unused -> this);
             }
 
             @Override
-            public CompletionStage<OmniRealtimeExchange.Manual.BufferOp> audio(byte[] bytes, int offset, int length) {
+            public CompletionStage<ManualVad.BufferOp> audio(byte[] bytes, int offset, int length) {
                 final var buffer = ByteBuffer.wrap(bytes, offset, length);
                 final var event = new OmniRealtimeBufferAppendAudioClientEvent(StringUtils.uuid(), buffer);
                 return origin.send(event)
@@ -128,7 +148,7 @@ public class ManualOmniRealtimeConnectHandler extends OmniRealtimeConnectHandler
             }
 
             @Override
-            public CompletionStage<OmniRealtimeExchange.Manual.BufferOp> clear() {
+            public CompletionStage<ManualVad.BufferOp> clear() {
                 final var future = bufferOpClearGuard.acquire();
                 return CompletableFuture.<Void>completedStage(null)
                         .thenCompose(unused -> origin.send(new OmniRealtimeBufferClearClientEvent(StringUtils.uuid())))
@@ -139,7 +159,7 @@ public class ManualOmniRealtimeConnectHandler extends OmniRealtimeConnectHandler
             }
 
             @Override
-            public CompletionStage<OmniRealtimeExchange.Manual.ResponseOp> commit() {
+            public CompletionStage<ManualVad.ResponseOp> commit() {
                 final var future = bufferOpCommitGuard.acquire();
                 return CompletableFuture.<Void>completedStage(null)
                         .thenCompose(unused -> origin.send(new OmniRealtimeBufferCommitClientEvent(StringUtils.uuid())))
@@ -151,7 +171,7 @@ public class ManualOmniRealtimeConnectHandler extends OmniRealtimeConnectHandler
 
         }
 
-        private class ResponseOpImpl implements OmniRealtimeExchange.Manual.ResponseOp {
+        private class ResponseOpImpl implements ManualVad.ResponseOp {
 
             private CompletionStage<Void> cancel() {
                 final var cancelF = responseOpCancelGuard.acquire();

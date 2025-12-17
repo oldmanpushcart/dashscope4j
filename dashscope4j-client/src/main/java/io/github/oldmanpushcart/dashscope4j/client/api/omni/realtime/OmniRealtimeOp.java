@@ -8,9 +8,9 @@ import java.util.concurrent.CompletionStage;
 
 public interface OmniRealtimeOp {
 
-    CompletionStage<OmniRealtimeExchange.Manual> newManual(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.Manual.Handler handler);
+    CompletionStage<OmniRealtimeExchange.ManualVad> newManual(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.ManualVad.Handler handler);
 
-    CompletionStage<OmniRealtimeExchange.Vad> newVad(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.Vad.Handler handler);
+    CompletionStage<OmniRealtimeExchange.ServerVad> newVad(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.ServerVad.Handler handler);
 
     static OpBuilder newOpBuilder() {
         return new OmniRealtimeOpImpl.OpBuilderImpl();

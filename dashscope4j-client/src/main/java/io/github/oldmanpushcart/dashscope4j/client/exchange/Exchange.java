@@ -89,6 +89,10 @@ public interface Exchange<T> extends Closeable {
 
         CompletionStage<E> onConnect(Exchange<T> exchange);
 
+        default long skip() {
+            return 0L;
+        }
+
     }
 
 }

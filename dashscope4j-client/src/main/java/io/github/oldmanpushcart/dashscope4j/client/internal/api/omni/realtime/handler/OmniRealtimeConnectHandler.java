@@ -37,17 +37,23 @@ public abstract class OmniRealtimeConnectHandler<E extends Exchange<OmniRealtime
     abstract protected CompletionStage<Void> processOnClose(Throwable ex);
 
     @Override
+    public long skip() {
+        return 1L;
+    }
+
+    @Override
     public CompletionStage<E> onConnect(Exchange<OmniRealtimeClientEvent> exchange) {
         return CompletableFuture.<Void>completedStage(null)
                 .thenCompose(unused -> sessionCreatedFuture)
                 .thenCompose(unused -> sessionUpdate(exchange))
                 .thenCompose(unused -> sessionUpdatedFuture)
                 .thenCompose(unused -> processOnConnect(exchange))
-                .whenComplete((e, ex) -> {
-                    if (null == ex) {
-                        consumer.onOpen(e);
-                    }
-                });
+                .thenCompose(this::processOnOpen);
+    }
+
+    private CompletionStage<E> processOnOpen(E exchange) {
+        return consumer.onOpen(exchange)
+                .thenApply(unused -> exchange);
     }
 
     private CompletionStage<Void> sessionUpdate(Exchange<OmniRealtimeClientEvent> exchange) {
