@@ -13,7 +13,7 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> 
 
     interface ManualVad extends OmniRealtimeExchange {
 
-        CompletionStage<BufferOp> newConversation();
+        CompletionStage<BufferOp> newBuffer();
 
         interface BufferOp {
 

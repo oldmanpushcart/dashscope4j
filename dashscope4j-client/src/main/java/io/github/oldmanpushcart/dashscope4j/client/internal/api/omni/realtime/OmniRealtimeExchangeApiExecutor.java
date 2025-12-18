@@ -2,25 +2,24 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.realtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeErrorException;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeErrorServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeSessionCreatedServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeSessionUpdatedServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApiExecutor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.FutureSlot;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 public class OmniRealtimeExchangeApiExecutor {
@@ -35,31 +34,28 @@ public class OmniRealtimeExchangeApiExecutor {
         this.decoder = s -> JacksonJsonUtils.toObject(mapper, s, OmniRealtimeServerEvent.class);
     }
 
+    private static final String KEY_SESSION_CREATED = "session.created";
+    private static final String KEY_SESSION_UPDATED = "session.updated";
+
     public CompletionStage<Exchange<OmniRealtimeClientEvent>> newExchange(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.Handler handler) {
-        final var createdF = new CompletableFuture<>();
-        final var futureMap = new ConcurrentHashMap<Class<?>, CompletableFuture<?>>();
+        final var futureSlot = new FutureSlot<String>();
+        final var createdF = futureSlot.acquire(KEY_SESSION_CREATED);
         return exchangeApi
                 .newExchange(model.endpoint(), encoder, decoder, new OmniRealtimeExchange.Handler() {
 
                     @Override
                     public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
-                        futureMap.put(OmniRealtimeSessionCreatedServerEvent.class, createdF);
                         handler.onOpen(exchange);
                     }
 
                     @Override
                     public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
 
-                        if (data instanceof OmniRealtimeSessionCreatedServerEvent) {
-                            Optional.ofNullable(futureMap.remove(OmniRealtimeSessionCreatedServerEvent.class))
-                                    .orElseThrow(() -> new IllegalStateException(""))
-                                    .complete(null);
-                        }
+                        futureSlot.complete(data.type());
 
-                        if (data instanceof OmniRealtimeSessionUpdatedServerEvent) {
-                            Optional.ofNullable(futureMap.remove(OmniRealtimeSessionUpdatedServerEvent.class))
-                                    .orElseThrow(() -> new IllegalStateException(""))
-                                    .complete(null);
+                        if (data instanceof OmniRealtimeErrorServerEvent errorEvent) {
+                            final var error = errorEvent.error();
+                            throw new OmniRealtimeErrorException(error.code(), error.message());
                         }
 
                         return handler.onData(data);
@@ -72,8 +68,7 @@ public class OmniRealtimeExchangeApiExecutor {
 
                     @Override
                     public void onClosed(Throwable ex) {
-                        futureMap.forEach((clazz, future) -> future.completeExceptionally(ex));
-                        futureMap.clear();
+                        futureSlot.drain().forEach((k, f) -> f.completeExceptionally(ex));
                         handler.onClosed(ex);
                     }
 
@@ -83,22 +78,18 @@ public class OmniRealtimeExchangeApiExecutor {
                  * 等带会话创建
                  */
                 .thenCompose(e -> createdF.thenApply(u -> e))
+                .whenComplete((v, ex) -> futureSlot.release(KEY_SESSION_CREATED, createdF))
 
                 /*
                  * 发起并等待会话更新
                  */
                 .thenCompose(exchange -> {
-
-                    final var updatedF = new CompletableFuture<>()
-                            .whenComplete((u, ex) -> futureMap.remove(OmniRealtimeSessionUpdatedServerEvent.class));
-                    if (null != futureMap.putIfAbsent(OmniRealtimeSessionUpdatedServerEvent.class, updatedF)) {
-                        throw new IllegalStateException();
-                    }
-
+                    final var updatedF = futureSlot.acquire(KEY_SESSION_UPDATED);
                     final var session = new OmniRealtimeSession(parameters);
                     final var event = new OmniRealtimeSessionUpdateClientEvent(StringUtils.uuid(), session);
                     return exchange.send(event)
                             .thenCompose(unused -> updatedF)
+                            .whenComplete((v, ex) -> futureSlot.release(KEY_SESSION_UPDATED, updatedF))
                             .thenApply(u -> exchange);
                 })
                 ;

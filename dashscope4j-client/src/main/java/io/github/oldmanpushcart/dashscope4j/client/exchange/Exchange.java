@@ -85,4 +85,49 @@ public interface Exchange<T> extends Closeable {
 
     }
 
+
+    abstract class Proxy<T> implements Exchange<T> {
+
+        private final Exchange<T> origin;
+
+        protected Proxy(Exchange<T> origin) {
+            this.origin = origin;
+        }
+
+        protected Exchange<T> origin() {
+            return origin;
+        }
+
+        @Override
+        public String id() {
+            return origin.id();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return origin.isClosed();
+        }
+
+        @Override
+        public CompletionStage<Void> closing() {
+            return origin.closing();
+        }
+
+        @Override
+        public void close() {
+            origin.close();
+        }
+
+        @Override
+        public CompletionStage<Void> send(T data) {
+            return origin.send(data);
+        }
+
+        @Override
+        public CompletionStage<Void> send(ByteBuffer buffer) {
+            return origin.send(buffer);
+        }
+
+    }
+
 }

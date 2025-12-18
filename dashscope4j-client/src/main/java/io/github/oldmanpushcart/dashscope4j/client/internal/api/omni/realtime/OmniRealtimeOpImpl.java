@@ -6,11 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeOp;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.internal.BaseOpBuilderImpl;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.realtime.handler.ManualVadOmniRealtimeConnectHandler;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.realtime.handler.ServerVadOmniRealtimeConnectHandler;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApiExecutor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 
 import java.net.http.HttpClient;
@@ -18,32 +14,22 @@ import java.util.concurrent.CompletionStage;
 
 public class OmniRealtimeOpImpl implements OmniRealtimeOp {
 
-    private final ExchangeApiExecutor executor;
-    private final ObjectMapper mapper;
+    private final OmniRealtimeExchangeApiExecutorForManualVad manualApi;
+    private final OmniRealtimeExchangeApiExecutorForServerVad serverApi;
 
     private OmniRealtimeOpImpl(String ak, HttpClient http, ObjectMapper mapper) {
-        this.executor = new ExchangeApiExecutor(ak, http);
-        this.mapper = mapper;
+        this.manualApi = new OmniRealtimeExchangeApiExecutorForManualVad(ak, http, mapper);
+        this.serverApi = new OmniRealtimeExchangeApiExecutorForServerVad(ak, http, mapper);
     }
 
     @Override
     public CompletionStage<OmniRealtimeExchange.ManualVad> newManual(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.ManualVad.Handler handler) {
-        return executor.newExchange(
-                model.endpoint(),
-                e->JacksonJsonUtils.toJson(mapper, e),
-                s->JacksonJsonUtils.toObject(mapper, s, OmniRealtimeServerEvent.class),
-                new ManualVadOmniRealtimeConnectHandler(parameters, handler)
-        );
+        return manualApi.newExchange(parameters, model, handler);
     }
 
     @Override
     public CompletionStage<OmniRealtimeExchange.ServerVad> newVad(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.ServerVad.Handler handler) {
-        return executor.newExchange(
-                model.endpoint(),
-                e->JacksonJsonUtils.toJson(mapper, e),
-                s->JacksonJsonUtils.toObject(mapper, s, OmniRealtimeServerEvent.class),
-                new ServerVadOmniRealtimeConnectHandler(parameters, handler)
-        );
+        return serverApi.newExchange(parameters, model, handler);
     }
 
 

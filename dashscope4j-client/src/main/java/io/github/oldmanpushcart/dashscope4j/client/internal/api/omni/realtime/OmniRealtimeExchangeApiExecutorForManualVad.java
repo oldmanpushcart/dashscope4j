@@ -5,19 +5,19 @@ import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.*;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.*;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseDoneServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.FutureSlot;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.awt.image.BufferedImage;
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
-import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class OmniRealtimeExchangeApiExecutorForManualVad {
 
@@ -27,8 +27,14 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
         exchangeApi = new OmniRealtimeExchangeApiExecutor(ak, http, mapper);
     }
 
+    private static final String KEY_BUFFER_CLEARED = "input_audio_buffer.cleared";
+    private static final String KEY_BUFFER_COMMITTED = "input_audio_buffer.committed";
+    private static final String KEY_RESPONSE_CREATED = "response.created";
+    private static final String KEY_RESPONSE_DONE = "response.done";
+
+
     public CompletionStage<OmniRealtimeExchange.ManualVad> newExchange(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.Handler handler) {
-        final var futureMap = new ConcurrentHashMap<Class<?>, CompletableFuture<?>>();
+        final var futureSlot = new FutureSlot<String>();
         return exchangeApi
                 .newExchange(parameters, model, new OmniRealtimeExchange.Handler() {
 
@@ -40,24 +46,16 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
                     @Override
                     public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
 
-                        if (data instanceof OmniRealtimeBufferClearedServerEvent) {
-                            Optional.ofNullable(futureMap.remove(OmniRealtimeBufferClearedServerEvent.class))
-                                    .orElseThrow(() -> new IllegalStateException(""))
-                                    .complete(null);
+                        if(data instanceof OmniRealtimeResponseDoneServerEvent responseDoneEvent) {
+                            final var doneF = futureSlot.get(KEY_RESPONSE_DONE);
+                            if(null != doneF
+                                    && !doneF.isDone()
+                                    && responseDoneEvent.response().status() == OmniRealtimeServerEvent.Status.CANCELLED) {
+                                doneF.cancel(true);
+                            }
                         }
 
-                        if (data instanceof OmniRealtimeBufferCommittedServerEvent) {
-                            Optional.ofNullable(futureMap.remove(OmniRealtimeBufferCommittedServerEvent.class))
-                                    .orElseThrow(() -> new IllegalStateException(""))
-                                    .complete(null);
-                        }
-
-                        if (data instanceof OmniRealtimeResponseCreatedServerEvent) {
-                            Optional.ofNullable(futureMap.remove(OmniRealtimeResponseCreatedServerEvent.class))
-                                    .orElseThrow(() -> new IllegalStateException(""))
-                                    .complete(null);
-                        }
-
+                        futureSlot.complete(data.type());
 
                         return handler.onData(data);
                     }
@@ -69,59 +67,29 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
                     @Override
                     public void onClosed(Throwable ex) {
-                        futureMap.forEach((clazz, future) -> future.completeExceptionally(ex));
-                        futureMap.clear();
+                        futureSlot.drain().forEach((k, f) -> f.completeExceptionally(ex));
                         handler.onClosed(ex);
                     }
 
                 })
-                .thenApply(exchange -> new ManualVad(exchange, futureMap));
+                .thenApply(exchange -> new ManualVad(exchange, futureSlot));
     }
 
 
-    private static class ManualVad implements OmniRealtimeExchange.ManualVad {
+    private static class ManualVad extends Exchange.Proxy<OmniRealtimeClientEvent> implements OmniRealtimeExchange.ManualVad {
 
         private final Exchange<OmniRealtimeClientEvent> origin;
-        private final ConcurrentHashMap<Class<?>, CompletableFuture<?>> futureMap;
+        private final FutureSlot<String> futureSlot;
 
-        private ManualVad(Exchange<OmniRealtimeClientEvent> origin, ConcurrentHashMap<Class<?>, CompletableFuture<?>> futureMap) {
+        private ManualVad(Exchange<OmniRealtimeClientEvent> origin, FutureSlot<String> futureSlot) {
+            super(origin);
             this.origin = origin;
-            this.futureMap = futureMap;
+            this.futureSlot = futureSlot;
         }
 
         @Override
-        public CompletionStage<BufferOp> newConversation() {
+        public CompletionStage<BufferOp> newBuffer() {
             return CompletableFuture.completedStage(new BufferOpImpl());
-        }
-
-        @Override
-        public String id() {
-            return origin.id();
-        }
-
-        @Override
-        public boolean isClosed() {
-            return origin.isClosed();
-        }
-
-        @Override
-        public CompletionStage<Void> closing() {
-            return origin.closing();
-        }
-
-        @Override
-        public void close() {
-            origin.close();
-        }
-
-        @Override
-        public CompletionStage<Void> send(OmniRealtimeClientEvent data) {
-            return origin.send(data);
-        }
-
-        @Override
-        public CompletionStage<Void> send(ByteBuffer buffer) {
-            return origin.send(buffer);
         }
 
         private class BufferOpImpl implements BufferOp {
@@ -150,29 +118,21 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
             @Override
             public CompletionStage<BufferOp> clear() {
-
-                final var future = new CompletableFuture<>();
-                if (null != futureMap.putIfAbsent(OmniRealtimeBufferClearedServerEvent.class, future)) {
-                    throw new IllegalStateException();
-                }
-
+                final var clearedF = futureSlot.acquire(KEY_BUFFER_CLEARED);
                 final var event = new OmniRealtimeBufferClearClientEvent(StringUtils.uuid());
                 return origin.send(event)
-                        .thenCompose(unused -> future)
+                        .thenCompose(unused -> clearedF)
+                        .whenComplete((v, ex) -> futureSlot.release(KEY_BUFFER_CLEARED, clearedF))
                         .thenApply(unused -> this);
             }
 
             @Override
             public CompletionStage<ResponseOp> commit() {
-
-                final var future = new CompletableFuture<>();
-                if (null != futureMap.putIfAbsent(OmniRealtimeBufferCommittedServerEvent.class, future)) {
-                    throw new IllegalStateException();
-                }
-
+                final var committedF = futureSlot.acquire(KEY_BUFFER_COMMITTED);
                 final var event = new OmniRealtimeBufferCommitClientEvent(StringUtils.uuid());
                 return origin.send(event)
-                        .thenCompose(unused -> future)
+                        .thenCompose(unused -> committedF)
+                        .whenComplete((v, ex) -> futureSlot.release(KEY_BUFFER_COMMITTED, committedF))
                         .thenApply(unused -> new ResponseOpImpl());
             }
 
@@ -183,29 +143,31 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
             @Override
             public CompletableFuture<Void> create() {
 
-                final var createdF = new CompletableFuture<Void>();
-                if (null != futureMap.putIfAbsent(OmniRealtimeResponseCreatedServerEvent.class, createdF)) {
-                    throw new IllegalStateException();
+                try {
+                    Thread.sleep(1000*1L);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
 
-                final var doneF = new CompletableFuture<Void>();
-                if (null != futureMap.putIfAbsent(OmniRealtimeResponseDoneServerEvent.class, doneF)) {
-                    throw new IllegalStateException();
-                }
-
+                // final var createdF = futureSlot.acquire(KEY_RESPONSE_CREATED);
+                final var doneF = futureSlot.acquire(KEY_RESPONSE_DONE);
                 final var createE = new OmniRealtimeResponseCreateClientEvent(StringUtils.uuid());
                 return origin.send(createE)
-                        .thenCompose(unused -> createdF)
+                        // .thenCompose(unused -> createdF)
+                        .thenCompose(unused -> doneF)
                         .exceptionallyCompose(ex -> {
                             final var cause = CompletableFutureUtils.unwrapEx(ex);
                             if (cause instanceof CancellationException && !doneF.isDone()) {
                                 final var cancelE = new OmniRealtimeResponseCancelClientEvent(StringUtils.uuid());
-                                return origin.send(cancelE);
+                                return origin.send(cancelE)
+                                        .thenCompose(unused -> doneF)
+                                        .thenCompose(unused -> CompletableFuture.failedStage(ex));
                             } else {
                                 return CompletableFuture.failedStage(ex);
                             }
                         })
-                        .thenCompose(unused -> doneF)
+                        .whenComplete((v, ex) -> futureSlot.release(KEY_RESPONSE_DONE, doneF))
+                        // .whenComplete((v, ex) -> futureSlot.release(KEY_RESPONSE_CREATED, createdF))
                         .toCompletableFuture();
             }
 

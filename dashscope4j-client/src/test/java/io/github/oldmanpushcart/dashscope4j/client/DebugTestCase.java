@@ -5,10 +5,12 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtim
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseAudioDeltaServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseAudioTranscriptDeltaServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseDoneServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +21,6 @@ import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
 
 import static io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME;
 
@@ -40,16 +41,16 @@ public class DebugTestCase implements LoadingEnv {
                 .newManual(new Parameters(), QWEN3_OMNI_FLASH_REALTIME, new OmniRealtimeExchange.ManualVad.Handler() {
 
                     @Override
-                    public CompletionStage<Void> onOpen(OmniRealtimeExchange.ManualVad exchange) {
-                        // return CompletableFuture.completedStage(null);
-                        return null;
+                    public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+
                     }
 
                     @Override
                     public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
 
-                        if (data instanceof OmniRealtimeResponseAudioTranscriptDeltaServerEvent event) {
-                            System.out.println(event.delta());
+                        if(data instanceof OmniRealtimeResponseAudioTranscriptDeltaServerEvent event) {
+                            final var delta = event.delta();
+                            System.out.println(delta);
                         }
 
                         return CompletableFuture.completedStage(null);
@@ -61,8 +62,8 @@ public class DebugTestCase implements LoadingEnv {
                     }
 
                     @Override
-                    public CompletionStage<Void> onClosed(Throwable ex) {
-                        return CompletableFuture.completedStage(null);
+                    public void onClosed(Throwable ex) {
+                        ex.printStackTrace();
                     }
 
                 })
@@ -71,7 +72,7 @@ public class DebugTestCase implements LoadingEnv {
 
         //exchange.buffer().clear();
 
-        manualVad.newConversation()
+        manualVad.newBuffer()
                 .thenCompose(bufferOp-> {
                     try (final var ais = AudioSystem.getAudioInputStream(audioFile)) {
                         int bytesRead;
@@ -81,6 +82,9 @@ public class DebugTestCase implements LoadingEnv {
                                     .toCompletableFuture()
                                     .join();
                         }
+                        bufferOp.image(image)
+                                .toCompletableFuture()
+                                .join();
                         return bufferOp.commit();
                     } catch (Throwable ex) {
                         return CompletableFuture.failedStage(ex);
