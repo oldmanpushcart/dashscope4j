@@ -8,13 +8,16 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.clien
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.*;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
+import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.awt.image.BufferedImage;
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
+import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class OmniRealtimeExchangeApiExecutorForManualVad {
 
@@ -25,91 +28,65 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
     }
 
     public CompletionStage<OmniRealtimeExchange.ManualVad> newExchange(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.Handler handler) {
-        final var opGuard = new AtomicReference<OpFuture>();
-        exchangeApi.newExchange(parameters, model, new OmniRealtimeExchange.Handler() {
+        final var futureMap = new ConcurrentHashMap<Class<?>, CompletableFuture<?>>();
+        return exchangeApi
+                .newExchange(parameters, model, new OmniRealtimeExchange.Handler() {
 
-            @Override
-            public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
-                handler.onOpen(exchange);
-            }
+                    @Override
+                    public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+                        handler.onOpen(exchange);
+                    }
 
-            @Override
-            public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
+                    @Override
+                    public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
 
-                final var opF = opGuard.get();
-                if (OpFuture.matches(data, opF)) {
-                    opF.complete(null);
-                }
+                        if (data instanceof OmniRealtimeBufferClearedServerEvent) {
+                            Optional.ofNullable(futureMap.remove(OmniRealtimeBufferClearedServerEvent.class))
+                                    .orElseThrow(() -> new IllegalStateException(""))
+                                    .complete(null);
+                        }
 
-                return handler.onData(data);
-            }
+                        if (data instanceof OmniRealtimeBufferCommittedServerEvent) {
+                            Optional.ofNullable(futureMap.remove(OmniRealtimeBufferCommittedServerEvent.class))
+                                    .orElseThrow(() -> new IllegalStateException(""))
+                                    .complete(null);
+                        }
 
-            @Override
-            public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                return handler.onBinary(buffer);
-            }
+                        if (data instanceof OmniRealtimeResponseCreatedServerEvent) {
+                            Optional.ofNullable(futureMap.remove(OmniRealtimeResponseCreatedServerEvent.class))
+                                    .orElseThrow(() -> new IllegalStateException(""))
+                                    .complete(null);
+                        }
 
-            @Override
-            public void onClosed(Throwable ex) {
 
-                final var opF = opGuard.getAndSet(null);
-                if (null != opF) {
-                    opF.completeExceptionally(ex);
-                }
+                        return handler.onData(data);
+                    }
 
-                handler.onClosed(ex);
-            }
+                    @Override
+                    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+                        return handler.onBinary(buffer);
+                    }
 
-        });
+                    @Override
+                    public void onClosed(Throwable ex) {
+                        futureMap.forEach((clazz, future) -> future.completeExceptionally(ex));
+                        futureMap.clear();
+                        handler.onClosed(ex);
+                    }
+
+                })
+                .thenApply(exchange -> new ManualVad(exchange, futureMap));
     }
 
-
-    private static class OpFuture extends CompletableFuture<Void> {
-
-        private final State state;
-
-        private OpFuture(State state) {
-            this.state = state;
-        }
-
-        public State state() {
-            return state;
-        }
-
-        public static boolean matches(OmniRealtimeServerEvent event, OpFuture opF) {
-            return null != opF && opF.state().type().isInstance(event);
-        }
-
-        public enum State {
-
-            WAITING_BUFFER_CLEARED(OmniRealtimeBufferClearedServerEvent.class),
-            WAITING_BUFFER_COMMITED(OmniRealtimeBufferCommittedServerEvent.class),
-            WAITING_RESPONSE_CREATED(OmniRealtimeResponseCreatedServerEvent.class),
-            WAITING_RESPONSE_DONE(OmniRealtimeResponseDoneServerEvent.class),
-            ;
-
-            private final Class<?> type;
-
-            State(Class<?> type) {
-                this.type = type;
-            }
-
-            public Class<?> type() {
-                return type;
-            }
-
-        }
-
-    }
 
     private static class ManualVad implements OmniRealtimeExchange.ManualVad {
 
         private final Exchange<OmniRealtimeClientEvent> origin;
-        private final AtomicReference<OpFuture> opGuard;
+        private final ConcurrentHashMap<Class<?>, CompletableFuture<?>> futureMap;
 
-        private ManualVad(Exchange<OmniRealtimeClientEvent> origin, AtomicReference<OpFuture> opGuard) {
+        private ManualVad(Exchange<OmniRealtimeClientEvent> origin, ConcurrentHashMap<Class<?>, CompletableFuture<?>> futureMap) {
             this.origin = origin;
-            this.opGuard = opGuard;
+            this.futureMap = futureMap;
         }
 
         @Override
@@ -173,51 +150,63 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
             @Override
             public CompletionStage<BufferOp> clear() {
-                final var event = new OmniRealtimeBufferClearClientEvent(StringUtils.uuid());
-                final var opF = new OpFuture(OpFuture.State.WAITING_BUFFER_CLEARED);
-                if (!opGuard.compareAndSet(null, opF)) {
+
+                final var future = new CompletableFuture<>();
+                if (null != futureMap.putIfAbsent(OmniRealtimeBufferClearedServerEvent.class, future)) {
                     throw new IllegalStateException();
                 }
+
+                final var event = new OmniRealtimeBufferClearClientEvent(StringUtils.uuid());
                 return origin.send(event)
-                        .thenCompose(unused -> opF)
-                        .whenComplete((v, ex) -> opGuard.compareAndSet(opF, null))
+                        .thenCompose(unused -> future)
                         .thenApply(unused -> this);
             }
 
             @Override
             public CompletionStage<ResponseOp> commit() {
-                final var event = new OmniRealtimeBufferCommitClientEvent(StringUtils.uuid());
-                final var opF = new OpFuture(OpFuture.State.WAITING_BUFFER_COMMITED);
-                if (!opGuard.compareAndSet(null, opF)) {
+
+                final var future = new CompletableFuture<>();
+                if (null != futureMap.putIfAbsent(OmniRealtimeBufferCommittedServerEvent.class, future)) {
                     throw new IllegalStateException();
                 }
+
+                final var event = new OmniRealtimeBufferCommitClientEvent(StringUtils.uuid());
                 return origin.send(event)
-                        .thenCompose(unused -> opF)
-                        .whenComplete((v, ex) -> opGuard.compareAndSet(opF, null))
-                        .thenApply(unused -> new ResponseOpImpl())
-                        ;
+                        .thenCompose(unused -> future)
+                        .thenApply(unused -> new ResponseOpImpl());
             }
 
         }
 
         private class ResponseOpImpl implements ResponseOp {
 
-            private CompletionStage<Void> responseCreate() {
-                final var event = new OmniRealtimeResponseCreateClientEvent(StringUtils.uuid());
-                final var opF = new OpFuture(OpFuture.State.WAITING_RESPONSE_CREATED);
-                if (!opGuard.compareAndSet(null, opF)) {
-                    throw new IllegalStateException();
-                }
-                return origin.send(event)
-                        .thenCompose(unused -> opF)
-                        .whenComplete((v, ex) -> opGuard.compareAndSet(opF, null))
-                        ;
-            }
-
-
             @Override
             public CompletableFuture<Void> create() {
-                return null;
+
+                final var createdF = new CompletableFuture<Void>();
+                if (null != futureMap.putIfAbsent(OmniRealtimeResponseCreatedServerEvent.class, createdF)) {
+                    throw new IllegalStateException();
+                }
+
+                final var doneF = new CompletableFuture<Void>();
+                if (null != futureMap.putIfAbsent(OmniRealtimeResponseDoneServerEvent.class, doneF)) {
+                    throw new IllegalStateException();
+                }
+
+                final var createE = new OmniRealtimeResponseCreateClientEvent(StringUtils.uuid());
+                return origin.send(createE)
+                        .thenCompose(unused -> createdF)
+                        .exceptionallyCompose(ex -> {
+                            final var cause = CompletableFutureUtils.unwrapEx(ex);
+                            if (cause instanceof CancellationException && !doneF.isDone()) {
+                                final var cancelE = new OmniRealtimeResponseCancelClientEvent(StringUtils.uuid());
+                                return origin.send(cancelE);
+                            } else {
+                                return CompletableFuture.failedStage(ex);
+                            }
+                        })
+                        .thenCompose(unused -> doneF)
+                        .toCompletableFuture();
             }
 
         }

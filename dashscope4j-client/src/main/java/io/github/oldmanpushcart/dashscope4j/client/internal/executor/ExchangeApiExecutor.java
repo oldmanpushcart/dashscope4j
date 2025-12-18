@@ -105,7 +105,7 @@ public class ExchangeApiExecutor {
      * Exchange的WebSocket监听器
      * 用于驱动Exchange处理器
      */
-    private static class ListenerImpl<T, R, E> implements WebSocket.Listener {
+    private static class ListenerImpl<T, R> implements WebSocket.Listener {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
         private final String id;

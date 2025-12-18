@@ -17,8 +17,10 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.Jackson
 
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 public class OmniRealtimeExchangeApiExecutor {
@@ -34,14 +36,14 @@ public class OmniRealtimeExchangeApiExecutor {
     }
 
     public CompletionStage<Exchange<OmniRealtimeClientEvent>> newExchange(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.Handler handler) {
-        final var completeF = new CompletableFuture<>();
-        final var sessionCreatedF = new CompletableFuture<>();
-        final var sessionUpdatedF = new CompletableFuture<>();
+        final var createdF = new CompletableFuture<>();
+        final var futureMap = new ConcurrentHashMap<Class<?>, CompletableFuture<?>>();
         return exchangeApi
                 .newExchange(model.endpoint(), encoder, decoder, new OmniRealtimeExchange.Handler() {
 
                     @Override
                     public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+                        futureMap.put(OmniRealtimeSessionCreatedServerEvent.class, createdF);
                         handler.onOpen(exchange);
                     }
 
@@ -49,11 +51,15 @@ public class OmniRealtimeExchangeApiExecutor {
                     public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
 
                         if (data instanceof OmniRealtimeSessionCreatedServerEvent) {
-                            sessionCreatedF.complete(null);
+                            Optional.ofNullable(futureMap.remove(OmniRealtimeSessionCreatedServerEvent.class))
+                                    .orElseThrow(() -> new IllegalStateException(""))
+                                    .complete(null);
                         }
 
                         if (data instanceof OmniRealtimeSessionUpdatedServerEvent) {
-                            sessionUpdatedF.complete(null);
+                            Optional.ofNullable(futureMap.remove(OmniRealtimeSessionUpdatedServerEvent.class))
+                                    .orElseThrow(() -> new IllegalStateException(""))
+                                    .complete(null);
                         }
 
                         return handler.onData(data);
@@ -66,7 +72,8 @@ public class OmniRealtimeExchangeApiExecutor {
 
                     @Override
                     public void onClosed(Throwable ex) {
-                        completeF.completeExceptionally(ex);
+                        futureMap.forEach((clazz, future) -> future.completeExceptionally(ex));
+                        futureMap.clear();
                         handler.onClosed(ex);
                     }
 
@@ -75,17 +82,24 @@ public class OmniRealtimeExchangeApiExecutor {
                 /*
                  * 等带会话创建
                  */
-                .thenCompose(e -> sessionCreatedF.thenApply(u -> e))
+                .thenCompose(e -> createdF.thenApply(u -> e))
 
                 /*
                  * 发起并等待会话更新
                  */
                 .thenCompose(exchange -> {
+
+                    final var updatedF = new CompletableFuture<>()
+                            .whenComplete((u, ex) -> futureMap.remove(OmniRealtimeSessionUpdatedServerEvent.class));
+                    if (null != futureMap.putIfAbsent(OmniRealtimeSessionUpdatedServerEvent.class, updatedF)) {
+                        throw new IllegalStateException();
+                    }
+
                     final var session = new OmniRealtimeSession(parameters);
                     final var event = new OmniRealtimeSessionUpdateClientEvent(StringUtils.uuid(), session);
                     return exchange.send(event)
-                            .thenApply(u -> exchange)
-                            .thenCompose(e -> sessionUpdatedF.thenApply(u -> e));
+                            .thenCompose(unused -> updatedF)
+                            .thenApply(u -> exchange);
                 })
                 ;
     }
