@@ -6,11 +6,13 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtim
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeResponseCancelClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseAudioTranscriptDeltaServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
@@ -70,7 +72,7 @@ public class DebugTestCase implements LoadingEnv {
                 .join();
 
         manualVad.newInput()
-                .thenCompose(OmniRealtimeExchange.ManualVad.InputOp::clear)
+                //.thenCompose(OmniRealtimeExchange.ManualVad.InputOp::clear)
                 .thenCompose(inputOp -> {
                     try (final var ais = AudioSystem.getAudioInputStream(audioFile)) {
                         CompletionStage<?> stage = CompletableFuture.completedStage(null);
@@ -90,6 +92,13 @@ public class DebugTestCase implements LoadingEnv {
                 .thenCompose(OmniRealtimeExchange.ManualVad.ResponseOp::create)
                 .toCompletableFuture()
                 .join();
+
+        final var cancelE = new OmniRealtimeResponseCancelClientEvent(UUIDUtils.genUUID22());
+        manualVad.send(cancelE)
+                .toCompletableFuture()
+                .join();
+
+        Thread.sleep(1000 * 5L);
 
     }
 

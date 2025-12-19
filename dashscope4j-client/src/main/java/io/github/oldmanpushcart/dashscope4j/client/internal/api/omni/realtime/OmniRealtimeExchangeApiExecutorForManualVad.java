@@ -119,7 +119,7 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
         private final Exchange<OmniRealtimeClientEvent> origin;
         private final FutureSlot<String> futureSlot;
-        private final AtomicReference<State> stateRef = new AtomicReference<>();
+        private final AtomicReference<State> stateRef = new AtomicReference<>(State.IDLE);
 
         private ManualVad(Exchange<OmniRealtimeClientEvent> origin, FutureSlot<String> futureSlot) {
             super(origin);
@@ -127,11 +127,21 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
             this.futureSlot = futureSlot;
         }
 
+        private void changeState(State expect, State update) {
+            if (!stateRef.compareAndSet(expect, update)) {
+                throw new IllegalStateException("Operation requires in %s state, but current state is: %s".formatted(expect, stateRef.get()));
+            }
+        }
+
+        private void checkState(State expect) {
+            if (expect != stateRef.get()) {
+                throw new IllegalStateException("Operation requires in %s state, but current state is: %s".formatted(expect, stateRef.get()));
+            }
+        }
+
         @Override
         public CompletionStage<InputOp> newInput() {
-            if (!stateRef.compareAndSet(State.IDLE, State.INPUT)) {
-                throw new IllegalStateException();
-            }
+            changeState(State.IDLE, State.INPUT);
             return CompletableFuture.completedStage(new InputOpImpl());
         }
 
@@ -139,9 +149,7 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
             @Override
             public CompletionStage<InputOp> image(BufferedImage image) {
-                if (stateRef.get() != State.INPUT) {
-                    throw new IllegalStateException();
-                }
+                checkState(State.INPUT);
                 final var event = new OmniRealtimeBufferAppendImageClientEvent(genUUID22(), image);
                 return origin.send(event)
                         .thenApply(unused -> this);
@@ -149,9 +157,7 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
             @Override
             public CompletionStage<InputOp> audio(ByteBuffer buffer) {
-                if (stateRef.get() != State.INPUT) {
-                    throw new IllegalStateException();
-                }
+                checkState(State.INPUT);
                 final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
                 return origin.send(event)
                         .thenApply(unused -> this);
@@ -159,9 +165,7 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
             @Override
             public CompletionStage<InputOp> audio(byte[] bytes, int offset, int length) {
-                if (stateRef.get() != State.INPUT) {
-                    throw new IllegalStateException();
-                }
+                checkState(State.INPUT);
                 final var buffer = ByteBuffer.wrap(bytes, offset, length);
                 final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
                 return origin.send(event)
@@ -170,9 +174,7 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
             @Override
             public CompletionStage<InputOp> clear() {
-                if (!stateRef.compareAndSet(State.INPUT, State.IDLE)) {
-                    throw new IllegalStateException();
-                }
+                checkState(State.INPUT);
                 final var clearedF = futureSlot.acquire(KEY_BUFFER_CLEARED);
                 final var event = new OmniRealtimeBufferClearClientEvent(genUUID22());
                 return origin.send(event)
@@ -183,9 +185,7 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
             @Override
             public CompletionStage<ResponseOp> commit() {
-                if (!stateRef.compareAndSet(State.INPUT, State.COMMITTED)) {
-                    throw new IllegalStateException();
-                }
+                changeState(State.INPUT, State.COMMITTED);
                 final var committedF = futureSlot.acquire(KEY_BUFFER_COMMITTED);
                 final var event = new OmniRealtimeBufferCommitClientEvent(genUUID22());
                 return origin.send(event)
@@ -196,6 +196,7 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
             @Override
             public CompletionStage<Void> cancel() {
+                changeState(State.INPUT, State.IDLE);
                 return clear()
                         .thenAccept(v -> {
                         });
@@ -207,13 +208,18 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
             @Override
             public CompletableFuture<Void> create() {
-
+                changeState(State.COMMITTED, State.RESPONSE);
                 final var createdF = futureSlot.acquire(KEY_RESPONSE_CREATED);
                 final var doneF = futureSlot.acquire(KEY_RESPONSE_DONE);
                 final var createE = new OmniRealtimeResponseCreateClientEvent(genUUID22());
                 return origin.send(createE)
+
                         .thenCompose(unused -> createdF)
+                        .whenComplete((v, ex) -> futureSlot.release(KEY_RESPONSE_CREATED, createdF))
+
                         .thenCompose(unused -> doneF)
+                        .whenComplete((v, ex) -> futureSlot.release(KEY_RESPONSE_DONE, doneF))
+
                         .exceptionallyCompose(ex -> {
                             final var cause = CompletableFutureUtils.unwrapEx(ex);
                             if (cause instanceof CancellationException && !doneF.isDone()) {
@@ -225,8 +231,8 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
                                 return CompletableFuture.failedStage(ex);
                             }
                         })
-                        .whenComplete((v, ex) -> futureSlot.release(KEY_RESPONSE_DONE, doneF))
-                        .whenComplete((v, ex) -> futureSlot.release(KEY_RESPONSE_CREATED, createdF))
+
+                        .whenComplete((v, ex) -> changeState(State.RESPONSE, State.IDLE))
                         .toCompletableFuture();
             }
 
