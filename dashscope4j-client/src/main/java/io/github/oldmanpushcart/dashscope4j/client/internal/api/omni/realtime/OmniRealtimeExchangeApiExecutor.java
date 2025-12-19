@@ -13,14 +13,14 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.serve
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApiExecutor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FutureSlot;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+
+import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
 public class OmniRealtimeExchangeApiExecutor {
 
@@ -51,13 +51,16 @@ public class OmniRealtimeExchangeApiExecutor {
                     @Override
                     public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
 
-                        futureSlot.complete(data.type());
-
+                        /*
+                         * 统一捕捉对错误信息
+                         * 任何的错误都是不可被接收，遇到则说明发生了预期外的操作，需要主动关闭连接等待排查
+                         */
                         if (data instanceof OmniRealtimeErrorServerEvent errorEvent) {
                             final var error = errorEvent.error();
                             throw new OmniRealtimeErrorException(error.code(), error.message());
                         }
 
+                        futureSlot.complete(data.type());
                         return handler.onData(data);
                     }
 
@@ -86,7 +89,7 @@ public class OmniRealtimeExchangeApiExecutor {
                 .thenCompose(exchange -> {
                     final var updatedF = futureSlot.acquire(KEY_SESSION_UPDATED);
                     final var session = new OmniRealtimeSession(parameters);
-                    final var event = new OmniRealtimeSessionUpdateClientEvent(StringUtils.uuid(), session);
+                    final var event = new OmniRealtimeSessionUpdateClientEvent(genUUID22(), session);
                     return exchange.send(event)
                             .thenCompose(unused -> updatedF)
                             .whenComplete((v, ex) -> futureSlot.release(KEY_SESSION_UPDATED, updatedF))

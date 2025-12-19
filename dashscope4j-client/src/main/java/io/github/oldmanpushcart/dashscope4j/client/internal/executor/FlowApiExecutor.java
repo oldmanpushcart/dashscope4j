@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.HttpHe
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetection;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
+import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +26,6 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
-import static io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils.isNotBlank;
 
 /**
  * 流式执行器
@@ -303,7 +303,7 @@ public class FlowApiExecutor {
                     final String line = scanner.nextLine();
 
                     // 过滤掉空行（如有）
-                    if (!isNotBlank(line)) {
+                    if (CommonUtils.isBlankString(line)) {
                         continue;
                     }
 

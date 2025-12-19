@@ -5,9 +5,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils.isBlank;
-import static io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils.isNotBlank;
-
 /**
  * Feature编解器(线程安全)
  * Created by luanjia@taobao.com on 16/8/24.
@@ -51,6 +48,14 @@ public class FeatureCodec {
         this.kvSeparator = kvSeparator;
     }
 
+    private static boolean isNotBlank(final String string) {
+        return !isBlank(string);
+    }
+
+    private static boolean isBlank(final String string) {
+        return null == string
+                || string.trim().isEmpty();
+    }
 
     /**
      * collection集合转换到feature字符串

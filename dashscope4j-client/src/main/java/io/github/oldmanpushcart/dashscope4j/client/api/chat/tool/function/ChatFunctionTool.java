@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 
 import java.lang.reflect.Type;
 import java.util.Optional;
@@ -70,7 +71,7 @@ public class ChatFunctionTool implements FunctionTool {
      * 不要拿null到jackson进行转换
      */
     private static <T> T toArgument(String parameterJson, Type parameterType) {
-        return StringUtils.isNotBlank(parameterJson)
+        return CommonUtils.isNotBlankString(parameterJson)
                 ? JacksonJsonUtils.toObject(parameterJson, parameterType)
                 : null;
     }

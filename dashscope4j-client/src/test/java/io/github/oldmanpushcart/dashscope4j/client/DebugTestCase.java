@@ -7,7 +7,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtim
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseAudioDeltaServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseAudioTranscriptDeltaServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
@@ -70,26 +69,24 @@ public class DebugTestCase implements LoadingEnv {
                 .toCompletableFuture()
                 .join();
 
-        //exchange.buffer().clear();
-
-        manualVad.newBuffer()
-                .thenCompose(bufferOp-> {
+        manualVad.newInput()
+                .thenCompose(OmniRealtimeExchange.ManualVad.InputOp::clear)
+                .thenCompose(inputOp -> {
                     try (final var ais = AudioSystem.getAudioInputStream(audioFile)) {
+                        CompletionStage<?> stage = CompletableFuture.completedStage(null);
                         int bytesRead;
                         final var bytes = new byte[10240];
                         while ((bytesRead = ais.read(bytes)) != -1) {
-                            bufferOp.audio(bytes, 0, bytesRead)
-                                    .toCompletableFuture()
-                                    .join();
+                            final int read = bytesRead;
+                            stage = stage.thenCompose(v-> inputOp.audio(bytes, 0, read));;
                         }
-                        bufferOp.image(image)
-                                .toCompletableFuture()
-                                .join();
-                        return bufferOp.commit();
+                        return stage.thenApply(v-> inputOp);
                     } catch (Throwable ex) {
                         return CompletableFuture.failedStage(ex);
                     }
                 })
+                .thenCompose(inputOp -> inputOp.image(image))
+                .thenCompose(OmniRealtimeExchange.ManualVad.InputOp::commit)
                 .thenCompose(OmniRealtimeExchange.ManualVad.ResponseOp::create)
                 .toCompletableFuture()
                 .join();

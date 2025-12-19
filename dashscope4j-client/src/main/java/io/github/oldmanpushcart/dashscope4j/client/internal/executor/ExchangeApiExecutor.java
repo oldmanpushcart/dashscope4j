@@ -12,7 +12,6 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
@@ -34,14 +33,15 @@ public class ExchangeApiExecutor {
             final Exchange.Handler<T, R> handler
     ) {
         final var id = UUID.randomUUID().toString();
+        final var listener = new ListenerImpl<>(id, endpoint, encoder, decoder, handler);
         return http.newWebSocketBuilder()
                 .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
                 .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
                 .header(HTTP_HEADER_X_DASHSCOPE_SSE, DISABLE)
                 .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
                 .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
-                .buildAsync(endpoint, new ListenerImpl<>(id, endpoint, encoder, decoder, handler))
-                .thenApply(ws -> new ExchangeImpl<>(id, ws, encoder));
+                .buildAsync(endpoint, listener)
+                .thenCompose(ws -> listener.getFuture());
     }
 
     private static class ExchangeImpl<T> implements Exchange<T> {
@@ -50,11 +50,13 @@ public class ExchangeApiExecutor {
         private final String id;
         private final WebSocket ws;
         private final Function<T, String> encoder;
+        private final CompletableFuture<Void> closeF;
 
-        private ExchangeImpl(String id, WebSocket ws, Function<T, String> encoder) {
+        private ExchangeImpl(String id, WebSocket ws, Function<T, String> encoder, CompletableFuture<Void> closeF) {
             this.id = id;
             this.ws = ws;
             this.encoder = encoder;
+            this.closeF = closeF;
         }
 
         @Override
@@ -64,7 +66,7 @@ public class ExchangeApiExecutor {
 
         @Override
         public boolean isClosed() {
-            return ws.isInputClosed() || ws.isOutputClosed();
+            return closeF.isDone();
         }
 
         @Override
@@ -82,18 +84,23 @@ public class ExchangeApiExecutor {
         }
 
         @Override
+        public CompletionStage<Void> closeFuture() {
+            return closeF;
+        }
+
+        @Override
         public CompletionStage<Void> send(T data) {
             final var body = encoder.apply(data);
-            logger.trace("dashscope-client://exchange/{}/text >>> {}", id, body);
             return ws.sendText(body, true)
+                    .whenComplete((v, ex) -> logger.trace("dashscope-client://exchange/{}/text >>> {}", id, body, ex))
                     .thenAccept(unused -> {
                     });
         }
 
         @Override
         public CompletionStage<Void> send(ByteBuffer buffer) {
-            logger.trace("dashscope-client://exchange/{}/binary >>> bytes[{}]", id, buffer.remaining());
             return ws.sendBinary(buffer, true)
+                    .whenComplete((v, ex) -> logger.trace("dashscope-client://exchange/{}/binary >>> bytes[{}]", id, buffer.remaining(), ex))
                     .thenAccept(unused -> {
                     });
         }
@@ -114,8 +121,9 @@ public class ExchangeApiExecutor {
         private final Function<String, R> decoder;
         private final Exchange.Handler<T, R> handler;
 
+        private final CompletableFuture<Exchange<T>> exchangeF = new CompletableFuture<>();
+        private final CompletableFuture<Void> closeF = new CompletableFuture<>();
         private final StringBuilder stringBuf = new StringBuilder();
-        private final AtomicBoolean closedFlag = new AtomicBoolean(false);
 
         private ListenerImpl(
                 final String id,
@@ -131,15 +139,28 @@ public class ExchangeApiExecutor {
             this.handler = handler;
         }
 
+        public CompletionStage<Exchange<T>> getFuture() {
+            return exchangeF;
+        }
+
         @Override
         public void onOpen(WebSocket ws) {
             try {
-                final var exchange = new ExchangeImpl<>(id, ws, encoder);
+                final var exchange = new ExchangeImpl<>(id, ws, encoder, closeF);
                 handler.onOpen(exchange);
+                exchangeF.complete(exchange);
                 ws.request(1L);
                 logger.trace("dashscope-client://exchange/{} opened. endpoint={};", id, endpoint);
             } catch (Throwable ex) {
                 fireClosed(ws, ex);
+            }
+        }
+
+        private boolean tryClose(Throwable ex) {
+            if (null == ex) {
+                return closeF.complete(null);
+            } else {
+                return closeF.completeExceptionally(ex);
             }
         }
 
@@ -161,12 +182,12 @@ public class ExchangeApiExecutor {
              * 在进行关闭处理过程中，很可能会触发二次关闭（比如websocket.about())，
              * 所以这里进行一次重复调用判断，只有第一次才触发
              */
-            if (!closedFlag.compareAndSet(false, true)) {
+            if (!tryClose(ex)) {
                 return CompletableFuture.completedStage(null);
             }
 
             /*
-             * 都已经通知关闭了，所以这里无论如何也得中断一次webscoket
+             * 都已经通知关闭了，所以这里无论如何也得中断一次连接
              * 反正是幂等操作，关了心安
              */
             ws.abort();
@@ -243,6 +264,7 @@ public class ExchangeApiExecutor {
 
         @Override
         public CompletionStage<?> onClose(WebSocket ws, int status, String reason) {
+            logger.trace("dashscope-client://exchange/{}/close <<< CLOSE! status={};reason={};", id, status, reason);
             final var ex = status != WebSocket.NORMAL_CLOSURE
                     ? new WebSocketCloseException(status, reason)
                     : null;

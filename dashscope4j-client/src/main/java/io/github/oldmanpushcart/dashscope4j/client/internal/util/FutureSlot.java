@@ -90,6 +90,38 @@ public class FutureSlot<K> {
     }
 
     /**
+     * 尝试取消与指定键关联的异步操作。
+     *
+     * <p>此方法会调用底层 {@link CompletableFuture#cancel(boolean)}，
+     * 但<strong>不会释放槽位</strong>。即使取消成功，该 key 仍处于占用状态，
+     * 必须通过 {@link #release(Object, CompletableFuture)} 并传入原始 future 引用
+     * 才能真正释放槽位，使该 key 可被重新使用。
+     *
+     * <p><strong>注意：</strong>
+     * {@code CompletableFuture} 的 {@code cancel()} 方法在语义上较为特殊：
+     * <ul>
+     *   <li>若 future 尚未完成，调用 {@code cancel(true/false)} 会将其标记为“已取消”；
+     *   <li>但 {@code CompletableFuture} <strong>不支持中断正在执行的任务</strong>（即 {@code mayInterruptIfRunning} 参数无效）；
+     *   <li>它仅影响 future 的完成状态，对已提交到线程池的任务无强制终止作用。
+     * </ul>
+     *
+     * <p>因此，本方法主要用于：
+     * <ul>
+     *   <li>提前标记 future 为取消状态，避免后续逻辑误用；
+     *   <li>配合外部任务管理机制（如记录取消意图）；
+     *   <li>但<strong>不能保证底层异步任务实际停止执行</strong>。
+     * </ul>
+     *
+     * @param key 槽位键
+     * @param mayInterruptIfRunning 此参数对 {@code CompletableFuture} 无效，仅保留以匹配通用 Future 接口语义
+     * @return {@code true} 表示 future 存在且被成功取消；{@code false} 表示槽位不存在、已完成或已取消
+     */
+    public boolean cancel(K key, boolean mayInterruptIfRunning) {
+        final var future = futureMap.get(key);
+        return null != future && future.cancel(mayInterruptIfRunning);
+    }
+
+    /**
      * 显式释放指定键的槽位。
      *
      * <p>仅当内部存储的 Future 引用与传入的 {@code future} 完全相同时，
@@ -105,11 +137,6 @@ public class FutureSlot<K> {
      */
     public boolean release(K key, CompletableFuture<Void> future) {
         return futureMap.remove(key, future);
-    }
-
-
-    public CompletableFuture<Void> get(K key) {
-        return futureMap.get(key);
     }
 
     /**

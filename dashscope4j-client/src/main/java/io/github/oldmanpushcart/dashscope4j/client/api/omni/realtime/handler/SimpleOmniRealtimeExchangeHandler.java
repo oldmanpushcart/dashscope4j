@@ -1,0 +1,61 @@
+package io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.handler;
+
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.*;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+/**
+ * 简单的 OMNI-REALTIME 数据交换处理器
+ */
+public abstract class SimpleOmniRealtimeExchangeHandler implements OmniRealtimeExchange.Handler {
+
+    @Override
+    public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
+
+        CompletionStage<Void> stage = CompletableFuture.completedStage(null);
+
+        // 应答开始
+        if (data instanceof OmniRealtimeResponseCreatedServerEvent responseCreatedEvent) {
+            stage = stage.thenCompose(v -> onResponseCreated(responseCreatedEvent.id()));
+        }
+
+        // 应答结束
+        else if (data instanceof OmniRealtimeResponseDoneServerEvent responseDoneEvent) {
+            stage = stage.thenCompose(v -> onResponseFinished(responseDoneEvent.id(), responseDoneEvent.response().status()));
+        }
+
+        // 应答文本块
+        else if (data instanceof OmniRealtimeResponseTextDeltaServerEvent responseTextDeltaEvent) {
+            stage = stage.thenCompose(v -> onResponseTextDelta(responseTextDeltaEvent.responseId(), responseTextDeltaEvent.delta()));
+        }
+
+        // 应答文本块（多模态）
+        else if (data instanceof OmniRealtimeResponseAudioTranscriptDeltaServerEvent responseAudioTranscriptDeltaEvent) {
+            stage = stage.thenCompose(v -> onResponseTextDelta(responseAudioTranscriptDeltaEvent.responseId(), responseAudioTranscriptDeltaEvent.delta()));
+        }
+
+        // 应答音频块（多模态）
+        else if (data instanceof OmniRealtimeResponseAudioDeltaServerEvent responseAudioDeltaEvent) {
+            stage = stage.thenCompose(v -> onResponseAudioDelta(responseAudioDeltaEvent.responseId(), responseAudioDeltaEvent.delta()));
+        }
+
+        return stage;
+    }
+
+    @Override
+    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+        return CompletableFuture.completedStage(null);
+    }
+
+    abstract public CompletionStage<Void> onResponseTextDelta(String responseId, String delta);
+
+    abstract public CompletionStage<Void> onResponseAudioDelta(String responseId, ByteBuffer delta);
+
+    abstract public CompletionStage<Void> onResponseCreated(String responseId);
+
+    abstract public CompletionStage<Void> onResponseFinished(String responseId, OmniRealtimeServerEvent.Status status);
+
+}

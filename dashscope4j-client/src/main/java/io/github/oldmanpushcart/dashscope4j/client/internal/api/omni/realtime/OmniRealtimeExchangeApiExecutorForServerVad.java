@@ -15,6 +15,8 @@ import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletionStage;
 
+import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
+
 public class OmniRealtimeExchangeApiExecutorForServerVad {
 
     private final OmniRealtimeExchangeApiExecutor exchangeApi;
@@ -40,20 +42,20 @@ public class OmniRealtimeExchangeApiExecutorForServerVad {
 
         @Override
         public CompletionStage<Void> image(BufferedImage image) {
-            final var event = new OmniRealtimeBufferAppendImageClientEvent(StringUtils.uuid(), image);
+            final var event = new OmniRealtimeBufferAppendImageClientEvent(genUUID22(), image);
             return origin.send(event);
         }
 
         @Override
         public CompletionStage<Void> audio(ByteBuffer buffer) {
-            final var event = new OmniRealtimeBufferAppendAudioClientEvent(StringUtils.uuid(), buffer);
+            final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
             return origin.send(event);
         }
 
         @Override
         public CompletionStage<Void> audio(byte[] bytes, int offset, int length) {
             final var buffer = ByteBuffer.wrap(bytes, offset, length);
-            final var event = new OmniRealtimeBufferAppendAudioClientEvent(StringUtils.uuid(), buffer);
+            final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
             return origin.send(event);
         }
 

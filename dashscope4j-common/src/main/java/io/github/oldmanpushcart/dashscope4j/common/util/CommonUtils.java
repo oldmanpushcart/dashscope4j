@@ -9,6 +9,10 @@ public class CommonUtils {
         return str == null || str.trim().isEmpty();
     }
 
+    public static boolean isEmptyString(String str) {
+        return str == null || str.isEmpty();
+    }
+
     public static boolean isNotBlankString(String str) {
         return !isBlankString(str);
     }

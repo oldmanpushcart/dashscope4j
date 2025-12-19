@@ -30,6 +30,8 @@ public interface Exchange<T> extends Closeable {
     @Override
     void close();
 
+    CompletionStage<Void> closeFuture();
+
     /**
      * 发送应用数据
      *
@@ -116,6 +118,11 @@ public interface Exchange<T> extends Closeable {
         @Override
         public void close() {
             origin.close();
+        }
+
+        @Override
+        public CompletionStage<Void> closeFuture() {
+            return origin.closeFuture();
         }
 
         @Override
