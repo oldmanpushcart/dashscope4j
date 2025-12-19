@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseDoneServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeSessionUpdatedServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FutureSlot;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
@@ -15,6 +17,7 @@ import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 import java.awt.image.BufferedImage;
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -32,11 +35,27 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
     private static final String KEY_RESPONSE_CREATED = "response.created";
     private static final String KEY_RESPONSE_DONE = "response.done";
 
+    private static Parameters adjust(Parameters parameters) {
+        final var newParameters = new Parameters().merge(parameters);
+        final var newTurnDetection = Optional.ofNullable(parameters.get(OmniRealtimeParameterKeys.TURN_DETECTION))
+                .map(turnDetection -> new OmniRealtimeParameterKeys.TurnDetection(
+                        OmniRealtimeParameterKeys.TurnDetection.Type.MANUAL_VAD,
+                        turnDetection.threshold(),
+                        turnDetection.silence()
+                ))
+                .orElseGet(()-> new OmniRealtimeParameterKeys.TurnDetection(
+                        OmniRealtimeParameterKeys.TurnDetection.Type.MANUAL_VAD,
+                        null,
+                        null
+                ));
+        newParameters.append(OmniRealtimeParameterKeys.TURN_DETECTION, newTurnDetection);
+        return newParameters;
+    }
 
     public CompletionStage<OmniRealtimeExchange.ManualVad> newExchange(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.Handler handler) {
         final var futureSlot = new FutureSlot<String>();
         return exchangeApi
-                .newExchange(parameters, model, new OmniRealtimeExchange.Handler() {
+                .newExchange(adjust(parameters), model, new OmniRealtimeExchange.Handler() {
 
                     @Override
                     public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
@@ -46,12 +65,20 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
                     @Override
                     public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
 
-                        if(data instanceof OmniRealtimeResponseDoneServerEvent responseDoneEvent) {
+                        if (data instanceof OmniRealtimeResponseDoneServerEvent responseDoneEvent) {
                             final var doneF = futureSlot.get(KEY_RESPONSE_DONE);
-                            if(null != doneF
+                            if (null != doneF
                                     && !doneF.isDone()
                                     && responseDoneEvent.response().status() == OmniRealtimeServerEvent.Status.CANCELLED) {
                                 doneF.cancel(true);
+                            }
+                        }
+
+                        if (data instanceof OmniRealtimeSessionUpdatedServerEvent sessionUpdatedEvent) {
+                            final var session = sessionUpdatedEvent.session();
+                            final var turnDetection = session.parameters().get(OmniRealtimeParameterKeys.TURN_DETECTION);
+                            if (turnDetection.type() != OmniRealtimeParameterKeys.TurnDetection.Type.MANUAL_VAD) {
+                                throw new IllegalStateException("Invalid turn detection type: %s".formatted(turnDetection.type()));
                             }
                         }
 
@@ -143,11 +170,11 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
             @Override
             public CompletableFuture<Void> create() {
 
-                try {
-                    Thread.sleep(1000*1L);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+//                try {
+//                    Thread.sleep(1000*1L);
+//                } catch (InterruptedException e) {
+//                    throw new RuntimeException(e);
+//                }
 
                 // final var createdF = futureSlot.acquire(KEY_RESPONSE_CREATED);
                 final var doneF = futureSlot.acquire(KEY_RESPONSE_DONE);
