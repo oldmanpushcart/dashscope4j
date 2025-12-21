@@ -15,34 +15,34 @@ public abstract class SimpleOmniRealtimeExchangeHandler implements OmniRealtimeE
     @Override
     public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
 
-        CompletionStage<Void> stage = CompletableFuture.completedStage(null);
+        final var responseId = data.id();
 
         // 应答开始
-        if (data instanceof OmniRealtimeResponseCreatedServerEvent responseCreatedEvent) {
-            stage = stage.thenCompose(v -> onResponseCreated(responseCreatedEvent.id()));
+        if (data instanceof OmniRealtimeResponseCreatedServerEvent) {
+            return onResponseCreated(responseId);
         }
 
         // 应答结束
-        else if (data instanceof OmniRealtimeResponseDoneServerEvent responseDoneEvent) {
-            stage = stage.thenCompose(v -> onResponseFinished(responseDoneEvent.id(), responseDoneEvent.response().status()));
+        else if (data instanceof OmniRealtimeResponseDoneServerEvent event) {
+            return onResponseFinished(responseId, event.response().status());
         }
 
         // 应答文本块
-        else if (data instanceof OmniRealtimeResponseTextDeltaServerEvent responseTextDeltaEvent) {
-            stage = stage.thenCompose(v -> onResponseTextDelta(responseTextDeltaEvent.responseId(), responseTextDeltaEvent.delta()));
+        else if (data instanceof OmniRealtimeResponseTextDeltaServerEvent event) {
+            return onResponseTextDelta(responseId, event.delta());
         }
 
         // 应答文本块（多模态）
-        else if (data instanceof OmniRealtimeResponseAudioTranscriptDeltaServerEvent responseAudioTranscriptDeltaEvent) {
-            stage = stage.thenCompose(v -> onResponseTextDelta(responseAudioTranscriptDeltaEvent.responseId(), responseAudioTranscriptDeltaEvent.delta()));
+        else if (data instanceof OmniRealtimeResponseAudioTranscriptDeltaServerEvent event) {
+            return onResponseTextDelta(responseId, event.delta());
         }
 
         // 应答音频块（多模态）
-        else if (data instanceof OmniRealtimeResponseAudioDeltaServerEvent responseAudioDeltaEvent) {
-            stage = stage.thenCompose(v -> onResponseAudioDelta(responseAudioDeltaEvent.responseId(), responseAudioDeltaEvent.delta()));
+        else if (data instanceof OmniRealtimeResponseAudioDeltaServerEvent event) {
+            return onResponseAudioDelta(responseId, event.delta());
         }
 
-        return stage;
+        return CompletableFuture.completedStage(null);
     }
 
     @Override

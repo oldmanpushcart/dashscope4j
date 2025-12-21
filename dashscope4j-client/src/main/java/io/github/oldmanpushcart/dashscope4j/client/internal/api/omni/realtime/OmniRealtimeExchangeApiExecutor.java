@@ -2,13 +2,11 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.realtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeErrorException;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeErrorServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApiExecutor;
@@ -17,6 +15,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.Jackson
 
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -41,32 +40,12 @@ public class OmniRealtimeExchangeApiExecutor {
         final var futureSlot = new FutureSlot<String>();
         final var createdF = futureSlot.acquire(KEY_SESSION_CREATED);
         return exchangeApi
-                .newExchange(model.endpoint(), encoder, decoder, new OmniRealtimeExchange.Handler() {
-
-                    @Override
-                    public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
-                        handler.onOpen(exchange);
-                    }
+                .newExchange(model.endpoint(), encoder, decoder, new Exchange.ProxyHandler<>(handler) {
 
                     @Override
                     public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
-
-                        /*
-                         * 统一捕捉对错误信息
-                         * 任何的错误都是不可被接收，遇到则说明发生了预期外的操作，需要主动关闭连接等待排查
-                         */
-                        if (data instanceof OmniRealtimeErrorServerEvent errorEvent) {
-                            final var error = errorEvent.error();
-                            throw new OmniRealtimeErrorException(error.code(), error.message());
-                        }
-
                         futureSlot.complete(data.type());
                         return handler.onData(data);
-                    }
-
-                    @Override
-                    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                        return handler.onBinary(buffer);
                     }
 
                     @Override
@@ -79,12 +58,15 @@ public class OmniRealtimeExchangeApiExecutor {
 
                 /*
                  * 等带会话创建
+                 * OMNI-REALTIME 连接之后，第一个必定是会话创建事件。所以这里以收到会话创建事件作为 Exchange 创建完成标志。
                  */
                 .thenCompose(e -> createdF.thenApply(u -> e))
                 .whenComplete((v, ex) -> futureSlot.release(KEY_SESSION_CREATED, createdF))
 
                 /*
                  * 发起并等待会话更新
+                 * OMNI-REALTIME 连接建立之后，并不清楚当前会话类型是 Manual VAD 还是 Server VAD，
+                 * 所以这里需要进行强制配置更新，以确保当前会话是以期待的类型进行
                  */
                 .thenCompose(exchange -> {
                     final var updatedF = futureSlot.acquire(KEY_SESSION_UPDATED);

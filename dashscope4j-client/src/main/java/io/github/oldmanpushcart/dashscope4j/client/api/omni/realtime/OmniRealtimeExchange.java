@@ -20,9 +20,9 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> 
     interface ManualVad extends OmniRealtimeExchange {
 
         /**
-         * 创建一个新的输入操作
+         * 创建一个新地输入操作
          * <p>
-         * 你可以进行图片和音频的输入。需要注意的是，图像输入必须要在音频输入之后进行
+         * 你可以进行图片和音频的输入。需要注意的是，图像输入必需要在音频输入之后进行
          * </p>
          *
          * @return 输入操作

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange.ManualVad;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange.ServerVad;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.BaseOpBuilderImpl;
@@ -23,12 +25,12 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
     }
 
     @Override
-    public CompletionStage<OmniRealtimeExchange.ManualVad> newManual(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.ManualVad.Handler handler) {
+    public CompletionStage<ManualVad> newManualVad(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.Handler handler) {
         return manualApi.newExchange(parameters, model, handler);
     }
 
     @Override
-    public CompletionStage<OmniRealtimeExchange.ServerVad> newVad(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.ServerVad.Handler handler) {
+    public CompletionStage<ServerVad> newServerVad(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.Handler handler) {
         return serverApi.newExchange(parameters, model, handler);
     }
 

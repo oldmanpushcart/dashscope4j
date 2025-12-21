@@ -1,16 +1,17 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange.ManualVad;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeResponseCancelClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeResponseAudioTranscriptDeltaServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.handler.SimpleOmniRealtimeExchangeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.exchange.ExchangeConnector;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
 
 import static io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME;
 
@@ -35,70 +37,77 @@ public class DebugTestCase implements LoadingEnv {
         final var image = ImageIO.read(new File("./test-data/image/red-cup.jpeg"));
         final var audioFile = new File("./test-data/audio/say-what-you-see.wav");
 
-        final var manualVad = OmniRealtimeOp.newOpBuilder()
+        final var latch = new CountDownLatch(1);
+        final var realtimeOp = OmniRealtimeOp.newOpBuilder()
                 .ak(AK)
                 .http(http)
-                .build()
-                .newManual(new Parameters(), QWEN3_OMNI_FLASH_REALTIME, new OmniRealtimeExchange.ManualVad.Handler() {
+                .build();
 
-                    @Override
-                    public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+        new ExchangeConnector(() -> {
+            final var parameters = new Parameters();
+            return realtimeOp.newManualVad(parameters, QWEN3_OMNI_FLASH_REALTIME, new SimpleOmniRealtimeExchangeHandler() {
 
-                    }
+                @Override
+                public CompletionStage<Void> onResponseTextDelta(String responseId, String delta) {
+                    System.out.println(delta);
+                    return CompletableFuture.completedStage(null);
+                }
 
-                    @Override
-                    public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
+                @Override
+                public CompletionStage<Void> onResponseAudioDelta(String responseId, ByteBuffer delta) {
+                    return CompletableFuture.completedStage(null);
+                }
 
-                        if(data instanceof OmniRealtimeResponseAudioTranscriptDeltaServerEvent event) {
-                            final var delta = event.delta();
-                            System.out.println(delta);
-                        }
+                @Override
+                public CompletionStage<Void> onResponseCreated(String responseId) {
+                    return CompletableFuture.completedStage(null);
+                }
 
-                        return CompletableFuture.completedStage(null);
-                    }
+                @Override
+                public CompletionStage<Void> onResponseFinished(String responseId, OmniRealtimeServerEvent.Status status) {
+                    latch.countDown();
+                    return CompletableFuture.completedStage(null);
+                }
 
-                    @Override
-                    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                        return CompletableFuture.completedStage(null);
-                    }
+                @Override
+                public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
 
-                    @Override
-                    public void onClosed(Throwable ex) {
-                        ex.printStackTrace();
-                    }
+                    final var manualVad = (ManualVad)exchange;
+                    manualVad
+                            .newInput()
+                            .thenCompose(ManualVad.InputOp::clear)
+                            .thenCompose(inputOp -> {
+                                try (final var ais = AudioSystem.getAudioInputStream(audioFile)) {
+                                    CompletionStage<?> stage = CompletableFuture.completedStage(null);
+                                    int bytesRead;
+                                    final var bytes = new byte[10240];
+                                    while ((bytesRead = ais.read(bytes)) != -1) {
+                                        final int read = bytesRead;
+                                        stage = stage.thenCompose(v -> inputOp.audio(bytes, 0, read));
+                                    }
+                                    return stage.thenApply(v -> inputOp);
+                                } catch (Throwable ex) {
+                                    return CompletableFuture.failedStage(ex);
+                                }
+                            })
+                            .thenCompose(inputOp -> inputOp.image(image))
+                            .thenCompose(ManualVad.InputOp::commit)
+                            .thenCompose(ManualVad.ResponseOp::create);
 
-                })
+                }
+
+                @Override
+                public void onClosed(Throwable ex) {
+                    ex.printStackTrace();
+                    latch.countDown();
+                }
+
+            });
+        }).connect(ExchangeConnector.ReconnectStrategies.immediateForever())
                 .toCompletableFuture()
                 .join();
 
-        manualVad.newInput()
-                //.thenCompose(OmniRealtimeExchange.ManualVad.InputOp::clear)
-                .thenCompose(inputOp -> {
-                    try (final var ais = AudioSystem.getAudioInputStream(audioFile)) {
-                        CompletionStage<?> stage = CompletableFuture.completedStage(null);
-                        int bytesRead;
-                        final var bytes = new byte[10240];
-                        while ((bytesRead = ais.read(bytes)) != -1) {
-                            final int read = bytesRead;
-                            stage = stage.thenCompose(v-> inputOp.audio(bytes, 0, read));;
-                        }
-                        return stage.thenApply(v-> inputOp);
-                    } catch (Throwable ex) {
-                        return CompletableFuture.failedStage(ex);
-                    }
-                })
-                .thenCompose(inputOp -> inputOp.image(image))
-                .thenCompose(OmniRealtimeExchange.ManualVad.InputOp::commit)
-                .thenCompose(OmniRealtimeExchange.ManualVad.ResponseOp::create)
-                .toCompletableFuture()
-                .join();
-
-        final var cancelE = new OmniRealtimeResponseCancelClientEvent(UUIDUtils.genUUID22());
-        manualVad.send(cancelE)
-                .toCompletableFuture()
-                .join();
-
-        Thread.sleep(1000 * 5L);
+        latch.await();
 
     }
 
@@ -111,6 +120,24 @@ public class DebugTestCase implements LoadingEnv {
         final var event = new OmniRealtimeSessionUpdateClientEvent("1", new OmniRealtimeSession(parameters));
         final var json = JacksonJsonUtils.toJson(event);
         System.out.println(json);
+
+    }
+
+    private void reconnect(OmniRealtimeOp omniRealtimeOp) {
+
+    }
+
+    @Test
+    public void debug5() {
+
+        CompletableFuture.completedStage(null)
+                .thenAccept(unused -> {
+                    throw new RuntimeException("TEST!");
+                })
+                .whenComplete((v, ex) -> {
+                    ex.printStackTrace();
+                });
+
 
     }
 
