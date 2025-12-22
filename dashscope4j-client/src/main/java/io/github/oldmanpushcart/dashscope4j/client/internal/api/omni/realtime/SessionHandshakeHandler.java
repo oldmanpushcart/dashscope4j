@@ -46,11 +46,26 @@ class SessionHandshakeHandler implements OmniRealtimeExchange.Handler {
         }
     }
 
+    private boolean isResponseCancelError(OmniRealtimeErrorServerEvent.Error error) {
+        return null != error
+                && "invalid_request_error".equals(error.type())
+                && "Conversation has none active response".equals(error.message());
+    }
+
     @Override
     public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
 
         if (data instanceof OmniRealtimeErrorServerEvent event) {
             final var error = event.error();
+
+            /*
+             * 如果是响应取消错误，则忽略
+             * 因为会存在竞争的情况，即响应完成和响应取消同时发生。这种情况的错误是可被允许。
+             */
+            if (isResponseCancelError(error)) {
+                return CompletableFuture.completedStage(null);
+            }
+            
             final var cause = new OmniRealtimeErrorException(error.code(), error.message());
             return CompletableFuture.failedStage(cause);
         }
