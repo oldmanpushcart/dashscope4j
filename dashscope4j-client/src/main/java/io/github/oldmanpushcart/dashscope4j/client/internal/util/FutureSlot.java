@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.util;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;

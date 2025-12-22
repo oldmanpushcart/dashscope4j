@@ -1,24 +1,15 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.realtime;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeErrorException;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange.ManualVad;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.*;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeErrorServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeSessionUpdatedServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FutureSlot;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.awt.image.BufferedImage;
-import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
-import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -26,114 +17,50 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-public class OmniRealtimeExchangeApiExecutorForManualVad {
+class ManualVadHandler implements OmniRealtimeExchange.Handler {
 
     private static final String KEY_BUFFER_CLEARED = "input_audio_buffer.cleared";
     private static final String KEY_BUFFER_COMMITTED = "input_audio_buffer.committed";
     private static final String KEY_RESPONSE_CREATED = "response.created";
     private static final String KEY_RESPONSE_DONE = "response.done";
 
-    private final OmniRealtimeExchangeApiExecutor exchangeApi;
+    private final FutureSlot<String> futureSlot = new FutureSlot<>();
+    private final OmniRealtimeExchange.Handler delegate;
+    private final CompletableFuture<ManualVad> completeF = new CompletableFuture<>();
 
-    public OmniRealtimeExchangeApiExecutorForManualVad(String ak, HttpClient http, ObjectMapper mapper) {
-        exchangeApi = new OmniRealtimeExchangeApiExecutor(ak, http, mapper);
+    public ManualVadHandler(OmniRealtimeExchange.Handler delegate) {
+        this.delegate = delegate;
     }
 
-    private static Parameters adjust(Parameters parameters) {
-        final var newParameters = new Parameters().merge(parameters);
-        final var newTurnDetection = Optional.ofNullable(parameters.get(OmniRealtimeParameterKeys.TURN_DETECTION))
-                .map(turnDetection -> new OmniRealtimeParameterKeys.TurnDetection(
-                        OmniRealtimeParameterKeys.TurnDetection.Type.MANUAL_VAD,
-                        turnDetection.threshold(),
-                        turnDetection.silence()
-                ))
-                .orElseGet(() -> new OmniRealtimeParameterKeys.TurnDetection(
-                        OmniRealtimeParameterKeys.TurnDetection.Type.MANUAL_VAD,
-                        null,
-                        null
-                ));
-        newParameters.append(OmniRealtimeParameterKeys.TURN_DETECTION, newTurnDetection);
-        return newParameters;
+    public CompletionStage<ManualVad> completeStage() {
+        return completeF;
     }
 
-    public CompletionStage<ManualVad> newExchange(Parameters parameters, OmniRealtimeModel model, OmniRealtimeExchange.Handler handler) {
-        final var futureSlot = new FutureSlot<String>();
-        final var futureHandler = new FutureHandler(futureSlot, handler);
-        return exchangeApi
-                .newExchange(adjust(parameters), model, futureHandler)
-                .thenCompose(unused -> futureHandler.getFuture());
+    @Override
+    public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+        final var manualVad = new ManualVadImpl(exchange, futureSlot);
+        delegate.onOpen(manualVad);
+        completeF.complete(manualVad);
     }
 
-    private static class FutureHandler implements OmniRealtimeExchange.Handler {
-
-        private final FutureSlot<String> futureSlot;
-        private final OmniRealtimeExchange.Handler delegate;
-        private final CompletableFuture<ManualVad> future = new CompletableFuture<>();
-
-        private FutureHandler(FutureSlot<String> futureSlot, OmniRealtimeExchange.Handler delegate) {
-            this.futureSlot = futureSlot;
-            this.delegate = delegate;
-        }
-
-        public CompletionStage<ManualVad> getFuture() {
-            return future;
-        }
-
-        @Override
-        public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
-            final var manualVad = new ManualVadImpl(exchange, futureSlot);
-            delegate.onOpen(manualVad);
-            future.complete(manualVad);
-        }
-
-        private boolean isIgnoreError(OmniRealtimeErrorServerEvent.Error error) {
-            return "invalid_request_error".equals(error.type())
-                    && "Conversation has none active response".equals(error.message());
-        }
-
-        @Override
-        public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
-
-            /*
-             * 统一捕捉对错误信息
-             * 任何的错误都是不可被接收，遇到则说明发生了预期外的操作，需要主动关闭连接等待排查
-             */
-            if (data instanceof OmniRealtimeErrorServerEvent errorEvent) {
-                final var error = errorEvent.error();
-                if (!isIgnoreError(error)) {
-                    throw new OmniRealtimeErrorException(error.code(), error.message());
-                }
-            }
-
-            /*
-             * 检查会话响应类型是否为ManualVad
-             * 因为整个Manual类型的会话是需要严格保障Event传递的顺序的，所以类型错乱会引起不确定后果
-             */
-            if (data instanceof OmniRealtimeSessionUpdatedServerEvent sessionUpdatedEvent) {
-                final var session = sessionUpdatedEvent.session();
-                final var turnDetection = session.parameters().get(OmniRealtimeParameterKeys.TURN_DETECTION);
-                if (null != turnDetection
-                        && turnDetection.type() != OmniRealtimeParameterKeys.TurnDetection.Type.MANUAL_VAD) {
-                    throw new IllegalStateException("Invalid turn detection type: %s".formatted(turnDetection.type()));
-                }
-            }
-
-            futureSlot.complete(data.type());
-            return delegate.onData(data);
-        }
-
-        @Override
-        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-            return delegate.onBinary(buffer);
-        }
-
-        @Override
-        public void onClosed(Throwable ex) {
-            futureSlot.drain().forEach((k, f) -> f.completeExceptionally(ex));
-            delegate.onClosed(ex);
-        }
-
+    @Override
+    public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
+        futureSlot.complete(data.type());
+        return delegate.onData(data);
     }
+
+    @Override
+    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+        return CompletableFuture.completedStage(null);
+    }
+
+    @Override
+    public void onClosed(Throwable ex) {
+        futureSlot.drain().forEach((k, f) -> f.completeExceptionally(ex));
+        delegate.onClosed(ex);
+        completeF.completeExceptionally(ex);
+    }
+
 
     private static class ManualVadImpl extends Exchange.Proxy<OmniRealtimeClientEvent> implements ManualVad {
 
@@ -147,8 +74,12 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
             this.futureSlot = futureSlot;
         }
 
+        private boolean tryChangeState(State expect, State update) {
+            return stateRef.compareAndSet(expect, update);
+        }
+
         private void changeState(State expect, State update) {
-            if (!stateRef.compareAndSet(expect, update)) {
+            if (!tryChangeState(expect, update)) {
                 throw new IllegalStateException("Operation requires %s state, but current state is: %s".formatted(expect, stateRef.get()));
             }
         }
@@ -169,7 +100,7 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
             @Override
             public CompletionStage<InputOp> image(BufferedImage image) {
-                stateRef.compareAndSet(State.INPUT_READY, State.INPUT);
+                tryChangeState(State.INPUT_READY, State.INPUT);
                 checkState(State.INPUT);
                 final var event = new OmniRealtimeBufferAppendImageClientEvent(genUUID22(), image);
                 return origin.send(event)
@@ -178,7 +109,7 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
             @Override
             public CompletionStage<InputOp> audio(ByteBuffer buffer) {
-                stateRef.compareAndSet(State.INPUT_READY, State.INPUT);
+                tryChangeState(State.INPUT_READY, State.INPUT);
                 checkState(State.INPUT);
                 final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
                 return origin.send(event)
@@ -187,7 +118,7 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
             @Override
             public CompletionStage<InputOp> audio(byte[] bytes, int offset, int length) {
-                stateRef.compareAndSet(State.INPUT_READY, State.INPUT);
+                tryChangeState(State.INPUT_READY, State.INPUT);
                 checkState(State.INPUT);
                 final var buffer = ByteBuffer.wrap(bytes, offset, length);
                 final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
@@ -261,12 +192,13 @@ public class OmniRealtimeExchangeApiExecutorForManualVad {
 
                         .exceptionallyCompose(ex -> {
                             final var cause = CompletableFutureUtils.unwrapEx(ex);
-                            if (cause instanceof CancellationException) {
-                                final var cancelE = new OmniRealtimeResponseCancelClientEvent(genUUID22());
-                                return origin.send(cancelE);
-                            } else {
-                                return CompletableFuture.failedStage(ex);
+                            if(!(cause instanceof CancellationException)) {
+                                return CompletableFuture.failedStage(cause);
                             }
+                            final var cancelE = new OmniRealtimeResponseCancelClientEvent(genUUID22());
+                            return origin.send(cancelE)
+                                    .thenCompose(unused -> doneF)
+                                    .whenComplete((v, unusedEx) -> futureSlot.release(KEY_RESPONSE_DONE, doneF));
                         })
 
                         .whenComplete((v, ex) -> changeState(State.RESPONSE, State.IDLE))
