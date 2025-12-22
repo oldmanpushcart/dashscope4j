@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.realtime;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange.ServerVad;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeBufferAppendAudioClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeBufferAppendImageClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
@@ -30,7 +31,7 @@ class ServerVadHandler implements OmniRealtimeExchange.Handler {
 
     @Override
     public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
-        final var serverVad = new ServerVadImpl(exchange);
+        final var serverVad = new ServerVadImpl((OmniRealtimeExchange) exchange);
         delegate.onOpen(serverVad);
         completeF.complete(serverVad);
     }
@@ -53,9 +54,9 @@ class ServerVadHandler implements OmniRealtimeExchange.Handler {
 
     private static class ServerVadImpl extends Exchange.Proxy<OmniRealtimeClientEvent> implements ServerVad {
 
-        private final Exchange<OmniRealtimeClientEvent> origin;
+        private final OmniRealtimeExchange origin;
 
-        private ServerVadImpl(Exchange<OmniRealtimeClientEvent> origin) {
+        private ServerVadImpl(OmniRealtimeExchange origin) {
             super(origin);
             this.origin = origin;
         }
@@ -79,6 +80,10 @@ class ServerVadHandler implements OmniRealtimeExchange.Handler {
             return origin.send(event);
         }
 
+        @Override
+        public OmniRealtimeSession session() {
+            return origin.session();
+        }
     }
 
 }

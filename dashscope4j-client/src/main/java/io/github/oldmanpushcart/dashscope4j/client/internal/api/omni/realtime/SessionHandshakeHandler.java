@@ -65,7 +65,7 @@ class SessionHandshakeHandler implements OmniRealtimeExchange.Handler {
             if (isResponseCancelError(error)) {
                 return CompletableFuture.completedStage(null);
             }
-            
+
             final var cause = new OmniRealtimeErrorException(error.code(), error.message());
             return CompletableFuture.failedStage(cause);
         }
@@ -87,9 +87,11 @@ class SessionHandshakeHandler implements OmniRealtimeExchange.Handler {
                 }
             }
             case AWAITING_SESSION_CONFIRMED -> {
-                if (data instanceof OmniRealtimeSessionUpdatedServerEvent) {
+                if (data instanceof OmniRealtimeSessionUpdatedServerEvent event) {
                     changeState(state, State.HANDSHAKE_COMPLETED);
-                    delegate.onOpen(exchange);
+                    final var session = event.session();
+                    final var omniRealtimeExchange = new OmniRealtimeExchangeImpl(exchange, session);
+                    delegate.onOpen(omniRealtimeExchange);
                     yield CompletableFuture.completedStage(null);
                 } else {
                     final var cause = new IllegalStateException("Expect %s event, but was: %s".formatted(
@@ -130,6 +132,28 @@ class SessionHandshakeHandler implements OmniRealtimeExchange.Handler {
          * 握手完成
          */
         HANDSHAKE_COMPLETED,
+
+    }
+
+    private static class OmniRealtimeExchangeImpl extends Exchange.Proxy<OmniRealtimeClientEvent> implements OmniRealtimeExchange {
+
+        private final OmniRealtimeSession session;
+
+        /**
+         * 构造一个代理实例，包装给定的原始 {@link Exchange}。
+         *
+         * @param delegate 被代理的原始数据交换对象，不可为 {@code null}
+         * @throws NullPointerException 如果 {@code origin} 为 {@code null}
+         */
+        protected OmniRealtimeExchangeImpl(Exchange<OmniRealtimeClientEvent> delegate, OmniRealtimeSession session) {
+            super(delegate);
+            this.session = session;
+        }
+
+        @Override
+        public OmniRealtimeSession session() {
+            return session;
+        }
 
     }
 

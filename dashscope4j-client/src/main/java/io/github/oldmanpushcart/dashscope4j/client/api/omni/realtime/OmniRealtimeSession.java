@@ -57,7 +57,7 @@ public record OmniRealtimeSession(
                     continue;
                 }
 
-                // 其他字段根据注册的参数KEY进行反射
+                // 其它的字段根据注册的参数KEY进行反射
                 Parameters.StdParameterKey<?, ?> parameterKey = null;
                 for (var registeredKey : OmniRealtimeParameterKeys.REGISTRIES) {
                     if (registeredKey.name().equals(name)) {

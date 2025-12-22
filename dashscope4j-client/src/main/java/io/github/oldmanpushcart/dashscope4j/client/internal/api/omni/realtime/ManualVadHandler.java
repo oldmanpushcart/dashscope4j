@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.realtime;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange.ManualVad;
+import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
@@ -38,7 +39,7 @@ class ManualVadHandler implements OmniRealtimeExchange.Handler {
 
     @Override
     public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
-        final var manualVad = new ManualVadImpl(exchange, futureSlot);
+        final var manualVad = new ManualVadImpl((OmniRealtimeExchange) exchange, futureSlot);
         delegate.onOpen(manualVad);
         completeF.complete(manualVad);
     }
@@ -64,11 +65,11 @@ class ManualVadHandler implements OmniRealtimeExchange.Handler {
 
     private static class ManualVadImpl extends Exchange.Proxy<OmniRealtimeClientEvent> implements ManualVad {
 
-        private final Exchange<OmniRealtimeClientEvent> origin;
+        private final OmniRealtimeExchange origin;
         private final FutureSlot<String> futureSlot;
         private final AtomicReference<State> stateRef = new AtomicReference<>(State.IDLE);
 
-        private ManualVadImpl(Exchange<OmniRealtimeClientEvent> origin, FutureSlot<String> futureSlot) {
+        private ManualVadImpl(OmniRealtimeExchange origin, FutureSlot<String> futureSlot) {
             super(origin);
             this.origin = origin;
             this.futureSlot = futureSlot;
@@ -94,6 +95,11 @@ class ManualVadHandler implements OmniRealtimeExchange.Handler {
         public CompletionStage<InputOp> newInput() {
             changeState(State.IDLE, State.INPUT_READY);
             return CompletableFuture.completedStage(new InputOpImpl());
+        }
+
+        @Override
+        public OmniRealtimeSession session() {
+            return origin.session();
         }
 
         private class InputOpImpl implements InputOp {
@@ -192,7 +198,7 @@ class ManualVadHandler implements OmniRealtimeExchange.Handler {
 
                         .exceptionallyCompose(ex -> {
                             final var cause = CompletableFutureUtils.unwrapEx(ex);
-                            if(!(cause instanceof CancellationException)) {
+                            if (!(cause instanceof CancellationException)) {
                                 return CompletableFuture.failedStage(cause);
                             }
                             final var cancelE = new OmniRealtimeResponseCancelClientEvent(genUUID22());

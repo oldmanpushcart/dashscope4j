@@ -15,6 +15,13 @@ import java.util.concurrent.CompletionStage;
 public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> {
 
     /**
+     * 获取会话
+     *
+     * @return 会话
+     */
+    OmniRealtimeSession session();
+
+    /**
      * 手动 VAD
      */
     interface ManualVad extends OmniRealtimeExchange {
