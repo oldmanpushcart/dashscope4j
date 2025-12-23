@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
+import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +35,9 @@ public class AsyncApiExecutor {
 
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> execute(URI endpoint, T request) {
 
+        final var traceId = UUIDUtils.genUUID22();
         final var requestBody = JacksonJsonUtils.toJson(request);
-        logger.debug("{} >>> {}", this, requestBody);
+        logger.debug("{}/{} >>> {}", this, traceId, requestBody);
 
         final var httpRequest = HttpRequest.newBuilder()
                 .uri(endpoint)
@@ -51,7 +53,7 @@ public class AsyncApiExecutor {
                 .thenApply(httpResponse -> {
                     final var responseBody = httpResponse.body();
                     final var responseType = request.responseType();
-                    logger.debug("{} <<< {}", this, responseBody);
+                    logger.debug("{}/{} <<< {}", this, traceId, responseBody);
                     return JacksonJsonUtils.toApiResponse(responseBody, responseType, request, httpResponse);
                 })
                 .thenApply(response -> {

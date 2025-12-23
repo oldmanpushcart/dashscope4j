@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetectio
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
+import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,9 +42,13 @@ public class FlowApiExecutor {
         this.http = http;
     }
 
+    @Override
+    public String toString() {
+        return "dashscope4j-client://flow";
+    }
+
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(URI endpoint, T request) {
-
-
+        final var traceId = UUIDUtils.genUUID22();
         return new Flow.Publisher<>() {
 
             @Override
@@ -54,7 +59,7 @@ public class FlowApiExecutor {
                 try {
 
                     final var requestBody = JacksonJsonUtils.toJson(request);
-                    logger.trace("dashscope-client://flow {} <<< {}", endpoint, requestBody);
+                    logger.debug("{}/{} >>> {}", FlowApiExecutor.this, traceId, requestBody);
 
                     final var httpRequest = HttpRequest.newBuilder()
                             .uri(endpoint)
@@ -78,7 +83,7 @@ public class FlowApiExecutor {
 
                                     @Override
                                     public void onSubscribe(Flow.Subscription subscription) {
-                                        logger.trace("dashscope-client://flow {} subscribed!", endpoint);
+                                        logger.debug("{}/{} subscribed!", FlowApiExecutor.this, traceId);
                                         this.subscription = subscription;
                                         submissionPublisher.subscribe(subscriber);
                                         subscription.request(1);
@@ -91,7 +96,7 @@ public class FlowApiExecutor {
 
                                             final var responseBody = item.data();
                                             final var responseType = request.responseType();
-                                            logger.trace("dashscope-client://flow {} >>> {}", endpoint, responseBody);
+                                            logger.debug("{}/{} <<< {}", FlowApiExecutor.this, traceId, responseBody);
 
                                             final var response = JacksonJsonUtils.toApiResponse(responseBody, responseType, request, httpResponse);
                                             if (!response.isSuccess()) {
@@ -109,13 +114,13 @@ public class FlowApiExecutor {
 
                                     @Override
                                     public void onError(Throwable ex) {
-                                        logger.trace("dashscope-client://flow {} closed by error!", endpoint, ex);
+                                        logger.warn("{}/{} closed by error!", FlowApiExecutor.this, traceId, ex);
                                         submissionPublisher.closeExceptionally(ex);
                                     }
 
                                     @Override
                                     public void onComplete() {
-                                        logger.trace("dashscope-client://flow {} closed by normal!", endpoint);
+                                        logger.debug("{}/{} closed by normal!", FlowApiExecutor.this, traceId);
                                         submissionPublisher.close();
                                     }
 
@@ -274,7 +279,7 @@ public class FlowApiExecutor {
                  * 这里记录下SSE的数据日志
                  * 因为非常消耗性能，所以用trace
                  */
-                logger.trace("dashscope-client://flow/sse <<< \n{}", body);
+                logger.trace("HTTP-SSE <<< \n{}", body);
 
                 final var item = Item.parse(body);
                 publisher.submit(item);
@@ -329,9 +334,6 @@ public class FlowApiExecutor {
                         case "id" -> id = value;
                         case "event" -> event = value;
                         case "data" -> dataBuf.append(value).append("\n");
-                        default -> {
-                            // TODO: log this
-                        }
                     }
 
 

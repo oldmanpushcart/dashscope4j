@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.executor;
 
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
+import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,7 @@ public class ExchangeApiExecutor {
             final Function<String, R> decoder,
             final Exchange.Handler<T, R> handler
     ) {
-        final var id = UUID.randomUUID().toString();
+        final var id = UUIDUtils.genUUID22();
         final var listener = new ListenerImpl<>(id, endpoint, encoder, decoder, handler);
         return http.newWebSocketBuilder()
                 .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
@@ -263,15 +264,14 @@ public class ExchangeApiExecutor {
             final var body = stringBuf.toString();
             stringBuf.setLength(0);
 
+            logger.debug("{} <<< {}", this, body);
             return CompletableFuture.completedStage(body)
                     .thenApply(decoder)
                     .thenCompose(handler::onData)
                     .whenComplete((unused, ex) -> {
                         if (null == ex) {
-                            logger.debug("{}/text <<< {}", this, body);
                             ws.request(1);
                         } else {
-                            logger.warn("{}/text <<< {}", this, body, ex);
                             fireClosed(ws, ex);
                         }
                     });
@@ -280,14 +280,13 @@ public class ExchangeApiExecutor {
         @Override
         public CompletionStage<?> onBinary(WebSocket ws, ByteBuffer data, boolean last) {
             final var byteCnt = data.remaining();
+            logger.debug("{} <<< bytes[{}]!", this, byteCnt);
             return CompletableFuture.completedStage(data)
                     .thenCompose(handler::onBinary)
                     .whenComplete((unused, ex) -> {
                         if (null == ex) {
-                            logger.debug("{}/binary <<< bytes[{}]!", this, byteCnt);
                             ws.request(1);
                         } else {
-                            logger.warn("{}/binary <<< bytes[{}]!", this, byteCnt, ex);
                             fireClosed(ws, ex);
                         }
                     });
@@ -296,13 +295,12 @@ public class ExchangeApiExecutor {
         @Override
         public CompletionStage<?> onPing(WebSocket ws, ByteBuffer message) {
             final var byteCnt = message.remaining();
+            logger.debug("{} <<< PING({}bytes)", this, byteCnt);
             return ws.sendPong(message)
                     .whenComplete((unused, ex) -> {
                         if (null == ex) {
-                            logger.debug("{}/ping <<< bytes[{}]", this, byteCnt);
                             ws.request(1);
                         } else {
-                            logger.warn("{}/ping <<< bytes[{}]", this, byteCnt, ex);
                             fireClosed(ws, ex);
                         }
                     });
@@ -311,14 +309,14 @@ public class ExchangeApiExecutor {
         @Override
         public CompletionStage<?> onPong(WebSocket ws, ByteBuffer message) {
             final var byteCnt = message.remaining();
-            logger.debug("{}/pong <<< bytes[{}]", this, byteCnt);
+            logger.debug("{} <<< PONG({}bytes)", this, byteCnt);
             ws.request(1);
             return null;
         }
 
         @Override
         public CompletionStage<?> onClose(WebSocket ws, int status, String reason) {
-            logger.trace("{}/close <<< CLOSE! status={};reason={};", this, status, reason);
+            logger.trace("{} <<< CLOSE! status={};reason={};", this, status, reason);
             final var ex = status != WebSocket.NORMAL_CLOSURE
                     ? new WebSocketCloseException(status, reason)
                     : null;
