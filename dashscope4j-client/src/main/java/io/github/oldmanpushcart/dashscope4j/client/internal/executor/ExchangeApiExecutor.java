@@ -51,12 +51,19 @@ public class ExchangeApiExecutor {
         private final WebSocket ws;
         private final Function<T, String> encoder;
         private final CompletableFuture<Void> closeF;
+        private final String _toString;
 
         private ExchangeImpl(String id, WebSocket ws, Function<T, String> encoder, CompletableFuture<Void> closeF) {
             this.id = id;
             this.ws = ws;
             this.encoder = encoder;
             this.closeF = closeF;
+            this._toString = "dashscope4j-client://exchange/%s".formatted(id);
+        }
+
+        @Override
+        public String toString() {
+            return _toString;
         }
 
         @Override
@@ -71,16 +78,22 @@ public class ExchangeApiExecutor {
 
         @Override
         public CompletionStage<Void> closing() {
-            logger.trace("dashscope-client://exchange/{} >>> CLOSING.", id);
             return ws.sendClose(WebSocket.NORMAL_CLOSURE, "bye!")
+                    .whenComplete((v, ex) -> {
+                        if (null == ex) {
+                            logger.debug("{} >>> CLOSING", this);
+                        } else {
+                            logger.warn("{} >>> CLOSING", this, ex);
+                        }
+                    })
                     .thenAccept(unused -> {
                     });
         }
 
         @Override
         public void close() {
-            logger.trace("dashscope-client://exchange/{} >>> CLOSED.", id);
             ws.abort();
+            logger.debug("{} >>> CLOSED", this);
         }
 
         @Override
@@ -92,15 +105,28 @@ public class ExchangeApiExecutor {
         public CompletionStage<Void> send(T data) {
             final var body = encoder.apply(data);
             return ws.sendText(body, true)
-                    .whenComplete((v, ex) -> logger.trace("dashscope-client://exchange/{}/text >>> {}", id, body, ex))
+                    .whenComplete((v, ex) -> {
+                        if (null == ex) {
+                            logger.debug("{}/text >>> {}", this, body);
+                        } else {
+                            logger.warn("{}/text >>> {}", this, body, ex);
+                        }
+                    })
                     .thenAccept(unused -> {
                     });
         }
 
         @Override
         public CompletionStage<Void> send(ByteBuffer buffer) {
+            final var byteCnt = buffer.remaining();
             return ws.sendBinary(buffer, true)
-                    .whenComplete((v, ex) -> logger.trace("dashscope-client://exchange/{}/binary >>> bytes[{}]", id, buffer.remaining(), ex))
+                    .whenComplete((v, ex) -> {
+                        if (null == ex) {
+                            logger.debug("{}/binary >>> bytes[{}]", this, byteCnt);
+                        } else {
+                            logger.warn("{}/binary >>> bytes[{}]", this, byteCnt, ex);
+                        }
+                    })
                     .thenAccept(unused -> {
                     });
         }
@@ -125,6 +151,8 @@ public class ExchangeApiExecutor {
         private final CompletableFuture<Void> closeF = new CompletableFuture<>();
         private final StringBuilder stringBuf = new StringBuilder();
 
+        private final String _toString;
+
         private ListenerImpl(
                 final String id,
                 final URI endpoint,
@@ -137,10 +165,16 @@ public class ExchangeApiExecutor {
             this.encoder = encoder;
             this.decoder = decoder;
             this.handler = handler;
+            this._toString = "dashscope4j-client://exchange/%s".formatted(id);
         }
 
         public CompletionStage<Exchange<T>> getFuture() {
             return exchangeF;
+        }
+
+        @Override
+        public String toString() {
+            return _toString;
         }
 
         @Override
@@ -150,9 +184,10 @@ public class ExchangeApiExecutor {
                 handler.onOpen(exchange);
                 exchangeF.complete(exchange);
                 ws.request(1L);
-                logger.trace("dashscope-client://exchange/{} opened. endpoint={};", id, endpoint);
+                logger.debug("{} opened. endpoint={};", this, endpoint);
             } catch (Throwable ex) {
                 fireClosed(ws, ex);
+                logger.warn("{} open failure. endpoint={};", this, endpoint, ex);
             }
         }
 
@@ -172,9 +207,8 @@ public class ExchangeApiExecutor {
          *
          * @param ws websocket
          * @param ex 错误信息
-         * @return 关闭处理结果
          */
-        private CompletionStage<Void> fireClosed(WebSocket ws, Throwable ex) {
+        private void fireClosed(WebSocket ws, Throwable ex) {
 
             /*
              * 错误标志位，防止重复触发
@@ -183,22 +217,35 @@ public class ExchangeApiExecutor {
              * 所以这里进行一次重复调用判断，只有第一次才触发
              */
             if (!tryClose(ex)) {
-                return CompletableFuture.completedStage(null);
+                return;
             }
 
             /*
              * 都已经通知关闭了，所以这里无论如何也得中断一次连接
              * 反正是幂等操作，关了心安
              */
-            ws.abort();
+            try {
+                ws.abort();
+            } catch (Throwable abortEx) {
+                logger.trace("{} websocket abort threw exception during close", this, abortEx);
+            }
 
-            logger.trace("dashscope-client://exchange/{} closed.", id, ex);
-            return CompletableFuture.completedStage(null)
-                    .thenAccept(unused -> handler.onClosed(ex))
-                    .exceptionally(closeEx -> {
-                        logger.trace("dashscope-client://exchange/{} occur error when fire closed!", id, closeEx);
-                        return null;
-                    });
+            /*
+             * 努力通知 handler 当前通道已关闭
+             * 通知失败不影响整个关闭流程
+             */
+            try {
+                handler.onClosed(ex);
+            } catch (Throwable closeEx) {
+                logger.warn("{} handler threw exception during close", this, closeEx);
+            }
+
+            if (ex == null) {
+                logger.debug("{} closed normally", this);
+            } else {
+                logger.warn("{} closed abnormally", this, ex);
+            }
+
         }
 
         @Override
@@ -216,59 +263,67 @@ public class ExchangeApiExecutor {
             final var body = stringBuf.toString();
             stringBuf.setLength(0);
 
-            logger.trace("dashscope-client://exchange/{}/text <<< {}", id, body);
             return CompletableFuture.completedStage(body)
                     .thenApply(decoder)
                     .thenCompose(handler::onData)
                     .whenComplete((unused, ex) -> {
-                        if (null != ex) {
-                            fireClosed(ws, ex);
-                        } else {
+                        if (null == ex) {
+                            logger.debug("{}/text <<< {}", this, body);
                             ws.request(1);
+                        } else {
+                            logger.warn("{}/text <<< {}", this, body, ex);
+                            fireClosed(ws, ex);
                         }
                     });
         }
 
         @Override
         public CompletionStage<?> onBinary(WebSocket ws, ByteBuffer data, boolean last) {
-            logger.trace("dashscope-client://exchange/{}/binary <<< bytes[{}]", id, data.remaining());
+            final var byteCnt = data.remaining();
             return CompletableFuture.completedStage(data)
                     .thenCompose(handler::onBinary)
                     .whenComplete((unused, ex) -> {
-                        if (null != ex) {
-                            fireClosed(ws, ex);
-                        } else {
+                        if (null == ex) {
+                            logger.debug("{}/binary <<< bytes[{}]!", this, byteCnt);
                             ws.request(1);
+                        } else {
+                            logger.warn("{}/binary <<< bytes[{}]!", this, byteCnt, ex);
+                            fireClosed(ws, ex);
                         }
                     });
         }
 
         @Override
         public CompletionStage<?> onPing(WebSocket ws, ByteBuffer message) {
-            logger.trace("dashscope-client://exchange/{}/ping <<< bytes[{}]", id, message.remaining());
+            final var byteCnt = message.remaining();
             return ws.sendPong(message)
                     .whenComplete((unused, ex) -> {
-                        if (null != ex) {
-                            fireClosed(ws, ex);
-                        } else {
+                        if (null == ex) {
+                            logger.debug("{}/ping <<< bytes[{}]", this, byteCnt);
                             ws.request(1);
+                        } else {
+                            logger.warn("{}/ping <<< bytes[{}]", this, byteCnt, ex);
+                            fireClosed(ws, ex);
                         }
                     });
         }
 
         @Override
         public CompletionStage<?> onPong(WebSocket ws, ByteBuffer message) {
-            logger.trace("dashscope-client://exchange/{}/pong <<< bytes[{}]", id, message.remaining());
-            return WebSocket.Listener.super.onPong(ws, message);
+            final var byteCnt = message.remaining();
+            logger.debug("{}/pong <<< bytes[{}]", this, byteCnt);
+            ws.request(1);
+            return null;
         }
 
         @Override
         public CompletionStage<?> onClose(WebSocket ws, int status, String reason) {
-            logger.trace("dashscope-client://exchange/{}/close <<< CLOSE! status={};reason={};", id, status, reason);
+            logger.trace("{}/close <<< CLOSE! status={};reason={};", this, status, reason);
             final var ex = status != WebSocket.NORMAL_CLOSURE
                     ? new WebSocketCloseException(status, reason)
                     : null;
-            return fireClosed(ws, ex);
+            fireClosed(ws, ex);
+            return null;
         }
 
         @Override

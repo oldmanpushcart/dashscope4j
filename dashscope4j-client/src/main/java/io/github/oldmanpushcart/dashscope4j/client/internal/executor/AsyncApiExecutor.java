@@ -12,7 +12,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashMap;
 import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
@@ -28,10 +27,15 @@ public class AsyncApiExecutor {
         this.http = http;
     }
 
+    @Override
+    public String toString() {
+        return "dashscope4j-client://async";
+    }
+
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> execute(URI endpoint, T request) {
 
         final var requestBody = JacksonJsonUtils.toJson(request);
-        logger.trace("dashscope-client://async {} <<< {}", endpoint, requestBody);
+        logger.debug("{} >>> {}", this, requestBody);
 
         final var httpRequest = HttpRequest.newBuilder()
                 .uri(endpoint)
@@ -45,19 +49,15 @@ public class AsyncApiExecutor {
                 .build();
         return http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
                 .thenApply(httpResponse -> {
-
                     final var responseBody = httpResponse.body();
                     final var responseType = request.responseType();
-                    logger.trace("dashscope-client://async {} >>> {}", endpoint, responseBody);
-
+                    logger.debug("{} <<< {}", this, responseBody);
                     return JacksonJsonUtils.toApiResponse(responseBody, responseType, request, httpResponse);
                 })
                 .thenApply(response -> {
-
                     if (!response.isSuccess()) {
                         throw new ApiException(response);
                     }
-
                     return response;
                 });
     }
