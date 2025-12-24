@@ -139,14 +139,14 @@ public class ExchangeConnector {
         // 延迟重试：使用 daemon Timer
         final var delayMs = Math.max(0, delay.toMillis());
         logger.debug("{} retry scheduling after {}ms at attempt {}", this, delayMs, attempt);
-        final var completeF = new CompletableFuture<Void>();
+        final var retryF = new CompletableFuture<Void>();
         timer.schedule(new TimerTask() {
 
             @Override
             public void run() {
                 try {
                     if (isShutdown()) {
-                        completeF.completeExceptionally(
+                        retryF.completeExceptionally(
                                 new IllegalStateException("Connector was shutdown during retry at attempt %d!".formatted(attempt))
                         );
                         return;
@@ -154,19 +154,19 @@ public class ExchangeConnector {
                     reconnect(attempt + 1, strategy)
                             .whenComplete((exchange, reconnectEx) -> {
                                 if (reconnectEx != null) {
-                                    completeF.completeExceptionally(reconnectEx);
+                                    retryF.completeExceptionally(reconnectEx);
                                 } else {
-                                    completeF.complete(null);
+                                    retryF.complete(null);
                                 }
                             });
                 } catch (Throwable reconnectEx) {
-                    completeF.completeExceptionally(reconnectEx);
+                    retryF.completeExceptionally(reconnectEx);
                 }
             }
 
         }, delayMs);
 
-        return completeF;
+        return retryF;
 
     }
 
