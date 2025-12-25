@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRawValue;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
@@ -26,13 +25,11 @@ import static java.util.stream.Collectors.toMap;
 /**
  * 对话请求
  */
-@JsonSerialize(using = ChatRequestJsonSerializer.class)
 public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     private final List<Message> messages;
     private final List<Plugin> plugins;
     private final List<Tool> tools;
-    private final ChatCompatibility compatibility;
 
     private ChatRequest(Builder builder) {
         super(ChatResponse.class, builder);
@@ -40,7 +37,6 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         this.messages = unmodifiableList(builder.messages);
         this.plugins = unmodifiableList(builder.plugins);
         this.tools = unmodifiableList(builder.tools);
-        this.compatibility = builder.compatibility;
     }
 
     public List<Message> messages() {
@@ -55,9 +51,76 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         return tools;
     }
 
-    public ChatCompatibility compatibility() {
-        return compatibility;
+    @Override
+    protected Object input() {
+        return new Input();
     }
+
+    @Override
+    public Parameters parameters() {
+
+        final Parameters newParameters = new Parameters();
+
+        // 插件必选参数
+        if (!plugins.isEmpty()) {
+            newParameters.append("result_format", "message");
+        }
+
+        // 工具必选参数
+        final List<Tool> enabledTools = tools.stream()
+                .filter(Tool::isEnabled)
+                .collect(Collectors.toList());
+        if (!enabledTools.isEmpty()) {
+            newParameters.append("result_format", "message");
+            newParameters.append("tools", enabledTools);
+        }
+
+        return super.parameters()
+                .merge(newParameters)
+                .unmodifiable();
+    }
+
+    private class Input {
+
+        @JsonRawValue
+        @JsonProperty("messages")
+        String expect() {
+            return switch (decideMode()) {
+                case TEXT -> JacksonJsonUtils.toJson(ChatViews.Text.class, messages);
+                case MULTIMODAL -> JacksonJsonUtils.toJson(ChatViews.Multimodal.class, messages);
+            };
+        }
+
+
+        /*
+         * 决定使用哪种对话模式
+         */
+        private ChatModel.Mode decideMode() {
+
+            // 是否有PDFExtract插件
+            final boolean hasPdfExtractPlugin = plugins.stream()
+                    .anyMatch(plugin -> plugin.name().equals(ChatPlugin.PDF_EXTRACTER.name()));
+
+            // 聊天消息列表中是否包含File类型的内容
+            final boolean hasFileContent = messages.stream()
+                    .flatMap(message -> message.contents().stream())
+                    .anyMatch(content -> content.type() == Content.Type.FILE);
+
+            /*
+             * PDFExtract插件比较特殊，
+             * 他在有File类型的内容时，消息列表格式为为多模态格式，否则则为文本格式
+             */
+            if (hasPdfExtractPlugin && hasFileContent) {
+                return ChatModel.Mode.MULTIMODAL;
+            }
+
+            // 否则返回模型的默认模式
+            return model().mode();
+
+        }
+
+    }
+
 
     public static Builder newBuilder() {
         return new Builder();
@@ -73,8 +136,6 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         private final List<Plugin> plugins = new LinkedList<>();
         private final List<Tool> tools = new LinkedList<>();
 
-        private ChatCompatibility compatibility = ChatCompatibility.DASHSCOPE;
-
         protected Builder() {
         }
 
@@ -83,7 +144,6 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
             this.messages.addAll(request.messages);
             this.plugins.addAll(request.plugins);
             this.tools.addAll(request.tools);
-            this.compatibility = request.compatibility;
         }
 
         /**
@@ -238,12 +298,6 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         public Builder addFunctions(Collection<? extends ChatFunction<?, ?>> functions) {
             requireNonNull(functions);
             this.tools.addAll(toTools(functions));
-            return this;
-        }
-
-        public Builder compatibility(ChatCompatibility compatibility) {
-            requireNonNull(compatibility);
-            this.compatibility = compatibility;
             return this;
         }
 

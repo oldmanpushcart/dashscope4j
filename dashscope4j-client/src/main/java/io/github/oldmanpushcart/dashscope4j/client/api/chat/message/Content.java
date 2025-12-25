@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatView;
 
 import java.io.IOException;
 import java.net.URI;
@@ -67,40 +66,11 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
 
     static class ContentJsonSerializer extends JsonSerializer<Content<?>> {
 
-        private static final Map<Type, String> typeMappingForOpenAI = Map.of(
-                Type.TEXT, "text",
-                Type.IMAGE, "image_url",
-                Type.AUDIO, "audio_url",
-                Type.VIDEO, "video_url",
-                Type.FILE, "file_url"
-        );
-
         @Override
         public void serialize(Content<?> content, JsonGenerator gen, SerializerProvider provider) throws IOException {
-            final var view = provider.getActiveView();
-            if(ChatView.Dashscope.class.isAssignableFrom(view)) {
-                final var pojo = new HashMap<>();
-                pojo.put(content.type, content.data);
-                gen.writeObject(pojo);
-            } else if(ChatView.OpenAI.class.isAssignableFrom(view)) {
-
-                final var mappedType = typeMappingForOpenAI.get(content.type);
-                final var pojo = new HashMap<>();
-                pojo.put("type", mappedType);
-
-
-                if(content.type == Type.TEXT) {
-                    pojo.put("text", content.data);
-                } else {
-                    final var valuePojo = new HashMap<>();
-                    valuePojo.put("url", content.data);
-                    pojo.put(mappedType, valuePojo);
-                }
-
-                gen.writeObject(pojo);
-            } else {
-                throw new IllegalArgumentException("Unsupported view: " + view);
-            }
+            final var map = new HashMap<>();
+            map.put(content.type, content.data);
+            gen.writeObject(map);
         }
 
     }

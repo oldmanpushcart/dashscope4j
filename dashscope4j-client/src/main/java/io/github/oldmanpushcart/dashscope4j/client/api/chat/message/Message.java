@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatView;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatViews;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 
@@ -246,23 +246,23 @@ public sealed class Message implements Accumulator<Message> permits PluginMessag
 
         @Override
         public void serialize(List<Content<?>> contents, JsonGenerator gen, SerializerProvider provider) throws IOException {
-            final var mapper = (ObjectMapper)gen.getCodec();
+
             final var view = provider.getActiveView();
-            if(ChatView.Text.class.isAssignableFrom(view)) {
+            if (view == ChatViews.Text.class) {
                 final StringBuilder stringBuf = new StringBuilder();
                 for (final Content<?> content : contents) {
                     if (content instanceof Content.Text text) {
                         stringBuf.append(text.data());
                     }
                 }
-                mapper.writerWithView(view).writeValue(gen, stringBuf.toString());
-            } else if(ChatView.Multimodal.class.isAssignableFrom(view)) {
-                mapper.writerWithView(view).writeValue(gen, contents);
+                gen.writeObject(stringBuf.toString());
+            } else if (view == ChatViews.Multimodal.class) {
+                gen.writeObject(contents);
             } else {
-                throw new IllegalArgumentException("Unsupported view: " + view);
+                throw new IllegalArgumentException("Unknown view: %s".formatted(view));
             }
-        }
 
+        }
     }
 
     static class MessageJsonDeserializer extends JsonDeserializer<Message> {
