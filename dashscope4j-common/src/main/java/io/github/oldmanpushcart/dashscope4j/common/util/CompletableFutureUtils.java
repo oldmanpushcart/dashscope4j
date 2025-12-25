@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.common.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -8,6 +10,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
+import static java.util.Collections.synchronizedList;
 import static java.util.Objects.nonNull;
 
 /**
@@ -38,8 +41,8 @@ public class CompletableFutureUtils {
      * @param <R>      处理后类型
      * @return 迭代组合器
      */
-    public static <T, R> CompletionStage<List<R>> thenIterateCompose(Iterable<T> source, Function<T, CompletionStage<R>> function) {
-        CompletableFuture<List<R>> stage = CompletableFuture.completedFuture(new ArrayList<>());
+    public static <T, R> CompletionStage<List<R>> sequence(Iterable<T> source, Function<T, CompletionStage<R>> function) {
+        CompletableFuture<List<R>> stage = CompletableFuture.completedFuture(synchronizedList(new ArrayList<>()));
         for (final T t : source) {
             stage = stage.thenCompose(list ->
                     function.apply(t)
@@ -47,6 +50,30 @@ public class CompletableFutureUtils {
                             .thenApply(unused -> list));
         }
         return stage;
+    }
+
+    public static void main(String... args) {
+        List<String> source = Arrays.asList("slow", "fast");
+        Function<String, CompletionStage<String>> fn = s -> {
+            if ("slow".equals(s)) {
+                return CompletableFuture.supplyAsync(() -> {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return "SLOW";
+                });
+            } else {
+                return CompletableFuture.completedFuture("FAST");
+            }
+        };
+
+        sequence(source, fn)
+                .thenAccept(System.out::println)
+                .toCompletableFuture()
+                .join();
+
     }
 
 }

@@ -1,6 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange.ManualVad;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
@@ -21,6 +26,7 @@ import javax.sound.sampled.AudioSystem;
 import java.io.File;
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
@@ -130,14 +136,24 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug5() {
 
-        CompletableFuture.completedStage(null)
-                .thenAccept(unused -> {
-                    throw new RuntimeException("TEST!");
-                })
-                .whenComplete((v, ex) -> {
-                    ex.printStackTrace();
-                });
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_VL_MAX)
+                .addMessage(Message.ofUser(List.of(
+                        Content.ofText("图片中是什么?"),
+                        Content.ofImage(new File("./test-data/image/red-cup.jpeg").toURI())
+                )))
+                .build();
 
+        final var chatOp = ChatOp.newBuilder()
+                .ak(AK)
+                .http(http)
+                .build();
+
+        final var response = chatOp.async(request)
+                .toCompletableFuture()
+                .join();
+
+        System.out.println(response.output().best().message().text());
 
     }
 
