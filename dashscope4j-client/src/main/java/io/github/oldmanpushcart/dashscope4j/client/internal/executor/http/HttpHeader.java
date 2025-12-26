@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.executor.http;
 
 
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureCodec;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.codec.FeatureCodec;
 
 import java.net.http.HttpHeaders;
 import java.nio.charset.Charset;

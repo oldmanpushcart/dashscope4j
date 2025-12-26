@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.util;
+package io.github.oldmanpushcart.dashscope4j.client.internal.util.codec;
 
 import java.util.ArrayList;
 import java.util.Collection;

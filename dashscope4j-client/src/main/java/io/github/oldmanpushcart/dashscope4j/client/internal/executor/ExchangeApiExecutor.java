@@ -228,7 +228,7 @@ public class ExchangeApiExecutor {
             try {
                 ws.abort();
             } catch (Throwable abortEx) {
-                logger.trace("{} websocket abort threw exception during close", this, abortEx);
+                logger.warn("{} websocket abort threw exception during close", this, abortEx);
             }
 
             /*

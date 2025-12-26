@@ -7,20 +7,17 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApiExecutor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowApiExecutor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.codec.AsyncFileBase64Encoder;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.DeferredPublisher;
+import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
-import java.util.Base64;
+import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 import java.util.function.Function;
-
-import static io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils.sequentialMap;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public class ChatOpImpl implements ChatOp {
 
@@ -36,7 +33,7 @@ public class ChatOpImpl implements ChatOp {
     public CompletionStage<ChatResponse> async(ChatRequest request) {
         final var endpoint = request.model().endpoint();
         return CompletableFuture.completedStage(request)
-                .thenCompose(this::processingEachContentForInlineLocalMediaAsBase64)
+                .thenCompose(this::processingEachContentForInlineFileMediaAsBase64)
                 .thenCompose(r -> asyncApi.execute(endpoint, r))
                 .thenCompose(new FunctionToolCallOpAsyncHandler(this));
     }
@@ -45,14 +42,14 @@ public class ChatOpImpl implements ChatOp {
     public Flow.Publisher<ChatResponse> flow(ChatRequest request) {
         final var endpoint = request.model().endpoint();
         final var publisherF = CompletableFuture.completedStage(request)
-                .thenCompose(this::processingEachContentForInlineLocalMediaAsBase64)
+                .thenCompose(this::processingEachContentForInlineFileMediaAsBase64)
                 .thenApply(r -> flowApi.execute(endpoint, r))
                 .thenApply(publisher -> new FunctionToolCallOpFlowHandler(this).apply(publisher));
         return new DeferredPublisher<>(publisherF);
     }
 
     private static CompletionStage<ChatRequest> processingEachMessage(ChatRequest request, Function<Message, CompletionStage<Message>> operator) {
-        return sequentialMap(request.messages(), operator)
+        return CompletableFutureUtils.sequentialMap(request.messages(), operator)
                 .thenApply(newMessages ->
                         ChatRequest.newBuilder(request)
                                 .messages(newMessages)
@@ -60,29 +57,14 @@ public class ChatOpImpl implements ChatOp {
     }
 
     private static CompletionStage<ChatRequest> processingEachContent(ChatRequest request, Function<Content<?>, CompletionStage<Content<?>>> operator) {
-        return processingEachMessage(request, message -> sequentialMap(message.contents(), operator)
+        return processingEachMessage(request, message -> CompletableFutureUtils.sequentialMap(message.contents(), operator)
                 .thenApply(newContents ->
                         new Message(message.role(), newContents)));
     }
 
 
-    private CompletionStage<ChatRequest> processingEachContentForInlineLocalMediaAsBase64(ChatRequest request) {
+    private CompletionStage<ChatRequest> processingEachContentForInlineFileMediaAsBase64(ChatRequest request) {
         return processingEachContent(request, new Function<>() {
-
-            private static final int BUFFER_SIZE = 1024;
-
-            private static String toBase64(URI resourceURI) throws IOException {
-                try (final var input = resourceURI.toURL().openStream();
-                     final var output = new ByteArrayOutputStream();
-                     final var base64Output = Base64.getEncoder().wrap(output)) {
-                    final var buffer = new byte[BUFFER_SIZE];
-                    int readded;
-                    while ((readded = input.read(buffer)) != -1) {
-                        base64Output.write(buffer, 0, readded);
-                    }
-                    return output.toString(US_ASCII);
-                }
-            }
 
             private static boolean isFileURI(URI resourceURI) {
                 return "file".equalsIgnoreCase(resourceURI.getScheme());
@@ -91,21 +73,21 @@ public class ChatOpImpl implements ChatOp {
             @Override
             public CompletionStage<Content<?>> apply(Content<?> content) {
                 if (content instanceof Content.Media media) {
-                    return sequentialMap(media.data(), resourceURI -> {
+                    return CompletableFutureUtils
+                            .sequentialMap(media.data(), resourceURI -> {
                                 if (!isFileURI(resourceURI)) {
                                     return CompletableFuture.completedStage(resourceURI);
                                 }
-                                try {
-                                    return CompletableFuture.completedStage(URI.create("data:;base64," + toBase64(resourceURI)));
-                                } catch (IOException ioEx) {
-                                    return CompletableFuture.failedStage(ioEx);
-                                }
+                                final var path = Paths.get(resourceURI);
+                                return AsyncFileBase64Encoder.encode(path)
+                                        .thenApply(base64Str -> URI.create("data:;base64," + base64Str));
                             })
                             .thenApply(media::changeData);
                 } else {
                     return CompletableFuture.completedStage(content);
                 }
             }
+
         });
     }
 
