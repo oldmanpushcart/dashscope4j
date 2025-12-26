@@ -7,8 +7,9 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApiExecutor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowApiExecutor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.DeferredPublisher;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -17,7 +18,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
+
+import static io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content.Type.*;
+import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.isIn;
+import static io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils.sequentialMap;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public class ChatOpImpl implements ChatOp {
 
@@ -33,7 +38,7 @@ public class ChatOpImpl implements ChatOp {
     public CompletionStage<ChatResponse> async(ChatRequest request) {
         final var endpoint = request.model().endpoint();
         return CompletableFuture.completedStage(request)
-                .thenApply(this::processingForBase64EncodeImageContent)
+                .thenCompose(this::processingEachContentForInlineLocalMediaAsBase64)
                 .thenCompose(r -> asyncApi.execute(endpoint, r))
                 .thenCompose(new FunctionToolCallOpAsyncHandler(this));
     }
@@ -41,52 +46,74 @@ public class ChatOpImpl implements ChatOp {
     @Override
     public Flow.Publisher<ChatResponse> flow(ChatRequest request) {
         final var endpoint = request.model().endpoint();
-        final var publisher = flowApi.execute(endpoint, request);
-        return new FunctionToolCallOpFlowHandler(this)
-                .apply(publisher);
+        final var publisherF = CompletableFuture.completedStage(request)
+                .thenCompose(this::processingEachContentForInlineLocalMediaAsBase64)
+                .thenApply(r-> flowApi.execute(endpoint, r))
+                .thenApply(publisher -> new FunctionToolCallOpFlowHandler(this).apply(publisher));
+        return new DeferredPublisher<>(publisherF);
     }
 
-    private CompletionStage<ChatRequest> processingEachMessage(ChatRequest request, UnaryOperator<Message> operator) {
-        final var newMessages = request.messages().stream()
-                .map(operator)
-                .toList();
-        return ChatRequest.newBuilder(request)
-                .messages(newMessages)
-                .build();
+    private static CompletionStage<ChatRequest> processingEachMessage(ChatRequest request, Function<Message, CompletionStage<Message>> operator) {
+        return sequentialMap(request.messages(), operator)
+                .thenApply(newMessages ->
+                        ChatRequest.newBuilder(request)
+                                .messages(newMessages)
+                                .build());
     }
 
-    private ChatRequest processingForBase64EncodeImageContent(ChatRequest request) {
-        final var newMessages = request.messages().stream()
-                .map(message -> {
+    private static CompletionStage<ChatRequest> processingEachContent(ChatRequest request, Function<Content<?>, CompletionStage<Content<?>>> operator) {
+        return processingEachMessage(request, message -> sequentialMap(message.contents(), operator)
+                .thenApply(newContents ->
+                        new Message(message.role(), newContents)));
+    }
 
-                    if (message.getClass() != Message.class) {
-                        return message;
+
+    private CompletionStage<ChatRequest> processingEachContentForInlineLocalMediaAsBase64(ChatRequest request) {
+        return processingEachContent(request, new Function<Content<?>, CompletionStage<Content<?>>>() {
+
+            private static final int BUFFER_SIZE = 1024;
+
+            private static String toBase64(URI resourceURI) throws IOException {
+                try (final var input = resourceURI.toURL().openStream();
+                     final var output = new ByteArrayOutputStream();
+                     final var base64Output = Base64.getEncoder().wrap(output)) {
+                    final var buffer = new byte[BUFFER_SIZE];
+                    int readded;
+                    while ((readded = input.read(buffer)) != -1) {
+                        base64Output.write(buffer, 0, readded);
+                    }
+                    return output.toString(US_ASCII);
+                }
+            }
+
+            private static boolean isFileURI(URI resourceURI) {
+                return "file".equalsIgnoreCase(resourceURI.getScheme());
+            }
+
+            @Override
+            public CompletionStage<Content<?>> apply(Content<?> content) {
+                try {
+
+                    if (isIn(content.type(), IMAGE, AUDIO, VIDEO)
+                            && content.data() instanceof URI resourceURI
+                            && isFileURI(resourceURI)) {
+                        final var newResrouceURI = URI.create("data:;base64," + toBase64(resourceURI));
+                        final var newContent = switch (content.type()) {
+                            case IMAGE -> Content.ofImage(newResrouceURI);
+                            case AUDIO -> Content.ofAudio(newResrouceURI);
+                            case VIDEO -> Content.ofVideo(newResrouceURI);
+                            default -> content;
+                        };
+                        return CompletableFuture.completedStage(newContent);
+                    } else {
+                        return CompletableFuture.completedStage(content);
                     }
 
-                    final var newContents = message.contents().stream()
-                            .map(content -> {
-                                if (content.type() == Content.Type.IMAGE
-                                        && content.data() instanceof URI imageURI
-                                        && imageURI.getScheme().startsWith("file")) {
-                                    try {
-                                        final var imageBytes = IOUtils.toByteArray(imageURI);
-                                        final var imageBase64 = Base64.getEncoder().encodeToString(imageBytes);
-                                        final var newImageURI = URI.create("data:;base64,%s".formatted(imageBase64));
-                                        return Content.Media.ofImage(newImageURI);
-                                    } catch (IOException ioEx) {
-                                        throw new RuntimeException(ioEx);
-                                    }
-                                } else {
-                                    return content;
-                                }
-                            })
-                            .toList();
-                    return new Message(message.role(), newContents);
-                })
-                .toList();
-        return ChatRequest.newBuilder(request)
-                .messages(newMessages)
-                .build();
+                } catch (IOException ioEx) {
+                    return CompletableFuture.failedStage(ioEx);
+                }
+            }
+        });
     }
 
     public static class BuilderImpl implements ChatOp.Builder {

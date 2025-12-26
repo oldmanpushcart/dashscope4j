@@ -11,14 +11,12 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtim
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeResponseCancelClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.handler.SimpleOmniRealtimeExchangeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.ExchangeConnector;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
@@ -78,7 +76,7 @@ public class DebugTestCase implements LoadingEnv {
                 @Override
                 public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
 
-                    final var manualVad = (ManualVad)exchange;
+                    final var manualVad = (ManualVad) exchange;
                     manualVad
                             .newInput()
                             .thenCompose(ManualVad.InputOp::clear)
