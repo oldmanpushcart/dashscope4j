@@ -15,7 +15,9 @@ import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -69,7 +71,20 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
         @Override
         public void serialize(Content<?> content, JsonGenerator gen, SerializerProvider provider) throws IOException {
             final var map = new HashMap<>();
-            map.put(content.type, content.data);
+            if (content instanceof Text) {
+                map.put(content.type(), content.data());
+            } else if (content instanceof Media media) {
+                final var resources = media.data();
+                if (resources.isEmpty()) {
+                    map.put(content.type(), null);
+                } else if (resources.size() == 1) {
+                    map.put(content.type(), media.first());
+                } else {
+                    map.put(content.type(), resources);
+                }
+            } else {
+                throw new IllegalArgumentException("Unsupported content class: " + content.getClass().getSimpleName());
+            }
             gen.writeObject(map);
         }
 
@@ -79,11 +94,23 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
 
         @Override
         public Content<?> deserialize(JsonParser parser, DeserializationContext ctx) throws IOException, JacksonException {
-            final var entry = parser.getCodec().readValue(parser, new TypeReference<Map.Entry<Type, String>>() {
+            final var entry = parser.getCodec().readValue(parser, new TypeReference<Map.Entry<Type, Object>>() {
             });
-            return switch (entry.getKey()) {
-                case TEXT -> new Text(entry.getValue());
-                case IMAGE, AUDIO, VIDEO, FILE -> new Media(entry.getKey(), URI.create(entry.getValue()));
+            final var key = entry.getKey();
+            final var value = entry.getValue();
+            return switch (key) {
+                case TEXT -> new Text(String.valueOf(value));
+                case IMAGE, AUDIO, VIDEO, FILE -> {
+                    if (value instanceof Collection<?> collection) {
+                        final var uris = collection.stream()
+                                .map(Object::toString)
+                                .map(URI::create)
+                                .toList();
+                        yield new Media(key, uris);
+                    } else {
+                        yield new Media(key, List.of(URI.create(String.valueOf(value))));
+                    }
+                }
             };
         }
 
@@ -107,7 +134,7 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
      * @return 内容
      */
     public static Media ofImage(URI image) {
-        return new Media(Type.IMAGE, image);
+        return new Media(Type.IMAGE, List.of(image));
     }
 
 
@@ -118,7 +145,7 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
      * @return 内容
      */
     public static Media ofAudio(URI audio) {
-        return new Media(Type.AUDIO, audio);
+        return new Media(Type.AUDIO, List.of(audio));
     }
 
     /**
@@ -128,7 +155,17 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
      * @return 内容
      */
     public static Media ofVideo(URI video) {
-        return new Media(Type.VIDEO, video);
+        return new Media(Type.VIDEO, List.of(video));
+    }
+
+    /**
+     * 创建媒体内容：视频
+     *
+     * @param images 视频图片集
+     * @return 内容
+     */
+    public static Media ofVideo(List<URI> images) {
+        return new Media(Type.VIDEO, images);
     }
 
     /**
@@ -138,7 +175,7 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
      * @return 内容
      */
     public static Media ofFile(URI file) {
-        return new Media(Type.FILE, file);
+        return new Media(Type.FILE, List.of(file));
     }
 
     /**
@@ -196,14 +233,24 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
     /**
      * 媒体内容
      */
-    public static final class Media extends Content<URI> {
+    public static final class Media extends Content<List<URI>> {
 
-        private Media(Type type, URI data) {
+        private Media(Type type, List<URI> data) {
             super(type, data);
         }
 
-        private Media(Type type, URI data, Parameters parameters) {
+        private Media(Type type, List<URI> data, Parameters parameters) {
             super(type, data, parameters);
+        }
+
+        public Media changeData(List<URI> data) {
+            return new Media(type(), data, parameters());
+        }
+
+        public URI first() {
+            return (null != data() && !data().isEmpty())
+                    ? data().get(0)
+                    : null;
         }
 
     }

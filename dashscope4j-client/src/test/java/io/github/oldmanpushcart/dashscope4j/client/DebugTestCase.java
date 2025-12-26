@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange.ManualVad;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Flow;
 
 import static io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME;
 
@@ -132,7 +134,7 @@ public class DebugTestCase implements LoadingEnv {
     }
 
     @Test
-    public void debug5() {
+    public void debug5() throws InterruptedException {
 
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
@@ -147,11 +149,34 @@ public class DebugTestCase implements LoadingEnv {
                 .http(http)
                 .build();
 
-        final var response = chatOp.async(request)
-                .toCompletableFuture()
-                .join();
+        final var publisher = chatOp.flow(request);
 
-        System.out.println(response.output().best().message().text());
+        final var latch = new CountDownLatch(1);
+        publisher.subscribe(new Flow.Subscriber<>() {
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                subscription.request(Long.MAX_VALUE);
+            }
+
+            @Override
+            public void onNext(ChatResponse item) {
+                System.out.println(item.output().best().message().text());
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                throwable.printStackTrace();
+                latch.countDown();
+            }
+
+            @Override
+            public void onComplete() {
+                System.out.println("complete");
+                latch.countDown();
+            }
+        });
+
+        latch.await();
 
     }
 

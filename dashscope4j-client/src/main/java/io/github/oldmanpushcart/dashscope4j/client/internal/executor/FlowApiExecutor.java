@@ -48,7 +48,6 @@ public class FlowApiExecutor {
     }
 
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(URI endpoint, T request) {
-        final var traceId = UUIDUtils.genUUID22();
         return new Flow.Publisher<>() {
 
             @Override
@@ -59,7 +58,7 @@ public class FlowApiExecutor {
                 try {
 
                     final var requestBody = JacksonJsonUtils.toJson(request);
-                    logger.debug("{}/{} >>> {}", FlowApiExecutor.this, traceId, requestBody);
+                    logger.debug("{} >>> {}", FlowApiExecutor.this, requestBody);
 
                     final var httpRequest = HttpRequest.newBuilder()
                             .uri(endpoint)
@@ -83,7 +82,7 @@ public class FlowApiExecutor {
 
                                     @Override
                                     public void onSubscribe(Flow.Subscription subscription) {
-                                        logger.debug("{}/{} subscribed!", FlowApiExecutor.this, traceId);
+                                        logger.debug("{} subscribed!", FlowApiExecutor.this);
                                         this.subscription = subscription;
                                         submissionPublisher.subscribe(subscriber);
                                         subscription.request(1);
@@ -96,7 +95,7 @@ public class FlowApiExecutor {
 
                                             final var responseBody = item.data();
                                             final var responseType = request.responseType();
-                                            logger.debug("{}/{} <<< {}", FlowApiExecutor.this, traceId, responseBody);
+                                            logger.debug("{} <<< {}", FlowApiExecutor.this, responseBody);
 
                                             final var response = JacksonJsonUtils.toApiResponse(responseBody, responseType, request, httpResponse);
                                             if (!response.isSuccess()) {
@@ -114,13 +113,13 @@ public class FlowApiExecutor {
 
                                     @Override
                                     public void onError(Throwable ex) {
-                                        logger.warn("{}/{} closed by error!", FlowApiExecutor.this, traceId, ex);
+                                        logger.warn("{} closed by error!", FlowApiExecutor.this, ex);
                                         submissionPublisher.closeExceptionally(ex);
                                     }
 
                                     @Override
                                     public void onComplete() {
-                                        logger.debug("{}/{} closed by normal!", FlowApiExecutor.this, traceId);
+                                        logger.debug("{} closed by normal!", FlowApiExecutor.this);
                                         submissionPublisher.close();
                                     }
 

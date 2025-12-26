@@ -9,7 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionToolNotFoundException;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.MapPublisher;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.MapPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +32,11 @@ class FunctionToolCaller implements Tool.Caller {
         this.chatOp = chatOp;
         this.request = request;
         this.message = message;
+    }
+
+    @Override
+    public String toString() {
+        return "dashscope4j-client://chat/function";
     }
 
     public CompletionStage<ChatResponse> asyncCall() {
@@ -134,21 +139,14 @@ class FunctionToolCaller implements Tool.Caller {
     private CompletionStage<String> callFunction(FunctionTool tool, FunctionTool.Call call) {
 
         if (logger.isDebugEnabled()) {
-            logger.debug("dashscope-client://chat/function/{} <<< {}",
-                    call.stub().name(),
-                    call.stub().arguments()
-            );
+            logger.debug("{}/{} >>> {}", this, call.stub().name(), call.stub().arguments());
         }
 
         try {
             return tool.call(this, call.stub().arguments())
                     .whenComplete((result, ex) -> {
                         if (logger.isDebugEnabled()) {
-                            logger.debug("dashscope-client://chat/function/{} >>> {}",
-                                    call.stub().name(),
-                                    result,
-                                    ex
-                            );
+                            logger.debug("{}/{} <<< {}", this, call.stub().name(), result, ex);
                         }
                     });
         } catch (Throwable cause) {

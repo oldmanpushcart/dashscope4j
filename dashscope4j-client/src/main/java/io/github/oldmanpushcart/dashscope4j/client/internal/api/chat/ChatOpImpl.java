@@ -7,7 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApiExecutor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowApiExecutor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.DeferredPublisher;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.DeferredPublisher;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -19,8 +19,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 import java.util.function.Function;
 
-import static io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content.Type.*;
-import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.isIn;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils.sequentialMap;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
@@ -48,7 +46,7 @@ public class ChatOpImpl implements ChatOp {
         final var endpoint = request.model().endpoint();
         final var publisherF = CompletableFuture.completedStage(request)
                 .thenCompose(this::processingEachContentForInlineLocalMediaAsBase64)
-                .thenApply(r-> flowApi.execute(endpoint, r))
+                .thenApply(r -> flowApi.execute(endpoint, r))
                 .thenApply(publisher -> new FunctionToolCallOpFlowHandler(this).apply(publisher));
         return new DeferredPublisher<>(publisherF);
     }
@@ -69,7 +67,7 @@ public class ChatOpImpl implements ChatOp {
 
 
     private CompletionStage<ChatRequest> processingEachContentForInlineLocalMediaAsBase64(ChatRequest request) {
-        return processingEachContent(request, new Function<Content<?>, CompletionStage<Content<?>>>() {
+        return processingEachContent(request, new Function<>() {
 
             private static final int BUFFER_SIZE = 1024;
 
@@ -92,25 +90,20 @@ public class ChatOpImpl implements ChatOp {
 
             @Override
             public CompletionStage<Content<?>> apply(Content<?> content) {
-                try {
-
-                    if (isIn(content.type(), IMAGE, AUDIO, VIDEO)
-                            && content.data() instanceof URI resourceURI
-                            && isFileURI(resourceURI)) {
-                        final var newResrouceURI = URI.create("data:;base64," + toBase64(resourceURI));
-                        final var newContent = switch (content.type()) {
-                            case IMAGE -> Content.ofImage(newResrouceURI);
-                            case AUDIO -> Content.ofAudio(newResrouceURI);
-                            case VIDEO -> Content.ofVideo(newResrouceURI);
-                            default -> content;
-                        };
-                        return CompletableFuture.completedStage(newContent);
-                    } else {
-                        return CompletableFuture.completedStage(content);
-                    }
-
-                } catch (IOException ioEx) {
-                    return CompletableFuture.failedStage(ioEx);
+                if (content instanceof Content.Media media) {
+                    return sequentialMap(media.data(), resourceURI -> {
+                                if (!isFileURI(resourceURI)) {
+                                    return CompletableFuture.completedStage(resourceURI);
+                                }
+                                try {
+                                    return CompletableFuture.completedStage(URI.create("data:;base64," + toBase64(resourceURI)));
+                                } catch (IOException ioEx) {
+                                    return CompletableFuture.failedStage(ioEx);
+                                }
+                            })
+                            .thenApply(media::changeData);
+                } else {
+                    return CompletableFuture.completedStage(content);
                 }
             }
         });

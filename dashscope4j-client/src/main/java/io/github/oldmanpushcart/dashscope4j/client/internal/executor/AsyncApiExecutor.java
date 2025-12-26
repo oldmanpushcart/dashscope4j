@@ -35,9 +35,8 @@ public class AsyncApiExecutor {
 
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> execute(URI endpoint, T request) {
 
-        final var traceId = UUIDUtils.genUUID22();
         final var requestBody = JacksonJsonUtils.toJson(request);
-        logger.debug("{}/{} >>> {}", this, traceId, requestBody);
+        logger.debug("{} >>> {}", this, requestBody);
 
         final var httpRequest = HttpRequest.newBuilder()
                 .uri(endpoint)
@@ -53,7 +52,7 @@ public class AsyncApiExecutor {
                 .thenApply(httpResponse -> {
                     final var responseBody = httpResponse.body();
                     final var responseType = request.responseType();
-                    logger.debug("{}/{} <<< {}", this, traceId, responseBody);
+                    logger.debug("{} <<< {}", this, responseBody);
                     return JacksonJsonUtils.toApiResponse(responseBody, responseType, request, httpResponse);
                 })
                 .thenApply(response -> {
