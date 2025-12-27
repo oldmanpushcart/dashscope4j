@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.client;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
@@ -44,10 +43,7 @@ public class DebugTestCase implements LoadingEnv {
         final var audioFile = new File("./test-data/audio/say-what-you-see.wav");
 
         final var latch = new CountDownLatch(1);
-        final var realtimeOp = OmniRealtimeOp.newOpBuilder()
-                .ak(AK)
-                .http(http)
-                .build();
+        final var realtimeOp = client.omni().realtime();
 
         new ExchangeConnector(() -> {
             final var parameters = new Parameters();
@@ -144,10 +140,7 @@ public class DebugTestCase implements LoadingEnv {
                 )))
                 .build();
 
-        final var chatOp = ChatOp.newBuilder()
-                .ak(AK)
-                .http(http)
-                .build();
+        final var chatOp = client.chat();
 
         final var publisher = chatOp.flow(request);
 

@@ -1,8 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 
@@ -70,9 +68,7 @@ public abstract class AlgoRequest<M extends AlgoModel, R extends AlgoResponse<?>
      */
     @JsonProperty("parameters")
     public Parameters parameters() {
-        return new Parameters()
-                .merge(model.parameters())
-                .merge(parameters);
+        return parameters;
     }
 
     /**

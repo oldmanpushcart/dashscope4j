@@ -8,7 +8,6 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetectio
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
-import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

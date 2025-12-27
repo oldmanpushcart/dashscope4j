@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat;
 
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
@@ -7,12 +8,12 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApiExecutor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowApiExecutor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.codec.AsyncFileBase64Encoder;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.DeferredPublisher;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -21,29 +22,36 @@ import java.util.function.Function;
 
 public class ChatOpImpl implements ChatOp {
 
+    private final DashscopeClient client;
     private final AsyncApiExecutor asyncApi;
     private final FlowApiExecutor flowApi;
 
-    public ChatOpImpl(AsyncApiExecutor asyncApi, FlowApiExecutor flowApi) {
+    public ChatOpImpl(DashscopeClient client, AsyncApiExecutor asyncApi, FlowApiExecutor flowApi) {
+        this.client = client;
         this.asyncApi = asyncApi;
         this.flowApi = flowApi;
     }
 
+    private URI toEndpoint(ChatRequest request) {
+        final var model = request.model();
+        final var host = client.host();
+        return EndpointUtils
+                .https(host, model.path());
+    }
+
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
-        final var endpoint = request.model().endpoint();
         return CompletableFuture.completedStage(request)
                 .thenCompose(this::processingEachContentForInlineFileMediaAsBase64)
-                .thenCompose(r -> asyncApi.execute(endpoint, r))
+                .thenCompose(r -> asyncApi.execute(toEndpoint(r), r))
                 .thenCompose(new FunctionToolCallOpAsyncHandler(this));
     }
 
     @Override
     public Flow.Publisher<ChatResponse> flow(ChatRequest request) {
-        final var endpoint = request.model().endpoint();
         final var publisherF = CompletableFuture.completedStage(request)
                 .thenCompose(this::processingEachContentForInlineFileMediaAsBase64)
-                .thenApply(r -> flowApi.execute(endpoint, r))
+                .thenApply(r -> flowApi.execute(toEndpoint(r), r))
                 .thenApply(publisher -> new FunctionToolCallOpFlowHandler(this).apply(publisher));
         return new DeferredPublisher<>(publisherF);
     }
@@ -89,32 +97,6 @@ public class ChatOpImpl implements ChatOp {
             }
 
         });
-    }
-
-    public static class BuilderImpl implements ChatOp.Builder {
-
-        private String ak;
-        private HttpClient http;
-
-        @Override
-        public Builder ak(String ak) {
-            this.ak = ak;
-            return this;
-        }
-
-        @Override
-        public Builder http(HttpClient http) {
-            this.http = http;
-            return this;
-        }
-
-        @Override
-        public ChatOp build() {
-            final var async = new AsyncApiExecutor(ak, http);
-            final var flow = new FlowApiExecutor(ak, http);
-            return new ChatOpImpl(async, flow);
-        }
-
     }
 
 }

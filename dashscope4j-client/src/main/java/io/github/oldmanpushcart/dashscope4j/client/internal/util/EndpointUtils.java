@@ -54,4 +54,24 @@ public class EndpointUtils {
         }
     }
 
+    public static URI https(String host, String path) {
+        final var stringBuf = new StringBuilder("https://");
+        stringBuf.append(host);
+        if(!path.startsWith("/")) {
+            stringBuf.append("/");
+        }
+        stringBuf.append(path);
+        return URI.create(stringBuf.toString());
+    }
+
+    public static URI wss(String host, String path) {
+        final var stringBuf = new StringBuilder("wss://");
+        stringBuf.append(host);
+        if(!path.startsWith("/")) {
+            stringBuf.append("/");
+        }
+        stringBuf.append(path);
+        return URI.create(stringBuf.toString());
+    }
+
 }

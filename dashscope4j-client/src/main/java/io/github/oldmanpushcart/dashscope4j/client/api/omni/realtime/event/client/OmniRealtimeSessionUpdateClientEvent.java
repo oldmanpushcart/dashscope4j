@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
 
 public class OmniRealtimeSessionUpdateClientEvent extends OmniRealtimeClientEvent {

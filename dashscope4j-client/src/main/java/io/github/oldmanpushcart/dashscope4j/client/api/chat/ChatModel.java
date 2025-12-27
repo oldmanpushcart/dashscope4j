@@ -1,33 +1,31 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 
-import java.net.URI;
+import java.util.Map;
 
 public class ChatModel extends AlgoModel {
 
-    /**
-     * 文本模型地址
-     */
-    public static final URI TEXT_REMOTE = URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation");
-
-    /**
-     * 多磨太模型地址
-     */
-    public static final URI MULTIMODAL_REMOTE = URI.create("https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation");
-
-
     private final Mode mode;
 
-    public ChatModel(Mode mode, String name, URI endpoint, Parameters parameters) {
-        super(name, endpoint, parameters);
+    public ChatModel(Mode mode, String name, String path, Map<String, String> features) {
+        super(name, path, features);
         this.mode = mode;
     }
 
-    public ChatModel(Mode mode, String name, URI endpoint) {
-        super(name, endpoint);
-        this.mode = mode;
+    public ChatModel(Mode mode, String name, Map<String, String> features) {
+        this(mode, name, switchPathByMode(mode), features);
+    }
+
+    public ChatModel(Mode mode, String name) {
+        this(mode, name, switchPathByMode(mode), Map.of());
+    }
+
+    private static String switchPathByMode(Mode mode) {
+        return switch (mode) {
+            case TEXT -> "/api/v1/services/aigc/text-generation/generation";
+            case MULTIMODAL -> "/api/v1/services/aigc/multimodal-generation/generation";
+        };
     }
 
     /**
@@ -61,27 +59,7 @@ public class ChatModel extends AlgoModel {
      * @return 文本模型
      */
     public static ChatModel ofText(String name) {
-        return new ChatModel(
-                Mode.TEXT,
-                name,
-                TEXT_REMOTE
-        );
-    }
-
-    /**
-     * 构建文本模型
-     *
-     * @param name       模型名称
-     * @param parameters 模型参数
-     * @return 文本模型
-     */
-    public static ChatModel ofText(String name, Parameters parameters) {
-        return new ChatModel(
-                Mode.TEXT,
-                name,
-                TEXT_REMOTE,
-                parameters
-        );
+        return new ChatModel(Mode.TEXT, name);
     }
 
     /**
@@ -91,27 +69,7 @@ public class ChatModel extends AlgoModel {
      * @return 多模态模型
      */
     public static ChatModel ofMultimodal(String name) {
-        return new ChatModel(
-                Mode.MULTIMODAL,
-                name,
-                MULTIMODAL_REMOTE
-        );
-    }
-
-    /**
-     * 构建多模态模型
-     *
-     * @param name       模型名称
-     * @param parameters 模型参数
-     * @return 多模态模型
-     */
-    public static ChatModel ofMultimodal(String name, Parameters parameters) {
-        return new ChatModel(
-                Mode.MULTIMODAL,
-                name,
-                MULTIMODAL_REMOTE,
-                parameters
-        );
+        return new ChatModel(Mode.MULTIMODAL, name);
     }
 
 
@@ -198,9 +156,6 @@ public class ChatModel extends AlgoModel {
     /**
      * QWEN3-235B-A22B
      */
-    public static final ChatModel QWEN3_235B_A22B = ofText("qwen3-235b-a22b", new Parameters()
-            .append(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
-            .append(ChatParameterKeys.ENABLE_THINKING, false)
-            .unmodifiable());
+    public static final ChatModel QWEN3_235B_A22B = ofText("qwen3-235b-a22b");
 
 }

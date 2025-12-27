@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoRequest;
@@ -14,13 +15,15 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFu
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonEmptyCollection;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toMap;
 
 /**
  * 对话请求
@@ -56,9 +59,9 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         return new Input();
     }
 
-    @Override
-    public Parameters parameters() {
 
+    @JsonProperty("parameters")
+    Parameters mergedParameters() {
         final Parameters newParameters = new Parameters();
 
         // 插件必选参数
@@ -78,6 +81,12 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         return super.parameters()
                 .merge(newParameters)
                 .unmodifiable();
+    }
+
+    @JsonIgnore
+    @Override
+    public Parameters parameters() {
+        return super.parameters();
     }
 
     private class Input {

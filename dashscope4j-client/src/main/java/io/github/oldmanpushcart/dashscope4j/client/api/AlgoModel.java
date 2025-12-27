@@ -2,7 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.client.api;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-import java.net.URI;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * 算法模型
@@ -10,52 +11,30 @@ import java.net.URI;
 public abstract class AlgoModel {
 
     private final String name;
-    private final URI endpoint;
-    private final Parameters parameters;
+    private final String path;
+    private final Map<String, String> features;
 
-    /**
-     * 构造模型
-     *
-     * @param name       模型名称
-     * @param endpoint   模型服务端点
-     * @param parameters 模型参数
-     */
-    public AlgoModel(String name, URI endpoint, Parameters parameters) {
+    protected AlgoModel(String name, String path, Map<String, String> features) {
         this.name = name;
-        this.endpoint = endpoint;
-        this.parameters = parameters;
+        this.path = path;
+        this.features = Map.copyOf(features);
     }
 
-    /**
-     * 构造模型
-     *
-     * @param name     模型名称
-     * @param endpoint 模型服务端点
-     */
-    public AlgoModel(String name, URI endpoint) {
-        this(name, endpoint, new Parameters());
+    protected AlgoModel(String name, String path) {
+        this(name, path, Map.of());
     }
 
-    /**
-     * @return 模型名称
-     */
     @JsonValue
     public String name() {
         return name;
     }
 
-    /**
-     * @return 模型服务端点
-     */
-    public URI endpoint() {
-        return endpoint;
+    public String path() {
+        return path;
     }
 
-    /**
-     * @return 模型参数
-     */
-    public Parameters parameters() {
-        return parameters;
+    public Map<String, String> features() {
+        return features;
     }
 
 }
