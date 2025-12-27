@@ -1,13 +1,14 @@
 package io.github.oldmanpushcart.dashscope4j.common.util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
-import static java.util.Collections.synchronizedList;
 import static java.util.Objects.nonNull;
 
 /**
