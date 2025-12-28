@@ -30,13 +30,13 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalConte
 /**
  * 流式执行器
  */
-public class FlowApiExecutor {
+public class FlowApi {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String ak;
     private final HttpClient http;
 
-    public FlowApiExecutor(String ak, HttpClient http) {
+    public FlowApi(String ak, HttpClient http) {
         this.ak = ak;
         this.http = http;
     }
@@ -57,7 +57,7 @@ public class FlowApiExecutor {
                 try {
 
                     final var requestBody = JacksonJsonUtils.toJson(request);
-                    logger.debug("{} >>> {}", FlowApiExecutor.this, requestBody);
+                    logger.debug("{} >>> {}", FlowApi.this, requestBody);
 
                     final var httpRequest = HttpRequest.newBuilder()
                             .uri(endpoint)
@@ -81,7 +81,7 @@ public class FlowApiExecutor {
 
                                     @Override
                                     public void onSubscribe(Flow.Subscription subscription) {
-                                        logger.debug("{} subscribed!", FlowApiExecutor.this);
+                                        logger.debug("{} subscribed!", FlowApi.this);
                                         this.subscription = subscription;
                                         submissionPublisher.subscribe(subscriber);
                                         subscription.request(1);
@@ -94,7 +94,7 @@ public class FlowApiExecutor {
 
                                             final var responseBody = item.data();
                                             final var responseType = request.responseType();
-                                            logger.debug("{} <<< {}", FlowApiExecutor.this, responseBody);
+                                            logger.debug("{} <<< {}", FlowApi.this, responseBody);
 
                                             final var response = JacksonJsonUtils.toApiResponse(responseBody, responseType, request, httpResponse);
                                             if (!response.isSuccess()) {
@@ -112,13 +112,13 @@ public class FlowApiExecutor {
 
                                     @Override
                                     public void onError(Throwable ex) {
-                                        logger.warn("{} closed by error!", FlowApiExecutor.this, ex);
+                                        logger.warn("{} closed by error!", FlowApi.this, ex);
                                         submissionPublisher.closeExceptionally(ex);
                                     }
 
                                     @Override
                                     public void onComplete() {
-                                        logger.debug("{} closed by normal!", FlowApiExecutor.this);
+                                        logger.debug("{} closed by normal!", FlowApi.this);
                                         submissionPublisher.close();
                                     }
 

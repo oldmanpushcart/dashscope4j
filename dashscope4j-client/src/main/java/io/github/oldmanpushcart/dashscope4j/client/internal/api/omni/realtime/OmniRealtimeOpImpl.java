@@ -11,7 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtim
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys.TurnDetection;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApiExecutor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 
@@ -23,11 +23,11 @@ import java.util.function.Function;
 public class OmniRealtimeOpImpl implements OmniRealtimeOp {
 
     private final DashscopeClient client;
-    private final ExchangeApiExecutor exchangeApi;
+    private final ExchangeApi exchangeApi;
     private final Function<OmniRealtimeClientEvent, String> encoder;
     private final Function<String, OmniRealtimeServerEvent> decoder;
 
-    public OmniRealtimeOpImpl(DashscopeClient client, ExchangeApiExecutor exchangeApi) {
+    public OmniRealtimeOpImpl(DashscopeClient client, ExchangeApi exchangeApi) {
         this.client = client;
         this.exchangeApi = exchangeApi;
         this.encoder = JacksonJsonUtils::toJson;

@@ -16,13 +16,13 @@ import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
 
-public class AsyncApiExecutor {
+public class AsyncApi {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String ak;
     private final HttpClient http;
 
-    public AsyncApiExecutor(String ak, HttpClient http) {
+    public AsyncApi(String ak, HttpClient http) {
         this.ak = ak;
         this.http = http;
     }

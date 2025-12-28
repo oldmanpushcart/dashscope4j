@@ -4,32 +4,36 @@ import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApiExecutor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowApiExecutor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.process.ChatRequestProcessor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.process.FileToDataUriImageContentProcessor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.codec.AsyncFileBase64Encoder;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.DeferredPublisher;
-import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
-import java.util.function.Function;
 
 public class ChatOpImpl implements ChatOp {
 
     private final DashscopeClient client;
-    private final AsyncApiExecutor asyncApi;
-    private final FlowApiExecutor flowApi;
+    private final AsyncApi asyncApi;
+    private final FlowApi flowApi;
+    private final ChatRequestProcessor chatRequestProcessor;
 
-    public ChatOpImpl(DashscopeClient client, AsyncApiExecutor asyncApi, FlowApiExecutor flowApi) {
+    public ChatOpImpl(DashscopeClient client, AsyncApi asyncApi, FlowApi flowApi) {
         this.client = client;
         this.asyncApi = asyncApi;
         this.flowApi = flowApi;
+        this.chatRequestProcessor = newChatRequestProcessor();
+    }
+
+    private ChatRequestProcessor newChatRequestProcessor() {
+        return ChatRequestProcessor.group(
+                new FileToDataUriImageContentProcessor()
+        );
     }
 
     private URI toEndpoint(ChatRequest request) {
@@ -42,7 +46,7 @@ public class ChatOpImpl implements ChatOp {
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
         return CompletableFuture.completedStage(request)
-                .thenCompose(this::processingEachContentForInlineFileMediaAsBase64)
+                .thenCompose(chatRequestProcessor::process)
                 .thenCompose(r -> asyncApi.execute(toEndpoint(r), r))
                 .thenCompose(new FunctionToolCallOpAsyncHandler(this));
     }
@@ -50,53 +54,10 @@ public class ChatOpImpl implements ChatOp {
     @Override
     public Flow.Publisher<ChatResponse> flow(ChatRequest request) {
         final var publisherF = CompletableFuture.completedStage(request)
-                .thenCompose(this::processingEachContentForInlineFileMediaAsBase64)
+                .thenCompose(chatRequestProcessor::process)
                 .thenApply(r -> flowApi.execute(toEndpoint(r), r))
                 .thenApply(publisher -> new FunctionToolCallOpFlowHandler(this).apply(publisher));
         return new DeferredPublisher<>(publisherF);
-    }
-
-    private static CompletionStage<ChatRequest> processingEachMessage(ChatRequest request, Function<Message, CompletionStage<Message>> operator) {
-        return CompletableFutureUtils.sequentialMap(request.messages(), operator)
-                .thenApply(newMessages ->
-                        ChatRequest.newBuilder(request)
-                                .messages(newMessages)
-                                .build());
-    }
-
-    private static CompletionStage<ChatRequest> processingEachContent(ChatRequest request, Function<Content<?>, CompletionStage<Content<?>>> operator) {
-        return processingEachMessage(request, message -> CompletableFutureUtils.sequentialMap(message.contents(), operator)
-                .thenApply(newContents ->
-                        new Message(message.role(), newContents)));
-    }
-
-
-    private CompletionStage<ChatRequest> processingEachContentForInlineFileMediaAsBase64(ChatRequest request) {
-        return processingEachContent(request, new Function<>() {
-
-            private static boolean isFileURI(URI resourceURI) {
-                return "file".equalsIgnoreCase(resourceURI.getScheme());
-            }
-
-            @Override
-            public CompletionStage<Content<?>> apply(Content<?> content) {
-                if (content instanceof Content.Media media) {
-                    return CompletableFutureUtils
-                            .sequentialMap(media.data(), resourceURI -> {
-                                if (!isFileURI(resourceURI)) {
-                                    return CompletableFuture.completedStage(resourceURI);
-                                }
-                                final var path = Paths.get(resourceURI);
-                                return AsyncFileBase64Encoder.encode(path)
-                                        .thenApply(base64Str -> URI.create("data:;base64," + base64Str));
-                            })
-                            .thenApply(media::changeData);
-                } else {
-                    return CompletableFuture.completedStage(content);
-                }
-            }
-
-        });
     }
 
 }

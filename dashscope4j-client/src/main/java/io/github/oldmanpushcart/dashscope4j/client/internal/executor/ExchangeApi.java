@@ -16,12 +16,12 @@ import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
 
-public class ExchangeApiExecutor {
+public class ExchangeApi {
 
     private final String ak;
     private final HttpClient http;
 
-    public ExchangeApiExecutor(String ak, HttpClient http) {
+    public ExchangeApi(String ak, HttpClient http) {
         this.ak = ak;
         this.http = http;
     }
