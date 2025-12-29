@@ -5,9 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.ChatOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.OmniOpImpl;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApi;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.*;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 
 import java.net.http.HttpClient;
@@ -29,8 +27,8 @@ public class DashscopeClientImpl implements DashscopeClient {
         this.ak = requireNonBlankString(builder.ak, "ak must not be blank!");
         this.http = requireNonNull(builder.http, "http must not be null!");
 
-        final var asyncApi = new AsyncApi(ak, http);
-        final var flowApi = new FlowApi(ak, http);
+        final var asyncApi = new DefaultAsyncApi(ak, http);
+        final var flowApi = new DefaultFlowApi(ak, http);
         final var exchangeApi = new ExchangeApi(ak, http);
 
         this.omniOp = new OmniOpImpl(this, exchangeApi);

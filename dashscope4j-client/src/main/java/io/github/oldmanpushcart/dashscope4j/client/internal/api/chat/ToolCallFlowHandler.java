@@ -16,11 +16,11 @@ import static io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatParameter
 /**
  * 流式工具调用处理器
  */
-class FunctionToolCallOpFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>> {
+class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>> {
 
     private final ChatOp chatOp;
 
-    FunctionToolCallOpFlowHandler(ChatOp chatOp) {
+    ToolCallFlowHandler(ChatOp chatOp) {
         this.chatOp = chatOp;
     }
 

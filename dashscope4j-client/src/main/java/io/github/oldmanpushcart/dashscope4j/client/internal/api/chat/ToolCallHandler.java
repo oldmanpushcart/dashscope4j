@@ -9,11 +9,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-class FunctionToolCallOpAsyncHandler implements Function<ChatResponse, CompletionStage<ChatResponse>> {
+class ToolCallHandler implements Function<ChatResponse, CompletionStage<ChatResponse>> {
 
     private final ChatOp chatOp;
 
-    FunctionToolCallOpAsyncHandler(ChatOp chatOp) {
+    ToolCallHandler(ChatOp chatOp) {
         this.chatOp = chatOp;
     }
 

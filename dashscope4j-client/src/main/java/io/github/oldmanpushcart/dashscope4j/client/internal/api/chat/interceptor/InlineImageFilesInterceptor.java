@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.process;
+package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.codec.AsyncFileBase64Encoder;
@@ -9,14 +9,14 @@ import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class FileToDataUriImageContentProcessor implements EachMessageContentProcessor {
+public class InlineImageFilesInterceptor implements ContentTransformInterceptor {
 
     private static boolean isFileURI(URI resourceURI) {
         return "file".equalsIgnoreCase(resourceURI.getScheme());
     }
 
     @Override
-    public CompletionStage<Content<?>> process(Content<?> content) {
+    public CompletionStage<Content<?>> process(Chain chain, Content<?> content) {
         if (content instanceof Content.Media media) {
             return CompletableFutureUtils
                     .sequentialMap(media.data(), resourceURI -> {

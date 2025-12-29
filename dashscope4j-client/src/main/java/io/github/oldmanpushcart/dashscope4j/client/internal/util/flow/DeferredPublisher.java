@@ -1,22 +1,25 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.util.flow;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 public class DeferredPublisher<T> implements Flow.Publisher<T> {
 
-    private final CompletionStage<? extends Flow.Publisher<T>> upstreamStage;
+    private final Supplier<? extends CompletionStage<? extends Flow.Publisher<T>>> upstreamStageSupplier;
     private final Object lock = new Object();
     private final AtomicLong requestedRef = new AtomicLong(0L);
 
+    private volatile CompletableFuture<? extends Flow.Publisher<T>> upstreamFuture;
     private volatile Flow.Subscriber<? super T> downstream;
     private volatile Flow.Subscription upstream;
     private volatile boolean done;
 
-    public DeferredPublisher(CompletionStage<? extends Flow.Publisher<T>> upstreamStage) {
-        this.upstreamStage = upstreamStage;
+    public DeferredPublisher(Supplier<? extends CompletionStage<? extends Flow.Publisher<T>>> upstreamStageSupplier) {
+        this.upstreamStageSupplier = Objects.requireNonNull(upstreamStageSupplier);
     }
 
     @Override
@@ -33,55 +36,17 @@ public class DeferredPublisher<T> implements Flow.Publisher<T> {
             return;
         }
 
+
+        // DeferredSubscription
         this.downstream = downstream;
-        downstream.onSubscribe(new Flow.Subscription() {
+        downstream.onSubscribe(new DeferredSubscription());
 
-            @Override
-            public void request(long n) {
-
-                if (n <= 0) {
-                    signalError(new IllegalArgumentException("non-positive request: " + n));
-                    return;
-                }
-
-                var u = upstream;
-
-                if (null != u) {
-                    u.request(n);
-                } else {
-                    synchronized (lock) {
-                        u = upstream;
-                        if (null != u) {
-                            u.request(n);
-                        } else if (!done) {
-                            requestedRef.accumulateAndGet(n, (requested, delta) -> {
-                                final var result = requested + delta;
-                                return result < 0 ? Long.MAX_VALUE : result;
-                            });
-                        }
-                    }
-                }
-
-            }
-
-            @Override
-            public void cancel() {
-                if (done) {
-                    return;
-                }
-                done = true;
-
-                final var u = upstream;
-                if (null != u) {
-                    upstream = null;
-                    u.cancel();
-                }
-
-            }
-
-        });
-
-        subscribeToUpstreamWhenReady(upstreamStage);
+        try {
+            this.upstreamFuture = upstreamStageSupplier.get().toCompletableFuture();
+            subscribeToUpstreamWhenReady(upstreamFuture);
+        } catch (Throwable ex) {
+            signalError(ex);
+        }
 
     }
 
@@ -157,14 +122,22 @@ public class DeferredPublisher<T> implements Flow.Publisher<T> {
         if (!done) {
             done = true;
 
+            // Cancel upstream stage if available
+            final var us = upstreamFuture;
+            if (null != us) {
+                upstreamFuture = null;
+                us.cancel(true);
+            }
+
             // Cancel upstream if available
-            Flow.Subscription u = upstream;
+            final var u = upstream;
             if (u != null) {
+                upstream = null;
                 u.cancel();
             }
 
             // Signal error to downstream
-            Flow.Subscriber<? super T> d = downstream;
+            final var d = downstream;
             if (d != null) {
                 try {
                     d.onError(ex);
@@ -183,6 +156,58 @@ public class DeferredPublisher<T> implements Flow.Publisher<T> {
 
         @Override
         public void cancel() {
+
+        }
+
+    }
+
+    private class DeferredSubscription implements Flow.Subscription {
+
+        @Override
+        public void request(long n) {
+
+            if (n <= 0) {
+                signalError(new IllegalArgumentException("non-positive request: " + n));
+                return;
+            }
+
+            var u = upstream;
+            if (null != u) {
+                u.request(n);
+            } else {
+                synchronized (lock) {
+                    u = upstream;
+                    if (null != u) {
+                        u.request(n);
+                    } else if (!done) {
+                        requestedRef.accumulateAndGet(n, (requested, delta) -> {
+                            final var result = requested + delta;
+                            return result < 0 ? Long.MAX_VALUE : result;
+                        });
+                    }
+                }
+            }
+
+        }
+
+        @Override
+        public void cancel() {
+            if (done) {
+                return;
+            }
+            done = true;
+
+            final var us = upstreamFuture;
+            if (null != us) {
+                upstreamFuture = null;
+                us.cancel(true);
+            }
+
+            final var u = upstream;
+            if (null != u) {
+                upstream = null;
+                u.cancel();
+            }
 
         }
 
