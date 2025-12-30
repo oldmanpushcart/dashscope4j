@@ -62,25 +62,26 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     @JsonProperty("parameters")
     Parameters mergedParameters() {
-        final Parameters newParameters = new Parameters();
+        final var merged = new Parameters();
 
         // 插件必选参数
         if (!plugins.isEmpty()) {
-            newParameters.append("result_format", "message");
+            merged.append("result_format", "message");
         }
 
         // 工具必选参数
-        final List<Tool> enabledTools = tools.stream()
+        final var enabledTools = tools.stream()
                 .filter(Tool::isEnabled)
                 .collect(Collectors.toList());
         if (!enabledTools.isEmpty()) {
-            newParameters.append("result_format", "message");
-            newParameters.append("tools", enabledTools);
+            merged.append("result_format", "message");
+            merged.append("tools", enabledTools);
         }
 
-        return super.parameters()
-                .merge(newParameters)
-                .unmodifiable();
+        // 合并原有参数
+        merged.merge(super.parameters());
+
+        return merged;
     }
 
     @JsonIgnore
