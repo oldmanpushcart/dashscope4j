@@ -11,6 +11,6 @@ import java.util.concurrent.Flow;
  */
 public interface FlowApi {
 
-    <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request);
+    <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(URI endpoint, T request);
 
 }

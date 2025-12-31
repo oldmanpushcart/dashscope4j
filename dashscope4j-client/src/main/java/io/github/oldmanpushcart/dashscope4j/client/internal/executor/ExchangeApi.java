@@ -1,8 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.executor;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.ExchangeRequest;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.slf4j.Logger;
@@ -20,22 +18,21 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalConte
 
 public class ExchangeApi {
 
-    private final String host;
     private final String ak;
     private final HttpClient http;
 
-    public ExchangeApi(String host, String ak, HttpClient http) {
-        this.host = host;
+    public ExchangeApi(String ak, HttpClient http) {
         this.ak = ak;
         this.http = http;
     }
 
-    public <T, R> CompletionStage<Exchange<T>> newExchange(ExchangeRequest<?, T, R> request) {
+    public <T, R> CompletionStage<Exchange<T>> newExchange(
+            URI endpoint,
+            Function<T, String> encoder,
+            Function<String, R> decoder,
+            Exchange.Handler<T, R> handler
+    ) {
         final var id = UUIDUtils.genUUID22();
-        final var endpoint = EndpointUtils.wss(host, request.model().path());
-        final var encoder = request.encoder();
-        final var decoder = request.decoder();
-        final var handler = request.handler();
         final var listener = new ListenerImpl<>(id, endpoint, encoder, decoder, handler);
         return http.newWebSocketBuilder()
                 .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)

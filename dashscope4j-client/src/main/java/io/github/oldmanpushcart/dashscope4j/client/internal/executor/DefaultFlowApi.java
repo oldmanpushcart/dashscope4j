@@ -5,10 +5,14 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.HttpHeader;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetection;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -25,12 +29,11 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalConte
 
 public class DefaultFlowApi implements FlowApi {
 
-    private final String host;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String ak;
     private final HttpClient http;
 
-    public DefaultFlowApi(String host, String ak, HttpClient http) {
-        this.host = host;
+    public DefaultFlowApi(String ak, HttpClient http) {
         this.ak = ak;
         this.http = http;
     }
@@ -41,27 +44,26 @@ public class DefaultFlowApi implements FlowApi {
     }
 
     @Override
-    public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request) {
+    public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(URI endpoint, T request) {
         return new Flow.Publisher<>() {
 
             @Override
             public void subscribe(Flow.Subscriber<? super R> subscriber) {
 
                 final var submissionPublisher = new SubmissionPublisher<R>();
-
                 try {
 
-                    final var oriHttpRequest = request.toHttpRequest(host);
-                    final var httpRequest = HttpRequest.newBuilder(oriHttpRequest, (n, v) -> true)
+                    final var httpRequest = HttpRequest.newBuilder()
+                            .uri(endpoint)
                             .header(HTTP_HEADER_CONTENT_TYPE, "application/json")
                             .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
                             .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
                             .header(HTTP_HEADER_X_DASHSCOPE_SSE, ENABLE)
                             .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
                             .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
+                            .POST(HttpRequest.BodyPublishers.ofString(JacksonJsonUtils.toJson(request)))
                             .build();
 
-                    final var decoder = request.responseDecoder();
                     http.sendAsync(httpRequest, new ServerSentEventBodyHandler())
                             .thenAccept(httpResponse -> {
 
@@ -84,7 +86,7 @@ public class DefaultFlowApi implements FlowApi {
 
                                             final var responseBody = item.data();
 
-                                            final var response = decoder.apply(httpResponse, responseBody);
+                                            final var response = JacksonJsonUtils.toApiResponse(responseBody, request.responseType(), request, httpResponse);
                                             if (!response.isSuccess()) {
                                                 throw new ApiException(response);
                                             }

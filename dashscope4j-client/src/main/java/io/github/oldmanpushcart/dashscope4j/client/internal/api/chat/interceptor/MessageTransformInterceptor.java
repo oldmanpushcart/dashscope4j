@@ -14,7 +14,7 @@ public interface MessageTransformInterceptor extends ChatInterceptor {
                         ChatRequest.newBuilder(request)
                                 .messages(newMessages)
                                 .build())
-                .thenCompose(chain::proceed);
+                .thenApply(chain::proceed);
     }
 
     CompletionStage<Message> process(Chain chain, Message message);
