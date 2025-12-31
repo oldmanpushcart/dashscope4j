@@ -70,22 +70,31 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
 
         @Override
         public void serialize(Content<?> content, JsonGenerator gen, SerializerProvider provider) throws IOException {
-            final var map = new HashMap<>();
+
+            final var pojo = new HashMap<>();
+
+            // 写入内容
             if (content instanceof Text) {
-                map.put(content.type(), content.data());
+                pojo.put(content.type(), content.data());
             } else if (content instanceof Media media) {
                 final var resources = media.data();
                 if (resources.isEmpty()) {
-                    map.put(content.type(), null);
+                    pojo.put(content.type(), null);
                 } else if (resources.size() == 1) {
-                    map.put(content.type(), media.first());
+                    pojo.put(content.type(), media.first());
                 } else {
-                    map.put(content.type(), resources);
+                    pojo.put(content.type(), resources);
                 }
             } else {
                 throw new IllegalArgumentException("Unsupported content class: " + content.getClass().getSimpleName());
             }
-            gen.writeObject(map);
+
+            // 写入参数
+            if (null != content.parameters() && !content.parameters().isEmpty()) {
+                content.parameters().forEach(pojo::put);
+            }
+
+            gen.writeObject(pojo);
         }
 
     }
@@ -148,6 +157,10 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
         return new Media(Type.AUDIO, List.of(audio));
     }
 
+    public static Media ofAudio(URI audio, Parameters parameters) {
+        return new Media(Type.AUDIO, List.of(audio), parameters);
+    }
+
     /**
      * 创建媒体内容：视频
      *
@@ -158,6 +171,10 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
         return new Media(Type.VIDEO, List.of(video));
     }
 
+    public static Media ofVideo(URI video, Parameters parameters) {
+        return new Media(Type.VIDEO, List.of(video), parameters);
+    }
+
     /**
      * 创建媒体内容：视频
      *
@@ -166,6 +183,10 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
      */
     public static Media ofVideo(List<URI> images) {
         return new Media(Type.VIDEO, images);
+    }
+
+    public static Media ofVideo(List<URI> images, Parameters parameters) {
+        return new Media(Type.VIDEO, images, parameters);
     }
 
     /**

@@ -27,8 +27,8 @@ public class DashscopeClientImpl implements DashscopeClient {
         this.ak = requireNonBlankString(builder.ak, "ak must not be blank!");
         this.http = requireNonNull(builder.http, "http must not be null!");
 
-        final var asyncApi = new DefaultAsyncApi(ak, http);
-        final var flowApi = new DefaultFlowApi(ak, http);
+        final var asyncApi = new DefaultAsyncApi(host, ak, http);
+        final var flowApi = new DefaultFlowApi(host, ak, http);
         final var exchangeApi = new ExchangeApi(ak, http);
 
         this.omniOp = new OmniOpImpl(this, exchangeApi);

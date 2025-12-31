@@ -1,8 +1,16 @@
 package io.github.oldmanpushcart.dashscope4j.client.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Collections;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
@@ -25,6 +33,7 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class AlgoRequest<M extends AlgoModel, R extends AlgoResponse<?>> extends ApiRequest<R> {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final M model;
     private final Parameters parameters;
 
@@ -86,6 +95,29 @@ public abstract class AlgoRequest<M extends AlgoModel, R extends AlgoResponse<?>
         return Collections.emptyMap();
     }
 
+    @Override
+    public HttpRequest toHttpRequest(String host) {
+        final var endpoint = EndpointUtils.https(host, model.path());
+        return HttpRequest.newBuilder(endpoint)
+                .POST(HttpRequest.BodyPublishers.ofString(requestEncoder().apply(this)))
+                .build();
+    }
+
+    protected Function<ApiRequest<?>, String> requestEncoder() {
+        return request -> {
+            final var requestBody = JacksonJsonUtils.toJson(this);
+            logger.debug("dashscope4j-client://algo/{} >>> {}", model.name(), requestBody);
+            return requestBody;
+        };
+    }
+
+    @Override
+    public BiFunction<HttpResponse<?>, String, R> responseDecoder() {
+        return (httpResponse, responseBody) -> {
+            logger.debug("dashscope4j-client://algo/{} <<< {}", model.name(), responseBody);
+            return JacksonJsonUtils.toApiResponse(responseBody, responseType(), this, httpResponse);
+        };
+    }
 
     /**
      * 算法请求构建器

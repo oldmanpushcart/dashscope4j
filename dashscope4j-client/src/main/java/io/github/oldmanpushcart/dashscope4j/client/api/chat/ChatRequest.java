@@ -15,15 +15,15 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFu
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.net.http.HttpRequest;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_X_DASHSCOPE_PLUGIN;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonEmptyCollection;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * 对话请求
@@ -55,10 +55,30 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     }
 
     @Override
+    public HttpRequest toHttpRequest(String host) {
+        final var superHttpRequest = super.toHttpRequest(host);
+        final var httpRequestBuilder = HttpRequest.newBuilder(superHttpRequest, (n, v) -> true);
+
+        /*
+         * 如果有插件，则告知插件列表
+         */
+        if (!plugins.isEmpty()) {
+            final Map<?, ?> pluginArgMap = plugins.stream()
+                    .collect(toMap(
+                            Plugin::name,
+                            Plugin::meta,
+                            (a, b) -> b
+                    ));
+            httpRequestBuilder.header(HTTP_HEADER_X_DASHSCOPE_PLUGIN, JacksonJsonUtils.toJson(pluginArgMap));
+        }
+
+        return httpRequestBuilder.build();
+    }
+
+    @Override
     protected Object input() {
         return new Input();
     }
-
 
     @JsonProperty("parameters")
     Parameters mergedParameters() {

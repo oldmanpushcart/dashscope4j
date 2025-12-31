@@ -5,7 +5,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 
-import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -23,8 +22,8 @@ public class InterceptionAsyncApi implements AsyncApi {
     }
 
     @Override
-    public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> execute(URI endpoint, T request) {
-        final var chain = new InterceptorChain(client, request, r -> delegate.execute(endpoint, r));
+    public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> execute(T request) {
+        final var chain = new InterceptorChain(client, request, delegate::execute);
         try {
             //noinspection unchecked
             return (CompletionStage<R>) interceptor.intercept(chain);

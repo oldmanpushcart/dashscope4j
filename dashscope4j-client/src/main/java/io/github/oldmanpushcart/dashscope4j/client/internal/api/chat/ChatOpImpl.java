@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 
 public class ChatOpImpl implements ChatOp {
 
-    private final DashscopeClient client;
     private final AsyncApi asyncApi;
     private final FlowApi flowApi;
 
@@ -31,22 +30,14 @@ public class ChatOpImpl implements ChatOp {
     );
 
     public ChatOpImpl(DashscopeClient client, AsyncApi asyncApi, FlowApi flowApi) {
-        this.client = client;
         this.asyncApi = InterceptionAsyncApi.group(client, asyncApi, interceptors);
         this.flowApi = InterceptionFlowApi.group(client, flowApi, interceptors);
-    }
-
-    private URI toEndpoint(ChatRequest request) {
-        final var model = request.model();
-        final var host = client.host();
-        return EndpointUtils
-                .https(host, model.path());
     }
 
     @Override
     public CompletionStage<ChatResponse> async(ChatRequest request) {
         return CompletableFuture.completedStage(request)
-                .thenCompose(r -> asyncApi.execute(toEndpoint(r), r))
+                .thenCompose(asyncApi::execute)
                 .thenCompose(new ToolCallHandler(this));
     }
 
@@ -54,7 +45,7 @@ public class ChatOpImpl implements ChatOp {
     public Flow.Publisher<ChatResponse> flow(ChatRequest request) {
         final Supplier<CompletionStage<Flow.Publisher<ChatResponse>>> supplier = () ->
                 CompletableFuture.completedStage(request)
-                        .thenApply(r -> flowApi.execute(toEndpoint(r), r))
+                        .thenApply(flowApi::execute)
                         .thenApply(publisher -> new ToolCallFlowHandler(this).apply(publisher));
         return new DeferredPublisher<>(supplier);
     }
