@@ -29,4 +29,6 @@ public interface InternalContents {
 
     String HTTP_HEADER_X_DASHSCOPE_ASYNC = "X-DashScope-Async";
 
+    String HTTP_HEADER_X_OSS_OBJECT_ACL = "x-oss-object-acl";
+
 }

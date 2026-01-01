@@ -10,8 +10,8 @@ public class OmniOpImpl implements OmniOp {
 
     private final OmniRealtimeOp omniRealtimeOp;
 
-    public OmniOpImpl(DashscopeClient client, ExchangeApi exchangeApi) {
-        this.omniRealtimeOp = new OmniRealtimeOpImpl(client, exchangeApi);
+    public OmniOpImpl(String host, ExchangeApi exchangeApi) {
+        this.omniRealtimeOp = new OmniRealtimeOpImpl(host, exchangeApi);
     }
 
     @Override

@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
+import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.DashscopeClientImpl;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
@@ -14,6 +15,8 @@ public interface DashscopeClient {
     ChatOp chat();
 
     OmniOp omni();
+
+    BaseOp base();
 
     static Builder newBuilder() {
         return new DashscopeClientImpl.Builder();

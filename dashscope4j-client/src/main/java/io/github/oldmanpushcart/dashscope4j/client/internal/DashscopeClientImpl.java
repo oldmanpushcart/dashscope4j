@@ -3,9 +3,13 @@ package io.github.oldmanpushcart.dashscope4j.client.internal;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
+import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.ChatOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.OmniOpImpl;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.*;
+import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultAsyncApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultFlowApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 
 import java.net.http.HttpClient;
@@ -21,18 +25,20 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     private final OmniOp omniOp;
     private final ChatOp chatOp;
+    private final BaseOp baseOp;
 
     private DashscopeClientImpl(Builder builder) {
         this.host = requireNonBlankString(builder.host, "host must not be blank!");
         this.ak = requireNonBlankString(builder.ak, "ak must not be blank!");
         this.http = requireNonNull(builder.http, "http must not be null!");
 
-        final var asyncApi = new DefaultAsyncApi(ak, http);
-        final var flowApi = new DefaultFlowApi(ak, http);
+        final var asyncApi = new DefaultAsyncApi(host, ak, http);
+        final var flowApi = new DefaultFlowApi(host, ak, http);
         final var exchangeApi = new ExchangeApi(ak, http);
 
-        this.omniOp = new OmniOpImpl(this, exchangeApi);
         this.chatOp = new ChatOpImpl(this, asyncApi, flowApi);
+        this.omniOp = new OmniOpImpl(host, exchangeApi);
+        this.baseOp = new BaseOpImpl(asyncApi);
 
     }
 
@@ -49,6 +55,11 @@ public class DashscopeClientImpl implements DashscopeClient {
     @Override
     public OmniOp omni() {
         return omniOp;
+    }
+
+    @Override
+    public BaseOp base() {
+        return baseOp;
     }
 
 

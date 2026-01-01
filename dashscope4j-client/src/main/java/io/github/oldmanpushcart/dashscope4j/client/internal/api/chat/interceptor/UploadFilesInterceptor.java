@@ -2,19 +2,17 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.intercepto
 
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.codec.AsyncFileBase64Encoder;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class InlineImageFilesInterceptor implements ContentTransformInterceptor {
+public class UploadFilesInterceptor implements ContentTransformInterceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain, ChatRequest request) {
-        if(!request.inlineEnabled()) {
+        if(!request.uploadEnabled()) {
             return chain.proceed();
         } else {
             return ContentTransformInterceptor.super.intercept(chain, request);
@@ -31,22 +29,15 @@ public class InlineImageFilesInterceptor implements ContentTransformInterceptor 
             return CompletableFutureUtils
                     .sequentialMap(media.data(), resourceURI -> {
 
-                        // 只处理图片
-                        if (media.type() != Content.Media.Type.IMAGE) {
-                            return CompletableFuture.completedStage(resourceURI);
-                        }
-
                         // 只处理本地文件
                         if (!isFileURI(resourceURI)) {
                             return CompletableFuture.completedStage(resourceURI);
                         }
 
-                        /*
-                         * 将本地文件进行BASE64编码，并转成DATA-URI
-                         */
-                        final var path = Paths.get(resourceURI);
-                        return AsyncFileBase64Encoder.encode(path)
-                                .thenApply(base64Str -> URI.create("data:;base64," + base64Str));
+                        final var request = (ChatRequest) chain.request();
+                        final var model = request.model();
+
+                        return chain.client().base().store().upload(resourceURI, model);
 
                     })
                     .thenApply(media::changeData);

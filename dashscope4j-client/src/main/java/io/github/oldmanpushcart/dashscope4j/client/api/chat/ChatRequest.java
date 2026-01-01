@@ -33,6 +33,8 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     private final List<Message> messages;
     private final List<Plugin> plugins;
     private final List<Tool> tools;
+    private final boolean inlineEnabled;
+    private final boolean uploadEnabled;
 
     private ChatRequest(Builder builder) {
         super(ChatResponse.class, builder);
@@ -40,6 +42,8 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         this.messages = unmodifiableList(builder.messages);
         this.plugins = unmodifiableList(builder.plugins);
         this.tools = unmodifiableList(builder.tools);
+        this.inlineEnabled = builder.inlineEnabled;
+        this.uploadEnabled = builder.uploadEnabled;
     }
 
     public List<Message> messages() {
@@ -151,6 +155,14 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     }
 
+    public boolean inlineEnabled() {
+        return inlineEnabled;
+    }
+
+    public boolean uploadEnabled() {
+        return uploadEnabled;
+    }
+
 
     public static Builder newBuilder() {
         return new Builder();
@@ -165,6 +177,9 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         private final List<Message> messages = new LinkedList<>();
         private final List<Plugin> plugins = new LinkedList<>();
         private final List<Tool> tools = new LinkedList<>();
+
+        private boolean inlineEnabled = true;
+        private boolean uploadEnabled = true;
 
         protected Builder() {
         }
@@ -328,6 +343,16 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         public Builder addFunctions(Collection<? extends ChatFunction<?, ?>> functions) {
             requireNonNull(functions);
             this.tools.addAll(toTools(functions));
+            return this;
+        }
+
+        public Builder inlineEnabled(boolean inlineEnabled) {
+            this.inlineEnabled = inlineEnabled;
+            return this;
+        }
+
+        public Builder uploadEnabled(boolean uploadEnabled) {
+            this.uploadEnabled = uploadEnabled;
             return this;
         }
 

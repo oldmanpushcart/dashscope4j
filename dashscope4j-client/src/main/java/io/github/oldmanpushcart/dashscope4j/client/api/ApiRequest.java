@@ -25,12 +25,36 @@ public abstract class ApiRequest<R extends ApiResponse> {
         requireNonNull(responseType, "responseType is null!");
         this.responseType = responseType;
     }
+
     /**
      * @return 响应类型
      */
     public Class<R> responseType() {
         return responseType;
     }
+
+    /**
+     * 构建 HttpRequest
+     * <p>
+     * 允许实现者自定义实现HTTP请求，DashScope协议要求了多种方式（GET、POST）。
+     * 不同的协议下采用的方式不一样，所以这里直接将HTTP请求的构造开放出来，确保足够的灵活性。
+     * </p>
+     * <p>{@code T -> JSON}</p>
+     *
+     * @return 构建{@code HTTP}请求
+     */
+    abstract public HttpRequest toHttpRequest(String host);
+
+    /**
+     * 响应解码器
+     * <p>
+     * 允许实现者自定义响应解码器，DashScope协议要求了多种方式（JSON、BINARY）。
+     * </p>
+     * <p>{@code JSON -> R}</p>
+     *
+     * @return 响应解码器
+     */
+    abstract public BiFunction<HttpResponse<?>, String, R> responseDecoder();
 
     /**
      * 请求构建器
