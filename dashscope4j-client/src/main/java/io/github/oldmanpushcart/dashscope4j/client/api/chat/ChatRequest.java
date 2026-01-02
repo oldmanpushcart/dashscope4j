@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_X_DASHSCOPE_PLUGIN;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonEmptyCollection;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
@@ -161,6 +162,41 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     public boolean uploadEnabled() {
         return uploadEnabled;
+    }
+
+    public Message lastMessage() {
+        return !messages.isEmpty()
+                ? messages.get(messages.size() - 1)
+                : null;
+    }
+
+    public boolean hasUserInputMessage() {
+        return !messages.isEmpty()
+                && lastMessage().role() == Message.Role.USER;
+    }
+
+    public Message userInputMessage() {
+        return hasUserInputMessage()
+                ? lastMessage()
+                : null;
+    }
+
+    /**
+     * 提取历史信息
+     * <p>
+     * 消息列表中下标范围[0,n-1]信息为历史信息
+     * </p>
+     *
+     * @return 历史信息
+     */
+    public List<Message> historyMessages() {
+        if (messages.isEmpty()) {
+            return emptyList();
+        }
+        if (!hasUserInputMessage()) {
+            return messages;
+        }
+        return messages.subList(0, messages.size() - 1);
     }
 
 

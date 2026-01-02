@@ -66,8 +66,6 @@ public sealed class Message implements Accumulator<Message> permits PluginMessag
     }
 
     /**
-     * 获取文本内容集合
-     *
      * @return 文本内容集合
      */
     public List<Content.Text> textContents() {

@@ -11,6 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultAsyn
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultFlowApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
+import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
 import java.net.http.HttpClient;
 
@@ -20,8 +21,6 @@ import static java.util.Objects.requireNonNull;
 public class DashscopeClientImpl implements DashscopeClient {
 
     private final String host;
-    private final String ak;
-    private final HttpClient http;
 
     private final OmniOp omniOp;
     private final ChatOp chatOp;
@@ -29,8 +28,8 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     private DashscopeClientImpl(Builder builder) {
         this.host = requireNonBlankString(builder.host, "host must not be blank!");
-        this.ak = requireNonBlankString(builder.ak, "ak must not be blank!");
-        this.http = requireNonNull(builder.http, "http must not be null!");
+        String ak = CheckUtils.requireNonBlankString(builder.ak, "ak must not be blank!");
+        HttpClient http = requireNonNull(builder.http, "http must not be null!");
 
         final var asyncApi = new DefaultAsyncApi(host, ak, http);
         final var flowApi = new DefaultFlowApi(host, ak, http);

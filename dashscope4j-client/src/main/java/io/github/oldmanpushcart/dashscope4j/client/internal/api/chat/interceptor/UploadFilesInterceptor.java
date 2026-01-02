@@ -2,20 +2,21 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.intercepto
 
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class UploadFilesInterceptor implements ContentTransformInterceptor {
+public class UploadFilesInterceptor implements RewriteUserInputInterceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain, ChatRequest request) {
-        if(!request.uploadEnabled()) {
+        if (!request.uploadEnabled()) {
             return chain.proceed();
         } else {
-            return ContentTransformInterceptor.super.intercept(chain, request);
+            return RewriteUserInputInterceptor.super.intercept(chain, request);
         }
     }
 
@@ -24,26 +25,30 @@ public class UploadFilesInterceptor implements ContentTransformInterceptor {
     }
 
     @Override
-    public CompletionStage<Content<?>> process(Chain chain, Content<?> content) {
-        if (content instanceof Content.Media media) {
-            return CompletableFutureUtils
-                    .sequentialMap(media.data(), resourceURI -> {
+    public CompletionStage<Message> rewrite(Chain chain, Message message) {
+        return CompletableFutureUtils
+                .sequentialMap(message.contents(), content -> {
+                    if (content instanceof Content.Media media) {
+                        return CompletableFutureUtils
+                                .sequentialMap(media.data(), resourceURI -> {
 
-                        // 只处理本地文件
-                        if (!isFileURI(resourceURI)) {
-                            return CompletableFuture.completedStage(resourceURI);
-                        }
+                                    // 只处理本地文件
+                                    if (!isFileURI(resourceURI)) {
+                                        return CompletableFuture.completedStage(resourceURI);
+                                    }
 
-                        final var request = (ChatRequest) chain.request();
-                        final var model = request.model();
+                                    final var request = (ChatRequest) chain.request();
+                                    final var model = request.model();
 
-                        return chain.client().base().store().upload(resourceURI, model);
+                                    return chain.client().base().store().upload(resourceURI, model);
 
-                    })
-                    .thenApply(media::changeData);
-        } else {
-            return CompletableFuture.completedStage(content);
-        }
+                                })
+                                .thenApply(media::changeData);
+                    } else {
+                        return CompletableFuture.completedStage(content);
+                    }
+                })
+                .thenApply(Message::ofUser);
     }
 
 }

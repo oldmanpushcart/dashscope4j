@@ -268,6 +268,10 @@ public sealed abstract class Content<T> permits Content.Text, Content.Media {
             return new Media(type(), data, parameters());
         }
 
+        public Media changeParameters(Parameters parameters) {
+            return new Media(type(), data(), parameters);
+        }
+
         public URI first() {
             return (null != data() && !data().isEmpty())
                     ? data().get(0)

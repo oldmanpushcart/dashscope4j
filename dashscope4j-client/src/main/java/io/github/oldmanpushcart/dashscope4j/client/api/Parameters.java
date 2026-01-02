@@ -31,10 +31,9 @@ public class Parameters {
      * @param parameterKey 参数项
      * @param value        值
      * @param <T>          值类型
-     * @param <R>          转换后的值类型
      * @return this
      */
-    public <T, R> Parameters append(ParameterKey<T, R> parameterKey, T value) {
+    public <T> Parameters append(ParameterKey<T, ?> parameterKey, T value) {
         map.put(parameterKey.name(), parameterKey.convert(value));
         return this;
     }
@@ -68,10 +67,9 @@ public class Parameters {
      * @param parameterKey 参数项
      * @param value        值
      * @param <T>          类型
-     * @param <R>          值类型
      * @return this
      */
-    public <T, R> boolean has(ParameterKey<T, R> parameterKey, T value) {
+    public <T> boolean has(ParameterKey<T, ?> parameterKey, T value) {
         return map.containsKey(parameterKey.name()) && map.get(parameterKey.name()).equals(parameterKey.convert(value));
     }
 
