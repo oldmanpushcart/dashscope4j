@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.HttpHeader;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetection;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 import org.slf4j.Logger;
@@ -24,6 +25,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
+import static io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils.traceLogHttpRequest;
 
 public class DefaultFlowApi implements FlowApi {
 
@@ -53,19 +55,24 @@ public class DefaultFlowApi implements FlowApi {
                 final var submissionPublisher = new SubmissionPublisher<R>();
                 try {
 
+                    if(1 ==1 ) {
+                        throw new RuntimeException("TEST!");
+                    }
+
                     final var httpRequest = HttpRequest.newBuilder(request.toHttpRequest(host), (n, v) -> true)
-                            .header(HTTP_HEADER_CONTENT_TYPE, "application/json")
                             .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
                             .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
                             .header(HTTP_HEADER_X_DASHSCOPE_SSE, ENABLE)
                             .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
                             .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
                             .build();
+                    traceLogHttpRequest(httpRequest);
 
                     http.sendAsync(httpRequest, new ServerSentEventBodyHandler())
+                            .whenComplete(HttpUtils::traceLogHttpResponse)
                             .thenAccept(httpResponse -> {
 
-                                // 消费HTTP连接中得SSE
+                                // 消费 SSE
                                 httpResponse.body().subscribe(new Flow.Subscriber<>() {
 
                                     private Flow.Subscription subscription;
@@ -184,6 +191,7 @@ public class DefaultFlowApi implements FlowApi {
      */
     private static class ServerSentEventBodySubscriber implements HttpResponse.BodySubscriber<Flow.Publisher<Item>> {
 
+        private final Logger logger = LoggerFactory.getLogger(getClass());
         private final Charset charset;
 
         private final SubmissionPublisher<Item> publisher = new SubmissionPublisher<>();
@@ -203,6 +211,7 @@ public class DefaultFlowApi implements FlowApi {
 
         @Override
         public void onSubscribe(Flow.Subscription subscription) {
+            logger.trace("HTTP-SSE: subscribed");
             this.subscription = subscription;
             subscription.request(1);
         }
@@ -236,6 +245,7 @@ public class DefaultFlowApi implements FlowApi {
 
         @Override
         public void onError(Throwable ex) {
+            logger.trace("HTTP-SSE: error", ex);
             publisher.closeExceptionally(ex);
         }
 
@@ -248,6 +258,7 @@ public class DefaultFlowApi implements FlowApi {
                 return;
             }
             publisher.close();
+            logger.trace("HTTP-SSE: completed");
         }
 
         private void flush() {
@@ -256,6 +267,7 @@ public class DefaultFlowApi implements FlowApi {
             }
             try {
                 final var body = output.toString(charset).trim();
+                logger.trace("HTTP-SSE: <<< {}", body);
                 final var item = Item.parse(body);
                 publisher.submit(item);
             } finally {
@@ -277,7 +289,6 @@ public class DefaultFlowApi implements FlowApi {
             final StringBuilder dataBuf = new StringBuilder();
 
             try (final Scanner scanner = new Scanner(text)) {
-
 
                 while (scanner.hasNextLine()) {
                     final String line = scanner.nextLine();

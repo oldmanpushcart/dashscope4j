@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.Usage;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 
@@ -59,6 +60,11 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> implements A
 
     }
 
+    @Override
+    public ChatRequest request() {
+        return (ChatRequest) super.request();
+    }
+
     /*
      * 清除无用的使用情况
      */
@@ -72,7 +78,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> implements A
             return null;
         }
 
-        final List<Usage.Item> items = usage.items()
+        final var items = usage.items()
                 .stream()
 
                 /*
@@ -83,27 +89,6 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> implements A
 
                 .toList();
         return new Usage(items);
-    }
-
-    /**
-     * 修改候选结果
-     *
-     * @param operator 修改操作
-     * @return 修改后的对话应答
-     */
-    public ChatResponse changeChoice(UnaryOperator<Choice> operator) {
-        final List<Choice> newChoices = output().choices()
-                .stream()
-                .map(choice -> requireNonNull(operator.apply(choice)))
-                .collect(Collectors.toList());
-        return new ChatResponse(
-                (ChatRequest) request(),
-                uuid(),
-                code(),
-                desc(),
-                usage(),
-                new Output(output().search(), newChoices)
-        );
     }
 
     @Override
@@ -160,29 +145,15 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> implements A
      * @param search  搜索信息
      * @param choices 候选结果
      */
-    @JsonDeserialize(using = Output.OutputJsonDeserializer.class)
-    public record Output(Search search, List<Choice> choices) {
+    public record Output(
 
-        /**
-         * 构造输出
-         *
-         * @param search 搜索信息
-         * @param choice 候选结果
-         */
-        public Output(Search search, Choice choice) {
-            this(search, singletonList(choice));
-        }
+            @JsonProperty("search_info")
+            Search search,
 
-        /**
-         * 构造输出
-         *
-         * @param search  搜索信息
-         * @param choices 候选结果集
-         */
-        public Output(Search search, List<Choice> choices) {
-            this.search = search;
-            this.choices = unmodifiableList(choices);
-        }
+            @JsonProperty("choices")
+            List<Choice> choices
+
+    ) {
 
         /**
          * @return 最佳候选结果
@@ -193,151 +164,24 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> implements A
                     .orElseThrow(() -> new IllegalArgumentException("No choices found!"));
         }
 
-        /**
-         * @return 是否有搜索信息
-         */
-        public boolean hasSearch() {
-            return Objects.nonNull(search)
-                    && Objects.nonNull(search.results())
-                    && !search.results().isEmpty();
-        }
-
-
-        private static class OutputJsonDeserializer extends JsonDeserializer<Output> {
-
-            @Override
-            public Output deserialize(JsonParser parser, DeserializationContext ctx) throws IOException, JacksonException {
-
-                final var node = ctx.readTree(parser);
-                final var choicesNode = node.get("choices");
-
-                if (null == choicesNode) {
-                    return deserializeForTextFormat(ctx, node);
-                } else {
-                    return deserializeForMessageFormat(ctx, node);
-                }
-
-            }
-
-            private Output deserializeForMessageFormat(DeserializationContext ctx, JsonNode node) throws IOException {
-
-                // 如果没有 choices 节点，说明不是 message
-                final JsonNode choicesNode = node.get("choices");
-                if (Objects.isNull(choicesNode)) {
-                    return null;
-                }
-
-                // 搜索结果信息
-                final JsonNode searchNode = node.get("search_info");
-                final Search search = ctx.readTreeAsValue(searchNode, Search.class);
-
-                final List<Choice> choices = new ArrayList<>();
-                for (final JsonNode choiceNode : choicesNode) {
-
-                    // 结束原因
-                    final JsonNode finishNode = choiceNode.required("finish_reason");
-                    final ChatResponse.Finish finish = ctx.readTreeAsValue(finishNode, ChatResponse.Finish.class);
-
-                    // 单消息
-                    if (choiceNode.has("message")) {
-                        final JsonNode messageNode = choiceNode.required("message");
-                        final Message message = ctx.readTreeAsValue(messageNode, Message.class);
-                        choices.add(new Choice(finish, message));
-                    }
-
-                    // 多消息：见于plugin场景
-                    else if (choiceNode.has("messages")) {
-                        final JsonNode messagesNode = choiceNode.required("messages");
-                        final List<Message> messages = new ArrayList<>();
-                        for (final JsonNode messageNode : messagesNode) {
-                            final Message message = ctx.readTreeAsValue(messageNode, Message.class);
-                            messages.add(message);
-                        }
-                        choices.add(new Choice(finish, unmodifiableList(messages)));
-                    }
-
-                }
-
-                // 返回应答数据
-                return new ChatResponse.Output(search, unmodifiableList(choices));
-
-            }
-
-            private Output deserializeForTextFormat(DeserializationContext ctx, JsonNode node) throws IOException {
-
-                // 如果有 choices 节点，说明不是 text only
-                final JsonNode choicesNode = node.get("choices");
-                if (Objects.nonNull(choicesNode)) {
-                    return null;
-                }
-
-                // 搜索结果信息
-                final JsonNode searchNode = node.get("search_info");
-                final Search search = ctx.readTreeAsValue(searchNode, Search.class);
-
-                final InnerOutput data = ctx.readTreeAsValue(node, InnerOutput.class);
-                final Choice choice = new Choice(data.finish, Message.ofAi(data.text));
-                return new ChatResponse.Output(search, choice);
-
-            }
-
-            private record InnerOutput(
-
-                    @JsonProperty("finish_reason")
-                    ChatResponse.Finish finish,
-
-                    @JsonProperty("text")
-                    String text
-
-            ) {
-
-            }
-
-        }
-
     }
+
 
     /**
      * 候选结果
      *
-     * @param finish   结束类型
-     * @param messages 消息列表
+     * @param finish  结束类型
+     * @param message 消息
      */
-    public record Choice(Finish finish, List<Message> messages) implements Comparable<Choice>, Accumulator<Choice> {
+    public record Choice(
 
-        /**
-         * 构造候选结果
-         *
-         * @param finish  结束类型
-         * @param message 结果消息
-         */
-        public Choice(Finish finish, Message message) {
-            this(finish, singletonList(message));
-        }
+            @JsonProperty("finish_reason")
+            Finish finish,
 
-        /**
-         * 修改消息
-         *
-         * @param operator 修改操作
-         * @return 修改后的候选结果
-         */
-        public Choice changeMessages(UnaryOperator<List<Message>> operator) {
-            final List<Message> newMessages = operator.apply(messages);
-            requireNonNull(newMessages);
-            return new Choice(finish, newMessages);
-        }
+            @JsonProperty("message")
+            AssistantMessage message
 
-        /**
-         * 修改消息
-         *
-         * @param operator 修改操作
-         * @return 修改后的候选结果
-         */
-        public Choice changeMessage(UnaryOperator<Message> operator) {
-            final List<Message> newMessages = new ArrayList<>(history());
-            newMessages.add(requireNonNull(operator.apply(message())));
-            return new Choice(finish(), newMessages);
-        }
+    ) implements Comparable<Choice>, Accumulator<Choice> {
 
         /**
          * 合并两个候选结果
@@ -347,21 +191,11 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> implements A
          */
         @Override
         public Choice accumulate(Choice next) {
-
             if (null == next) {
                 return this;
             }
-
-            final List<Message> newMessages = new ArrayList<>();
-            newMessages.addAll(history());
-            newMessages.addAll(next.history());
-
-            final var message = message();
-            if (null != message) {
-                newMessages.add(message.accumulate(next.message()));
-            }
-
-            return new Choice(next.finish(), newMessages);
+            final var newMessage = message.accumulate(next.message);
+            return new Choice(next.finish(), newMessage);
         }
 
         /**
@@ -377,33 +211,6 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> implements A
         @Override
         public int compareTo(Choice o) {
             return Integer.compare(finish().weight, o.finish().weight);
-        }
-
-        /**
-         * @return 历史消息
-         * {@link #message()}
-         */
-        public List<Message> history() {
-            return Objects.nonNull(messages) && !messages.isEmpty()
-                    ? messages.subList(0, messages.size() - 1)
-                    : Collections.emptyList();
-        }
-
-        /**
-         * @return 最新消息
-         * <p>
-         * 在部分对话场景中会将历史上出现过的消息也一并传入，但只有最后一个消息（最新消息）才是调用方关心的。
-         * 所以这里提供了一个方法，方便调用方获取到最新的消息。
-         * </p>
-         * <p>
-         * 与最新消息对应的则是历史消息，可以参考 {@link #history()}
-         * </p>
-         */
-        public Message message() {
-            if (Objects.isNull(messages) || messages.isEmpty()) {
-                throw new IllegalStateException("messages not found!");
-            }
-            return messages.get(messages.size() - 1);
         }
 
     }

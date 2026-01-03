@@ -2,6 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.intercepto
 
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.SystemMessage;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.UserMessage;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -27,6 +29,6 @@ public interface RewriteUserInputInterceptor extends ChatInterceptor {
 
     }
 
-    CompletionStage<Message> rewrite(Chain chain, Message message);
+    CompletionStage<Message> rewrite(Chain chain, UserMessage message);
 
 }

@@ -2,44 +2,42 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-/**
- * 工具应答消息
- * <p>
- * 由客户端在完成工具调用后发起，用于反馈工具调用结果<br/>
- * {@code Client > LLM}
- * </p>
- */
-@JsonDeserialize
-public final class ToolMessage extends Message {
+public final class ToolMessage implements Message {
 
-    @JsonProperty("tool_call_id")
+    private final String content;
     private final String id;
 
-    /**
-     * 构造工具应答消息
-     *
-     * @param id      调用ID
-     * @param content 应答结果
-     */
     @JsonCreator
     public ToolMessage(
 
-            @JsonProperty("tool_call_id")
-            String id,
-
             @JsonProperty("content")
-            String content
+            String content,
+
+            @JsonProperty("tool_call_id")
+            String id
 
     ) {
-        super(Role.TOOL, content);
+        this.content = content;
         this.id = id;
     }
 
-    /**
-     * @return 调用ID
-     */
+    @Override
+    public Role role() {
+        return Role.TOOL;
+    }
+
+    @Override
+    public String text() {
+        return content;
+    }
+
+    @JsonProperty("content")
+    public String content() {
+        return content;
+    }
+
+    @JsonProperty("tool_call_id")
     public String id() {
         return id;
     }

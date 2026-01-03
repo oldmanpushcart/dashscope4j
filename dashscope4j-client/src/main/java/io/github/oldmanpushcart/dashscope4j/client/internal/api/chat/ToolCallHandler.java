@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolCallMessage;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -20,20 +19,19 @@ class ToolCallHandler implements Function<ChatResponse, CompletionStage<ChatResp
     @Override
     public CompletionStage<ChatResponse> apply(ChatResponse chatResponse) {
         final ChatResponse.Choice choice = chatResponse.output().best();
-        if (!isRequired(choice)) {
+
+        if (!isToolCall(choice)) {
             return CompletableFuture.completedFuture(chatResponse);
         }
 
-        final ChatRequest chatRequest = (ChatRequest) chatResponse.request();
-        final ToolCallMessage message = (ToolCallMessage) choice.message();
-        return new FunctionToolCaller(chatOp, chatRequest, message)
+        final ChatRequest chatRequest = chatResponse.request();
+        return new FunctionToolCaller(chatOp, chatRequest, choice.message())
                 .asyncCall();
     }
 
-    private boolean isRequired(ChatResponse.Choice choice) {
+    private boolean isToolCall(ChatResponse.Choice choice) {
         return null != choice
-                && choice.finish() == ChatResponse.Finish.TOOL_CALLS
-                && choice.message() instanceof ToolCallMessage;
+                && choice.finish() == ChatResponse.Finish.TOOL_CALLS;
     }
 
 }

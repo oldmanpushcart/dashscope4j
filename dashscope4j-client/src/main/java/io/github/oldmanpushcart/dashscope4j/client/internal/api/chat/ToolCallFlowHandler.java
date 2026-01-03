@@ -3,7 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolCallMessage;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.AssistantMessage;
+import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +44,7 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
     private class ToolCallSubscriber implements Flow.Subscriber<ChatResponse> {
 
         private final SubmissionPublisher<ChatResponse> output;
-        private final List<ToolCallMessage> tcMessageSegments = new ArrayList<>();
+        private final List<AssistantMessage> tcMessageSegments = new ArrayList<>();
         private ChatRequest request;
 
         /**
@@ -67,17 +68,18 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
                  * 整个流中取第一个即可，整个流的都是同一个request
                  */
                 if (null == request) {
-                    request = (ChatRequest) response.request();
+                    request = response.request();
                 }
 
-                /*
-                 * 如果有ToolCallMessage，则讲片段缓存起来
-                 * 在onCompleted的时候再合并起来使用
-                 */
                 final var choice = response.output().best();
                 final var message = choice.message();
-                if (message instanceof ToolCallMessage tcMessage) {
-                    tcMessageSegments.add(tcMessage);
+
+                /*
+                 * 如果有ToolCall，则讲片段缓存起来
+                 * 在onCompleted的时候再合并起来使用
+                 */
+                if(message.isToolCall()) {
+                    tcMessageSegments.add(message);
                 } else {
                     output.submit(response);
                 }
@@ -92,7 +94,7 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
             output.closeExceptionally(ex);
         }
 
-        private ToolCallMessage mergeToolCallMessages() {
+        private AssistantMessage mergeToolCallMessages() {
             if (null == request) {
                 return null;
             }

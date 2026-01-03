@@ -3,13 +3,12 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolCallMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionToolNotFoundException;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.MapPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +17,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
-import static java.util.Collections.unmodifiableList;
 import static java.util.concurrent.CompletableFuture.failedStage;
 
 class FunctionToolCaller implements Tool.Caller {
@@ -26,9 +24,9 @@ class FunctionToolCaller implements Tool.Caller {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ChatOp chatOp;
     private final ChatRequest request;
-    private final ToolCallMessage message;
+    private final AssistantMessage message;
 
-    public FunctionToolCaller(ChatOp chatOp, ChatRequest request, ToolCallMessage message) {
+    public FunctionToolCaller(ChatOp chatOp, ChatRequest request, AssistantMessage message) {
         this.chatOp = chatOp;
         this.request = request;
         this.message = message;
@@ -40,24 +38,22 @@ class FunctionToolCaller implements Tool.Caller {
     }
 
     public CompletionStage<ChatResponse> asyncCall() {
-        final Map<String, CompletableFuture<String>> futureMap = parallelCallFunction();
+        final var futureMap = parallelCallFunction();
         return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
                 .thenCompose(unused -> {
                     final List<Message> history = newHistory(futureMap);
                     final ChatRequest newRequest = newHistoryRequest(history);
-                    return chatOp.async(newRequest)
-                            .thenApply(response -> newHistoryResponse(history, response));
+                    return chatOp.async(newRequest);
                 });
     }
 
     public CompletionStage<Flow.Publisher<ChatResponse>> flowCall() {
-        final Map<String, CompletableFuture<String>> futureMap = parallelCallFunction();
+        final var futureMap = parallelCallFunction();
         return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
                 .thenApply(unused -> {
                     final var history = newHistory(futureMap);
                     final var newRequest = newHistoryRequest(history);
-                    final var publisher = chatOp.flow(newRequest);
-                    return new MapPublisher<>(publisher, response -> newHistoryResponse(history, response));
+                    return chatOp.flow(newRequest);
                 });
     }
 
@@ -92,25 +88,6 @@ class FunctionToolCaller implements Tool.Caller {
                 .build();
     }
 
-    // 找到返回的正常结束的选择，将历史消息添加到选择的历史消息中
-    private ChatResponse newHistoryResponse(List<Message> history, ChatResponse response) {
-
-        return response.changeChoice(choice -> {
-
-            if (choice.finish() != ChatResponse.Finish.NORMAL) {
-                return choice;
-            }
-
-            return choice.changeMessages(messages -> {
-                final List<Message> newMessages = new ArrayList<>();
-                newMessages.addAll(history);
-                newMessages.addAll(messages);
-                return unmodifiableList(newMessages);
-            });
-
-        });
-
-    }
 
     @Override
     public ChatRequest request() {
@@ -119,7 +96,7 @@ class FunctionToolCaller implements Tool.Caller {
 
     // 并行调用函数
     private Map<String, CompletableFuture<String>> parallelCallFunction() {
-        final Map<String, CompletableFuture<String>> futureMap = new HashMap<>();
+        final var futureMap = new HashMap<String, CompletableFuture<String>>();
         message.calls().stream()
                 .map(FunctionTool.Call.class::cast)
                 .forEach(call -> {

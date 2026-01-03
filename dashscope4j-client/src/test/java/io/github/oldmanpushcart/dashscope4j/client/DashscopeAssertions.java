@@ -3,11 +3,11 @@ package io.github.oldmanpushcart.dashscope4j.client;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.Content;
 
 import java.net.URI;
-import java.util.Arrays;
+import java.util.List;
 
 public class DashscopeAssertions {
 
@@ -34,7 +34,7 @@ public class DashscopeAssertions {
                 """.formatted(text, expect);
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_TURBO)
-                .addMessage(Message.ofUser(prompt))
+                .addMessage(Message.user(prompt))
                 .build();
         final ChatResponse response = dashscope.chat().async(request)
                 .toCompletableFuture()
@@ -72,9 +72,9 @@ public class DashscopeAssertions {
                 """.formatted(expect);
         final ChatRequest request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
-                .addMessage(Message.ofUser(Arrays.asList(
-                        Content.ofText(prompt),
-                        Content.ofImage(imageURI)
+                .addMessage(Message.user(List.of(
+                        Content.text(prompt),
+                        Content.image(imageURI)
                 )))
                 .build();
         final ChatResponse response = client.chat().async(request)

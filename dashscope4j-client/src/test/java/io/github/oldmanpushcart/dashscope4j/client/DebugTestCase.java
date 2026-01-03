@@ -4,8 +4,8 @@ import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange.ManualVad;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
@@ -134,9 +134,9 @@ public class DebugTestCase implements LoadingEnv {
 
         final var request = ChatRequest.newBuilder()
                 .model(ChatModel.QWEN_VL_MAX)
-                .addMessage(Message.ofUser(List.of(
-                        Content.ofText("图片中是什么?"),
-                        Content.ofImage(new File("./test-data/image/red-cup.jpeg").toURI())
+                .addMessage(Message.user(List.of(
+                        Content.text("请用中文描述图片"),
+                        Content.image(new File("./test-data/image/red-cup.jpeg").toURI())
                 )))
                 .build();
 
@@ -172,5 +172,23 @@ public class DebugTestCase implements LoadingEnv {
         latch.await();
 
     }
+
+    @Test
+    public void debug6() throws InterruptedException {
+
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_VL_MAX)
+                .addMessage(Message.user(List.of(
+                        Content.text("请用中文描述图片"),
+                        Content.image(new File("./test-data/image/red-cup.jpeg").toURI())
+                )))
+                .build();
+
+        final var chatOp = client.chat();
+        final var response = chatOp.async(request).toCompletableFuture().join();
+        System.out.println(response.output().best().message().text());
+
+    }
+
 
 }

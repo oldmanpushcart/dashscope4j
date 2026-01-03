@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_CONTENT_TYPE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -99,6 +100,7 @@ public abstract class AlgoRequest<M extends AlgoModel, R extends AlgoResponse<?>
     public HttpRequest toHttpRequest(String host) {
         final var endpoint = EndpointUtils.https(host, model.path());
         return HttpRequest.newBuilder(endpoint)
+                .header(HTTP_HEADER_CONTENT_TYPE, "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(requestEncoder().apply(this)))
                 .build();
     }
