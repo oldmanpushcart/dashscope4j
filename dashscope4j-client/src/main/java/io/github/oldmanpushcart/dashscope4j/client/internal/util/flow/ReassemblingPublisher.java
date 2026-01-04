@@ -1,7 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.util.flow;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Flow;
@@ -20,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ReassemblingPublisher<T, R> implements Flow.Publisher<R> {
 
+    private static final Logger logger = LoggerFactory.getLogger(ReassemblingPublisher.class);
     private final Flow.Publisher<T> upstream;
     private final Reassembler<T, R> reassembler;
 
@@ -54,6 +59,7 @@ public class ReassemblingPublisher<T, R> implements Flow.Publisher<R> {
         private final AtomicLong demandedAtomic = new AtomicLong(0);
         private final AtomicBoolean doneAtomic = new AtomicBoolean(false);
         private final AtomicInteger wip = new AtomicInteger(0);
+        private final DemandEstimator estimator = new DemandEstimator();
 
         private volatile Flow.Subscription subscription;
 
@@ -68,7 +74,9 @@ public class ReassemblingPublisher<T, R> implements Flow.Publisher<R> {
          * @param items 事件列表
          */
         private void emit(List<R> items) {
-            items.forEach(queue::offer);
+            if (null != items && !items.isEmpty()) {
+                items.forEach(queue::offer);
+            }
             drain();
         }
 
@@ -93,7 +101,7 @@ public class ReassemblingPublisher<T, R> implements Flow.Publisher<R> {
                 long emitted = 0L;
                 while (emitted < demanded) {
                     final var event = queue.poll();
-                    if (null == event) {
+                    if (null == event || doneAtomic.get()) {
                         break;
                     }
                     downstream.onNext(event);
@@ -119,13 +127,15 @@ public class ReassemblingPublisher<T, R> implements Flow.Publisher<R> {
                 missed = wip.addAndGet(-missed);
 
                 // 如果流处理未结束，且当前队列已无事件需要处理，则请求1个碎片
+                final var downstreamDemand = demandedAtomic.get();
                 final var shouldRequestMore = !doneAtomic.get()
-                        && demandedAtomic.get() > 0
+                        && downstreamDemand > 0
                         && queue.isEmpty();
                 if (shouldRequestMore) {
                     final var s = subscription;
                     if (null != s) {
-                        s.request(1);
+                        final var upstreamDemand = estimator.estimateUpstreamDemand(downstreamDemand);
+                        s.request(upstreamDemand);
                     }
                 }
 
@@ -134,8 +144,18 @@ public class ReassemblingPublisher<T, R> implements Flow.Publisher<R> {
 
         @Override
         public void onSubscribe(Flow.Subscription subscription) {
+
+            Objects.requireNonNull(subscription);
+
+            // 拒绝多次订阅
+            if (this.subscription != null) {
+                subscription.cancel();
+                return;
+            }
+
             this.subscription = subscription;
             downstream.onSubscribe(new Flow.Subscription() {
+
                 @Override
                 public void request(long n) {
 
@@ -160,6 +180,7 @@ public class ReassemblingPublisher<T, R> implements Flow.Publisher<R> {
                     }
                     subscription.cancel();
                 }
+
             });
         }
 
@@ -169,7 +190,9 @@ public class ReassemblingPublisher<T, R> implements Flow.Publisher<R> {
                 return;
             }
             try {
-                emit(reassembler.tryAssemble(item));
+                final var events = reassembler.tryAssemble(item);
+                estimator.observe(events.size());
+                emit(events);
             } catch (Throwable nextEx) {
                 onError(nextEx);
             }
@@ -177,10 +200,22 @@ public class ReassemblingPublisher<T, R> implements Flow.Publisher<R> {
 
         @Override
         public void onError(Throwable ex) {
+
+            final var s = this.subscription;
+            if (s != null) {
+                s.cancel();
+                this.subscription = null;
+            }
+
             if (!doneAtomic.compareAndSet(false, true)) {
                 return;
             }
-            downstream.onError(ex);
+            try {
+                downstream.onError(ex);
+            } catch (Throwable errorEx) {
+                logger.warn("onError handler threw exception (downstream bug)", errorEx);
+            }
+
         }
 
         @Override
@@ -191,12 +226,51 @@ public class ReassemblingPublisher<T, R> implements Flow.Publisher<R> {
             try {
                 emit(reassembler.flush());
             } catch (Throwable completeEx) {
-                onError(completeEx);
+                downstream.onError(completeEx);
             }
         }
 
     }
 
+
+    private static class DemandEstimator {
+
+        private long totalUpstream = 1L;
+        private long totalDownstream = 1L;
+        private static final int MAX_REQUEST = 128;
+
+        public void observe(int downstream) {
+
+            if (totalUpstream < Long.MAX_VALUE) {
+                totalUpstream++;
+            }
+
+            if (downstream > 0 && totalDownstream < Long.MAX_VALUE - downstream) {
+                totalDownstream += downstream;
+            } else if (downstream > 0) {
+                totalDownstream = Long.MAX_VALUE;
+            }
+
+        }
+
+        public long estimateUpstreamDemand(long downstreamDemand) {
+
+            if (downstreamDemand <= 0L) {
+                return 0L;
+            }
+
+            if (downstreamDemand == Long.MAX_VALUE) {
+                return MAX_REQUEST;
+            }
+
+            // ratio = 上 : 下
+            final double ratio = totalUpstream / (double) totalDownstream;
+            final long estimated = (long) (downstreamDemand * ratio);
+            return Math.min(Math.max(1, estimated), MAX_REQUEST);
+
+        }
+
+    }
 
     /**
      * 碎片组装器

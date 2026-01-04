@@ -4,7 +4,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.AssistantMessage;
-import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +51,7 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
         private final SubmissionPublisher<ChatResponse> output;
         private final List<AssistantMessage> tcMessageSegments = new ArrayList<>();
         private ChatRequest request;
+        private volatile Flow.Subscription subscription;
 
         /**
          * @param output 输出流
@@ -62,7 +62,8 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
 
         @Override
         public void onSubscribe(Flow.Subscription subscription) {
-            subscription.request(Long.MAX_VALUE);
+            this.subscription = subscription;
+            subscription.request(1);
         }
 
         @Override
@@ -84,11 +85,13 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
                  * 如果有ToolCall，则讲片段缓存起来
                  * 在onCompleted的时候再合并起来使用
                  */
-                if(message.isToolCall()) {
+                if (message.isToolCall()) {
                     tcMessageSegments.add(message);
                 } else {
                     output.submit(response);
                 }
+
+                subscription.request(1);
 
             } catch (Throwable ex) {
                 onError(ex);
@@ -127,6 +130,7 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
                  */
                 if (null == tcMessage) {
                     output.close();
+                    return;
                 }
 
                 /*
@@ -138,14 +142,18 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
                         .thenAccept(publisher ->
                                 publisher.subscribe(new Flow.Subscriber<>() {
 
+                                    private volatile Flow.Subscription subscription;
+
                                     @Override
                                     public void onSubscribe(Flow.Subscription subscription) {
-                                        subscription.request(Long.MAX_VALUE);
+                                        this.subscription = subscription;
+                                        subscription.request(1);
                                     }
 
                                     @Override
                                     public void onNext(ChatResponse item) {
                                         output.submit(item);
+                                        subscription.request(1L);
                                     }
 
                                     @Override
@@ -160,7 +168,7 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
 
                                 }))
                         .exceptionally(ex -> {
-                            output.closeExceptionally(ex);
+                            onError(ex);
                             return null;
                         });
 

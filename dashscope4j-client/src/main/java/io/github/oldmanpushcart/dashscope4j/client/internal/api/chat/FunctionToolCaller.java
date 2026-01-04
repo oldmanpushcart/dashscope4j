@@ -9,6 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionToolNotFoundException;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.ErrorPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,13 +49,17 @@ class FunctionToolCaller implements Tool.Caller {
     }
 
     public CompletionStage<Flow.Publisher<ChatResponse>> flowCall() {
-        final var futureMap = parallelCallFunction();
-        return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
-                .thenApply(unused -> {
-                    final var history = newHistory(futureMap);
-                    final var newRequest = newHistoryRequest(history);
-                    return chatOp.flow(newRequest);
-                });
+        try {
+            final var futureMap = parallelCallFunction();
+            return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
+                    .thenApply(unused -> {
+                        final var history = newHistory(futureMap);
+                        final var newRequest = newHistoryRequest(history);
+                        return chatOp.flow(newRequest);
+                    });
+        } catch (Throwable ex) {
+            return CompletableFuture.completedStage(new ErrorPublisher<>(ex));
+        }
     }
 
     /*

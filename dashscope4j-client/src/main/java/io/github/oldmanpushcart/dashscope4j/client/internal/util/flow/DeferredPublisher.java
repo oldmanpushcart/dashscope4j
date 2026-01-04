@@ -91,7 +91,11 @@ public class DeferredPublisher<T> implements Flow.Publisher<T> {
                 @Override
                 public void onNext(T item) {
                     if (!done) {
-                        DeferredPublisher.this.downstream.onNext(item);
+                        try {
+                            DeferredPublisher.this.downstream.onNext(item);
+                        } catch (Throwable ex) {
+                            signalError(ex);
+                        }
                     }
                 }
 
@@ -107,9 +111,9 @@ public class DeferredPublisher<T> implements Flow.Publisher<T> {
                     if (!done) {
                         done = true;
                         try {
-                            DeferredPublisher.this.downstream.onComplete();
-                        } catch (Throwable ignored) {
-                            // ignore
+                            downstream.onComplete();
+                        } catch (Throwable completeEx) {
+                            downstream.onError(completeEx);
                         }
                     }
                 }
