@@ -28,9 +28,15 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
     @Override
     public Flow.Publisher<ChatResponse> apply(Flow.Publisher<ChatResponse> source) {
         return subscriber -> {
+
+            /*
+             * 因为工具调用流程非常不可控，可能时间非常漫长。
+             * 为了确保流能被及时正确的转发，这里启用了一个publisher做中转
+             */
             final var output = new SubmissionPublisher<ChatResponse>();
             output.subscribe(subscriber);
             source.subscribe(new ToolCallSubscriber(output));
+
         };
     }
 

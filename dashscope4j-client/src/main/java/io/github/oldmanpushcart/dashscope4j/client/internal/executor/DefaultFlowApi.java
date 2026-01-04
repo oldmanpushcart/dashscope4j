@@ -47,17 +47,15 @@ public class DefaultFlowApi implements FlowApi {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request) {
+
         return new Flow.Publisher<>() {
 
             @Override
             public void subscribe(Flow.Subscriber<? super R> subscriber) {
 
                 final var submissionPublisher = new SubmissionPublisher<R>();
+                submissionPublisher.subscribe(subscriber);
                 try {
-
-                    if(1 ==1 ) {
-                        throw new RuntimeException("TEST!");
-                    }
 
                     final var httpRequest = HttpRequest.newBuilder(request.toHttpRequest(host), (n, v) -> true)
                             .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
@@ -80,7 +78,6 @@ public class DefaultFlowApi implements FlowApi {
                                     @Override
                                     public void onSubscribe(Flow.Subscription subscription) {
                                         this.subscription = subscription;
-                                        submissionPublisher.subscribe(subscriber);
                                         subscription.request(1);
                                     }
 
