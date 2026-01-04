@@ -6,10 +6,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.HttpHeader;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetection;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.DeferredPublisher;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.ErrorPublisher;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.ReassemblingPublisher;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.net.http.HttpClient;
@@ -17,19 +18,17 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
-import java.util.concurrent.SubmissionPublisher;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils.traceLogHttpRequest;
 
 public class DefaultFlowApi implements FlowApi {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String host;
     private final String ak;
     private final HttpClient http;
@@ -47,243 +46,122 @@ public class DefaultFlowApi implements FlowApi {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request) {
+        try {
 
-        return new Flow.Publisher<>() {
+            final var httpRequest = HttpRequest.newBuilder(request.toHttpRequest(host), (n, v) -> true)
+                    .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
+                    .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
+                    .header(HTTP_HEADER_X_DASHSCOPE_SSE, ENABLE)
+                    .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
+                    .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
+                    .build();
+            traceLogHttpRequest(httpRequest);
 
-            @Override
-            public void subscribe(Flow.Subscriber<? super R> subscriber) {
-
-                final var submissionPublisher = new SubmissionPublisher<R>();
-                submissionPublisher.subscribe(subscriber);
-                try {
-
-                    final var httpRequest = HttpRequest.newBuilder(request.toHttpRequest(host), (n, v) -> true)
-                            .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
-                            .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
-                            .header(HTTP_HEADER_X_DASHSCOPE_SSE, ENABLE)
-                            .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
-                            .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
-                            .build();
-                    traceLogHttpRequest(httpRequest);
-
-                    http.sendAsync(httpRequest, new ServerSentEventBodyHandler())
-                            .whenComplete(HttpUtils::traceLogHttpResponse)
-                            .thenAccept(httpResponse -> {
-
-                                // 消费 SSE
-                                httpResponse.body().subscribe(new Flow.Subscriber<>() {
-
-                                    private Flow.Subscription subscription;
-
-                                    @Override
-                                    public void onSubscribe(Flow.Subscription subscription) {
-                                        this.subscription = subscription;
-                                        subscription.request(1);
-                                    }
-
-                                    @Override
-                                    public void onNext(Item item) {
-
-                                        try {
-
-                                            final var responseBody = item.data();
-                                            final var response = request.responseDecoder().apply(httpResponse, responseBody);
-                                            if (!response.isSuccess()) {
-                                                throw new ApiException(response);
-                                            }
-
-                                            submissionPublisher.submit(response);
-                                            subscription.request(1);
-
-                                        } catch (Throwable ex) {
-                                            onError(ex);
-                                        }
-
-                                    }
-
-                                    @Override
-                                    public void onError(Throwable ex) {
-                                        submissionPublisher.closeExceptionally(ex);
-                                    }
-
-                                    @Override
-                                    public void onComplete() {
-                                        submissionPublisher.close();
-                                    }
-
-                                });
-
-                            })
-                            .exceptionally(ex -> {
-                                ensureSubscribedAndCloseExceptionally(submissionPublisher, ex);
-                                return null;
-                            });
-
-                } catch (Throwable ex) {
-                    ensureSubscribedAndCloseExceptionally(submissionPublisher, ex);
-                }
-
-            }
-
-            /**
-             * 确保订阅者已经订阅，并关闭异常
-             *
-             * @param publisher 发布者
-             * @param ex 异常
-             * @param <T> 泛型
-             */
-            private static <T> void ensureSubscribedAndCloseExceptionally(SubmissionPublisher<? extends T> publisher, Throwable ex) {
-
-                /*
-                 * 这里为了符合规范，如果没有人订阅，则先创建一个订阅者，并取消订阅
-                 */
-                if (!publisher.hasSubscribers()) {
-                    publisher.subscribe(new Flow.Subscriber<T>() {
-
-                        @Override
-                        public void onSubscribe(Flow.Subscription s) {
-                            s.cancel();
-                        }
-
-                        @Override
-                        public void onNext(Object item) { /* ignore */ }
-
-                        @Override
-                        public void onError(Throwable t) { /* ignore */ }
-
-                        @Override
-                        public void onComplete() { /* ignore */ }
-
-                    });
-                }
-
-                // 正式关闭
-                publisher.closeExceptionally(ex);
-
-            }
-
-        };
+            return new DeferredPublisher<>(() -> http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofPublisher())
+                    .whenComplete(HttpUtils::traceLogHttpResponse)
+                    .thenCompose(httpResponse -> {
+                        final var ct = HttpHeader.ContentType.parse(httpResponse.headers());
+                        final var charset = ct.charset();
+                        return CompletableFuture.completedStage(httpResponse.body())
+                                .thenApply(bytesPublisher -> new ReassemblingPublisher<>(bytesPublisher, new ServerSentEventReassembler(charset)))
+                                .thenApply(ssePublisher -> new ReassemblingPublisher<>(ssePublisher, new ApiResponseReassembler<>(request, httpResponse)));
+                    }));
+        } catch (Throwable ex) {
+            return new ErrorPublisher<>(ex);
+        }
     }
 
+    private static class ApiResponseReassembler<R extends ApiResponse> implements ReassemblingPublisher.Reassembler<ServerSentEvent, R> {
 
-    /**
-     * HTTP响应处理
-     */
-    private static class ServerSentEventBodyHandler implements HttpResponse.BodyHandler<Flow.Publisher<Item>> {
+        private final ApiRequest<R> request;
+        private final HttpResponse<?> httpResponse;
 
-        @Override
-        public HttpResponse.BodySubscriber<Flow.Publisher<Item>> apply(HttpResponse.ResponseInfo responseInfo) {
-
-            final var ct = HttpHeader.ContentType.parse(responseInfo.headers());
-            final var charset = ct.charset();
-
-            return new ServerSentEventBodySubscriber(charset);
+        private ApiResponseReassembler(ApiRequest<R> request, HttpResponse<?> httpResponse) {
+            this.request = request;
+            this.httpResponse = httpResponse;
         }
 
+        @Override
+        public List<R> tryAssemble(ServerSentEvent event) {
+            final var payload = event.payload();
+            final var response = request.responseDecoder().apply(httpResponse, payload);
+            if (!response.isSuccess()) {
+                throw new ApiException(response);
+            }
+            return List.of(response);
+        }
     }
 
+    private static class ServerSentEventReassembler implements ReassemblingPublisher.Reassembler<List<ByteBuffer>, ServerSentEvent> {
 
-    /**
-     * SSE订阅者
-     */
-    private static class ServerSentEventBodySubscriber implements HttpResponse.BodySubscriber<Flow.Publisher<Item>> {
-
-        private final Logger logger = LoggerFactory.getLogger(getClass());
         private final Charset charset;
-
-        private final SubmissionPublisher<Item> publisher = new SubmissionPublisher<>();
-        private final ByteArrayOutputStream output = new ByteArrayOutputStream();
         private final byte[] bytes = new byte[10240];
         private final FeatureDetection detection = new FeatureDetection(new byte[]{'\n', '\n'});
-        private volatile Flow.Subscription subscription;
+        private final ByteArrayOutputStream output = new ByteArrayOutputStream();
 
-        private ServerSentEventBodySubscriber(Charset charset) {
+        private ServerSentEventReassembler(Charset charset) {
             this.charset = charset;
         }
 
-        @Override
-        public CompletionStage<Flow.Publisher<Item>> getBody() {
-            return CompletableFuture.completedStage(publisher);
-        }
-
-        @Override
-        public void onSubscribe(Flow.Subscription subscription) {
-            logger.trace("HTTP-SSE: subscribed");
-            this.subscription = subscription;
-            subscription.request(1);
-        }
-
-        @Override
-        public void onNext(List<ByteBuffer> buffers) {
-            try {
-                for (ByteBuffer buffer : buffers) {
-                    while (buffer.hasRemaining()) {
-                        final var length = Math.min(buffer.remaining(), bytes.length);
-                        buffer.get(bytes, 0, length);
-                        var offset = 0;
-                        while (true) {
-                            final var position = detection.screening(bytes, offset, length - offset);
-                            if (position == -1) {
-                                output.write(bytes, offset, length - offset);
-                                break;
-                            } else {
-                                output.write(bytes, offset, position - offset);
-                                offset = position + 1;
-                                flush();
-                            }
-                        }
-                    }
-                }
-                subscription.request(1);
-            } catch (Throwable ex) {
-                onError(ex);
-            }
-        }
-
-        @Override
-        public void onError(Throwable ex) {
-            logger.trace("HTTP-SSE: error", ex);
-            publisher.closeExceptionally(ex);
-        }
-
-        @Override
-        public void onComplete() {
-            try {
-                flush();
-            } catch (Throwable ex) {
-                onError(ex);
-                return;
-            }
-            publisher.close();
-            logger.trace("HTTP-SSE: completed");
-        }
-
-        private void flush() {
+        private void drainTo(List<ServerSentEvent> events) {
             if (output.size() == 0) {
                 return;
             }
             try {
                 final var body = output.toString(charset).trim();
-                logger.trace("HTTP-SSE: <<< {}", body);
-                final var item = Item.parse(body);
-                publisher.submit(item);
+                final var event = ServerSentEvent.parse(body);
+                events.add(event);
             } finally {
                 output.reset();
             }
         }
 
+        @Override
+        public List<ServerSentEvent> tryAssemble(List<ByteBuffer> buffers) {
+            final var events = new ArrayList<ServerSentEvent>();
+            for (final var buffer : buffers) {
+                while (buffer.hasRemaining()) {
+                    final var length = Math.min(buffer.remaining(), bytes.length);
+                    buffer.get(bytes, 0, length);
+                    var offset = 0;
+                    while (true) {
+                        final var position = detection.screening(bytes, offset, length - offset);
+                        if (position == -1) {
+                            output.write(bytes, offset, length - offset);
+                            break;
+                        } else {
+                            output.write(bytes, offset, position - offset);
+                            offset = position + 1;
+                            drainTo(events);
+                        }
+                    }
+                }
+            }
+            return events;
+        }
+
+        @Override
+        public List<ServerSentEvent> flush() {
+            final var events = new ArrayList<ServerSentEvent>();
+            drainTo(events);
+            return events;
+        }
+
     }
 
-    /**
-     * SSE-Item
-     */
-    public record Item(String id, String event, String data) {
+    private record ServerSentEvent(String id, String type, String payload) {
 
-        public static Item parse(String text) {
+        /**
+         * {@code TEXT -> SSE}
+         *
+         * @param text 文本块
+         * @return SSE 事件
+         */
+        private static ServerSentEvent parse(String text) {
 
             String id = null;
-            String event = null;
-            final StringBuilder dataBuf = new StringBuilder();
+            String type = null;
+            final var payloadBuf = new StringBuilder();
 
             try (final Scanner scanner = new Scanner(text)) {
 
@@ -315,16 +193,16 @@ public class DefaultFlowApi implements FlowApi {
 
                     switch (field) {
                         case "id" -> id = value;
-                        case "event" -> event = value;
-                        case "data" -> dataBuf.append(value).append("\n");
+                        case "event" -> type = value;
+                        case "data" -> payloadBuf.append(value).append("\n");
                     }
 
 
                 }// while
             }// try
 
-            final var data = dataBuf.toString().trim();
-            return new Item(id, event, data);
+            final var payload = payloadBuf.toString().trim();
+            return new ServerSentEvent(id, type, payload);
 
         }
 

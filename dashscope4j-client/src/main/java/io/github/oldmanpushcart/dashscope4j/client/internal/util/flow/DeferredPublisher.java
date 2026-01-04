@@ -123,10 +123,10 @@ public class DeferredPublisher<T> implements Flow.Publisher<T> {
             done = true;
 
             // Cancel upstream stage if available
-            final var us = upstreamFuture;
-            if (null != us) {
+            final var uf = upstreamFuture;
+            if (null != uf) {
                 upstreamFuture = null;
-                us.cancel(true);
+                uf.cancel(true);
             }
 
             // Cancel upstream if available
@@ -197,10 +197,10 @@ public class DeferredPublisher<T> implements Flow.Publisher<T> {
             }
             done = true;
 
-            final var us = upstreamFuture;
-            if (null != us) {
+            final var uf = upstreamFuture;
+            if (null != uf) {
                 upstreamFuture = null;
-                us.cancel(true);
+                uf.cancel(true);
             }
 
             final var u = upstream;

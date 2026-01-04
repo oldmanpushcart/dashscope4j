@@ -8,8 +8,8 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.ChatOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.OmniOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultAsyncApi;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultFlowApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultFlowApi;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
