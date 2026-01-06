@@ -17,6 +17,10 @@ public class FlatMapPublisher<T, R> implements Flow.Publisher<R> {
     private final Function<T, Flow.Publisher<R>> each;
     private final Supplier<Flow.Publisher<R>> fin;
 
+    public FlatMapPublisher(Flow.Publisher<T> upstream, FlatMapper<T, R> mapper) {
+        this(upstream, mapper::map, mapper::finish);
+    }
+
     public FlatMapPublisher(Flow.Publisher<T> upstream, Function<T, Flow.Publisher<R>> each, Supplier<Flow.Publisher<R>> fin) {
         this.upstream = Objects.requireNonNull(upstream);
         this.each = Objects.requireNonNull(each);
@@ -36,6 +40,7 @@ public class FlatMapPublisher<T, R> implements Flow.Publisher<R> {
         INNER_SUBSCRIBING,
         INNER_SUBSCRIBED,
         INNER_READY,
+        INNER_COMPLETED,
         ERROR,
         COMPLETED,
         CANCELLED
@@ -192,27 +197,39 @@ public class FlatMapPublisher<T, R> implements Flow.Publisher<R> {
                                 break;
                             }
 
-                            // FIN子流完成，是整个流处理完成。
-                            if (is.done && is.terminal) {
-                                if (state.compareAndSet(s, State.COMPLETED)) {
-                                    select();
-                                    break;
-                                }
-                            }
-
-                            // 子流完成，切回到主流的READY，让主流READY继续完成后续判断
-                            if (is.done && !is.terminal) {
-                                if (state.compareAndSet(s, State.READY)) {
-                                    select();
-                                    break;
-                                }
-                            }
-
                             // 子流未结束但子流配额消费完成，重新请求新的配额
                             if (is.quota.available() == 0) {
                                 final var n = quota.available();
                                 if (n > 0) {
                                     is.subscription.request(n);
+                                }
+                            }
+                        }
+
+
+                        case INNER_COMPLETED -> {
+                            final var is = innerSubscriber;
+
+                            // 刷走子流中未发送的元素
+                            if (!is.queue.isEmpty()) {
+                                final var r = Objects.requireNonNull(is.queue.poll());
+                                quota.emitted(1L);
+                                downstream.onNext(r);
+                                select();
+                                break;
+                            }
+
+                            // FIN子流完成，是整个流处理完成。
+                            if (is.terminal) {
+                                if (state.compareAndSet(s, State.COMPLETED)) {
+                                    select();
+                                }
+                            }
+
+                            // 子流完成，切回到主流的READY，让主流READY继续完成后续判断
+                            else {
+                                if (state.compareAndSet(s, State.READY)) {
+                                    select();
                                 }
                             }
                         }
@@ -337,7 +354,6 @@ public class FlatMapPublisher<T, R> implements Flow.Publisher<R> {
         private final Queue<R> queue = new ConcurrentLinkedQueue<>();
         private final Quota quota = new Quota();
         private volatile Flow.Subscription subscription;
-        private volatile boolean done;
 
         private InnerSubscriber(AtomicReference<State> state, boolean terminal, Runnable select, Consumer<Throwable> onError) {
             this.state = state;
@@ -381,8 +397,30 @@ public class FlatMapPublisher<T, R> implements Flow.Publisher<R> {
 
         @Override
         public void onComplete() {
-            done = true;
+            state.set(State.INNER_COMPLETED);
             select.run();
+        }
+
+    }
+
+
+    @FunctionalInterface
+    public interface FlatMapper<T, R> {
+
+        /**
+         * 将上游元素映射为子流。
+         */
+        Flow.Publisher<R> map(T t);
+
+        /**
+         * 提供终结流（主流 onComplete 后追加的内容）。
+         * 默认为空流。
+         *
+         * <p>注意：此方法应在需要时才被调用（例如主流正常完成且未取消）。
+         * 实现应尽量轻量，或返回可重复订阅的 Publisher。
+         */
+        default Flow.Publisher<R> finish() {
+            return EmptyPublisher.empty();
         }
 
     }

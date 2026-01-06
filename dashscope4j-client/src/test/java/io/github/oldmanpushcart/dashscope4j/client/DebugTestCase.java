@@ -153,7 +153,7 @@ public class DebugTestCase implements LoadingEnv {
 
             @Override
             public void onNext(ChatResponse item) {
-                System.out.println(item.output().best().message().text());
+                System.out.println("==="+item.output().best().message().text());
             }
 
             @Override

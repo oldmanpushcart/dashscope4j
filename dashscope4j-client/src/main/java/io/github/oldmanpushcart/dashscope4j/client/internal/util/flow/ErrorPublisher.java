@@ -32,4 +32,8 @@ public class ErrorPublisher<T> implements Flow.Publisher<T> {
 
     }
 
+    public static <T> ErrorPublisher<T> of(Throwable ex) {
+        return new ErrorPublisher<>(ex);
+    }
+
 }

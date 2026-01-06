@@ -4,11 +4,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.AssistantMessage;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Flow;
-import java.util.concurrent.SubmissionPublisher;
 import java.util.function.UnaryOperator;
 
 import static io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT;
@@ -25,85 +25,48 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
     }
 
     @Override
-    public Flow.Publisher<ChatResponse> apply(Flow.Publisher<ChatResponse> source) {
-        return subscriber -> {
-
-            /*
-             * 因为工具调用流程非常不可控，可能时间非常漫长。
-             * 为了确保流能被及时正确的转发，这里启用了一个publisher做中转
-             */
-            final var output = new SubmissionPublisher<ChatResponse>();
-            output.subscribe(subscriber);
-            source.subscribe(new ToolCallSubscriber(output));
-
-        };
+    public Flow.Publisher<ChatResponse> apply(Flow.Publisher<ChatResponse> publisher) {
+        return new FlatMapPublisher<>(publisher, new ToolCallFlatMapper(chatOp));
     }
 
+    private static class ToolCallFlatMapper implements FlatMapPublisher.FlatMapper<ChatResponse, ChatResponse> {
 
-    /**
-     * 工具调用订阅者
-     * <p>
-     * 在这个订阅中会处理工具调用请求，并将工具调用的结果连接到当前流中
-     * </p>
-     */
-    private class ToolCallSubscriber implements Flow.Subscriber<ChatResponse> {
-
-        private final SubmissionPublisher<ChatResponse> output;
+        private final ChatOp chatOp;
         private final List<AssistantMessage> tcMessageSegments = new ArrayList<>();
-        private ChatRequest request;
-        private volatile Flow.Subscription subscription;
+        private volatile ChatRequest request;
 
-        /**
-         * @param output 输出流
-         */
-        private ToolCallSubscriber(SubmissionPublisher<ChatResponse> output) {
-            this.output = output;
+        private ToolCallFlatMapper(ChatOp chatOp) {
+            this.chatOp = chatOp;
         }
 
         @Override
-        public void onSubscribe(Flow.Subscription subscription) {
-            this.subscription = subscription;
-            subscription.request(1);
-        }
+        public Flow.Publisher<ChatResponse> map(ChatResponse response) {
 
-        @Override
-        public void onNext(ChatResponse response) {
-            try {
-
-                /*
-                 * 补充上ChatRequest
-                 * 整个流中取第一个即可，整个流的都是同一个request
-                 */
-                if (null == request) {
-                    request = response.request();
-                }
-
-                final var choice = response.output().best();
-                final var message = choice.message();
-
-                /*
-                 * 如果有ToolCall，则讲片段缓存起来
-                 * 在onCompleted的时候再合并起来使用
-                 */
-                if (message.isToolCall()) {
-                    tcMessageSegments.add(message);
-                } else {
-                    output.submit(response);
-                }
-
-                subscription.request(1);
-
-            } catch (Throwable ex) {
-                onError(ex);
+            /*
+             * 补充上ChatRequest
+             * 整个流中取第一个即可，整个流的都是同一个request
+             */
+            if (request == null) {
+                request = response.request();
             }
+
+            final var choice = response.output().best();
+            final var message = choice.message();
+
+            /*
+             * 如果有ToolCall，则讲片段缓存起来
+             * 在onCompleted的时候再合并起来使用
+             */
+            if (message.isToolCall()) {
+                tcMessageSegments.add(message);
+                return EmptyPublisher.empty();
+            } else {
+                return CollectionPublisher.of(response);
+            }
+
         }
 
-        @Override
-        public void onError(Throwable ex) {
-            output.closeExceptionally(ex);
-        }
-
-        private AssistantMessage mergeToolCallMessages() {
+        private AssistantMessage mergeSegments() {
             if (null == request) {
                 return null;
             }
@@ -114,7 +77,7 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
         }
 
         @Override
-        public void onComplete() {
+        public Flow.Publisher<ChatResponse> finish() {
 
             try {
 
@@ -122,58 +85,24 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
                  * 发起工具调用，产生子流
                  * 并将工具调用产生的流转发到下游接收方
                  */
-                final var tcMessage = mergeToolCallMessages();
+                final var tcMessage = mergeSegments();
 
                 /*
                  * 如果没有找到工具调用消息，说明本次流中不需要进行工具调用处理。
                  * 这种情况下直接关闭输出流即可
                  */
                 if (null == tcMessage) {
-                    output.close();
-                    return;
+                    return EmptyPublisher.empty();
                 }
 
                 /*
                  * 找到了工具调用消息，则向LLM发起工具调用
                  * 输出流将交由工具调用处理程序处理
                  */
-                new FunctionToolCaller(chatOp, request, tcMessage)
-                        .flowCall()
-                        .thenAccept(publisher ->
-                                publisher.subscribe(new Flow.Subscriber<>() {
-
-                                    private volatile Flow.Subscription subscription;
-
-                                    @Override
-                                    public void onSubscribe(Flow.Subscription subscription) {
-                                        this.subscription = subscription;
-                                        subscription.request(1);
-                                    }
-
-                                    @Override
-                                    public void onNext(ChatResponse item) {
-                                        output.submit(item);
-                                        subscription.request(1L);
-                                    }
-
-                                    @Override
-                                    public void onError(Throwable ex) {
-                                        output.closeExceptionally(ex);
-                                    }
-
-                                    @Override
-                                    public void onComplete() {
-                                        output.close();
-                                    }
-
-                                }))
-                        .exceptionally(ex -> {
-                            onError(ex);
-                            return null;
-                        });
+                return new DeferredPublisher<>(() -> new FunctionToolCaller(chatOp, request, tcMessage).flowCall());
 
             } catch (Throwable ex) {
-                onError(ex);
+                return ErrorPublisher.of(ex);
             }
 
         }
