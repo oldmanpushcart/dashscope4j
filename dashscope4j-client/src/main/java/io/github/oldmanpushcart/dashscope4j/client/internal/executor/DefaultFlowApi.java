@@ -6,9 +6,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.HttpHeader;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetection;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.DeferredPublisher;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.ErrorPublisher;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.ReassemblingPublisher;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 
@@ -60,23 +62,85 @@ public class DefaultFlowApi implements FlowApi {
             return new DeferredPublisher<>(() -> http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofPublisher())
                     .whenComplete(HttpUtils::traceLogHttpResponse)
                     .thenCompose(httpResponse -> {
+
                         final var ct = HttpHeader.ContentType.parse(httpResponse.headers());
                         final var charset = ct.charset();
-                        return CompletableFuture.completedStage(httpResponse.body())
-                                .thenApply(bytesPublisher -> new ReassemblingPublisher<>(bytesPublisher, new ServerSentEventReassembler(charset)))
-                                .thenApply(ssePublisher -> new ReassemblingPublisher<>(ssePublisher, new ApiResponseReassembler<>(request, httpResponse)));
+
+                        // sse
+                        if (httpResponse.statusCode() == 200 && "text/event-stream".equalsIgnoreCase(ct.mime())) {
+                            return CompletableFuture.completedStage(httpResponse.body())
+                                    .thenApply(bytesPublisher -> new ReassemblingPublisher<>(bytesPublisher, new ServerSentEventReassembler(charset)))
+                                    .thenApply(ssePublisher -> new ReassemblingPublisher<>(ssePublisher, new SseApiResponseReassembler<>(request, httpResponse)));
+                        }
+
+                        // error
+                        else if (httpResponse.statusCode() != 200 && "application/json".equalsIgnoreCase(ct.mime())) {
+                            return CompletableFuture.completedStage(httpResponse.body())
+                                    .thenApply(bytesPublisher -> new ReassemblingPublisher<>(bytesPublisher, new JsonApiResponseReassembler<>(charset, request, httpResponse)));
+                        }
+
+                        // other unsupported
+                        else {
+                            return CompletableFuture.completedStage(
+                                    new ErrorPublisher<>(
+                                            new IllegalStateException("Unsupported HTTP response! code=%s;mime-type=%s;".formatted(
+                                                    ct.mime(),
+                                                    httpResponse.statusCode()
+                                            ))));
+                        }
+
+
                     }));
         } catch (Throwable ex) {
             return new ErrorPublisher<>(ex);
         }
     }
 
-    private static class ApiResponseReassembler<R extends ApiResponse> implements ReassemblingPublisher.Reassembler<ServerSentEvent, R> {
+    private static class JsonApiResponseReassembler<R extends ApiResponse> implements ReassemblingPublisher.Reassembler<List<ByteBuffer>, R> {
+
+        private final Charset charset;
+        private final ApiRequest<R> request;
+        private final HttpResponse<?> httpResponse;
+        private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        private JsonApiResponseReassembler(Charset charset, ApiRequest<R> request, HttpResponse<?> httpResponse) {
+            this.charset = charset;
+            this.request = request;
+            this.httpResponse = httpResponse;
+        }
+
+        @Override
+        public List<R> tryAssemble(List<ByteBuffer> buffers) {
+            for (ByteBuffer buffer : buffers) {
+                final var bytes = new byte[buffer.remaining()];
+                buffer.get(bytes);
+                baos.write(bytes, 0, bytes.length);
+            }
+            return List.of();
+        }
+
+        @Override
+        public List<R> flush() {
+            try {
+                final var body = baos.toString(charset);
+                final var response = JacksonJsonUtils.toApiResponse(body, request.responseType(), request, httpResponse);
+                if (!response.isSuccess()) {
+                    throw new ApiException(response);
+                }
+                return List.of(response);
+            } finally {
+                IOUtils.closeQuietly(baos);
+            }
+        }
+
+    }
+
+    private static class SseApiResponseReassembler<R extends ApiResponse> implements ReassemblingPublisher.Reassembler<ServerSentEvent, R> {
 
         private final ApiRequest<R> request;
         private final HttpResponse<?> httpResponse;
 
-        private ApiResponseReassembler(ApiRequest<R> request, HttpResponse<?> httpResponse) {
+        private SseApiResponseReassembler(ApiRequest<R> request, HttpResponse<?> httpResponse) {
             this.request = request;
             this.httpResponse = httpResponse;
         }
@@ -84,6 +148,12 @@ public class DefaultFlowApi implements FlowApi {
         @Override
         public List<R> tryAssemble(ServerSentEvent event) {
             final var payload = event.payload();
+
+            // TODO: 需要修复返回无效的数据
+            if("[DONE]".equalsIgnoreCase(payload)) {
+                return List.of();
+            }
+
             final var response = request.responseDecoder().apply(httpResponse, payload);
             if (!response.isSuccess()) {
                 throw new ApiException(response);

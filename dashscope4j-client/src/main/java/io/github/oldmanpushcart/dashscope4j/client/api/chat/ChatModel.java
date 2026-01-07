@@ -158,4 +158,13 @@ public class ChatModel extends AlgoModel {
      */
     public static final ChatModel QWEN3_235B_A22B = ofText("qwen3-235b-a22b");
 
+    public static final ChatModel QWEN3_OMNI_FLASH = new ChatModel(
+            Mode.MULTIMODAL,
+            "qwen3-omni-flash",
+            "/compatible-mode/v1/chat/completions",
+            Map.of(
+                    "compat", "openai"
+            )
+    );
+
 }

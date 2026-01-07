@@ -4,12 +4,14 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.Content;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 
-public class Helper {
+public class OpenAiChatHelper {
 
     /**
      * 通义千问问答请求转换为{@code OpenAi}兼容模式问答请求
@@ -37,7 +39,7 @@ public class Helper {
         final var request = toChatRequest(response.request());
         final var choices = response.choices()
                 .stream()
-                .map(Helper::toChoice)
+                .map(OpenAiChatHelper::toChoice)
                 .toList();
         final var output = new ChatResponse.Output(
                 null,
@@ -77,8 +79,14 @@ public class Helper {
             contents.add(Content.audio(audioURI));
         }
 
+        // Tool Call
+        final var calls = null == message.calls()
+                ? Collections.<Tool.Call>emptyList()
+                : message.calls();
+
         return AssistantMessage.newBuilder()
                 .contents(contents)
+                .calls(calls)
                 .build();
     }
 

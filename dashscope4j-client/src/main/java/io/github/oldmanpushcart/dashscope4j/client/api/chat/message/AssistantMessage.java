@@ -140,9 +140,9 @@ public final class AssistantMessage implements Message, Accumulator<AssistantMes
     public static class Builder implements Buildable<AssistantMessage, Builder> {
 
         private final List<Content> contents = new ArrayList<>();
+        private final List<Tool.Call> calls = new ArrayList<>();
+        private String reasoningContent;
         private boolean partial;
-
-        private AssistantMessage previous;
 
         public Builder() {
 
@@ -150,8 +150,14 @@ public final class AssistantMessage implements Message, Accumulator<AssistantMes
 
         public Builder(AssistantMessage message) {
             this.contents.addAll(message.contents);
+            this.calls.addAll(message.calls);
             this.partial = message.partial;
-            this.previous = message;
+            this.reasoningContent = message.reasoningContent;
+        }
+
+        public Builder reasoningContent(String reasoningContent) {
+            this.reasoningContent = reasoningContent;
+            return this;
         }
 
         public Builder contents(List<Content> contents) {
@@ -170,6 +176,22 @@ public final class AssistantMessage implements Message, Accumulator<AssistantMes
             return this;
         }
 
+        public Builder calls(List<Tool.Call> calls) {
+            this.calls.clear();
+            this.calls.addAll(calls);
+            return this;
+        }
+
+        public Builder addCall(Tool.Call call) {
+            this.calls.add(call);
+            return this;
+        }
+
+        public Builder addCalls(List<Tool.Call> calls) {
+            this.calls.addAll(calls);
+            return this;
+        }
+
         public Builder partial(boolean partial) {
             this.partial = partial;
             return this;
@@ -177,12 +199,6 @@ public final class AssistantMessage implements Message, Accumulator<AssistantMes
 
         @Override
         public AssistantMessage build() {
-            final var reasoningContent = null != previous
-                    ? previous.reasoningContent
-                    : null;
-            final var calls = null != previous
-                    ? previous.calls
-                    : null;
             return new AssistantMessage(contents, reasoningContent, partial, calls);
         }
 

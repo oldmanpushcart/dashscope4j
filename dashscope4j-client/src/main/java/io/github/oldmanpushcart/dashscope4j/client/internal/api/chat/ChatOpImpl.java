@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor.InlineImageFilesInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor.OpenAiCompatInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor.UploadFilesInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.*;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.DeferredPublisher;
@@ -21,6 +22,7 @@ public class ChatOpImpl implements ChatOp {
     private final FlowApi flowApi;
 
     private static final List<Interceptor> interceptors = List.of(
+            new OpenAiCompatInterceptor(),
             new InlineImageFilesInterceptor(),
             new UploadFilesInterceptor()
     );

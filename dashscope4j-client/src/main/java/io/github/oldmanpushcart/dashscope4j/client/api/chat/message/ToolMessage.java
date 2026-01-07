@@ -11,11 +11,11 @@ public final class ToolMessage implements Message {
     @JsonCreator
     public ToolMessage(
 
-            @JsonProperty("content")
-            String content,
-
             @JsonProperty("tool_call_id")
-            String id
+            String id,
+
+            @JsonProperty("content")
+            String content
 
     ) {
         this.content = content;

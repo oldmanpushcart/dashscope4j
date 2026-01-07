@@ -36,6 +36,7 @@ public class OpenAiChatResponse extends OpenAiResponse {
             @JsonProperty("usage")
             Usage usage,
 
+            @JsonProperty("error")
             OpenAiError error
 
     ) {

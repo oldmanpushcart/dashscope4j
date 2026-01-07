@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
@@ -133,11 +134,12 @@ public class DebugTestCase implements LoadingEnv {
     public void debug5() throws InterruptedException {
 
         final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_VL_MAX)
+                .model(ChatModel.QWEN3_OMNI_FLASH)
                 .addMessage(Message.user(List.of(
                         Content.text("请用中文描述图片"),
                         Content.image(new File("./test-data/image/red-cup.jpeg").toURI())
                 )))
+                .parameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, false)
                 .build();
 
         final var chatOp = client.chat();
@@ -153,7 +155,9 @@ public class DebugTestCase implements LoadingEnv {
 
             @Override
             public void onNext(ChatResponse item) {
-                System.out.println("==="+item.output().best().message().text());
+                if(!item.output().choices().isEmpty()) {
+                    System.out.println("==="+item.output().best().message().text());
+                }
             }
 
             @Override

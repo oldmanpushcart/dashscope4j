@@ -1,8 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.compat.openai;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
@@ -15,11 +17,10 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.Jackson
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -28,6 +29,7 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalConte
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
 
+@JsonSerialize(using = OpenAiChatRequestJsonSerializer.class)
 public class OpenAiChatRequest extends OpenAiRequest<OpenAiChatResponse> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -46,50 +48,24 @@ public class OpenAiChatRequest extends OpenAiRequest<OpenAiChatResponse> {
         this.tools = builder.tools;
     }
 
-    @JsonIgnore
-    ChatRequest ref() {
+    public ChatRequest ref() {
         return ref;
     }
 
-    @JsonProperty("model")
     public ChatModel model() {
         return model;
     }
 
-    @JsonProperty("messages")
-    public List<Message> messages() {
-        return messages;
-    }
-
-    @JsonIgnore
     public Parameters parameters() {
         return parameters;
     }
 
-    @JsonIgnore
-    public List<Tool> tools() {
-        return tools;
+    public List<Message> messages() {
+        return messages;
     }
 
-    @JsonUnwrapped
-    private Parameters mergedParameters() {
-        final var merged = new Parameters();
-
-        // 强制指定返回格式为"message"，降低返回值的解析复杂度
-        merged.append("result_format", "message");
-
-        // 工具必选参数
-        final var enabledTools = tools.stream()
-                .filter(Tool::isEnabled)
-                .collect(Collectors.toList());
-        if (!enabledTools.isEmpty()) {
-            merged.append("tools", enabledTools);
-        }
-
-        // 合并原有参数
-        merged.merge(parameters);
-
-        return merged;
+    public List<Tool> tools() {
+        return tools;
     }
 
     @Override

@@ -50,6 +50,11 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatResponse>>
                 request = response.request();
             }
 
+            // TODO : 需要修复choice可能为空的问题
+            if(response.output().choices().isEmpty()) {
+                return CollectionPublisher.of(response);
+            }
+
             final var choice = response.output().best();
             final var message = choice.message();
 
