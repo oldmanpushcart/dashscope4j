@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.ImageContent;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.VideoContent;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.codec.AsyncFileBase64Encoder;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
@@ -15,21 +16,18 @@ import java.util.concurrent.CompletionStage;
 
 public class InlineImageFilesInterceptor implements RewriteUserInputInterceptor {
 
-    @Override
-    public CompletionStage<?> intercept(Chain chain, ChatRequest request) {
-        if (!request.inlineEnabled()) {
-            return chain.proceed();
-        } else {
-            return RewriteUserInputInterceptor.super.intercept(chain, request);
-        }
-    }
-
     private static boolean isFileURI(URI resourceURI) {
         return "file".equalsIgnoreCase(resourceURI.getScheme());
     }
 
     @Override
-    public CompletionStage<Message> rewrite(Chain chain, UserMessage message) {
+    public CompletionStage<Message> rewriteUserInputMessage(Interceptor.Chain chain, UserMessage message) {
+
+        final var request = (ChatRequest) chain.request();
+        if (!request.inlineEnabled()) {
+            return CompletableFuture.completedStage(message);
+        }
+
         return CompletableFutureUtils
                 .sequentialMap(message.contents(), content -> {
 
@@ -55,13 +53,14 @@ public class InlineImageFilesInterceptor implements RewriteUserInputInterceptor 
                                 .sequentialMap(videoURIs, resourceURI -> {
 
                                     // 只处理本地文件
-                                    if (!isFileURI(resourceURI)) {
+                                    if (isFileURI(resourceURI)) {
+                                        final var path = Paths.get(resourceURI);
+                                        return AsyncFileBase64Encoder.encode(path)
+                                                .thenApply(base64Str -> URI.create("data:;base64," + base64Str));
+                                    } else {
                                         return CompletableFuture.completedStage(resourceURI);
                                     }
 
-                                    final var path = Paths.get(resourceURI);
-                                    return AsyncFileBase64Encoder.encode(path)
-                                            .thenApply(base64Str -> URI.create("data:;base64," + base64Str));
                                 })
                                 .thenApply(newVideoURIs ->
                                         VideoContent.newBuilder(videoContent)

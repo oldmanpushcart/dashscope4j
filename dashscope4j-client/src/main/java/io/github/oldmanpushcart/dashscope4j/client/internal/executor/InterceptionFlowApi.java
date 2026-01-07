@@ -14,9 +14,9 @@ public class InterceptionFlowApi implements FlowApi {
 
     private final DashscopeClient client;
     private final FlowApi delegate;
-    private final Interceptor interceptor;
+    private final FlowInterceptor interceptor;
 
-    public InterceptionFlowApi(DashscopeClient client, FlowApi delegate, Interceptor interceptor) {
+    public InterceptionFlowApi(DashscopeClient client, FlowApi delegate, FlowInterceptor interceptor) {
         this.client = client;
         this.delegate = delegate;
         this.interceptor = interceptor;
@@ -24,7 +24,7 @@ public class InterceptionFlowApi implements FlowApi {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request) {
-        final var chain = new Interceptor.Chain(client, request, r -> CompletableFuture.completedStage(delegate.execute(r)));
+        final var chain = new FlowInterceptor.Chain(client, request, r -> CompletableFuture.completedStage(delegate.execute(r)));
         try {
             //noinspection unchecked
             return new DeferredPublisher<>(() ->
@@ -36,7 +36,7 @@ public class InterceptionFlowApi implements FlowApi {
         }
     }
 
-    public static FlowApi group(DashscopeClient client, FlowApi delegate, List<Interceptor> interceptors) {
+    public static FlowApi group(DashscopeClient client, FlowApi delegate, List<FlowInterceptor> interceptors) {
         FlowApi api = delegate;
         for (final var interceptor : interceptors) {
             api = new InterceptionFlowApi(client, api, interceptor);

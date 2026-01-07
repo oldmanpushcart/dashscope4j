@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.ImageContent;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.VideoContent;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.net.URI;
@@ -13,21 +14,16 @@ import java.util.concurrent.CompletionStage;
 
 public class UploadFilesInterceptor implements RewriteUserInputInterceptor {
 
-    @Override
-    public CompletionStage<?> intercept(Chain chain, ChatRequest request) {
-        if (!request.uploadEnabled()) {
-            return chain.proceed();
-        } else {
-            return RewriteUserInputInterceptor.super.intercept(chain, request);
-        }
-    }
-
     private static boolean isFileURI(URI resourceURI) {
         return "file".equalsIgnoreCase(resourceURI.getScheme());
     }
 
     @Override
-    public CompletionStage<Message> rewrite(Chain chain, UserMessage message) {
+    public CompletionStage<Message> rewriteUserInputMessage(Interceptor.Chain chain, UserMessage message) {
+        final var request = (ChatRequest) chain.request();
+        if (!request.uploadEnabled()) {
+            return CompletableFuture.completedStage(message);
+        }
         return CompletableFutureUtils
                 .sequentialMap(message.contents(), content -> {
 
@@ -38,7 +34,6 @@ public class UploadFilesInterceptor implements RewriteUserInputInterceptor {
                             return CompletableFuture.completedStage(content);
                         }
 
-                        final var request = (ChatRequest) chain.request();
                         final var model = request.model();
                         return chain.client().base().store().upload(imageURI, model)
                                 .thenApply(newImageURI ->
@@ -54,13 +49,12 @@ public class UploadFilesInterceptor implements RewriteUserInputInterceptor {
                                 .sequentialMap(resourceURIs, resourceURI -> {
 
                                     // 只处理本地文件
-                                    if (!isFileURI(resourceURI)) {
+                                    if (isFileURI(resourceURI)) {
+                                        final var model = request.model();
+                                        return chain.client().base().store().upload(resourceURI, model);
+                                    } else {
                                         return CompletableFuture.completedStage(resourceURI);
                                     }
-
-                                    final var request = (ChatRequest) chain.request();
-                                    final var model = request.model();
-                                    return chain.client().base().store().upload(resourceURI, model);
 
                                 })
                                 .thenApply(newResourceURIs ->

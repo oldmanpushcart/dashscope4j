@@ -12,9 +12,9 @@ public class InterceptionAsyncApi implements AsyncApi {
 
     private final DashscopeClient client;
     private final AsyncApi delegate;
-    private final Interceptor interceptor;
+    private final AsyncInterceptor interceptor;
 
-    public InterceptionAsyncApi(DashscopeClient client, AsyncApi delegate, Interceptor interceptor) {
+    public InterceptionAsyncApi(DashscopeClient client, AsyncApi delegate, AsyncInterceptor interceptor) {
         this.client = client;
         this.delegate = delegate;
         this.interceptor = interceptor;
@@ -22,7 +22,7 @@ public class InterceptionAsyncApi implements AsyncApi {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> execute(T request) {
-        final var chain = new Interceptor.Chain(client, request, delegate::execute);
+        final var chain = new AsyncInterceptor.Chain(client, request, delegate::execute);
         try {
             //noinspection unchecked
             return (CompletionStage<R>) interceptor.intercept(chain);
@@ -31,7 +31,7 @@ public class InterceptionAsyncApi implements AsyncApi {
         }
     }
 
-    public static AsyncApi group(DashscopeClient client, AsyncApi delegate, List<Interceptor> interceptors) {
+    public static AsyncApi group(DashscopeClient client, AsyncApi delegate, List<AsyncInterceptor> interceptors) {
         AsyncApi api = delegate;
         for (final var interceptor : interceptors) {
             api = new InterceptionAsyncApi(client, api, interceptor);

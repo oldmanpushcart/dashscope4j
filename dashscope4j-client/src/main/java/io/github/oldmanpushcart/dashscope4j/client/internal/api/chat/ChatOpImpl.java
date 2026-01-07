@@ -25,9 +25,19 @@ public class ChatOpImpl implements ChatOp {
             new UploadFilesInterceptor()
     );
 
+    private static final List<FlowInterceptor> flowInterceptors = interceptors.stream()
+            .filter(FlowInterceptor.class::isInstance)
+            .map(FlowInterceptor.class::cast)
+            .toList();
+
+    private static final List<AsyncInterceptor> asyncInterceptors = interceptors.stream()
+            .filter(AsyncInterceptor.class::isInstance)
+            .map(AsyncInterceptor.class::cast)
+            .toList();
+
     public ChatOpImpl(DashscopeClient client, AsyncApi asyncApi, FlowApi flowApi) {
-        this.asyncApi = InterceptionAsyncApi.group(client, asyncApi, interceptors);
-        this.flowApi = InterceptionFlowApi.group(client, flowApi, interceptors);
+        this.asyncApi = InterceptionAsyncApi.group(client, asyncApi, asyncInterceptors);
+        this.flowApi = InterceptionFlowApi.group(client, flowApi, flowInterceptors);
     }
 
     @Override
