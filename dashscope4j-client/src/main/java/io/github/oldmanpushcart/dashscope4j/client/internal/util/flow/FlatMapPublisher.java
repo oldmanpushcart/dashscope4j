@@ -220,7 +220,7 @@ public class FlatMapPublisher<T, R> implements Flow.Publisher<R> {
                             }
 
                             // FIN子流完成，是整个流处理完成。
-                            if (is.terminal) {
+                            if (is.isFin) {
                                 if (state.compareAndSet(s, State.COMPLETED)) {
                                     select();
                                 }
@@ -348,16 +348,16 @@ public class FlatMapPublisher<T, R> implements Flow.Publisher<R> {
     private static class InnerSubscriber<R> implements Flow.Subscriber<R> {
 
         private final AtomicReference<State> state;
-        private final boolean terminal;
+        private final boolean isFin;
         private final Runnable select;
         private final Consumer<Throwable> onError;
         private final Queue<R> queue = new ConcurrentLinkedQueue<>();
         private final Quota quota = new Quota();
         private volatile Flow.Subscription subscription;
 
-        private InnerSubscriber(AtomicReference<State> state, boolean terminal, Runnable select, Consumer<Throwable> onError) {
+        private InnerSubscriber(AtomicReference<State> state, boolean isFin, Runnable select, Consumer<Throwable> onError) {
             this.state = state;
-            this.terminal = terminal;
+            this.isFin = isFin;
             this.select = select;
             this.onError = onError;
         }
@@ -397,8 +397,14 @@ public class FlatMapPublisher<T, R> implements Flow.Publisher<R> {
 
         @Override
         public void onComplete() {
-            state.set(State.INNER_COMPLETED);
-            select.run();
+            final var ret = state.accumulateAndGet(State.INNER_COMPLETED, (s, u) ->
+                    switch (s) {
+                        case INNER_SUBSCRIBING, INNER_SUBSCRIBED, INNER_READY -> u;
+                        default -> s;
+                    });
+            if(ret == State.INNER_COMPLETED) {
+                select.run();
+            }
         }
 
     }
