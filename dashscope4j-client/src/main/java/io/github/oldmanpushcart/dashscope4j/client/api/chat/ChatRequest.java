@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonRawValue;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
@@ -11,7 +10,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -85,13 +83,9 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     private class Input {
 
-        @JsonRawValue
         @JsonProperty("messages")
-        String expect() {
-            return switch (model().mode()) {
-                case TEXT -> JacksonJsonUtils.toJson(ChatViews.Text.class, messages);
-                case MULTIMODAL -> JacksonJsonUtils.toJson(ChatViews.Multimodal.class, messages);
-            };
+        List<Message> messages() {
+            return messages;
         }
 
     }

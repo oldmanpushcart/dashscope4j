@@ -121,7 +121,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> implements A
 
         // 返回新的对话应答
         return new ChatResponse(
-                (ChatRequest) next.request(),
+                next.request(),
                 next.uuid(),
                 next.code(),
                 next.desc(),
