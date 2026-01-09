@@ -68,138 +68,142 @@ public class MapPublisher<T, R> implements Flow.Publisher<R> {
             int missed = 1;
             do {
 
-                final var s = state.get();
-                switch (s) {
+                try {
+                    final var s = state.get();
+                    switch (s) {
 
-                    // 主流已订阅
-                    case SUBSCRIBED -> {
-                        if (state.compareAndSet(s, State.MAIN_READY)) {
+                        // 主流已订阅
+                        case SUBSCRIBED -> {
+                            if (state.compareAndSet(s, State.MAIN_READY)) {
+                                upstreamSubscription.request(1L);
+                            }
+                        }
+
+                        // 主流准备完成
+                        case MAIN_READY -> {
+
+                            // 优先执行队列中的数据
+                            if (!queue.isEmpty()) {
+                                if (state.compareAndSet(s, State.INNER_SUBSCRIBING)) {
+                                    final var innerPub = Objects.requireNonNull(queue.poll());
+                                    final var is = new InnerSubscriber<R>(state, this::select, this::onError);
+                                    innerSubscriber = is;
+                                    innerPub.subscribe(is);
+                                }
+                                break;
+                            }
+
+                            // 队列执行完成，说明空了，继续向上游请求
                             upstreamSubscription.request(1L);
-                        }
-                    }
 
-                    // 主流准备完成
-                    case MAIN_READY -> {
-
-                        // 优先执行队列中的数据
-                        if (!queue.isEmpty()) {
-                            if (state.compareAndSet(s, State.INNER_SUBSCRIBING)) {
-                                final var innerPub = Objects.requireNonNull(queue.poll());
-                                final var is = new InnerSubscriber<R>(state, this::select, this::onError);
-                                innerSubscriber = is;
-                                innerPub.subscribe(is);
-                            }
-                            break;
                         }
 
-                        // 队列执行完成，说明空了，继续向上游请求
-                        upstreamSubscription.request(1L);
-
-                    }
-
-                    // 主流已完成
-                    case MAIN_COMPLETED -> {
-                        if (state.compareAndSet(s, State.COMPLETED)) {
-                            select();
-                        }
-                    }
-
-                    // 子流已订阅
-                    case INNER_SUBSCRIBED -> {
-                        if (state.compareAndSet(s, State.INNER_READY)) {
-                            final var n = quota.available();
-                            if (n > 0) {
-                                innerSubscriber.subscription.request(n);
-                            }
-                        }
-                    }
-
-                    // 子流准备完成
-                    case INNER_READY -> {
-
-                        final var is = innerSubscriber;
-
-                        // 子流有数据，发送给下游
-                        if (!is.queue.isEmpty()) {
-                            final var r = Objects.requireNonNull(is.queue.poll());
-                            quota.emitted(1L);
-                            downstream.onNext(r);
-                            select();
-                            break;
-                        }
-
-                        // 子流配额耗尽，重新向子流拉取数据
-                        if (is.quota.available() == 0) {
-                            final var n = quota.available();
-                            if (n > 0) {
-                                is.subscription.request(n);
+                        // 主流已完成
+                        case MAIN_COMPLETED -> {
+                            if (state.compareAndSet(s, State.COMPLETED)) {
+                                select();
                             }
                         }
 
-                    }
-
-                    // 子流已完成
-                    case INNER_COMPLETED -> {
-
-                        final var is = innerSubscriber;
-
-                        // 刷走子流中未发送的元素
-                        if (!is.queue.isEmpty()) {
-                            final var r = Objects.requireNonNull(is.queue.poll());
-                            quota.emitted(1L);
-                            downstream.onNext(r);
-                            select();
-                            break;
-                        }
-
-                        /*
-                         * 子流完成，从哪里来回哪里去
-                         * 从MAIN_READY来，回MAIN_READY去
-                         */
-                        if (state.compareAndSet(s, State.MAIN_READY)) {
-                            select();
-                        }
-
-                    }
-
-
-                    // 终结态
-                    case COMPLETED, ERROR, CANCELLED -> {
-                        try {
-
-                            // 标记为终结
-                            terminated = true;
-
-                            // 取消上游
-                            final var us = upstreamSubscription;
-                            if (null != us) {
-                                us.cancel();
+                        // 子流已订阅
+                        case INNER_SUBSCRIBED -> {
+                            if (state.compareAndSet(s, State.INNER_READY)) {
+                                final var n = quota.available();
+                                if (n > 0) {
+                                    innerSubscriber.subscription.request(n);
+                                }
                             }
+                        }
 
-                            // 取消子流
+                        // 子流准备完成
+                        case INNER_READY -> {
+
                             final var is = innerSubscriber;
-                            if (null != is && null != is.subscription) {
-                                is.subscription.cancel();
+
+                            // 子流有数据，发送给下游
+                            if (!is.queue.isEmpty()) {
+                                final var r = Objects.requireNonNull(is.queue.poll());
+                                quota.emitted(1L);
+                                downstream.onNext(r);
+                                select();
+                                break;
                             }
 
-                            // 根据是否有错误决定是完成还是失败
-                            if (null != ex) {
-                                downstream.onError(ex);
-                            } else {
-                                downstream.onComplete();
+                            // 子流配额耗尽，重新向子流拉取数据
+                            if (is.quota.available() == 0) {
+                                final var n = quota.available();
+                                if (n > 0) {
+                                    is.subscription.request(n);
+                                }
                             }
 
-                        } catch (Throwable ex) {
-                            // ignored
                         }
 
-                        /*
-                         * 进入终结态后，后续不会再有任何的 select
-                         * 所以这里可以通过 return 快速破坏执行链，起到立即结束的作用
-                         */
-                        return;
-                    }
+                        // 子流已完成
+                        case INNER_COMPLETED -> {
 
+                            final var is = innerSubscriber;
+
+                            // 刷走子流中未发送的元素
+                            if (!is.queue.isEmpty()) {
+                                final var r = Objects.requireNonNull(is.queue.poll());
+                                quota.emitted(1L);
+                                downstream.onNext(r);
+                                select();
+                                break;
+                            }
+
+                            /*
+                             * 子流完成，从哪里来回哪里去
+                             * 从MAIN_READY来，回MAIN_READY去
+                             */
+                            if (state.compareAndSet(s, State.MAIN_READY)) {
+                                select();
+                            }
+
+                        }
+
+
+                        // 终结态
+                        case COMPLETED, ERROR, CANCELLED -> {
+                            try {
+
+                                // 标记为终结
+                                terminated = true;
+
+                                // 取消上游
+                                final var us = upstreamSubscription;
+                                if (null != us) {
+                                    us.cancel();
+                                }
+
+                                // 取消子流
+                                final var is = innerSubscriber;
+                                if (null != is && null != is.subscription) {
+                                    is.subscription.cancel();
+                                }
+
+                                // 根据是否有错误决定是完成还是失败
+                                if (null != ex) {
+                                    downstream.onError(ex);
+                                } else {
+                                    downstream.onComplete();
+                                }
+
+                            } catch (Throwable ex) {
+                                // ignored
+                            }
+
+                            /*
+                             * 进入终结态后，后续不会再有任何的 select
+                             * 所以这里可以通过 return 快速破坏执行链，起到立即结束的作用
+                             */
+                            return;
+                        }
+
+                    }
+                } catch (Throwable ex) {
+                    onError(ex);
                 }
 
                 missed = wip.addAndGet(-missed);

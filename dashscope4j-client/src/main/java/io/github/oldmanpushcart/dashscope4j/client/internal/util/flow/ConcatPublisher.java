@@ -8,15 +8,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class ConcatPublisher<T> implements Flow.Publisher<T> {
 
     private final Flow.Publisher<T> upstream;
-    private final Supplier<Flow.Publisher<T>> fin;
+    private final Flow.Publisher<T> fin;
     private final Function<Throwable, Flow.Publisher<T>> err;
 
-    public ConcatPublisher(Flow.Publisher<T> upstream, Supplier<Flow.Publisher<T>> fin, Function<Throwable, Flow.Publisher<T>> err) {
+    public ConcatPublisher(Flow.Publisher<T> upstream, Flow.Publisher<T> fin, Function<Throwable, Flow.Publisher<T>> err) {
         Objects.requireNonNull(upstream, "upstream must not be null!");
         Objects.requireNonNull(fin, "next must not be null!");
         Objects.requireNonNull(err, "err must not be null!");
@@ -50,20 +49,19 @@ public class ConcatPublisher<T> implements Flow.Publisher<T> {
     private static class UpstreamSubscriber<T> implements Flow.Subscriber<T> {
 
         private final Flow.Subscriber<? super T> downstream;
-        private final Supplier<Flow.Publisher<T>> fin;
+        private final Flow.Publisher<T> fin;
         private final Function<Throwable, Flow.Publisher<T>> err;
 
-        private final AtomicReference<State> state = new AtomicReference<>();
+        private final AtomicReference<State> state = new AtomicReference<>(State.SUBSCRIBING);
         private final AtomicInteger wip = new AtomicInteger();
         private final Quota quota = new Quota();
-        private final Queue<Flow.Publisher<T>> queue = new ConcurrentLinkedQueue<>();
 
         private volatile boolean terminated;
         private volatile Flow.Subscription upstreamSubscription;
         private volatile InnerSubscriber<T> innerSubscriber;
         private volatile Throwable ex;
 
-        private UpstreamSubscriber(Flow.Subscriber<? super T> downstream, Supplier<Flow.Publisher<T>> fin, Function<Throwable, Flow.Publisher<T>> err) {
+        private UpstreamSubscriber(Flow.Subscriber<? super T> downstream, Flow.Publisher<T> fin, Function<Throwable, Flow.Publisher<T>> err) {
             this.downstream = downstream;
             this.fin = fin;
             this.err = err;
@@ -76,113 +74,116 @@ public class ConcatPublisher<T> implements Flow.Publisher<T> {
             int missed = 1;
             do {
 
-                final var s = state.get();
-                switch (s) {
-                    case MAIN_COMPLETED -> {
-                        if (state.compareAndSet(s, State.INNER_SUBSCRIBING)) {
-                            final var innerPub = fin.get();
-                            final var is = new InnerSubscriber<T>(State.COMPLETED, state, this::select, this::onError);
-                            innerSubscriber = is;
-                            innerPub.subscribe(is);
-                        }
-                    }
-
-                    case MAIN_ERROR -> {
-                        if (state.compareAndSet(s, State.INNER_SUBSCRIBING)) {
-                            final var innerPub = err.apply(ex);
-                            final var is = new InnerSubscriber<T>(State.COMPLETED, state, this::select, this::onError);
-                            innerSubscriber = is;
-                            innerPub.subscribe(is);
-                        }
-                    }
-
-                    case INNER_SUBSCRIBED -> {
-                        if (state.compareAndSet(s, State.INNER_READY)) {
-                            final var n = quota.available();
-                            if (n > 0) {
-                                innerSubscriber.subscription.request(n);
+                try {
+                    final var s = state.get();
+                    switch (s) {
+                        case MAIN_COMPLETED -> {
+                            if (state.compareAndSet(s, State.INNER_SUBSCRIBING)) {
+                                final var is = new InnerSubscriber<T>(state, this::select, this::onError);
+                                innerSubscriber = is;
+                                fin.subscribe(is);
                             }
                         }
-                    }
 
-                    case INNER_READY -> {
-                        final var is = innerSubscriber;
-
-                        // 子流有数据，发送给下游
-                        if (!is.queue.isEmpty()) {
-                            final var r = Objects.requireNonNull(is.queue.poll());
-                            quota.emitted(1L);
-                            downstream.onNext(r);
-                            select();
-                            break;
-                        }
-
-                        // 子流配额耗尽，重新向子流拉取数据
-                        if (is.quota.available() == 0) {
-                            final var n = quota.available();
-                            if (n > 0) {
-                                is.subscription.request(n);
+                        case MAIN_ERROR -> {
+                            if (state.compareAndSet(s, State.INNER_SUBSCRIBING)) {
+                                final var innerPub = err.apply(ex);
+                                final var is = new InnerSubscriber<T>(state, this::select, this::onError);
+                                innerSubscriber = is;
+                                innerPub.subscribe(is);
                             }
                         }
-                    }
 
-                    case INNER_COMPLETED -> {
-                        final var is = innerSubscriber;
-
-                        // 刷走子流中未发送的元素
-                        if (!is.queue.isEmpty()) {
-                            final var r = Objects.requireNonNull(is.queue.poll());
-                            quota.emitted(1L);
-                            downstream.onNext(r);
-                            select();
-                            break;
-                        }
-
-                        /*
-                         * 子流完成，跳到指定状态
-                         */
-                        if (state.compareAndSet(s, is.target)) {
-                            select();
-                        }
-                    }
-
-                    // 终结态
-                    case COMPLETED, ERROR, CANCELLED -> {
-                        try {
-
-                            // 标记为终结
-                            terminated = true;
-
-                            // 取消上游
-                            final var us = upstreamSubscription;
-                            if (null != us) {
-                                us.cancel();
+                        case INNER_SUBSCRIBED -> {
+                            if (state.compareAndSet(s, State.INNER_READY)) {
+                                final var n = quota.available();
+                                if (n > 0) {
+                                    innerSubscriber.subscription.request(n);
+                                }
                             }
+                        }
 
-                            // 取消子流
+                        case INNER_READY -> {
                             final var is = innerSubscriber;
-                            if (null != is && null != is.subscription) {
-                                is.subscription.cancel();
+
+                            // 子流有数据，发送给下游
+                            if (!is.queue.isEmpty()) {
+                                final var r = Objects.requireNonNull(is.queue.poll());
+                                quota.emitted(1L);
+                                downstream.onNext(r);
+                                select();
+                                break;
                             }
 
-                            // 根据是否有错误决定是完成还是失败
-                            if (null != ex) {
-                                downstream.onError(ex);
-                            } else {
-                                downstream.onComplete();
+                            // 子流配额耗尽，重新向子流拉取数据
+                            if (is.quota.available() == 0) {
+                                final var n = quota.available();
+                                if (n > 0) {
+                                    is.subscription.request(n);
+                                }
                             }
-
-                        } catch (Throwable ex) {
-                            // ignored
                         }
 
-                        /*
-                         * 进入终结态后，后续不会再有任何的 select
-                         * 所以这里可以通过 return 快速破坏执行链，起到立即结束的作用
-                         */
-                        return;
-                    }
+                        case INNER_COMPLETED -> {
+                            final var is = innerSubscriber;
 
+                            // 刷走子流中未发送的元素
+                            if (!is.queue.isEmpty()) {
+                                final var r = Objects.requireNonNull(is.queue.poll());
+                                quota.emitted(1L);
+                                downstream.onNext(r);
+                                select();
+                                break;
+                            }
+
+                            /*
+                             * 子流完成，跳到指定状态
+                             */
+                            if (state.compareAndSet(s, State.COMPLETED)) {
+                                select();
+                            }
+                        }
+
+                        // 终结态
+                        case COMPLETED, ERROR, CANCELLED -> {
+                            try {
+
+                                // 标记为终结
+                                terminated = true;
+
+                                // 取消上游
+                                final var us = upstreamSubscription;
+                                if (null != us) {
+                                    us.cancel();
+                                }
+
+                                // 取消子流
+                                final var is = innerSubscriber;
+                                if (null != is && null != is.subscription) {
+                                    is.subscription.cancel();
+                                }
+
+                                // 根据是否有错误决定是完成还是失败
+                                if (null != ex) {
+                                    downstream.onError(ex);
+                                } else {
+                                    downstream.onComplete();
+                                }
+
+                            } catch (Throwable ex) {
+                                // ignored
+                            }
+
+                            /*
+                             * 进入终结态后，后续不会再有任何的 select
+                             * 所以这里可以通过 return 快速破坏执行链，起到立即结束的作用
+                             */
+                            return;
+                        }
+
+                    }
+                } catch (Throwable ex) {
+                    onError(ex);
                 }
 
                 missed = wip.addAndGet(-missed);
@@ -192,7 +193,7 @@ public class ConcatPublisher<T> implements Flow.Publisher<T> {
         @Override
         public void onSubscribe(Flow.Subscription s) {
             Objects.requireNonNull(s, "subscription must not be null!");
-            if (!state.compareAndSet(State.SUBSCRIBING, State.MAIN_READY)) {
+            if (!state.compareAndSet(State.SUBSCRIBING, State.SUBSCRIBED)) {
                 s.cancel();
                 downstream.onSubscribe(new EmptySubscription());
                 downstream.onError(new IllegalStateException("Already subscribed!"));
@@ -235,7 +236,11 @@ public class ConcatPublisher<T> implements Flow.Publisher<T> {
         @Override
         public void onError(Throwable ex) {
             this.ex = ex;
-            final var ret = state.accumulateAndGet(State.MAIN_ERROR, (s, u) ->
+            if (state.compareAndSet(State.SUBSCRIBED, State.MAIN_ERROR)) {
+                select();
+                return;
+            }
+            final var ret = state.accumulateAndGet(State.ERROR, (s, u) ->
                     switch (s) {
                         case ERROR, COMPLETED, CANCELLED -> s;
                         default -> u;
@@ -247,7 +252,11 @@ public class ConcatPublisher<T> implements Flow.Publisher<T> {
 
         @Override
         public void onComplete() {
-            final var ret = state.accumulateAndGet(State.MAIN_COMPLETED, (s, u) ->
+            if (state.compareAndSet(State.SUBSCRIBED, State.MAIN_COMPLETED)) {
+                select();
+                return;
+            }
+            final var ret = state.accumulateAndGet(State.COMPLETED, (s, u) ->
                     switch (s) {
                         case ERROR, COMPLETED, CANCELLED -> s;
                         default -> u;
@@ -261,7 +270,6 @@ public class ConcatPublisher<T> implements Flow.Publisher<T> {
 
     private static class InnerSubscriber<T> implements Flow.Subscriber<T> {
 
-        private final State target;
         private final AtomicReference<State> state;
         private final Runnable select;
         private final Consumer<Throwable> onError;
@@ -271,8 +279,7 @@ public class ConcatPublisher<T> implements Flow.Publisher<T> {
 
         private volatile Flow.Subscription subscription;
 
-        private InnerSubscriber(State target, AtomicReference<State> state, Runnable select, Consumer<Throwable> onError) {
-            this.target = target;
+        private InnerSubscriber(AtomicReference<State> state, Runnable select, Consumer<Throwable> onError) {
             this.state = state;
             this.select = select;
             this.onError = onError;
