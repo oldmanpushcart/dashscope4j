@@ -7,9 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.HttpHe
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetection;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.DeferredPublisher;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.ErrorPublisher;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.ReassemblingPublisher;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
@@ -23,8 +21,8 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
+import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils.traceLogHttpRequest;
@@ -48,7 +46,7 @@ public class DefaultFlowApi implements FlowApi {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request) {
-        try {
+        return FlowX.defer(() -> FlowX.fromCompletionStage(() -> {
 
             final var httpRequest = HttpRequest.newBuilder(request.toHttpRequest(host), (n, v) -> true)
                     .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
@@ -59,120 +57,139 @@ public class DefaultFlowApi implements FlowApi {
                     .build();
             traceLogHttpRequest(httpRequest);
 
-            return new DeferredPublisher<>(() -> http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofPublisher())
+            return http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofPublisher())
                     .whenComplete(HttpUtils::traceLogHttpResponse)
-                    .thenCompose(httpResponse -> {
+                    .thenApply(httpResponse -> {
 
                         final var ct = HttpHeader.ContentType.parse(httpResponse.headers());
                         final var charset = ct.charset();
 
                         // sse
                         if (httpResponse.statusCode() == 200 && "text/event-stream".equalsIgnoreCase(ct.mime())) {
-                            return CompletableFuture.completedStage(httpResponse.body())
-                                    .thenApply(bytesPublisher -> new ReassemblingPublisher<>(bytesPublisher, new ServerSentEventReassembler(charset)))
-                                    .thenApply(ssePublisher -> new ReassemblingPublisher<>(ssePublisher, new SseApiResponseReassembler<>(request, httpResponse)));
+                            return FlowX
+                                    .fromPublisher(httpResponse.body())
+                                    .transform(new ByteBufferListToServerSentEventTransformer(charset))
+                                    .transform(new ServerSentEventToApiResponseTransformer<>(request, httpResponse))
+                                    .publisher();
                         }
 
                         // error
                         else if (httpResponse.statusCode() != 200 && "application/json".equalsIgnoreCase(ct.mime())) {
-                            return CompletableFuture.completedStage(httpResponse.body())
-                                    .thenApply(bytesPublisher -> new ReassemblingPublisher<>(bytesPublisher, new JsonApiResponseReassembler<>(charset, request, httpResponse)));
+                            return FlowX
+                                    .fromPublisher(httpResponse.body())
+                                    .transform(new ByteBufferListToApiResponseTransformer<>(charset, request, httpResponse))
+                                    .publisher();
                         }
 
-                        // other unsupported
+                        // other
                         else {
-                            return CompletableFuture.completedStage(
-                                    new ErrorPublisher<>(
-                                            new IllegalStateException("Unsupported HTTP response! code=%s;mime-type=%s;".formatted(
-                                                    ct.mime(),
-                                                    httpResponse.statusCode()
-                                            ))));
+                            return FlowX
+                                    .<R>error(new IllegalStateException("Unsupported HTTP response! code=%s;mime-type=%s;".formatted(
+                                            ct.mime(),
+                                            httpResponse.statusCode()
+                                    )))
+                                    .publisher();
                         }
 
+                    });
 
-                    }));
-        } catch (Throwable ex) {
-            return new ErrorPublisher<>(ex);
-        }
+        }).publisher()).publisher();
     }
 
-    private static class JsonApiResponseReassembler<R extends ApiResponse> implements ReassemblingPublisher.Reassembler<List<ByteBuffer>, R> {
+    /**
+     * {@code BYTES -> ApiResponse}流转换器
+     */
+    private static class ByteBufferListToApiResponseTransformer<R extends ApiResponse>
+            implements Function<Flow.Publisher<List<ByteBuffer>>, Flow.Publisher<R>> {
 
         private final Charset charset;
         private final ApiRequest<R> request;
         private final HttpResponse<?> httpResponse;
         private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        private JsonApiResponseReassembler(Charset charset, ApiRequest<R> request, HttpResponse<?> httpResponse) {
+        private ByteBufferListToApiResponseTransformer(Charset charset, ApiRequest<R> request, HttpResponse<?> httpResponse) {
             this.charset = charset;
             this.request = request;
             this.httpResponse = httpResponse;
         }
 
         @Override
-        public List<R> tryAssemble(List<ByteBuffer> buffers) {
-            for (ByteBuffer buffer : buffers) {
-                final var bytes = new byte[buffer.remaining()];
-                buffer.get(bytes);
-                baos.write(bytes, 0, bytes.length);
-            }
-            return List.of();
+        public Flow.Publisher<R> apply(Flow.Publisher<List<ByteBuffer>> publisher) {
+            return FlowX
+                    .fromPublisher(publisher)
+                    .flatMap(buffers -> {
+                        for (final var buffer : buffers) {
+                            final var bytes = new byte[buffer.remaining()];
+                            buffer.get(bytes);
+                            baos.write(bytes, 0, bytes.length);
+                        }
+                        return List.<R>of();
+                    })
+                    .concat(FlowX
+                            .defer(() -> {
+                                try {
+                                    final var body = baos.toString(charset);
+                                    final var response = JacksonJsonUtils.toApiResponse(body, request.responseType(), request, httpResponse);
+                                    return !response.isSuccess()
+                                            ? FlowX.<R>error(new ApiException(response)).publisher()
+                                            : FlowX.just(response).publisher();
+                                } finally {
+                                    IOUtils.closeQuietly(baos);
+                                }
+                            })
+                            .publisher())
+                    .publisher();
         }
-
-        @Override
-        public List<R> flush() {
-            try {
-                final var body = baos.toString(charset);
-                final var response = JacksonJsonUtils.toApiResponse(body, request.responseType(), request, httpResponse);
-                if (!response.isSuccess()) {
-                    throw new ApiException(response);
-                }
-                return List.of(response);
-            } finally {
-                IOUtils.closeQuietly(baos);
-            }
-        }
-
     }
 
-    private static class SseApiResponseReassembler<R extends ApiResponse> implements ReassemblingPublisher.Reassembler<ServerSentEvent, R> {
+    /**
+     * {@code SSE -> ApiResponse}流转换器
+     */
+    private static class ServerSentEventToApiResponseTransformer<R extends ApiResponse>
+            implements Function<Flow.Publisher<ServerSentEvent>, Flow.Publisher<R>> {
 
         private final ApiRequest<R> request;
         private final HttpResponse<?> httpResponse;
 
-        private SseApiResponseReassembler(ApiRequest<R> request, HttpResponse<?> httpResponse) {
+        private ServerSentEventToApiResponseTransformer(ApiRequest<R> request, HttpResponse<?> httpResponse) {
             this.request = request;
             this.httpResponse = httpResponse;
         }
 
         @Override
-        public List<R> tryAssemble(ServerSentEvent event) {
-            final var payload = event.payload();
-
-            // TODO: 需要修复返回无效的数据
-            if("[DONE]".equalsIgnoreCase(payload)) {
-                return List.of();
-            }
-
-            final var response = request.responseDecoder().apply(httpResponse, payload);
-            if (!response.isSuccess()) {
-                throw new ApiException(response);
-            }
-            return List.of(response);
+        public Flow.Publisher<R> apply(Flow.Publisher<ServerSentEvent> publisher) {
+            return FlowX
+                    .fromPublisher(publisher)
+                    .filter(event -> !"[DONE]".equalsIgnoreCase(event.payload()))
+                    .flatMap(event -> {
+                        final var response = request.responseDecoder().apply(httpResponse, event.payload());
+                        if (!response.isSuccess()) {
+                            throw new ApiException(response);
+                        }
+                        return List.of(response);
+                    })
+                    .publisher();
         }
+
     }
 
-    private static class ServerSentEventReassembler implements ReassemblingPublisher.Reassembler<List<ByteBuffer>, ServerSentEvent> {
+
+    /**
+     * {@code BYTES -> SSE}流转换器
+     */
+    private static class ByteBufferListToServerSentEventTransformer
+            implements Function<Flow.Publisher<List<ByteBuffer>>, Flow.Publisher<ServerSentEvent>> {
 
         private final Charset charset;
         private final byte[] bytes = new byte[10240];
         private final FeatureDetection detection = new FeatureDetection(new byte[]{'\n', '\n'});
         private final ByteArrayOutputStream output = new ByteArrayOutputStream();
 
-        private ServerSentEventReassembler(Charset charset) {
+        private ByteBufferListToServerSentEventTransformer(Charset charset) {
             this.charset = charset;
         }
 
+        // 将字符串转换为 SSE
         private void drainTo(List<ServerSentEvent> events) {
             if (output.size() == 0) {
                 return;
@@ -187,38 +204,53 @@ public class DefaultFlowApi implements FlowApi {
         }
 
         @Override
-        public List<ServerSentEvent> tryAssemble(List<ByteBuffer> buffers) {
-            final var events = new ArrayList<ServerSentEvent>();
-            for (final var buffer : buffers) {
-                while (buffer.hasRemaining()) {
-                    final var length = Math.min(buffer.remaining(), bytes.length);
-                    buffer.get(bytes, 0, length);
-                    var offset = 0;
-                    while (true) {
-                        final var position = detection.screening(bytes, offset, length - offset);
-                        if (position == -1) {
-                            output.write(bytes, offset, length - offset);
-                            break;
-                        } else {
-                            output.write(bytes, offset, position - offset);
-                            offset = position + 1;
-                            drainTo(events);
-                        }
-                    }
-                }
-            }
-            return events;
-        }
+        public Flow.Publisher<ServerSentEvent> apply(Flow.Publisher<List<ByteBuffer>> publisher) {
+            return FlowX
+                    .fromPublisher(publisher)
 
-        @Override
-        public List<ServerSentEvent> flush() {
-            final var events = new ArrayList<ServerSentEvent>();
-            drainTo(events);
-            return events;
+                    // 将字节流转换为 SSE 事件流
+                    .flatMap(buffers -> {
+                        final var events = new ArrayList<ServerSentEvent>();
+                        for (final var buffer : buffers) {
+                            while (buffer.hasRemaining()) {
+                                final var length = Math.min(buffer.remaining(), bytes.length);
+                                buffer.get(bytes, 0, length);
+                                var offset = 0;
+                                while (true) {
+                                    final var position = detection.screening(bytes, offset, length - offset);
+                                    if (position == -1) {
+                                        output.write(bytes, offset, length - offset);
+                                        break;
+                                    } else {
+                                        output.write(bytes, offset, position - offset);
+                                        offset = position + 1;
+                                        drainTo(events);
+                                    }
+                                }
+                            }
+                        }
+                        return events;
+                    })
+
+                    // 流结束，将剩余的事件流发送走
+                    .concat(FlowX
+                            .defer(() -> {
+                                final var events = new ArrayList<ServerSentEvent>();
+                                drainTo(events);
+                                return FlowX
+                                        .fromIterable(events)
+                                        .publisher();
+                            })
+                            .publisher()
+                    )
+                    .publisher();
         }
 
     }
 
+    /**
+     * SSE
+     */
     private record ServerSentEvent(String id, String type, String payload) {
 
         /**
@@ -233,7 +265,7 @@ public class DefaultFlowApi implements FlowApi {
             String type = null;
             final var payloadBuf = new StringBuilder();
 
-            try (final Scanner scanner = new Scanner(text)) {
+            try (final var scanner = new Scanner(text)) {
 
                 while (scanner.hasNextLine()) {
                     final String line = scanner.nextLine();

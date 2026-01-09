@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.util.flow;
 import java.util.Objects;
 import java.util.concurrent.Flow;
 
-public class ErrorPublisher<T> implements Flow.Publisher<T> {
+class ErrorPublisher<T> implements Flow.Publisher<T> {
 
     private final Throwable cause;
 

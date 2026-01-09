@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class ConcatPublisher<T> implements Flow.Publisher<T> {
+class ConcatPublisher<T> implements Flow.Publisher<T> {
 
     private final Flow.Publisher<T> upstream;
     private final Flow.Publisher<T> fin;

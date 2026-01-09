@@ -5,10 +5,10 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.EchoFunctio
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.TextContent;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Flow;
+import java.util.stream.Collectors;
 
 public class ChatRequestTestCase implements LoadingEnv {
 
@@ -16,8 +16,8 @@ public class ChatRequestTestCase implements LoadingEnv {
     public void test() throws InterruptedException {
 
         final var request = ChatRequest.newBuilder()
-                //.model(ChatModel.QWEN3_OMNI_FLASH)
-                .model(ChatModel.QWEN_MAX)
+                .model(ChatModel.QWEN3_OMNI_FLASH)
+                //.model(ChatModel.QWEN_MAX)
                 .addMessage(Message.system(TextContent.newBuilder()
                         .text("请用中文回答问题")
                         .cacheControl(Content.CacheControl.EPHEMERAL)
@@ -29,39 +29,11 @@ public class ChatRequestTestCase implements LoadingEnv {
                 .build();
 
         final var publisher = client.chat().flow(request);
-        final var latch = new CountDownLatch(1);
-        publisher
-                .subscribe(new Flow.Subscriber<ChatResponse>() {
-
-                    private volatile Flow.Subscription subscription;
-
-                    @Override
-                    public void onSubscribe(Flow.Subscription subscription) {
-                        subscription.request(1);
-                        this.subscription = subscription;
-                    }
-
-                    @Override
-                    public void onNext(ChatResponse item) {
-                        if(!item.output().choices().isEmpty()) {
-                            System.out.println("====" + item.output().best().message().text());
-                        }
-                        subscription.request(1);
-                    }
-
-                    @Override
-                    public void onError(Throwable throwable) {
-                        throwable.printStackTrace();
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        latch.countDown();
-                    }
-                });
-
-        latch.await();
+        FlowX.fromPublisher(publisher)
+                .map(r -> r.output().best().message().text())
+                .filter(s -> !s.isBlank())
+                .blockingCollect(Collectors.toList())
+                .forEach(System.out::println);
 
     }
 

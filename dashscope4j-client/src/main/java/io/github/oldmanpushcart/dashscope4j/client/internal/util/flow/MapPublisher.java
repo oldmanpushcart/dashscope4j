@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class MapPublisher<T, R> implements Flow.Publisher<R> {
+class MapPublisher<T, R> implements Flow.Publisher<R> {
 
     private final Flow.Publisher<T> upstream;
     private final Function<T, Flow.Publisher<R>> map;

@@ -6,9 +6,8 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.compat.open
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.compat.openai.OpenAiChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.ReassemblingPublisher;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -60,8 +59,11 @@ public class OpenAiCompatInterceptor implements FlowInterceptor, AsyncIntercepto
                     //noinspection unchecked
                     return (Flow.Publisher<OpenAiChatResponse>) v;
                 })
-                .thenApply(publisher -> new ReassemblingPublisher<>(publisher, r -> List.of(OpenAiChatHelper.toChatResponse(r))))
-                ;
+                .thenApply(publisher ->
+                        FlowX.fromPublisher(publisher)
+                                .map(OpenAiChatHelper::toChatResponse)
+                                .publisher()
+                );
     }
 
 }

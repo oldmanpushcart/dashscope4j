@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.util.flow;
 
 import java.util.concurrent.Flow;
 
-public class EmptySubscriber<T> implements Flow.Subscriber<T> {
+class EmptySubscriber<T> implements Flow.Subscriber<T> {
 
     @Override
     public void onSubscribe(Flow.Subscription subscription) {

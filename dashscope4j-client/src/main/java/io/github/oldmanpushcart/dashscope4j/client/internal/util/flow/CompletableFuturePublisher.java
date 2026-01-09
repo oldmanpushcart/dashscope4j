@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
-public class CompletableFuturePublisher<T> implements Flow.Publisher<T> {
+class CompletableFuturePublisher<T> implements Flow.Publisher<T> {
 
     private final CompletableFuture<? extends Flow.Publisher<T>> future;
     private final Quota quota = new Quota();

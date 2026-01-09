@@ -3,8 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.executor;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.DeferredPublisher;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.ErrorPublisher;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -24,16 +23,16 @@ public class InterceptionFlowApi implements FlowApi {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request) {
-        final var chain = new FlowInterceptor.Chain(client, request, r -> CompletableFuture.completedStage(delegate.execute(r)));
-        try {
-            //noinspection unchecked
-            return new DeferredPublisher<>(() ->
-                    interceptor.intercept(chain)
-                            .thenApply(r ->
-                                    (Flow.Publisher<R>) r));
-        } catch (Throwable ex) {
-            return new ErrorPublisher<>(ex);
-        }
+        return FlowX
+                .fromCompletionStage(() -> {
+                    final var chain = new FlowInterceptor.Chain(client, request, r -> CompletableFuture.completedStage(delegate.execute(r)));
+                    return interceptor.intercept(chain)
+                            .thenApply(r -> {
+                                //noinspection unchecked
+                                return (Flow.Publisher<R>) r;
+                            });
+                })
+                .publisher();
     }
 
     public static FlowApi group(DashscopeClient client, FlowApi delegate, List<FlowInterceptor> interceptors) {

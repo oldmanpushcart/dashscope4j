@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class IterablePublisher<T> implements Flow.Publisher<T> {
+class IterablePublisher<T> implements Flow.Publisher<T> {
 
     private final Iterable<T> iterable;
 

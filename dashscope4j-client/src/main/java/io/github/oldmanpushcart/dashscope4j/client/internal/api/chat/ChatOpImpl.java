@@ -8,13 +8,12 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor.OpenAiCompatInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor.UploadFilesInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.*;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.DeferredPublisher;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
-import java.util.function.Supplier;
 
 public class ChatOpImpl implements ChatOp {
 
@@ -51,11 +50,9 @@ public class ChatOpImpl implements ChatOp {
 
     @Override
     public Flow.Publisher<ChatResponse> flow(ChatRequest request) {
-        final Supplier<CompletionStage<Flow.Publisher<ChatResponse>>> supplier = () ->
-                CompletableFuture.completedStage(request)
-                        .thenApply(flowApi::execute)
-                        .thenApply(publisher -> new NewToolCallFlowHandler(this).apply(publisher));
-        return new DeferredPublisher<>(supplier);
+        return FlowX.defer(() -> flowApi.execute(request))
+                .transform(new ToolCallFlowHandler(this))
+                .publisher();
     }
 
 }

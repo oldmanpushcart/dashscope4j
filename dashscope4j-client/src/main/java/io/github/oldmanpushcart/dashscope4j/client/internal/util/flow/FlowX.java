@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.*;
+import java.util.stream.Collector;
 
 public final class FlowX<T> {
 
@@ -27,6 +27,10 @@ public final class FlowX<T> {
             p = new ErrorPublisher<>(ex);
         }
         this.publisher = p;
+    }
+
+    private FlowX<T> self() {
+        return this;
     }
 
     public FlowX<T> filter(Predicate<T> filter) {
@@ -60,7 +64,7 @@ public final class FlowX<T> {
 
     public FlowX<T> doOnNext(Consumer<? super T> action) {
         Objects.requireNonNull(action, "action must not be null!");
-        return map(t->{
+        return map(t -> {
             action.accept(t);
             return t;
         });
@@ -68,23 +72,30 @@ public final class FlowX<T> {
 
     public FlowX<T> doOnError(Consumer<? super Throwable> action) {
         Objects.requireNonNull(action, "action must not be null!");
-        return concat(t-> {
+        return concat(t -> {
             action.accept(t);
-           return FlowX.<T>error(t).publisher();
+            return FlowX.<T>error(t).publisher();
         });
     }
 
     public FlowX<T> doOnComplete(Runnable action) {
         Objects.requireNonNull(action, "action must not be null!");
-        return concat(FlowX.defer(()-> {
+        return concat(FlowX.defer(() -> {
             try {
                 action.run();
                 return FlowX.<T>empty().publisher();
-            }catch (Throwable ex) {
+            } catch (Throwable ex) {
                 return FlowX.<T>error(ex).publisher();
             }
         }).publisher());
     }
+
+    public <U> FlowX<U> transform(Function<Flow.Publisher<T>, Flow.Publisher<U>> transformer) {
+        Objects.requireNonNull(transformer, "transformer must not be null!");
+        return FlowX.defer(() -> transformer.apply(publisher));
+    }
+
+    // --- 消费函数 ---
 
     public void forEach(Consumer<? super T> action) {
         Objects.requireNonNull(action, "action must not be null!");
@@ -103,13 +114,66 @@ public final class FlowX<T> {
         });
     }
 
+    public <A, R> CompletionStage<R> collect(Collector<T, A, R> collector) {
+        Objects.requireNonNull(collector, "collector must not be null!");
+        final Supplier<A> supplier = collector.supplier();
+        final BiConsumer<A, T> accumulator = collector.accumulator();
+        final Function<A, R> finisher = collector.finisher();
+        final A container = supplier.get();
+
+        final var future = new CompletableFuture<R>();
+        self()
+                .doOnError(future::completeExceptionally)
+                .doOnComplete(() -> future.complete(finisher.apply(container)))
+                .forEach(item -> accumulator.accept(container, item));
+        return future;
+    }
+
+    public <A, R> R blockingCollect(Collector<T, A, R> collector) {
+        Objects.requireNonNull(collector, "collector must not be null!");
+        final Supplier<A> supplier = collector.supplier();
+        final BiConsumer<A, T> accumulator = collector.accumulator();
+        final Function<A, R> finisher = collector.finisher();
+        final A container = supplier.get();
+
+        final var errorRef = new AtomicReference<Throwable>();
+        final var latch = new CountDownLatch(1);
+        self()
+                .doOnError(ex -> {
+                    errorRef.set(ex);
+                    latch.countDown();
+                })
+                .doOnComplete(latch::countDown)
+                .forEach(item -> accumulator.accept(container, item));
+
+        try {
+            latch.await();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Collect interrupted!", ex);
+        }
+
+        final var error = errorRef.get();
+        if (error instanceof RuntimeException runtimeEx) {
+            throw runtimeEx;
+        } else if (error != null) {
+            throw new RuntimeException("Collect failed!", error);
+        } else {
+            return finisher.apply(container);
+        }
+
+    }
+
     public Flow.Publisher<T> publisher() {
         return publisher;
     }
 
+
+    // --- 构造工厂 ---
+
     public static <T> FlowX<T> defer(Supplier<? extends Flow.Publisher<T>> supplier) {
         Objects.requireNonNull(supplier, "supplier must not be null!");
-        return new FlowX<>(() ->subscriber -> {
+        return new FlowX<>(() -> subscriber -> {
             final var publisher = supplier.get();
             Objects.requireNonNull(publisher, "Publisher from supplier is null");
             publisher.subscribe(subscriber);
@@ -160,7 +224,7 @@ public final class FlowX<T> {
     }
 
     public static void main(String[] args) {
-        FlowX.fromCompletionStage(()-> CompletableFuture.completedStage(FlowX.just(1,2,3).publisher()))
+        FlowX.fromCompletionStage(() -> CompletableFuture.completedStage(FlowX.just(1, 2, 3).publisher()))
                 .forEach(System.out::println);
     }
 
