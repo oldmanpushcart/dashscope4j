@@ -54,7 +54,7 @@ public class ChatOpImpl implements ChatOp {
         final Supplier<CompletionStage<Flow.Publisher<ChatResponse>>> supplier = () ->
                 CompletableFuture.completedStage(request)
                         .thenApply(flowApi::execute)
-                        .thenApply(publisher -> new ToolCallFlowHandler(this).apply(publisher));
+                        .thenApply(publisher -> new NewToolCallFlowHandler(this).apply(publisher));
         return new DeferredPublisher<>(supplier);
     }
 

@@ -27,8 +27,27 @@ public class CompletableFuturePublisher<T> implements Flow.Publisher<T> {
                 d.onError(new IllegalStateException("Publisher already subscribed"));
                 return;
             }
-            this.downstream = d;
+            downstream = d;
         }
+
+        downstream.onSubscribe(new Flow.Subscription() {
+            @Override
+            public void request(long n) {
+                if(upstream == null) {
+                    quota.requested(n);
+                } else {
+                    upstream.request(n);
+                }
+            }
+
+            @Override
+            public void cancel() {
+                if(upstream != null) {
+                    upstream.cancel();
+                }
+            }
+        });
+
         subscribeToUpstreamWhenReady(future);
     }
 
@@ -44,7 +63,7 @@ public class CompletableFuturePublisher<T> implements Flow.Publisher<T> {
             }
 
             try {
-                publisher.subscribe(new Flow.Subscriber<T>() {
+                publisher.subscribe(new Flow.Subscriber<>() {
 
                     @Override
                     public void onSubscribe(Flow.Subscription s) {
@@ -53,7 +72,10 @@ public class CompletableFuturePublisher<T> implements Flow.Publisher<T> {
                             return;
                         }
                         upstream = s;
-                        s.request(quota.available());
+                        final var n = quota.available();
+                        if(n > 0) {
+                            s.request(n);
+                        }
                     }
 
                     @Override

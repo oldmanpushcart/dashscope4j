@@ -45,8 +45,7 @@ public final class FlowX<T> {
 
     public <R> FlowX<R> flatMap(Function<T, Iterable<R>> mapper) {
         Objects.requireNonNull(mapper, "mapper must not be null!");
-        return new FlowX<>(new MapPublisher<>(publisher, t ->
-                FlowX.fromIterable(mapper.apply(t)).publisher()));
+        return new FlowX<>(new MapPublisher<>(publisher, t -> FlowX.fromIterable(mapper.apply(t)).publisher()));
     }
 
     public FlowX<T> concat(Flow.Publisher<T> fin) {
@@ -77,7 +76,14 @@ public final class FlowX<T> {
 
     public FlowX<T> doOnComplete(Runnable action) {
         Objects.requireNonNull(action, "action must not be null!");
-        return concat(FlowX.<T>empty().publisher());
+        return concat(FlowX.defer(()-> {
+            try {
+                action.run();
+                return FlowX.<T>empty().publisher();
+            }catch (Throwable ex) {
+                return FlowX.<T>error(ex).publisher();
+            }
+        }).publisher());
     }
 
     public void forEach(Consumer<? super T> action) {
@@ -94,7 +100,6 @@ public final class FlowX<T> {
                 action.accept(item);
             }
 
-
         });
     }
 
@@ -104,11 +109,16 @@ public final class FlowX<T> {
 
     public static <T> FlowX<T> defer(Supplier<? extends Flow.Publisher<T>> supplier) {
         Objects.requireNonNull(supplier, "supplier must not be null!");
-        return new FlowX<>(() -> subscriber -> {
+        return new FlowX<>(() ->subscriber -> {
             final var publisher = supplier.get();
             Objects.requireNonNull(publisher, "Publisher from supplier is null");
             publisher.subscribe(subscriber);
         });
+    }
+
+    public static <T> FlowX<T> fromPublisher(Flow.Publisher<T> publisher) {
+        Objects.requireNonNull(publisher, "publisher must not be null!");
+        return new FlowX<>(publisher);
     }
 
     public static <T> FlowX<T> fromCompletableFuture(Supplier<CompletableFuture<? extends Flow.Publisher<T>>> supplier) {
@@ -150,9 +160,7 @@ public final class FlowX<T> {
     }
 
     public static void main(String[] args) {
-        FlowX.just(1, 2, 3, 4, 5)
-                .flatMap(i -> List.of(i, i * 2))
-                .concat(FlowX.just(6, 7, 8).publisher())
+        FlowX.fromCompletionStage(()-> CompletableFuture.completedStage(FlowX.just(1,2,3).publisher()))
                 .forEach(System.out::println);
     }
 

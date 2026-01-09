@@ -122,6 +122,7 @@ public class ConcatPublisher<T> implements Flow.Publisher<T> {
                                     is.subscription.request(n);
                                 }
                             }
+
                         }
 
                         case INNER_COMPLETED -> {
@@ -199,7 +200,18 @@ public class ConcatPublisher<T> implements Flow.Publisher<T> {
                 downstream.onError(new IllegalStateException("Already subscribed!"));
                 return;
             }
-            upstreamSubscription = s;
+            upstreamSubscription = new Flow.Subscription() {
+                @Override
+                public void request(long n) {
+                    quota.requested(n);
+                    s.request(n);
+                }
+
+                @Override
+                public void cancel() {
+                    s.cancel();
+                }
+            };
             downstream.onSubscribe(new Flow.Subscription() {
                 @Override
                 public void request(long n) {
@@ -207,8 +219,8 @@ public class ConcatPublisher<T> implements Flow.Publisher<T> {
                         onError(new IllegalArgumentException("n must be positive!"));
                         return;
                     }
-                    quota.requested(n);
-                    s.request(n);
+                    upstreamSubscription.request(n);
+                    select();
                 }
 
                 @Override

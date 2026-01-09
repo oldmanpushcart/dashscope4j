@@ -16,8 +16,8 @@ public class ChatRequestTestCase implements LoadingEnv {
     public void test() throws InterruptedException {
 
         final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN3_OMNI_FLASH)
-                //.model(ChatModel.QWEN_MAX)
+                //.model(ChatModel.QWEN3_OMNI_FLASH)
+                .model(ChatModel.QWEN_MAX)
                 .addMessage(Message.system(TextContent.newBuilder()
                         .text("请用中文回答问题")
                         .cacheControl(Content.CacheControl.EPHEMERAL)

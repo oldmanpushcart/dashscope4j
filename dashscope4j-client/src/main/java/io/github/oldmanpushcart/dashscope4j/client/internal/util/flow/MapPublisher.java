@@ -219,7 +219,17 @@ public class MapPublisher<T, R> implements Flow.Publisher<R> {
                 downstream.onError(new IllegalStateException("Already subscribed!"));
                 return;
             }
-            upstreamSubscription = s;
+            upstreamSubscription = new Flow.Subscription() {
+                @Override
+                public void request(long n) {
+                    s.request(n);
+                }
+
+                @Override
+                public void cancel() {
+                    s.cancel();
+                }
+            };
             downstream.onSubscribe(new Flow.Subscription() {
                 @Override
                 public void request(long n) {

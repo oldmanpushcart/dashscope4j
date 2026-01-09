@@ -45,9 +45,12 @@ public class IterablePublisher<T> implements Flow.Publisher<T> {
                 if (n <= 0) {
                     throw new IllegalArgumentException("n must be positive!");
                 }
-                quota.requested(n);
+                if(done.get()) {
+                    return;
+                }
 
-                while(quota.available() > 0) {
+                quota.requested(n);
+                while(quota.available() > 0 && !done.get()) {
                     if(iterator.hasNext()) {
                         final var item = iterator.next();
                         quota.emitted(1);
