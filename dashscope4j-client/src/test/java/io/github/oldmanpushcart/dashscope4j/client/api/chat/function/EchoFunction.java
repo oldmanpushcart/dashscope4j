@@ -21,7 +21,7 @@ public class EchoFunction implements ChatFunction<EchoFunction.Echo, EchoFunctio
 
     public record Echo(
 
-            @JsonProperty("text")
+            @JsonProperty(value = "text")
             @JsonPropertyDescription("需要回显的文字")
             String text
 

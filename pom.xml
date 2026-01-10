@@ -43,6 +43,7 @@
         <slf4j.version>2.0.11</slf4j.version>
         <logback.version>1.5.18</logback.version>
         <mcp.version>0.10.0</mcp.version>
+        <victools.version>4.38.0</victools.version>
     </properties>
 
     <profiles>
@@ -227,6 +228,21 @@
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
                 <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.victools</groupId>
+                <artifactId>jsonschema-generator</artifactId>
+                <version>${victools.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.victools</groupId>
+                <artifactId>jsonschema-module-jackson</artifactId>
+                <version>${victools.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.victools</groupId>
+                <artifactId>jsonschema-module-jakarta-validation</artifactId>
+                <version>${victools.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

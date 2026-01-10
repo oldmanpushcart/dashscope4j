@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatParameterKeys;
@@ -17,7 +18,9 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.serve
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.handler.SimpleOmniRealtimeExchangeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.ExchangeConnector;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.SchemaUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import jakarta.validation.constraints.Email;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
@@ -25,6 +28,7 @@ import javax.sound.sampled.AudioSystem;
 import java.io.File;
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -177,20 +181,56 @@ public class DebugTestCase implements LoadingEnv {
 
     }
 
+    private record Person(
+
+            @JsonProperty(required = true)
+            String name,
+
+            @JsonProperty
+            int age,
+
+            @JsonProperty
+            Gender gender,
+
+            @JsonProperty(required = true)
+            List<Address> addresses,
+
+            @JsonProperty
+            @Email
+            String email,
+
+            @JsonProperty
+            Instant birthday
+    ) {
+
+    }
+
+    private record Address(
+
+            @JsonProperty
+            String province,
+
+            @JsonProperty
+            String city,
+
+            @JsonProperty
+            String street,
+
+            @JsonProperty
+            String zipCode
+    ) {
+
+    }
+
+    private enum Gender {
+        MALE,
+        FEMALE
+    }
+
     @Test
-    public void debug6() throws InterruptedException {
+    public void debug6() {
 
-        final var request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_VL_MAX)
-                .addMessage(Message.user(List.of(
-                        Content.text("请用中文描述图片"),
-                        Content.image(new File("./test-data/image/red-cup.jpeg").toURI())
-                )))
-                .build();
-
-        final var chatOp = client.chat();
-        final var response = chatOp.async(request).toCompletableFuture().join();
-        System.out.println(response.output().best().message().text());
+        System.out.println(SchemaUtils.schema(Person.class));
 
     }
 

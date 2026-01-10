@@ -120,7 +120,6 @@ public final class FlowX<T> {
         final BiConsumer<A, T> accumulator = collector.accumulator();
         final Function<A, R> finisher = collector.finisher();
         final A container = supplier.get();
-
         final var future = new CompletableFuture<R>();
         self()
                 .doOnError(future::completeExceptionally)

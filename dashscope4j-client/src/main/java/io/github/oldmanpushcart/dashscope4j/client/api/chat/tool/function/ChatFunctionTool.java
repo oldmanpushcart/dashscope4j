@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function;
 
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.SchemaUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
@@ -37,7 +38,7 @@ public class ChatFunctionTool implements FunctionTool {
     private static Meta newFunctionToolMeta(Builder builder) {
         final var parameterSchemaNode = Optional.ofNullable(builder.parameterSchema)
                 .map(JacksonJsonUtils::toNode)
-                .orElseGet(() -> JacksonJsonUtils.schema(builder.parameterType));
+                .orElseGet(() -> SchemaUtils.schema(builder.parameterType));
         return new Meta(
                 builder.name,
                 builder.description,

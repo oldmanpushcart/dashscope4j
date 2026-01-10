@@ -15,7 +15,6 @@ public interface ChatFunction<T, R> {
 
     /**
      * @return 是否启用
-     * @since 3.1.0
      */
     default boolean isEnabled() {
         return true;

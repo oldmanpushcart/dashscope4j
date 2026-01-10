@@ -1,8 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
-import io.github.oldmanpushcart.dashscope4j.client.OpAsync;
-import io.github.oldmanpushcart.dashscope4j.client.OpFlow;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Flow;
 
-public interface ChatOp extends OpAsync<ChatRequest, ChatResponse>, OpFlow<ChatRequest, ChatResponse> {
+public interface ChatOp {
+
+    CompletionStage<ChatResponse> async(ChatRequest request);
+
+    Flow.Publisher<ChatResponse> flow(ChatRequest request);
 
 }

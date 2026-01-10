@@ -9,7 +9,7 @@ import static io.github.oldmanpushcart.dashscope4j.common.Constants.DEFAULT_REAL
 public class OmniRealtimeModel extends AlgoModel {
 
     public OmniRealtimeModel(String name, Map<String, String> features) {
-        super(name, DEFAULT_REALTIME_PATH, features);
+        super(name, String.format("%s?model=%s".formatted(DEFAULT_REALTIME_PATH, name)), features);
     }
 
     public OmniRealtimeModel(String name) {

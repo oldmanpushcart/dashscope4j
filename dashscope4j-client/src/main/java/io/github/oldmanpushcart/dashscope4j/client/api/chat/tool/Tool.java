@@ -72,17 +72,17 @@ public interface Tool {
     interface Call extends Accumulator<Call> {
 
         /**
-         * @return 工具调用索引
+         * @return INDEX
          */
         int index();
 
         /**
-         * @return 调用ID
+         * @return ID
          */
         String id();
 
         /**
-         * @return 工具分类
+         * @return CLASSIFY
          */
         Classify classify();
 
