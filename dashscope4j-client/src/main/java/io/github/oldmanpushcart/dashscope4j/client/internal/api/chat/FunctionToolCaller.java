@@ -7,8 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.AssistantMes
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionToolNotFoundException;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,7 +150,7 @@ class FunctionToolCaller implements Tool.Caller {
                 .map(FunctionTool.class::cast)
                 .filter(tool -> Objects.equals(tool.meta().name(), functionCall.stub().name()))
                 .findFirst()
-                .orElseThrow(() -> new FunctionToolNotFoundException(functionCall.stub().name()));
+                .orElseThrow(() -> new IllegalArgumentException("Function tool not found: " + functionCall.stub().name()));
     }
 
 }

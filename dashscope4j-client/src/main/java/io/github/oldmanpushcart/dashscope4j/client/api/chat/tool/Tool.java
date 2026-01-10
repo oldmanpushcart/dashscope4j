@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 
 import java.util.concurrent.CompletionStage;
@@ -15,25 +14,28 @@ import java.util.concurrent.CompletionStage;
 public interface Tool {
 
     /**
-     * @return 工具是否可用
-     */
-    default boolean isEnabled() {
-        return true;
-    }
-
-    /**
      * @return 工具分类
      */
     Classify classify();
 
     /**
+     * 分类
+     */
+    enum Classify {
+
+        @JsonProperty("function")
+        FUNCTION
+
+    }
+
+    /**
      * 调用工具
      *
-     * @param caller   调用者
-     * @param argument 参数
-     * @return 调用结果
+     * @param caller       调用者
+     * @param argumentJson 参数（JSON格式）
+     * @return 调用结果（JSON格式）
      */
-    CompletionStage<String> call(Caller caller, String argument);
+    CompletionStage<String> call(Caller caller, String argumentJson);
 
     /**
      * 调用者
@@ -44,16 +46,6 @@ public interface Tool {
          * @return 触发对话请求
          */
         ChatRequest request();
-
-    }
-
-    /**
-     * 分类
-     */
-    enum Classify {
-
-        @JsonProperty("function")
-        FUNCTION
 
     }
 
@@ -85,13 +77,6 @@ public interface Tool {
          * @return CLASSIFY
          */
         Classify classify();
-
-    }
-
-    /**
-     * 工具元数据
-     */
-    interface Meta {
 
     }
 

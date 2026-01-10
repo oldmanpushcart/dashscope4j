@@ -7,15 +7,10 @@ import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunction;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.ChatFunctionTool;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function.FunctionTool;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonEmptyCollection;
 import static java.util.Collections.emptyList;
@@ -62,11 +57,8 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         merged.append("result_format", "message");
 
         // 工具必选参数
-        final var enabledTools = tools.stream()
-                .filter(Tool::isEnabled)
-                .collect(Collectors.toList());
-        if (!enabledTools.isEmpty()) {
-            merged.append("tools", enabledTools);
+        if (!tools.isEmpty()) {
+            merged.append("tools", tools);
         }
 
         // 合并原有参数
@@ -239,50 +231,6 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
         public Builder addTools(Collection<? extends Tool> tools) {
             requireNonNull(tools);
             this.tools.addAll(tools);
-            return this;
-        }
-
-        /**
-         * 设置函数列表
-         *
-         * @param functions 函数列表
-         * @return this
-         */
-        public Builder functions(Collection<? extends ChatFunction<?, ?>> functions) {
-            requireNonNull(functions);
-            this.tools.removeIf(tool -> tool instanceof FunctionTool);
-            this.tools.addAll(toTools(functions));
-            return this;
-        }
-
-        private static List<Tool> toTools(Collection<? extends ChatFunction<?, ?>> functions) {
-            requireNonNull(functions);
-            return functions.stream()
-                    .map(ChatFunctionTool::of)
-                    .map(Tool.class::cast)
-                    .collect(Collectors.toList());
-        }
-
-        /**
-         * 添加函数
-         *
-         * @param function 函数
-         * @return this
-         */
-        public Builder addFunction(ChatFunction<?, ?> function) {
-            requireNonNull(function);
-            return addFunctions(Collections.singleton(function));
-        }
-
-        /**
-         * 添加函数列表
-         *
-         * @param functions 函数列表
-         * @return this
-         */
-        public Builder addFunctions(Collection<? extends ChatFunction<?, ?>> functions) {
-            requireNonNull(functions);
-            this.tools.addAll(toTools(functions));
             return this;
         }
 

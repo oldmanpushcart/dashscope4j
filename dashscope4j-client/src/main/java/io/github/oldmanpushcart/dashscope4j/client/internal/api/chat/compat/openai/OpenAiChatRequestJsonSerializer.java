@@ -5,13 +5,11 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.*;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.*;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class OpenAiChatRequestJsonSerializer extends JsonSerializer<OpenAiChatRequest> {
 
@@ -21,11 +19,8 @@ public class OpenAiChatRequestJsonSerializer extends JsonSerializer<OpenAiChatRe
             put("model", request.model());
             put("messages", serializeMessageList(request.messages()));
             request.parameters().forEach(this::put);
-            final var enabledTools = request.tools().stream()
-                    .filter(Tool::isEnabled)
-                    .collect(Collectors.toList());
-            if (!enabledTools.isEmpty()) {
-                put("tools", enabledTools);
+            if (!request.tools().isEmpty()) {
+                put("tools", request.tools());
             }
         }};
         generator.writeObject(requestPojo);

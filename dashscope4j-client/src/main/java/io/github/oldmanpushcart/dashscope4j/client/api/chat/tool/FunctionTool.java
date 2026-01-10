@@ -1,9 +1,15 @@
-package io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.function;
+package io.github.oldmanpushcart.dashscope4j.client.api.chat.tool;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.tool.DefaultFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
+import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+
+import java.lang.reflect.Type;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils.concat;
 
@@ -42,7 +48,7 @@ public interface FunctionTool extends Tool {
             @JsonProperty("parameters")
             JsonNode parameterSchema
 
-    ) implements Tool.Meta {
+    ) {
 
     }
 
@@ -88,7 +94,7 @@ public interface FunctionTool extends Tool {
                 throw new IllegalArgumentException("Not a function tool call");
             }
 
-            // 合并Call
+            // 合并
             return new Call(
                     index,
                     concat(id, next.id()),
@@ -122,6 +128,28 @@ public interface FunctionTool extends Tool {
             }
 
         }
+
+    }
+
+
+
+    static Builder newBuilder() {
+        return new DefaultFunctionTool.Builder();
+    }
+
+    interface Builder extends Buildable<FunctionTool, Builder> {
+
+        Builder name(String name);
+
+        Builder description(String description);
+
+        <T> Builder function(BiFunction<Tool.Caller, T, CompletionStage<?>> function);
+        <T> Builder function(Function<T, CompletionStage<?>> function);
+
+
+        Builder parameterType(Type parameterType);
+
+        Builder parameterSchema(JsonNode parameterSchema);
 
     }
 

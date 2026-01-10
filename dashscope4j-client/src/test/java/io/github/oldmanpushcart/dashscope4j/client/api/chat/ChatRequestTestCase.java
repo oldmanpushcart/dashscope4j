@@ -24,7 +24,7 @@ public class ChatRequestTestCase implements LoadingEnv {
                         .build()))
                 .addMessage(Message.user("echo: HELLO WORLD!"))
                 //.parameter("enable_omni_output_audio_url","true")
-                .addFunction(new EchoFunction())
+                .addTool(new EchoFunction().toTool())
                 .parameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, false)
                 .build();
 

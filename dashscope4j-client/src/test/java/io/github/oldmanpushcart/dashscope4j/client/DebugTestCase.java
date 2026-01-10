@@ -20,7 +20,6 @@ import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.ExchangeConnector;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.SchemaUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
-import jakarta.validation.constraints.Email;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
@@ -159,8 +158,8 @@ public class DebugTestCase implements LoadingEnv {
 
             @Override
             public void onNext(ChatResponse item) {
-                if(!item.output().choices().isEmpty()) {
-                    System.out.println("==="+item.output().best().message().text());
+                if (!item.output().choices().isEmpty()) {
+                    System.out.println("===" + item.output().best().message().text());
                 }
             }
 
@@ -196,7 +195,6 @@ public class DebugTestCase implements LoadingEnv {
             List<Address> addresses,
 
             @JsonProperty
-            @Email
             String email,
 
             @JsonProperty
