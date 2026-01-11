@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.chat.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -97,6 +98,7 @@ public final class AssistantMessage implements Message, Accumulator<AssistantMes
     /**
      * @return 是否为工具调用
      */
+    @JsonIgnore
     public boolean isToolCall() {
         return calls != null && !calls.isEmpty();
     }

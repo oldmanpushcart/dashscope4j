@@ -105,7 +105,8 @@ public class ChatModel extends AlgoModel {
      * <p>是视觉推理模型，支持视觉输入及思维链输出，在数学、编程、视觉分析、创作以及通用任务上都表现了更强的能力。</p>
      */
     public static final ChatModel QVQ_MAX = new ChatModel("qvq-max", MULTIMODAL_PATH, Map.of(
-            "flow-only", "1"
+            "flow-only", "1",
+            "incremental-output-only", "1"
     ));
 
     /**
@@ -114,9 +115,10 @@ public class ChatModel extends AlgoModel {
     public static final ChatModel QWEN3_235B_A22B = new ChatModel("qwen3-235b-a22b", TEXT_PATH);
 
     public static final ChatModel QWEN3_OMNI_FLASH = new ChatModel("qwen3-omni-flash", COMPAT_OPENAI_PATH, Map.of(
-                    "compat", "openai",
-                    "flow-only", "1"
-            )
+            "compat", "openai",
+            "flow-only", "1",
+            "incremental-output-only", "1"
+    )
     );
 
 }
