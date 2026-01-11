@@ -7,7 +7,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
 
 public class EchoFunction {
 

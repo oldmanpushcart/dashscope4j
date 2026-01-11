@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.intercepto
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.AudioContent;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.ImageContent;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.VideoContent;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.Interceptor;
@@ -65,6 +66,21 @@ public class InlineImageFilesInterceptor implements RewriteUserInputInterceptor 
                                 .thenApply(newVideoURIs ->
                                         VideoContent.newBuilder(videoContent)
                                                 .resources(newVideoURIs)
+                                                .build());
+                    }
+
+                    // 处理音频内容
+                    else if(content instanceof AudioContent audioContent) {
+                        final var audioURI = audioContent.audio();
+                        if (!isFileURI(audioURI)) {
+                            return CompletableFuture.completedStage(content);
+                        }
+                        final var path = Paths.get(audioURI);
+                        return AsyncFileBase64Encoder.encode(path)
+                                .thenApply(base64Str -> URI.create("data:;base64," + base64Str))
+                                .thenApply(newAudioURI ->
+                                        AudioContent.newBuilder(audioContent)
+                                                .audio(newAudioURI)
                                                 .build());
                     }
 

@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.intercepto
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.AudioContent;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.ImageContent;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.VideoContent;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.Interceptor;
@@ -60,6 +61,20 @@ public class UploadFilesInterceptor implements RewriteUserInputInterceptor {
                                 .thenApply(newResourceURIs ->
                                         VideoContent.newBuilder(videoContent)
                                                 .resources(newResourceURIs)
+                                                .build());
+                    }
+
+                    // 处理音频内容
+                    else if(content instanceof AudioContent audioContent) {
+                        final var audioURI = audioContent.audio();
+                        if (!isFileURI(audioURI)) {
+                            return CompletableFuture.completedStage(content);
+                        }
+                        final var model = request.model();
+                        return chain.client().base().store().upload(audioURI, model)
+                                .thenApply(newAudioURI ->
+                                        AudioContent.newBuilder(audioContent)
+                                                .audio(newAudioURI)
                                                 .build());
                     }
 

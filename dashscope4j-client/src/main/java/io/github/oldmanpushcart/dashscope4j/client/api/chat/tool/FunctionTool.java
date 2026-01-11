@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.lang.reflect.Type;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -142,10 +143,9 @@ public interface FunctionTool extends Tool {
 
         Builder description(String description);
 
-        <T> Builder function(BiFunction<Tool.Caller, T, CompletionStage<?>> function);
+        <T> Builder function(BiFunction<Tool.Caller, T, ?> function);
 
-        <T> Builder function(Function<T, CompletionStage<?>> function);
-
+        <T> Builder function(Function<T, ?> function);
 
         Builder parameterType(Type parameterType);
 

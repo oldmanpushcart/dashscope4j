@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 public class DefaultFunctionTool implements FunctionTool {
 
     private final Meta meta;
-    private final BiFunction<Tool.Caller, ?, CompletionStage<?>> function;
+    private final BiFunction<Tool.Caller, ?, ?> function;
     private final Type parameterType;
 
     private DefaultFunctionTool(Builder builder) {
@@ -51,8 +51,13 @@ public class DefaultFunctionTool implements FunctionTool {
     @Override
     public CompletionStage<String> call(Caller caller, String argumentJson) {
         try {
-            return function.apply(caller, toObject(argumentJson, parameterType))
-                    .thenApply(JacksonJsonUtils::toJson);
+            final var result = function.apply(caller, toObject(argumentJson, parameterType));
+            if(result instanceof CompletionStage<?> stage) {
+                return stage.thenApply(JacksonJsonUtils::toJson);
+            } else {
+                final var resultJson = JacksonJsonUtils.toJson(result);
+                return CompletableFuture.completedFuture(resultJson);
+            }
         } catch (Throwable ex) {
             return CompletableFuture.failedStage(ex);
         }
@@ -62,7 +67,7 @@ public class DefaultFunctionTool implements FunctionTool {
 
         private String name;
         private String description;
-        private BiFunction<Tool.Caller, ?, CompletionStage<?>> function;
+        private BiFunction<Tool.Caller, ?, ?> function;
         private Type parameterType;
         private JsonNode parameterSchema;
 
@@ -81,16 +86,19 @@ public class DefaultFunctionTool implements FunctionTool {
         }
 
         @Override
-        public <T> FunctionTool.Builder function(BiFunction<Caller, T, CompletionStage<?>> function) {
+        public <T> FunctionTool.Builder function(BiFunction<Caller, T, ?> function) {
             requireNonNull(function, "function must not be null!");
             this.function = function;
             return this;
         }
 
         @Override
-        public <T> FunctionTool.Builder function(Function<T, CompletionStage<?>> function) {
-            return this.<T>function((caller, t) -> function.apply(t));
+        public <T> FunctionTool.Builder function(Function<T, ?> function) {
+            requireNonNull(function, "function must not be null!");
+            this.function = (BiFunction<Caller, T, Object>) (caller, t) -> function.apply(t);
+            return this;
         }
+
 
         @Override
         public FunctionTool.Builder parameterType(Type parameterType) {
