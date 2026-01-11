@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.util.flow;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
@@ -9,6 +10,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 public final class FlowX<T> {
 
@@ -112,6 +114,13 @@ public final class FlowX<T> {
             }
 
         });
+    }
+
+    public CompletionStage<T> reduce(BinaryOperator<T> accumulator) {
+        Objects.requireNonNull(accumulator, "accumulator must not be null!");
+        return collect(Collectors.reducing(accumulator))
+                .thenApply(Optional::orElseThrow)
+                .toCompletableFuture();
     }
 
     public <A, R> CompletionStage<R> collect(Collector<T, A, R> collector) {

@@ -19,7 +19,7 @@ public class EchoFunction {
 
             @JsonProperty
             @JsonPropertyDescription("需要回显的文字")
-            String text
+            String words
 
     ) {
 

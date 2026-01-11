@@ -4,9 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor.InlineImageFilesInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor.OpenAiCompatInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor.UploadFilesInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor.*;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.*;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
@@ -15,16 +13,33 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
+import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.reverseListImmutable;
+
 public class ChatOpImpl implements ChatOp {
 
     private final AsyncApi asyncApi;
     private final FlowApi flowApi;
 
-    private static final List<Interceptor> interceptors = List.of(
-            new OpenAiCompatInterceptor(),
+    private static final List<Interceptor> interceptors = reverseListImmutable(List.of(
+
+            new IncrementalOutputOnlyInterceptor(),
+
+            // 文件上传到默认 OSS 空间
+            new UploadFilesInterceptor(),
+
+            // 音视频通过 BASE64 内联
             new InlineImageFilesInterceptor(),
-            new UploadFilesInterceptor()
-    );
+
+            // 纯文本内容过滤（部分对话模型只支持纯文本内容）
+            new TextOnlyInterceptor(),
+
+            // 流桥接
+            new FlowOnlyInterceptor(),
+
+            // 兼容 OpenAI 协议
+            new OpenAiCompatInterceptor()
+
+    ));
 
     private static final List<FlowInterceptor> flowInterceptors = interceptors.stream()
             .filter(FlowInterceptor.class::isInstance)

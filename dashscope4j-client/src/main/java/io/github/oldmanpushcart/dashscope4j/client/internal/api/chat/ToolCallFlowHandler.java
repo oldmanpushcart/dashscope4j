@@ -32,11 +32,11 @@ public class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatRes
         final var segments = new ArrayList<AssistantMessage>();
         return FlowX.fromPublisher(publisher)
 
-                /*
-                 * 过滤掉返回内容为空的响应
-                 * 在兼容 openai 协议的场景中，会返回一个空的响应，导致后续的流中断
-                 */
-                .filter(response -> !response.output().choices().isEmpty())
+//                /*
+//                 * 过滤掉返回内容为空的响应
+//                 * 在兼容 openai 协议的场景中，会返回一个空的响应，导致后续的流中断
+//                 */
+//                .filter(response -> !response.output().choices().isEmpty())
 
                 /*
                  * 完成 ToolCall 消息的收集，并将在后续进行处理，
@@ -50,6 +50,10 @@ public class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatRes
                      */
                     if (requestRef.get() == null) {
                         requestRef.set(response.request());
+                    }
+
+                    if(response.output().choices().isEmpty()) {
+                        return true;
                     }
 
                     final var choice = response.output().best();

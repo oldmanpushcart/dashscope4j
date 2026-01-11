@@ -24,6 +24,11 @@ public abstract class AlgoModel {
         this(name, path, Map.of());
     }
 
+    @Override
+    public String toString() {
+        return name;
+    }
+
     @JsonValue
     public String name() {
         return name;

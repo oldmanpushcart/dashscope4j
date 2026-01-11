@@ -11,7 +11,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils.concat;
+import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.joinStrings;
 
 /**
  * 函数工具
@@ -97,7 +97,7 @@ public interface FunctionTool extends Tool {
             // 合并
             return new Call(
                     index,
-                    concat(id, next.id()),
+                    joinStrings(id, next.id()),
                     stub().accumulate(next.stub())
             );
 
@@ -122,15 +122,14 @@ public interface FunctionTool extends Tool {
             @Override
             public Stub accumulate(Stub next) {
                 return new Stub(
-                        concat(name, next.name),
-                        concat(arguments, next.arguments)
+                        joinStrings(name, next.name),
+                        joinStrings(arguments, next.arguments)
                 );
             }
 
         }
 
     }
-
 
 
     static Builder newBuilder() {
@@ -144,6 +143,7 @@ public interface FunctionTool extends Tool {
         Builder description(String description);
 
         <T> Builder function(BiFunction<Tool.Caller, T, CompletionStage<?>> function);
+
         <T> Builder function(Function<T, CompletionStage<?>> function);
 
 

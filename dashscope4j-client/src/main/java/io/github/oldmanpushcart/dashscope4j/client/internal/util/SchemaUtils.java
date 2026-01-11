@@ -42,6 +42,11 @@ public class SchemaUtils {
                      */
                     .without(Option.FLATTENED_ENUMS_FROM_TOSTRING)
 
+                    /*
+                     * 禁用 schema 版本信息输出，
+                     * 例如："$schema":"https://json-schema.org/draft/2020-12/schema"
+                     */
+                    .without(Option.SCHEMA_VERSION_INDICATOR)
                     .build()
 
     );

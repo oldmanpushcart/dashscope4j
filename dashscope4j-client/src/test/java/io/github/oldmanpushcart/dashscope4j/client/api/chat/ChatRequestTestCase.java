@@ -8,6 +8,8 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.Text
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class ChatRequestTestCase implements LoadingEnv {
@@ -34,6 +36,24 @@ public class ChatRequestTestCase implements LoadingEnv {
                 .filter(s -> !s.isBlank())
                 .blockingCollect(Collectors.toList())
                 .forEach(System.out::println);
+
+    }
+
+    @Test
+    public void test2() {
+
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWQ_PLUS_LATEST)
+                .addMessage(Message.user("(1+2+3+4)/5=?，请告诉我最终答案"))
+                //.parameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
+                .build();
+
+        FlowX.fromPublisher(client.chat().flow(request))
+                .reduce(ChatResponse::accumulate)
+                .thenApply(response -> response.output().best().message().text())
+                .thenAccept(System.out::println)
+                .toCompletableFuture()
+                .join();
 
     }
 

@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor;
 
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.compat.openai.OpenAiChatHelper;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.compat.openai.OpenAiChatRequest;
@@ -13,6 +14,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
+import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.hasKeyValue;
+
 public class OpenAiCompatInterceptor implements FlowInterceptor, AsyncInterceptor {
 
     @Override
@@ -22,8 +25,8 @@ public class OpenAiCompatInterceptor implements FlowInterceptor, AsyncIntercepto
             return chain.proceed();
         }
 
-        final var featureMap = chatRequest.model().features();
-        if (!(featureMap.containsKey("compat") && "openai".equals(featureMap.get("compat")))) {
+        final var features = chatRequest.model().features();
+        if (!hasKeyValue(features, "compat", "openai")) {
             return chain.proceed();
         }
 

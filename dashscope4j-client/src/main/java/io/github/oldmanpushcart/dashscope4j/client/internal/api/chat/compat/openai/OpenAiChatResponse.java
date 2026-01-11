@@ -42,7 +42,7 @@ public class OpenAiChatResponse extends OpenAiResponse {
     ) {
         super(request, uuid, error);
         this.choices = choices;
-        this.usage = usage;
+        this.usage = null == usage ? Usage.empty() : usage;
     }
 
     public OpenAiChatRequest request() {

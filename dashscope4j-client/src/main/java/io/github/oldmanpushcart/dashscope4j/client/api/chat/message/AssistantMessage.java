@@ -7,9 +7,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.TextContent;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.StringUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 
 import java.util.*;
 import java.util.function.Function;
@@ -105,15 +105,15 @@ public final class AssistantMessage implements Message, Accumulator<AssistantMes
     public AssistantMessage accumulate(AssistantMessage next) {
 
         // 合并所有内容
-        final List<Content> newContents = Stream.of(contents, next.contents)
+        final var newContents = Stream.of(contents, next.contents)
                 .flatMap(Collection::stream)
                 .toList();
 
         // 合并理论推理内容
-        final String newReasoningContent = StringUtils.concat(reasoningContent, next.reasoningContent);
+        final var newReasoningContent = CommonUtils.joinStrings(reasoningContent, next.reasoningContent);
 
         // 合并工具调用
-        final List<Tool.Call> mergedCalls = Stream.of(calls, next.calls)
+        final var mergedCalls = Stream.of(calls, next.calls)
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toMap(
