@@ -182,7 +182,7 @@ public class ChatTestCase implements LoadingEnv {
                 .model(model)
                 .addMessage(Message.user(List.of(
                         Content.text("这个音频文件提到了什么?"),
-                        Content.audio(new File("./test-data/audio/beach-girl-dog.wav").toURI())
+                        Content.audio(new File("./test-data/audio/beach-woman-dog.wav").toURI())
                 )))
                 .build();
         final var response = client.chat().async(request)
@@ -191,7 +191,7 @@ public class ChatTestCase implements LoadingEnv {
         ApiAssertions.assertApiResponseSuccessful(response);
         DashscopeAssertions.dashscopeAssertText(client,
                 response.output().best().message().text(),
-                "提到了：海滩、女孩和狗"
+                "提到了：海滩、女人和狗"
         );
     }
 
@@ -208,10 +208,9 @@ public class ChatTestCase implements LoadingEnv {
         final var request = ChatRequest.newBuilder()
                 .model(model)
                 .addMessage(Message.user(List.of(
-                        Content.text("请描述视频内容"),
+                        Content.text("请告诉我视频中的性别和对应数量"),
                         Content.video(imageURIs)
                 )))
-                .uploadEnabled(false)
                 .build();
 
         final var response = client.chat().async(request)
@@ -220,14 +219,7 @@ public class ChatTestCase implements LoadingEnv {
         ApiAssertions.assertApiResponseSuccessful(response);
         DashscopeAssertions.dashscopeAssertText(client,
                 response.output().best().message().text(),
-                """
-                        提到了以下信息：
-                        1. 三个人坐在一张桌子旁。
-                        2. 左边是一位穿着白色上衣和米色外套的女士，中间是一位穿着蓝色衬衫和领带的男士，右边是一位穿着黑色西装和领带的男士。
-                        3. 桌子上放着两瓶啤酒、几碗食物和一些餐具。
-                        4. 他们看起来在聊天和享受美食。
-                        5. 背景是一个家庭厨房，可以看到冰箱和其他厨房用具。
-                        """
+                "视频中有2男1女"
         );
 
     }
