@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoModel;
 import io.github.oldmanpushcart.dashscope4j.client.base.store.StoreOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApi;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.ProgressListener;
 
 import java.net.URI;

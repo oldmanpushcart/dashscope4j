@@ -8,8 +8,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.Text
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class ChatRequestTestCase implements LoadingEnv {

@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor;
 
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
@@ -9,8 +10,6 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.hasKeyValue;
 
 public class IncrementalOutputOnlyInterceptor implements FlowInterceptor {
 
@@ -23,7 +22,7 @@ public class IncrementalOutputOnlyInterceptor implements FlowInterceptor {
 
         // 只处理增量输出的模型
         final var model = request.model();
-        if (!hasKeyValue(model.features(), "incremental-output-only", "1")) {
+        if (!model.tags().contains(ChatModelTags.INCREMENTAL_OUTPUT_ONLY)) {
             return chain.proceed();
         }
 
@@ -65,8 +64,7 @@ public class IncrementalOutputOnlyInterceptor implements FlowInterceptor {
                                         response.usage(),
                                         response.output()
                                 );
-                            })
-                            .publisher();
+                            });
                 });
     }
 

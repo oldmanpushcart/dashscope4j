@@ -2,7 +2,9 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoModel;
 
-import java.util.Map;
+import java.util.Set;
+
+import static io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModelTags.*;
 
 public class ChatModel extends AlgoModel {
 
@@ -10,12 +12,12 @@ public class ChatModel extends AlgoModel {
     private static final String MULTIMODAL_PATH = "/api/v1/services/aigc/multimodal-generation/generation";
     private static final String COMPAT_OPENAI_PATH = "/compatible-mode/v1/chat/completions";
 
-    public ChatModel(String name, String path, Map<String, String> features) {
-        super(name, path, features);
+    public ChatModel(String name, String path, Set<String> tags) {
+        super(name, path, tags);
     }
 
     public ChatModel(String name, String path) {
-        this(name, path, Map.of());
+        this(name, path, Set.of());
     }
 
     /**
@@ -43,8 +45,8 @@ public class ChatModel extends AlgoModel {
      * QWEN-LONG
      * <p>通义千问超大规模语言模型，支持长文本上下文，以及基于长文档、多文档等多个场景的对话功能。</p>
      */
-    public static final ChatModel QWEN_LONG = new ChatModel("qwen-long", TEXT_PATH, Map.of(
-            "text-only", "1"
+    public static final ChatModel QWEN_LONG = new ChatModel("qwen-long", TEXT_PATH, Set.of(
+            TEXT_INPUT_ONLY
     ));
 
     /**
@@ -86,27 +88,27 @@ public class ChatModel extends AlgoModel {
      * QWQ-PLUS
      * <p>通义千问对话模型推理（稳定版）</p>
      */
-    public static final ChatModel QWQ_PLUS = new ChatModel("qwq-plus", TEXT_PATH, Map.of(
-            "flow-only", "1",
-            "incremental-output-only", "1"
+    public static final ChatModel QWQ_PLUS = new ChatModel("qwq-plus", TEXT_PATH, Set.of(
+            FLOW_OUTPUT_ONLY,
+            INCREMENTAL_OUTPUT_ONLY
     ));
 
     /**
      * QWQ-PLUS-LATEST
      * <p>通义千问对话模型推理（最新版）</p>
      */
-    public static final ChatModel QWQ_PLUS_LATEST = new ChatModel("qwq-plus-latest", TEXT_PATH, Map.of(
-            "flow-only", "1",
-            "incremental-output-only", "1"
+    public static final ChatModel QWQ_PLUS_LATEST = new ChatModel("qwq-plus-latest", TEXT_PATH, Set.of(
+            FLOW_OUTPUT_ONLY,
+            INCREMENTAL_OUTPUT_ONLY
     ));
 
     /**
      * QVQ-MAX
      * <p>是视觉推理模型，支持视觉输入及思维链输出，在数学、编程、视觉分析、创作以及通用任务上都表现了更强的能力。</p>
      */
-    public static final ChatModel QVQ_MAX = new ChatModel("qvq-max", MULTIMODAL_PATH, Map.of(
-            "flow-only", "1",
-            "incremental-output-only", "1"
+    public static final ChatModel QVQ_MAX = new ChatModel("qvq-max", MULTIMODAL_PATH, Set.of(
+            FLOW_OUTPUT_ONLY,
+            INCREMENTAL_OUTPUT_ONLY
     ));
 
     /**
@@ -114,10 +116,10 @@ public class ChatModel extends AlgoModel {
      */
     public static final ChatModel QWEN3_235B_A22B = new ChatModel("qwen3-235b-a22b", TEXT_PATH);
 
-    public static final ChatModel QWEN3_OMNI_FLASH = new ChatModel("qwen3-omni-flash", COMPAT_OPENAI_PATH, Map.of(
-            "compat", "openai",
-            "flow-only", "1",
-            "incremental-output-only", "1"
+    public static final ChatModel QWEN3_OMNI_FLASH = new ChatModel("qwen3-omni-flash", COMPAT_OPENAI_PATH, Set.of(
+            COMPAT_OPENAI,
+            FLOW_OUTPUT_ONLY,
+            INCREMENTAL_OUTPUT_ONLY
     )
     );
 

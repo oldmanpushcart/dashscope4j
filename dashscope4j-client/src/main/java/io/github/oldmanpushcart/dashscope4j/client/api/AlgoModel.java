@@ -2,8 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.api;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-import java.util.Map;
-import java.util.Properties;
+import java.util.Set;
 
 /**
  * 算法模型
@@ -12,16 +11,16 @@ public abstract class AlgoModel {
 
     private final String name;
     private final String path;
-    private final Map<String, String> features;
+    private final Set<String> tags;
 
-    protected AlgoModel(String name, String path, Map<String, String> features) {
+    protected AlgoModel(String name, String path, Set<String> tags) {
         this.name = name;
         this.path = path;
-        this.features = Map.copyOf(features);
+        this.tags = Set.copyOf(tags);
     }
 
     protected AlgoModel(String name, String path) {
-        this(name, path, Map.of());
+        this(name, path, Set.of());
     }
 
     @Override
@@ -38,8 +37,8 @@ public abstract class AlgoModel {
         return path;
     }
 
-    public Map<String, String> features() {
-        return features;
+    public Set<String> tags() {
+        return tags;
     }
 
 }

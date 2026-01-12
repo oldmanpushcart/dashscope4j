@@ -22,22 +22,23 @@ public class ChatOpImpl implements ChatOp {
 
     private static final List<Interceptor> interceptors = reverseListImmutable(List.of(
 
+            // 支持仅增量输出模型
             new IncrementalOutputOnlyInterceptor(),
 
             // 文件上传到默认 OSS 空间
             new UploadFilesInterceptor(),
 
             // 音视频通过 BASE64 内联
-            new InlineImageFilesInterceptor(),
+            new InlineFilesInterceptor(),
 
             // 纯文本内容过滤（部分对话模型只支持纯文本内容）
-            new TextOnlyInterceptor(),
+            new TextInputOnlyInterceptor(),
 
-            // 流桥接
-            new FlowOnlyInterceptor(),
+            // 支持仅流式输出模型
+            new FlowOutputOnlyInterceptor(),
 
             // 兼容 OpenAI 协议
-            new OpenAiCompatInterceptor()
+            new CompatOpenAiInterceptor()
 
     ));
 
@@ -66,8 +67,7 @@ public class ChatOpImpl implements ChatOp {
     @Override
     public Flow.Publisher<ChatResponse> flow(ChatRequest request) {
         return FlowX.defer(() -> flowApi.execute(request))
-                .transform(new ToolCallFlowHandler(this))
-                .publisher();
+                .transform(new ToolCallFlowHandler(this));
     }
 
 }

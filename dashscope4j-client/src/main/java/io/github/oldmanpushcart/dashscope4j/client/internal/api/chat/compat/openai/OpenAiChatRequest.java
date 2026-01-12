@@ -1,9 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.compat.openai;
 
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
@@ -17,13 +13,13 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.Jackson
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_CONTENT_TYPE;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;

@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.omni;
 
-import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.realtime.OmniRealtimeOpImpl;

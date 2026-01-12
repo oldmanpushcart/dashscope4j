@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.URI;
-import java.util.Objects;
 
 /**
  * 图像内容。

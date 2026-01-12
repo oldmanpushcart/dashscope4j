@@ -7,8 +7,6 @@ import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.lang.reflect.Type;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 

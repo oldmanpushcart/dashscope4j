@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
-import java.util.Objects;
-
 public final class TextContent implements Content {
 
     private final String text;

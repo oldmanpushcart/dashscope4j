@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.interceptor;
 
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
@@ -9,9 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.hasKeyValue;
-
-public class FlowOnlyInterceptor implements AsyncInterceptor {
+public class FlowOutputOnlyInterceptor implements AsyncInterceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain) {
@@ -21,7 +20,7 @@ public class FlowOnlyInterceptor implements AsyncInterceptor {
         }
 
         final var model = request.model();
-        if (!hasKeyValue(model.features(), "flow-only", "1")) {
+        if(!model.tags().contains(ChatModelTags.FLOW_OUTPUT_ONLY)) {
             return chain.proceed();
         }
 

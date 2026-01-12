@@ -12,7 +12,7 @@ import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-public final class FlowX<T> {
+public final class FlowX<T> implements Flow.Publisher<T> {
 
     private final Flow.Publisher<T> publisher;
 
@@ -31,6 +31,11 @@ public final class FlowX<T> {
         this.publisher = p;
     }
 
+    @Override
+    public void subscribe(Flow.Subscriber<? super T> subscriber) {
+        publisher.subscribe(subscriber);
+    }
+
     private FlowX<T> self() {
         return this;
     }
@@ -39,29 +44,29 @@ public final class FlowX<T> {
         Objects.requireNonNull(filter, "filter must not be null!");
         return new FlowX<>(new MapPublisher<>(publisher, t ->
                 filter.test(t)
-                        ? FlowX.just(t).publisher()
-                        : FlowX.<T>empty().publisher()));
+                        ? FlowX.just(t)
+                        : FlowX.empty()));
     }
 
     public <R> FlowX<R> map(Function<T, R> mapper) {
         Objects.requireNonNull(mapper, "mapper must not be null!");
         return new FlowX<>(new MapPublisher<>(publisher, t ->
-                FlowX.just(mapper.apply(t)).publisher()));
+                FlowX.just(mapper.apply(t))));
     }
 
     public <R> FlowX<R> flatMap(Function<T, Iterable<R>> mapper) {
         Objects.requireNonNull(mapper, "mapper must not be null!");
-        return new FlowX<>(new MapPublisher<>(publisher, t -> FlowX.fromIterable(mapper.apply(t)).publisher()));
+        return new FlowX<>(new MapPublisher<>(publisher, t -> FlowX.fromIterable(mapper.apply(t))));
     }
 
     public FlowX<T> concat(Flow.Publisher<T> fin) {
         Objects.requireNonNull(fin, "fin must not be null!");
-        return new FlowX<>(new ConcatPublisher<>(publisher, fin, t -> FlowX.<T>error(t).publisher()));
+        return new FlowX<>(new ConcatPublisher<>(publisher, fin, FlowX::error));
     }
 
     public FlowX<T> concat(Function<Throwable, Flow.Publisher<T>> err) {
         Objects.requireNonNull(err, "err must not be null!");
-        return new FlowX<>(new ConcatPublisher<>(publisher, FlowX.<T>empty().publisher(), err));
+        return new FlowX<>(new ConcatPublisher<>(publisher, FlowX.empty(), err));
     }
 
     public FlowX<T> doOnNext(Consumer<? super T> action) {
@@ -76,7 +81,7 @@ public final class FlowX<T> {
         Objects.requireNonNull(action, "action must not be null!");
         return concat(t -> {
             action.accept(t);
-            return FlowX.<T>error(t).publisher();
+            return FlowX.error(t);
         });
     }
 
@@ -85,11 +90,11 @@ public final class FlowX<T> {
         return concat(FlowX.defer(() -> {
             try {
                 action.run();
-                return FlowX.<T>empty().publisher();
+                return FlowX.empty();
             } catch (Throwable ex) {
-                return FlowX.<T>error(ex).publisher();
+                return FlowX.error(ex);
             }
-        }).publisher());
+        }));
     }
 
     public <U> FlowX<U> transform(Function<Flow.Publisher<T>, Flow.Publisher<U>> transformer) {
@@ -172,10 +177,6 @@ public final class FlowX<T> {
 
     }
 
-    public Flow.Publisher<T> publisher() {
-        return publisher;
-    }
-
 
     // --- 构造工厂 ---
 
@@ -232,8 +233,7 @@ public final class FlowX<T> {
     }
 
     public static void main(String[] args) {
-        FlowX.fromCompletionStage(() -> CompletableFuture.completedStage(FlowX.just(1, 2, 3).publisher()))
+        FlowX.fromCompletionStage(() -> CompletableFuture.completedStage(FlowX.just(1, 2, 3)))
                 .forEach(System.out::println);
     }
-
 }

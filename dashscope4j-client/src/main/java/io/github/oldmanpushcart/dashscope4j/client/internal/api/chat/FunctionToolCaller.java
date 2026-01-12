@@ -6,8 +6,8 @@ import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.ToolMessage;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.FunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,19 +48,15 @@ class FunctionToolCaller implements Tool.Caller {
     }
 
     public Flow.Publisher<ChatResponse> flowCall() {
-        return FlowX
-                .defer(() -> FlowX
-                        .fromCompletionStage(() -> {
-                            final var futureMap = parallelCallFunction();
-                            return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
-                                    .thenApply(unused -> {
-                                        final var history = newHistory(futureMap);
-                                        final var newRequest = newHistoryRequest(history);
-                                        return chatOp.flow(newRequest);
-                                    });
-                        })
-                        .publisher())
-                .publisher();
+        return FlowX.defer(() -> FlowX.fromCompletionStage(() -> {
+            final var futureMap = parallelCallFunction();
+            return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
+                    .thenApply(unused -> {
+                        final var history = newHistory(futureMap);
+                        final var newRequest = newHistoryRequest(history);
+                        return chatOp.flow(newRequest);
+                    });
+        }));
     }
 
     /*

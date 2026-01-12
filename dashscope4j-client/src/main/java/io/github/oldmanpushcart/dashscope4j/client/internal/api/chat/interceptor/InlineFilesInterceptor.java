@@ -15,7 +15,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class InlineImageFilesInterceptor implements RewriteUserInputInterceptor {
+public class InlineFilesInterceptor implements RewriteUserInputInterceptor {
 
     private static boolean isFileURI(URI resourceURI) {
         return "file".equalsIgnoreCase(resourceURI.getScheme());

@@ -69,31 +69,27 @@ public class DefaultFlowApi implements FlowApi {
                             return FlowX
                                     .fromPublisher(httpResponse.body())
                                     .transform(new ByteBufferListToServerSentEventTransformer(charset))
-                                    .transform(new ServerSentEventToApiResponseTransformer<>(request, httpResponse))
-                                    .publisher();
+                                    .transform(new ServerSentEventToApiResponseTransformer<>(request, httpResponse));
                         }
 
                         // error
                         else if (httpResponse.statusCode() != 200 && "application/json".equalsIgnoreCase(ct.mime())) {
                             return FlowX
                                     .fromPublisher(httpResponse.body())
-                                    .transform(new ByteBufferListToApiResponseTransformer<>(charset, request, httpResponse))
-                                    .publisher();
+                                    .transform(new ByteBufferListToApiResponseTransformer<>(charset, request, httpResponse));
                         }
 
                         // other
                         else {
-                            return FlowX
-                                    .<R>error(new IllegalStateException("Unsupported HTTP response! code=%s;mime-type=%s;".formatted(
-                                            ct.mime(),
-                                            httpResponse.statusCode()
-                                    )))
-                                    .publisher();
+                            return FlowX.error(new IllegalStateException("Unsupported HTTP response! code=%s;mime-type=%s;".formatted(
+                                    ct.mime(),
+                                    httpResponse.statusCode()
+                            )));
                         }
 
                     });
 
-        }).publisher()).publisher();
+        }));
     }
 
     /**
@@ -131,14 +127,12 @@ public class DefaultFlowApi implements FlowApi {
                                     final var body = baos.toString(charset);
                                     final var response = JacksonJsonUtils.toApiResponse(body, request.responseType(), request, httpResponse);
                                     return !response.isSuccess()
-                                            ? FlowX.<R>error(new ApiException(response)).publisher()
-                                            : FlowX.just(response).publisher();
+                                            ? FlowX.error(new ApiException(response))
+                                            : FlowX.just(response);
                                 } finally {
                                     IOUtils.closeQuietly(baos);
                                 }
-                            })
-                            .publisher())
-                    .publisher();
+                            }));
         }
     }
 
@@ -167,8 +161,7 @@ public class DefaultFlowApi implements FlowApi {
                             throw new ApiException(response);
                         }
                         return List.of(response);
-                    })
-                    .publisher();
+                    });
         }
 
     }
@@ -233,17 +226,11 @@ public class DefaultFlowApi implements FlowApi {
                     })
 
                     // 流结束，将剩余的事件流发送走
-                    .concat(FlowX
-                            .defer(() -> {
-                                final var events = new ArrayList<ServerSentEvent>();
-                                drainTo(events);
-                                return FlowX
-                                        .fromIterable(events)
-                                        .publisher();
-                            })
-                            .publisher()
-                    )
-                    .publisher();
+                    .concat(FlowX.defer(() -> {
+                        final var events = new ArrayList<ServerSentEvent>();
+                        drainTo(events);
+                        return FlowX.fromIterable(events);
+                    }));
         }
 
     }

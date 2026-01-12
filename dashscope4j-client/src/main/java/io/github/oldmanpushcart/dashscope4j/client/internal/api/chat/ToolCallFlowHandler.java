@@ -52,7 +52,7 @@ public class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatRes
                         requestRef.set(response.request());
                     }
 
-                    if(response.output().choices().isEmpty()) {
+                    if (response.output().choices().isEmpty()) {
                         return true;
                     }
 
@@ -75,20 +75,14 @@ public class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<ChatRes
                 /*
                  * 对合并的 ToolCall 进行处理，正式发起函数调用
                  */
-                .concat(FlowX
-                        .defer(() -> {
-                            final var request = requestRef.get();
-                            final var tcMessage = mergeSegments(request, segments);
-                            if (null == tcMessage) {
-                                return FlowX
-                                        .<ChatResponse>empty()
-                                        .publisher();
-                            }
-                            return new FunctionToolCaller(chatOp, request, tcMessage).flowCall();
-                        })
-                        .publisher()
-                )
-                .publisher();
+                .concat(FlowX.defer(() -> {
+                    final var request = requestRef.get();
+                    final var tcMessage = mergeSegments(request, segments);
+                    if (null == tcMessage) {
+                        return FlowX.empty();
+                    }
+                    return new FunctionToolCaller(chatOp, request, tcMessage).flowCall();
+                }));
     }
 
     private AssistantMessage mergeSegments(ChatRequest request, List<AssistantMessage> segments) {
