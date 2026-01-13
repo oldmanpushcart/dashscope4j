@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 import java.util.function.Function;
 
@@ -46,7 +47,7 @@ public class DefaultFlowApi implements FlowApi {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request) {
-        return FlowX.defer(() -> FlowX.fromCompletionStage(() -> {
+        return FlowX.defer(() -> {
 
             final var httpRequest = HttpRequest.newBuilder(request.toHttpRequest(host), (n, v) -> true)
                     .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
@@ -57,7 +58,7 @@ public class DefaultFlowApi implements FlowApi {
                     .build();
             traceLogHttpRequest(httpRequest);
 
-            return http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofPublisher())
+            final CompletionStage<Flow.Publisher<R>> stage = http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofPublisher())
                     .whenComplete(HttpUtils::traceLogHttpResponse)
                     .thenApply(httpResponse -> {
 
@@ -88,8 +89,8 @@ public class DefaultFlowApi implements FlowApi {
                         }
 
                     });
-
-        }));
+            return FlowX.fromCompletionStage(stage);
+        });
     }
 
     /**

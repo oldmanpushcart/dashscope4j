@@ -124,8 +124,7 @@ public final class FlowX<T> implements Flow.Publisher<T> {
     public CompletionStage<T> reduce(BinaryOperator<T> accumulator) {
         Objects.requireNonNull(accumulator, "accumulator must not be null!");
         return collect(Collectors.reducing(accumulator))
-                .thenApply(Optional::orElseThrow)
-                .toCompletableFuture();
+                .thenApply(Optional::orElseThrow);
     }
 
     public <A, R> CompletionStage<R> collect(Collector<T, A, R> collector) {
@@ -194,22 +193,14 @@ public final class FlowX<T> implements Flow.Publisher<T> {
         return new FlowX<>(publisher);
     }
 
-    public static <T> FlowX<T> fromCompletableFuture(Supplier<CompletableFuture<? extends Flow.Publisher<T>>> supplier) {
-        Objects.requireNonNull(supplier, "supplier must not be null!");
-        return new FlowX<>(() -> {
-            final var future = supplier.get();
-            Objects.requireNonNull(future, "CompletableFuture from supplier is null");
-            return new CompletableFuturePublisher<>(future);
-        });
+    public static <T> FlowX<T> fromCompletableFuture(CompletableFuture<? extends Flow.Publisher<T>> future) {
+        Objects.requireNonNull(future, "future must not be null!");
+        return new FlowX<>(() -> new CompletableFuturePublisher<>(future));
     }
 
-    public static <T> FlowX<T> fromCompletionStage(Supplier<CompletionStage<? extends Flow.Publisher<T>>> supplier) {
-        Objects.requireNonNull(supplier, "supplier must not be null!");
-        return fromCompletableFuture(() -> {
-            final var stage = supplier.get();
-            Objects.requireNonNull(stage, "CompletionStage from supplier is null");
-            return stage.toCompletableFuture();
-        });
+    public static <T> FlowX<T> fromCompletionStage(CompletionStage<? extends Flow.Publisher<T>> stage) {
+        Objects.requireNonNull(stage, "stage must not be null!");
+        return fromCompletableFuture(stage.toCompletableFuture());
     }
 
     @SafeVarargs
@@ -232,8 +223,4 @@ public final class FlowX<T> implements Flow.Publisher<T> {
         return new FlowX<>(new EmptyPublisher<>());
     }
 
-    public static void main(String[] args) {
-        FlowX.fromCompletionStage(() -> CompletableFuture.completedStage(FlowX.just(1, 2, 3)))
-                .forEach(System.out::println);
-    }
 }

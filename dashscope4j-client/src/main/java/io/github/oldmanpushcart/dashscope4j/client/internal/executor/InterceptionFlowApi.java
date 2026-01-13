@@ -23,13 +23,14 @@ public class InterceptionFlowApi implements FlowApi {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request) {
-        return FlowX.fromCompletionStage(() -> {
+        return FlowX.defer(() -> {
             final var chain = new FlowInterceptor.Chain(client, request, r -> CompletableFuture.completedStage(delegate.execute(r)));
-            return interceptor.intercept(chain)
+            final var stage = interceptor.intercept(chain)
                     .thenApply(r -> {
                         //noinspection unchecked
                         return (Flow.Publisher<R>) r;
                     });
+            return FlowX.fromCompletionStage(stage);
         });
     }
 

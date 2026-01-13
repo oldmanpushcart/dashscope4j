@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.MultipartBodyPublisherBuilder;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonXmlUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.ProgressListener;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,13 +27,11 @@ public class PostUploadRequest extends ApiRequest<PostUploadResponse> {
     private final Policy policy;
     private final URI resource;
     private final String ossKey;
-    private final ProgressListener listener;
 
     protected PostUploadRequest(Builder builder) {
         super(PostUploadResponse.class, builder);
         this.policy = builder.policy;
         this.resource = builder.resource;
-        this.listener = builder.listener;
         this.ossKey = computeOssKey(policy, resource);
     }
 
@@ -101,22 +98,6 @@ public class PostUploadRequest extends ApiRequest<PostUploadResponse> {
         };
     }
 
-    public Policy policy() {
-        return policy;
-    }
-
-    public URI resource() {
-        return resource;
-    }
-
-    public String ossKey() {
-        return ossKey;
-    }
-
-    public ProgressListener listener() {
-        return listener;
-    }
-
     public static Builder newBuilder() {
         return new Builder();
     }
@@ -129,7 +110,6 @@ public class PostUploadRequest extends ApiRequest<PostUploadResponse> {
 
         private Policy policy;
         private URI resource;
-        private ProgressListener listener;
 
         public Builder() {
 
@@ -139,7 +119,6 @@ public class PostUploadRequest extends ApiRequest<PostUploadResponse> {
             super(request);
             this.policy = request.policy;
             this.resource = request.resource;
-            this.listener = request.listener;
         }
 
         public Builder policy(Policy policy) {
@@ -149,11 +128,6 @@ public class PostUploadRequest extends ApiRequest<PostUploadResponse> {
 
         public Builder resource(URI resource) {
             this.resource = requireNonNull(resource);
-            return this;
-        }
-
-        public Builder listener(ProgressListener listener) {
-            this.listener = requireNonNull(listener);
             return this;
         }
 

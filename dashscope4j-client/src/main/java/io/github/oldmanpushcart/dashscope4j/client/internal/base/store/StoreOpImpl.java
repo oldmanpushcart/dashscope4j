@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 import io.github.oldmanpushcart.dashscope4j.client.api.AlgoModel;
 import io.github.oldmanpushcart.dashscope4j.client.base.store.StoreOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApi;
-import io.github.oldmanpushcart.dashscope4j.client.util.ProgressListener;
 
 import java.net.URI;
 import java.util.Map;
@@ -26,14 +25,9 @@ public class StoreOpImpl implements StoreOp {
 
     @Override
     public CompletionStage<URI> upload(URI resource, AlgoModel model) {
-        return upload(resource, model, ProgressListener.empty);
-    }
-
-    @Override
-    public CompletionStage<URI> upload(URI resource, AlgoModel model, ProgressListener listener) {
         return CompletableFuture.completedStage(null)
                 .thenCompose(unused -> fetchPolicy(model))
-                .thenCompose(policy -> upload(policy, resource, listener));
+                .thenCompose(policy -> upload(policy, resource));
     }
 
     private CompletionStage<Policy> fetchPolicy(AlgoModel model) {
@@ -54,11 +48,10 @@ public class StoreOpImpl implements StoreOp {
                 });
     }
 
-    private CompletionStage<URI> upload(Policy policy, URI resource, ProgressListener listener) {
+    private CompletionStage<URI> upload(Policy policy, URI resource) {
         final var request = PostUploadRequest.newBuilder()
                 .policy(policy)
                 .resource(resource)
-                .listener(listener)
                 .build();
         return asyncApi.execute(request)
                 .thenApply(PostUploadResponse::uploaded);

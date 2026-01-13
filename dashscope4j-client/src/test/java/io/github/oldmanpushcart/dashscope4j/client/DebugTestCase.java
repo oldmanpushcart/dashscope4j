@@ -19,6 +19,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.handler.Sim
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.ExchangeConnector;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.SchemaUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.junit.jupiter.api.Test;
 
@@ -228,7 +229,8 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug6() {
 
-        System.out.println(SchemaUtils.schema(Person.class));
+        FlowX.fromPublisher(client.base().files().flow())
+                .forEach(meta -> System.out.println(meta.identity()));
 
     }
 

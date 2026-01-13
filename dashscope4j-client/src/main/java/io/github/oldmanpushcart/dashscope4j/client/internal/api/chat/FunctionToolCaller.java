@@ -48,15 +48,16 @@ class FunctionToolCaller implements Tool.Caller {
     }
 
     public Flow.Publisher<ChatResponse> flowCall() {
-        return FlowX.defer(() -> FlowX.fromCompletionStage(() -> {
+        return FlowX.defer(() -> {
             final var futureMap = parallelCallFunction();
-            return CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
+            return FlowX.fromCompletionStage(CompletableFuture
+                    .allOf(futureMap.values().toArray(new CompletableFuture[0]))
                     .thenApply(unused -> {
                         final var history = newHistory(futureMap);
                         final var newRequest = newHistoryRequest(history);
                         return chatOp.flow(newRequest);
-                    });
-        }));
+                    }));
+        });
     }
 
     /*
