@@ -257,7 +257,7 @@ class ConcatPublisher<T> implements Flow.Publisher<T> {
                         case ERROR, COMPLETED, CANCELLED -> s;
                         default -> u;
                     });
-            if (ret == State.MAIN_ERROR) {
+            if (ret == State.ERROR) {
                 select();
             }
         }
@@ -273,7 +273,7 @@ class ConcatPublisher<T> implements Flow.Publisher<T> {
                         case ERROR, COMPLETED, CANCELLED -> s;
                         default -> u;
                     });
-            if (ret == State.MAIN_COMPLETED) {
+            if (ret == State.COMPLETED) {
                 select();
             }
         }

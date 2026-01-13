@@ -5,9 +5,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.Future;
 import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -104,21 +103,14 @@ public final class FlowX<T> implements Flow.Publisher<T> {
 
     // --- 消费函数 ---
 
-    public void forEach(Consumer<? super T> action) {
+    public Future<Void> forEach(Consumer<? super T> action) {
         Objects.requireNonNull(action, "action must not be null!");
-        publisher.subscribe(new EmptySubscriber<>() {
-
-            @Override
-            public void onSubscribe(Flow.Subscription subscription) {
-                subscription.request(Long.MAX_VALUE);
-            }
-
-            @Override
-            public void onNext(T item) {
-                action.accept(item);
-            }
-
-        });
+        return self()
+                .doOnNext(action)
+                .collect(Collectors.counting())
+                .thenAccept(ignored -> {
+                })
+                .toCompletableFuture();
     }
 
     public CompletionStage<T> reduce(BinaryOperator<T> accumulator) {
@@ -134,46 +126,78 @@ public final class FlowX<T> implements Flow.Publisher<T> {
         final Function<A, R> finisher = collector.finisher();
         final A container = supplier.get();
         final var future = new CompletableFuture<R>();
-        self()
-                .doOnError(future::completeExceptionally)
-                .doOnComplete(() -> future.complete(finisher.apply(container)))
-                .forEach(item -> accumulator.accept(container, item));
+
+        subscribe(new Flow.Subscriber<>() {
+
+            private volatile Flow.Subscription subscription;
+
+            @Override
+            public void onSubscribe(Flow.Subscription s) {
+                if (this.subscription != null) {
+                    s.cancel();
+                    return;
+                }
+                this.subscription = s;
+                future.whenComplete((r, ex) -> {
+                    if (future.isCancelled()) {
+                        s.cancel();
+                    }
+                });
+                requestOne();
+            }
+
+            private void requestOne() {
+                if (!future.isDone()) {
+                    subscription.request(1L);
+                }
+            }
+
+            @Override
+            public void onNext(T item) {
+                if (!future.isDone()) {
+                    try {
+                        accumulator.accept(container, item);
+                        requestOne();
+                    } catch (Throwable ex) {
+                        onError(ex);
+                    }
+                }
+            }
+
+            @Override
+            public void onError(Throwable ex) {
+                if (!future.isDone()) {
+                    future.completeExceptionally(ex);
+                }
+            }
+
+            @Override
+            public void onComplete() {
+                if (!future.isDone()) {
+                    try {
+                        future.complete(finisher.apply(container));
+                    } catch (Throwable ex) {
+                        future.completeExceptionally(ex);
+                    }
+                }
+            }
+        });
+
         return future;
     }
 
     public <A, R> R blockingCollect(Collector<T, A, R> collector) {
         Objects.requireNonNull(collector, "collector must not be null!");
-        final Supplier<A> supplier = collector.supplier();
-        final BiConsumer<A, T> accumulator = collector.accumulator();
-        final Function<A, R> finisher = collector.finisher();
-        final A container = supplier.get();
+        return collect(collector)
+                .toCompletableFuture()
+                .join();
+    }
 
-        final var errorRef = new AtomicReference<Throwable>();
-        final var latch = new CountDownLatch(1);
-        self()
-                .doOnError(ex -> {
-                    errorRef.set(ex);
-                    latch.countDown();
-                })
-                .doOnComplete(latch::countDown)
-                .forEach(item -> accumulator.accept(container, item));
-
-        try {
-            latch.await();
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Collect interrupted!", ex);
-        }
-
-        final var error = errorRef.get();
-        if (error instanceof RuntimeException runtimeEx) {
-            throw runtimeEx;
-        } else if (error != null) {
-            throw new RuntimeException("Collect failed!", error);
-        } else {
-            return finisher.apply(container);
-        }
-
+    public void blockingForEach(Consumer<? super T> action) {
+        self().doOnNext(action)
+                .collect(Collectors.counting())
+                .toCompletableFuture()
+                .join();
     }
 
 
@@ -181,10 +205,13 @@ public final class FlowX<T> implements Flow.Publisher<T> {
 
     public static <T> FlowX<T> defer(Supplier<? extends Flow.Publisher<T>> supplier) {
         Objects.requireNonNull(supplier, "supplier must not be null!");
-        return new FlowX<>(() -> subscriber -> {
-            final var publisher = supplier.get();
-            Objects.requireNonNull(publisher, "Publisher from supplier is null");
-            publisher.subscribe(subscriber);
+        return new FlowX<>(() -> new Flow.Publisher<T>() {
+            @Override
+            public void subscribe(Flow.Subscriber<? super T> subscriber) {
+                final var publisher = supplier.get();
+                Objects.requireNonNull(publisher, "Publisher from supplier is null");
+                publisher.subscribe(subscriber);
+            }
         });
     }
 

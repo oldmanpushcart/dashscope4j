@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.base.files;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.OpenAiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.MultipartBodyPublisherBuilder;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,11 +36,11 @@ public class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
         logger.debug("dashscope4j-client://base/files/create >>> resource={};purpose={};", resource, purpose);
         final var boundary = "boundary%s".formatted(sequencer.incrementAndGet());
         return HttpRequest.newBuilder()
-                .uri(URI.create(host + "/compatible-mode/v1/files"))
+                .uri(EndpointUtils.https(host ,"/compatible-mode/v1/files"))
                 .header(HEADER_CONTENT_TYPE, "multipart/form-data; boundary=%s".formatted(boundary))
                 .POST(new MultipartBodyPublisherBuilder()
                         .boundary(boundary)
-                        .part("purpose", JacksonJsonUtils.toJson(purpose))
+                        .part("purpose", JacksonJsonUtils.toJson(purpose).replaceAll("\"", ""))
                         .part("file", resource, filename)
                         .build())
                 .build();

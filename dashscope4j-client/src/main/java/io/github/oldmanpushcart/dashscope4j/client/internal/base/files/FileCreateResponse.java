@@ -20,7 +20,7 @@ public class FileCreateResponse extends OpenAiResponse {
             @JacksonInject("dashscope/request")
             FileCreateRequest request,
 
-            @JacksonInject("header/x-request-id")
+            @JacksonInject("http/header/x-request-id")
             String uuid,
 
             @JsonProperty("error")

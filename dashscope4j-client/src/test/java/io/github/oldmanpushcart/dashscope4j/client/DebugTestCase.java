@@ -16,6 +16,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.clien
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.handler.SimpleOmniRealtimeExchangeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.exchange.ExchangeConnector;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.SchemaUtils;
@@ -229,8 +230,27 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug6() {
 
+        for(int i = 0; i < 3; i++) {
+            client.base().files().create(new File("./test-data/image/red-cup.jpeg"), Purpose.FILE_EXTRACT)
+                    .toCompletableFuture()
+                    .join();
+        }
+
         FlowX.fromPublisher(client.base().files().flow())
-                .forEach(meta -> System.out.println(meta.identity()));
+                .blockingForEach(meta-> {
+                    client.base().files().delete(meta.identity())
+                            .toCompletableFuture()
+                            .join();
+                });
+
+
+    }
+
+    @Test
+    public void debug7() {
+
+        FlowX.fromCompletionStage(client.base().files().list("file-fe-a12be37b9be0402a88f46da7", 10).thenApply(FlowX::fromIterable))
+                .blockingForEach(System.out::println);
 
     }
 

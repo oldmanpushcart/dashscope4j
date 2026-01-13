@@ -8,9 +8,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 
 import java.lang.reflect.Type;
 import java.net.http.HttpResponse;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 public class JacksonJsonUtils {
 
@@ -96,7 +98,7 @@ public class JacksonJsonUtils {
     public static <T extends ApiResponse> T toApiResponse(String json, Class<T> type, ApiRequest<?> request, HttpResponse<?> httpResponse) {
         final Map<String, Object> variableMap = new HashMap<>();
         httpResponse.headers().map()
-                .forEach((name, values) -> variableMap.put("http/header/%s".formatted(name), values));
+                .forEach((name, values) -> variableMap.put("http/header/%s".formatted(name), String.join("", values)));
         variableMap.put("dashscope/request", request);
         try {
             return mapper.reader(new NullableInjectableValues(variableMap)).forType(type).readValue(json);

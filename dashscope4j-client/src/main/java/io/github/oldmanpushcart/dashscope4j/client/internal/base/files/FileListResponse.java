@@ -22,7 +22,7 @@ public class FileListResponse extends OpenAiResponse {
             @JacksonInject("dashscope/request")
             FileListRequest request,
 
-            @JacksonInject("header/x-request-id")
+            @JacksonInject("http/header/x-request-id")
             String uuid,
 
             @JsonProperty("error")

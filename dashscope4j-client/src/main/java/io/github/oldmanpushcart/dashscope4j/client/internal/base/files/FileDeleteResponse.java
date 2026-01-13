@@ -16,7 +16,7 @@ public class FileDeleteResponse extends OpenAiResponse {
             @JacksonInject("dashscope/request")
             FileDeleteRequest request,
 
-            @JacksonInject("header/x-request-id")
+            @JacksonInject("http/header/x-request-id")
             String uuid,
 
             @JsonProperty("error")
