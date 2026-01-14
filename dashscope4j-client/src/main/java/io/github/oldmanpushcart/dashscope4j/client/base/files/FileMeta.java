@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.base.files;
 
+import java.net.URI;
 import java.time.Instant;
 
 public record FileMeta(
@@ -9,4 +10,9 @@ public record FileMeta(
         Instant uploadedAt,
         Purpose purpose
 ) {
+
+    public URI toURI() {
+        return URI.create("fileid://" + identity);
+    }
+
 }

@@ -1,12 +1,18 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.files;
 
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
+import io.github.oldmanpushcart.dashscope4j.client.api.Ret;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
+import io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
+import io.github.oldmanpushcart.dashscope4j.common.Constants;
+import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
@@ -35,7 +41,31 @@ public class FilesOpImpl implements FilesOp {
                 .identity(identity)
                 .build();
         return asyncApi.execute(request)
-                .thenApply(FileDetailResponse::meta);
+                .thenApply(FileDetailResponse::meta)
+                .handle((meta, ex) -> {
+
+                    if (null == ex) {
+                        return CompletableFuture.completedStage(meta);
+                    }
+
+                    if (isCauseByFileNotExisted(ex)) {
+                        return CompletableFuture.<FileMeta>completedStage(null);
+                    } else {
+                        return CompletableFuture.<FileMeta>failedStage(ex);
+                    }
+
+                })
+                .thenCompose(v -> v);
+    }
+
+    private static boolean isCauseByFileNotExisted(Throwable ex) {
+        final Throwable cause = CompletableFutureUtils.unwrapEx(ex);
+        if (cause instanceof ApiException apiEx) {
+            return Ret.CODE_FAILURE.equals(apiEx.code())
+                    && apiEx.desc() != null
+                    && apiEx.desc().startsWith("No such File object:");
+        }
+        return false;
     }
 
     @Override
@@ -44,7 +74,19 @@ public class FilesOpImpl implements FilesOp {
                 .identity(identity)
                 .build();
         return asyncApi.execute(request)
-                .thenApply(FileDeleteResponse::deleted);
+                .thenApply(FileDeleteResponse::deleted)
+                .handle((deleted, ex) -> {
+                    if (ex == null) {
+                        return CompletableFuture.completedStage(deleted);
+                    }
+
+                    if (isCauseByFileNotExisted(ex)) {
+                        return CompletableFuture.completedStage(false);
+                    } else {
+                        return CompletableFuture.<Boolean>failedStage(ex);
+                    }
+                })
+                .thenCompose(v -> v);
     }
 
     private CompletionStage<FileListResponse> list(String after, int limit) {

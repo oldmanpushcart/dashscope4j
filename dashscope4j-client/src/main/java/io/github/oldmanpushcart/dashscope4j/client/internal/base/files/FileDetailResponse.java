@@ -43,7 +43,7 @@ public class FileDetailResponse extends OpenAiResponse {
 
     ) {
         super(request, uuid, error);
-        this.meta = null != error
+        this.meta = null == error
                 ? new FileMeta(identity, name, size, Instant.ofEpochSecond(created), purpose)
                 : null;
     }

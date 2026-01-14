@@ -6,8 +6,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.function.QueryScoreFunction;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.Content;
+import io.github.oldmanpushcart.dashscope4j.client.base.files.FilesOpHelper;
+import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -17,7 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
-public class ChatTestCase implements LoadingEnv {
+public class ChatOpTestCase implements LoadingEnv {
 
     static Stream<ChatModel> provideModelsForText() {
         return Stream.of(
@@ -220,6 +223,37 @@ public class ChatTestCase implements LoadingEnv {
         DashscopeAssertions.dashscopeAssertText(client,
                 response.output().best().message().text(),
                 "视频中有2男1女"
+        );
+
+    }
+
+
+    @Test
+    public void test$chat$long() {
+
+        final var file = new File("./test-data/document/P020210313315693279320.pdf");
+        final var fileURI = file.toURI();
+        final var name = FilesOpHelper.encodeFilename(file.getName());
+        final var meta = client.base().files().create(fileURI, name, Purpose.FILE_EXTRACT)
+                .toCompletableFuture()
+                .join();
+
+        final var request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_LONG)
+                .addMessage(Message.system(meta.toURI().toString()))
+                .addMessage(Message.user("请帮我分析这个文件，并给出一个总结"))
+                .parameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
+                .build();
+
+        final var response = FlowX.fromPublisher(client.chat().flow(request))
+                .reduce(ChatResponse::accumulate)
+                .toCompletableFuture()
+                .join();
+
+        DashscopeAssertions.dashscopeAssertText(
+                client,
+                response.output().best().message().text(),
+                "这篇文章说的是中国第十四个五年规划"
         );
 
     }
