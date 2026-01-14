@@ -7,7 +7,6 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
 import java.net.URI;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
@@ -48,32 +47,33 @@ public class FilesOpImpl implements FilesOp {
                 .thenApply(FileDeleteResponse::deleted);
     }
 
-    @Override
-    public CompletionStage<List<FileMeta>> list(String after, int limit) {
+    private CompletionStage<FileListResponse> list(String after, int limit) {
         final var request = FileListRequest.newBuilder()
                 .after(after)
                 .limit(limit)
                 .build();
-        return asyncApi.execute(request)
-                .thenApply(FileListResponse::metas);
+        return asyncApi.execute(request);
     }
 
     @Override
-    public Flow.Publisher<FileMeta> flow() {
-        return fetchPage(null, 10);
+    public Flow.Publisher<FileMeta> flow(int batch) {
+        return fetchPage(null, batch);
     }
 
-    private Flow.Publisher<FileMeta> fetchPage(String after, int limit) {
+    private Flow.Publisher<FileMeta> fetchPage(String after, int batch) {
         return FlowX.defer(() -> {
-            final var future = list(after, limit)
-                    .thenApply(metas -> {
-                        if (!metas.isEmpty()) {
-                            return FlowX
-                                    .fromIterable(metas)
-                                    .concat(fetchPage(metas.get(metas.size() - 1).identity(), limit));
-                        } else {
-                            return FlowX.<FileMeta>empty();
+            final CompletionStage<Flow.Publisher<FileMeta>> future = list(after, batch)
+                    .thenApply(listResponse -> {
+                        final var metas = listResponse.metas();
+                        if (metas.isEmpty()) {
+                            return FlowX.empty();
                         }
+                        return FlowX
+                                .fromIterable(metas)
+                                .concat(FlowX.defer(() ->
+                                        listResponse.hasNext()
+                                                ? fetchPage(metas.get(metas.size() - 1).identity(), batch)
+                                                : FlowX.empty()));
                     });
             return FlowX.fromCompletionStage(future);
         });

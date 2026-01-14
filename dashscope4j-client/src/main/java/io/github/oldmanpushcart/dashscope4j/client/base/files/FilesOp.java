@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.client.base.files;
 
 import java.io.File;
 import java.net.URI;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
@@ -18,8 +17,10 @@ public interface FilesOp {
 
     CompletionStage<Boolean> delete(String identity);
 
-    CompletionStage<List<FileMeta>> list(String after, int limit);
+    default Flow.Publisher<FileMeta> flow() {
+        return flow(10);
+    }
 
-    Flow.Publisher<FileMeta> flow();
+    Flow.Publisher<FileMeta> flow(int batch);
 
 }

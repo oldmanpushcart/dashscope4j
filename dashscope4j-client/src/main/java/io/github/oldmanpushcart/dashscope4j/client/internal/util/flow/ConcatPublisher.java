@@ -41,6 +41,7 @@ class ConcatPublisher<T> implements Flow.Publisher<T> {
         INNER_SUBSCRIBED,
         INNER_READY,
         INNER_COMPLETED,
+        INNER_ERROR,
         ERROR,
         COMPLETED,
         CANCELLED
@@ -74,12 +75,12 @@ class ConcatPublisher<T> implements Flow.Publisher<T> {
             int missed = 1;
             do {
 
+                final var s = state.get();
                 try {
-                    final var s = state.get();
                     switch (s) {
                         case MAIN_COMPLETED -> {
                             if (state.compareAndSet(s, State.INNER_SUBSCRIBING)) {
-                                final var is = new InnerSubscriber<T>(state, this::select, this::onError);
+                                final var is = new InnerSubscriber<T>(state, this::select);
                                 innerSubscriber = is;
                                 fin.subscribe(is);
                             }
@@ -88,7 +89,7 @@ class ConcatPublisher<T> implements Flow.Publisher<T> {
                         case MAIN_ERROR -> {
                             if (state.compareAndSet(s, State.INNER_SUBSCRIBING)) {
                                 final var innerPub = err.apply(ex);
-                                final var is = new InnerSubscriber<T>(state, this::select, this::onError);
+                                final var is = new InnerSubscriber<T>(state, this::select);
                                 innerSubscriber = is;
                                 innerPub.subscribe(is);
                             }
@@ -122,7 +123,14 @@ class ConcatPublisher<T> implements Flow.Publisher<T> {
                                     is.subscription.request(n);
                                 }
                             }
+                        }
 
+                        case INNER_ERROR -> {
+                            final var is = innerSubscriber;
+                            this.ex = is.ex;
+                            if(state.compareAndSet(s, State.ERROR)) {
+                                select();
+                            }
                         }
 
                         case INNER_COMPLETED -> {
@@ -184,7 +192,10 @@ class ConcatPublisher<T> implements Flow.Publisher<T> {
 
                     }
                 } catch (Throwable ex) {
-                    onError(ex);
+                    this.ex = ex;
+                    if(state.compareAndSet(s, State.ERROR)) {
+                        select();
+                    }
                 }
 
                 missed = wip.addAndGet(-missed);
@@ -252,12 +263,12 @@ class ConcatPublisher<T> implements Flow.Publisher<T> {
                 select();
                 return;
             }
-            final var ret = state.accumulateAndGet(State.ERROR, (s, u) ->
+            final var ret = state.accumulateAndGet(State.MAIN_ERROR, (s, u) ->
                     switch (s) {
                         case ERROR, COMPLETED, CANCELLED -> s;
                         default -> u;
                     });
-            if (ret == State.ERROR) {
+            if (ret == State.MAIN_ERROR) {
                 select();
             }
         }
@@ -268,12 +279,12 @@ class ConcatPublisher<T> implements Flow.Publisher<T> {
                 select();
                 return;
             }
-            final var ret = state.accumulateAndGet(State.COMPLETED, (s, u) ->
+            final var ret = state.accumulateAndGet(State.MAIN_COMPLETED, (s, u) ->
                     switch (s) {
                         case ERROR, COMPLETED, CANCELLED -> s;
                         default -> u;
                     });
-            if (ret == State.COMPLETED) {
+            if (ret == State.MAIN_COMPLETED) {
                 select();
             }
         }
@@ -284,17 +295,16 @@ class ConcatPublisher<T> implements Flow.Publisher<T> {
 
         private final AtomicReference<State> state;
         private final Runnable select;
-        private final Consumer<Throwable> onError;
 
         private final Queue<T> queue = new ConcurrentLinkedQueue<>();
         private final Quota quota = new Quota();
 
         private volatile Flow.Subscription subscription;
+        private volatile Throwable ex;
 
-        private InnerSubscriber(AtomicReference<State> state, Runnable select, Consumer<Throwable> onError) {
+        private InnerSubscriber(AtomicReference<State> state, Runnable select) {
             this.state = state;
             this.select = select;
-            this.onError = onError;
         }
 
         @Override
@@ -325,7 +335,15 @@ class ConcatPublisher<T> implements Flow.Publisher<T> {
 
         @Override
         public void onError(Throwable ex) {
-            onError.accept(ex);
+            this.ex = ex;
+            final var ret = state.accumulateAndGet(State.INNER_ERROR, (s, u) ->
+                    switch (s) {
+                        case INNER_SUBSCRIBING, INNER_SUBSCRIBED, INNER_READY -> u;
+                        default -> s;
+                    });
+            if (ret == State.INNER_ERROR) {
+                select.run();
+            }
         }
 
         @Override

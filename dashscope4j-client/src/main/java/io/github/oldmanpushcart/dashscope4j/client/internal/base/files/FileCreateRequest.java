@@ -20,9 +20,9 @@ public class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
 
     private static final AtomicInteger sequencer = new AtomicInteger(1000);
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private URI resource;
-    private String filename;
-    private Purpose purpose;
+    private final URI resource;
+    private final String filename;
+    private final Purpose purpose;
 
     protected FileCreateRequest(Builder builder) {
         super(FileCreateResponse.class, builder);

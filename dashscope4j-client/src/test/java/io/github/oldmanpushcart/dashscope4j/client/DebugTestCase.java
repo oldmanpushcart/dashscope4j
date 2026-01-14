@@ -30,11 +30,13 @@ import java.io.File;
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
+import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME;
 
@@ -230,29 +232,21 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug6() {
 
-        for(int i = 0; i < 3; i++) {
+        for(int i = 0; i < 5; i++) {
             client.base().files().create(new File("./test-data/image/red-cup.jpeg"), Purpose.FILE_EXTRACT)
                     .toCompletableFuture()
                     .join();
         }
 
-        FlowX.fromPublisher(client.base().files().flow())
-                .blockingForEach(meta-> {
-                    client.base().files().delete(meta.identity())
+        FlowX.fromPublisher(client.base().files().flow(1))
+                .blockingCollect(Collectors.toList())
+                .forEach(meta-> {
+                    client.base().files().detail(meta.identity())
                             .toCompletableFuture()
                             .join();
                 });
 
 
     }
-
-    @Test
-    public void debug7() {
-
-        FlowX.fromCompletionStage(client.base().files().list("file-fe-a12be37b9be0402a88f46da7", 10).thenApply(FlowX::fromIterable))
-                .blockingForEach(System.out::println);
-
-    }
-
 
 }
