@@ -258,4 +258,20 @@ public class ChatOpTestCase implements LoadingEnv {
 
     }
 
+//    @Test
+//    public void test$chat$genImage() {
+//
+//        final var request = ChatRequest.newBuilder()
+//                .model(ChatModel.QWEN_IMAGE)
+//                .addMessage(Message.user("帮我画一朵紫色的向日葵"))
+//                .build();
+//
+//        final var response = client.chat().async(request)
+//                .toCompletableFuture()
+//                .join();
+//
+//        System.out.println(response.output().best().message());
+//
+//    }
+
 }

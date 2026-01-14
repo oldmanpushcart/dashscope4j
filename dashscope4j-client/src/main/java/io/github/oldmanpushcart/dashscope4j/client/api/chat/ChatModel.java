@@ -120,7 +120,8 @@ public class ChatModel extends AlgoModel {
             COMPAT_OPENAI,
             FLOW_OUTPUT_ONLY,
             INCREMENTAL_OUTPUT_ONLY
-    )
-    );
+    ));
+
+    public static final ChatModel QWEN_IMAGE = new ChatModel("qwen-image", MULTIMODAL_PATH);
 
 }
