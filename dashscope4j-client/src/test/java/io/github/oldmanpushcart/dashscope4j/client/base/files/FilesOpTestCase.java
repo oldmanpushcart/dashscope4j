@@ -1,9 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.client.base.files;
 
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiAssertions;
+import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.SystemMessage;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -132,6 +135,23 @@ public class FilesOpTestCase implements LoadingEnv {
                 .forEach(identity -> filesOp.delete(identity)
                         .toCompletableFuture()
                         .join());
+
+    }
+
+    /*
+     * file-fe-58febfa682b34d898b1693a6
+     */
+    @Disabled
+    @Test
+    public void debug() {
+
+        final var filesOp = client.base().files();
+        final var created = filesOp.create(new File("./test-data/document/P020210313315693279320.pdf"), Purpose.FILE_EXTRACT)
+                .toCompletableFuture()
+                .join();
+
+        Assertions.assertNotNull(created);
+        System.out.println(created);
 
     }
 

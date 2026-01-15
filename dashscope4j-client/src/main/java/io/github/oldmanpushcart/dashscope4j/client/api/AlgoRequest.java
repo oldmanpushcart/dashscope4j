@@ -155,6 +155,12 @@ public abstract class AlgoRequest<M extends AlgoModel, R extends AlgoResponse<?>
             return self();
         }
 
+        public B parameters(Parameters parameters) {
+            requireNonNull(parameters, "parameters is null!");
+            this.parameters.merge(parameters);
+            return self();
+        }
+
         /**
          * 添加参数
          *

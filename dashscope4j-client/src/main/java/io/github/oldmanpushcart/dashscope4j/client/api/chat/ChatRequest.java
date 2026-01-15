@@ -27,7 +27,7 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     private final boolean inlineEnabled;
     private final boolean uploadEnabled;
 
-    private ChatRequest(Builder builder) {
+    protected ChatRequest(Builder builder) {
         super(ChatResponse.class, builder);
         requireNonEmptyCollection(builder.messages, "messages is empty!");
         this.messages = unmodifiableList(builder.messages);

@@ -8,9 +8,9 @@ public interface ChatModelTags {
     String FLOW_OUTPUT_ONLY = "flow-output-only:1";
 
     /**
-     * 仅支持文本输入
+     * 仅支持异步输出
      */
-    String TEXT_INPUT_ONLY = "text-input-only:1";
+    String ASYNC_OUTPUT_ONLY = "async-output-only:1";
 
     /**
      * 仅支持增量输出
@@ -21,5 +21,10 @@ public interface ChatModelTags {
      * 兼容 OpenAI
      */
     String COMPAT_OPENAI = "compat:openai";
+
+    /**
+     * 兼容 纯文本协议
+     */
+    String COMPAT_PLAINTEXT = "compat:plaintext";
 
 }

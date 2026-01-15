@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.api.chat.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.TextContent;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
@@ -42,7 +41,6 @@ public final class UserMessage implements Message {
     }
 
     @JsonProperty("content")
-    @JsonSerialize(using = ContentListJsonSerializer.class)
     public List<Content> contents() {
         return contents;
     }

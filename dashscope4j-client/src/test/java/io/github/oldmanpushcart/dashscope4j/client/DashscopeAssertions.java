@@ -20,14 +20,14 @@ public class DashscopeAssertions {
      */
     public static void dashscopeAssertText(DashscopeClient dashscope, String text, String expect) {
         final String prompt = """
-                请你判断文本内容符合预期描述。如果符合，请只输出 TRUE；如果不满足，请只输出 FALSE。不要添加任何解释或额外信息。
+                请你判断文本内容意思符合预期。如果意思符合，请只输出 TRUE；如果不满足，请只输出 FALSE。不要添加任何解释或额外信息。
                 
-                文本内容
+                内容
                 ----------
                 %s
                 ----------
                 
-                预期描述
+                预期
                 ----------
                 %s
                 ----------
@@ -43,10 +43,10 @@ public class DashscopeAssertions {
             throw new AssertionError("""
                     预期描述与文本内容不符
                     
-                    预期描述:
+                    预期:
                     %s
                     
-                    文本内容:
+                    内容:
                     %s
                     """.formatted(expect, text)
             );
@@ -63,9 +63,9 @@ public class DashscopeAssertions {
      */
     public static void dashscopeAssertImage(DashscopeClient client, URI imageURI, String expect) {
         final String prompt = """
-                请你判断图片内容符合预期描述。如果符合，请只输出 TRUE；如果不满足，请只输出 FALSE。不要添加任何解释或额外信息。
+                请你判断图片内容符合预期。如果符合，请只输出 TRUE；如果不满足，请只输出 FALSE。不要添加任何解释或额外信息。
                 
-                预期描述
+                预期
                 ----------
                 %s
                 ----------
@@ -82,9 +82,9 @@ public class DashscopeAssertions {
                 .join();
         if (!response.output().best().message().text().contains("TRUE")) {
             throw new AssertionError("""
-                    预期描述与实际图片不符
+                    预期与实际图片不符
                     
-                    预期描述：
+                    预期：
                     %s
                     """.formatted(expect)
             );

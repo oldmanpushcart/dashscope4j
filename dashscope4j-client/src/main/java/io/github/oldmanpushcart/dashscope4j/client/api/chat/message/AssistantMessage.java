@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.TextContent;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.tool.Tool;
@@ -66,7 +65,6 @@ public final class AssistantMessage implements Message, Accumulator<AssistantMes
     }
 
     @JsonProperty("content")
-    @JsonSerialize(using = ContentListJsonSerializer.class)
     public List<Content> contents() {
         return contents;
     }

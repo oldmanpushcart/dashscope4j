@@ -31,11 +31,14 @@ public class ChatOpImpl implements ChatOp {
             // 音视频通过 BASE64 内联
             new InlineFilesInterceptor(),
 
-            // 纯文本内容过滤（部分对话模型只支持纯文本内容）
-            new TextInputOnlyInterceptor(),
-
             // 支持仅流式输出模型
             new FlowOutputOnlyInterceptor(),
+
+            // 支持仅异步输出模型
+            new AsyncOutputOnlyInterceptor(),
+
+            // 兼容纯文本协议
+            new CompatPlaintextInterceptor(),
 
             // 兼容 OpenAI 协议
             new CompatOpenAiInterceptor()

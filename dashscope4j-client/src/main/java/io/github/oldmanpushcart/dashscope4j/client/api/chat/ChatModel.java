@@ -21,6 +21,12 @@ public class ChatModel extends AlgoModel {
     }
 
     /**
+     * QWEN-FLASH
+     * <p>通义千问系列速度最快、成本极低的模型，适合简单任务。</p>
+     */
+    public static final ChatModel QWEN_FLASH = new ChatModel("qwen-flash", TEXT_PATH);
+
+    /**
      * QWEN-TURBO
      * <p>通义千问超大规模语言模型，支持中文、英文等不同语言输入。</p>
      * <p>模型支持8k tokens上下文，为了保证正常的使用和输出，API限定用户输入为6k tokens。</p>
@@ -29,10 +35,17 @@ public class ChatModel extends AlgoModel {
 
     /**
      * QWEN-PLUS
+     * <p>能力均衡，推理效果、成本和速度介于通义千问Max和通义千问Flash之间，适合中等复杂任务。</p>
      * <p>通义千问超大规模语言模型增强版，支持中文、英文等不同语言输入。</p>
      * <p>模型支持32k tokens上下文，为了保证正常的使用和输出，API限定用户输入为30k tokens。</p>
      */
     public static final ChatModel QWEN_PLUS = new ChatModel("qwen-plus", TEXT_PATH);
+
+    /**
+     * QWEN-PLUS-LATEST
+     * <p>{@link #QWEN_PLUS}最新快照版</p>
+     */
+    public static final ChatModel QWEN_PLUS_LATEST = new ChatModel("qwen-plus-latest", TEXT_PATH);
 
     /**
      * QWEN-MAX
@@ -46,43 +59,16 @@ public class ChatModel extends AlgoModel {
      * <p>通义千问超大规模语言模型，支持长文本上下文，以及基于长文档、多文档等多个场景的对话功能。</p>
      */
     public static final ChatModel QWEN_LONG = new ChatModel("qwen-long", TEXT_PATH, Set.of(
-            TEXT_INPUT_ONLY
+            COMPAT_PLAINTEXT
     ));
 
     /**
-     * QWEN-VL-PLUS
-     * <p>通义千问大规模视觉语言模型增强版。</p>
-     * <p>大幅提升细节识别能力和文字识别能力，支持超百万像素分辨率和任意长宽比规格的图像。在广泛的视觉任务上提供卓越的性能。</p>
+     * QWEN-LONG-LATEST
+     * <p>{@link #QWEN_LONG}的最新快照版</p>
      */
-    public static final ChatModel QWEN_VL_PLUS = new ChatModel("qwen-vl-plus", MULTIMODAL_PATH);
-
-    /**
-     * QWEN-VL-MAX
-     * <p>通义千问超大规模视觉语言模型。</p>
-     * <p>相比增强版，再次提升视觉推理能力和指令遵循能力，提供更高的视觉感知和认知水平。在更多复杂任务上提供最佳的性能。</p>
-     */
-    public static final ChatModel QWEN_VL_MAX = new ChatModel("qwen-vl-max", MULTIMODAL_PATH);
-
-    /**
-     * QWEN-AUDIO-TURBO
-     * <p>通义千问大规模语音模型增强版</p>
-     * <p>增强了语音识别、语音定位、说话人信息识别和音乐分析鉴赏的能力。</p>
-     */
-    public static final ChatModel QWEN_AUDIO_TURBO = new ChatModel("qwen-audio-turbo", MULTIMODAL_PATH);
-
-    /**
-     * QWEN-AUDIO-CHAT
-     * <p>通义千问大规模语音模型</p>
-     * <p>支持全音频类型的处理，包括多轮问答、音频推理与创作，同时还能识别说话人的情绪、性别，以及环境和音乐的多种特征。</p>
-     */
-    public static final ChatModel QWEN_AUDIO_CHAT = new ChatModel("qwen-audio-chat", MULTIMODAL_PATH);
-
-    /**
-     * QWEN2_AUDIO_INSTRUCT
-     * <p>通义千问Audio更新增强版。</p>
-     * <p>拓展音频多模态理解和生成能力，额外提供语音聊天与音频分析能力，能够实现自由灵活的音频交互。</p>
-     */
-    public static final ChatModel QWEN2_AUDIO_INSTRUCT = new ChatModel("qwen2-audio-instruct", MULTIMODAL_PATH);
+    public static final ChatModel QWEN_LONG_LATEST = new ChatModel("qwen-long-latest", TEXT_PATH, Set.of(
+            COMPAT_PLAINTEXT
+    ));
 
     /**
      * QWQ-PLUS
@@ -103,8 +89,28 @@ public class ChatModel extends AlgoModel {
     ));
 
     /**
+     * QWEN-VL-FLASH
+     * <p>通义千问大规模视觉语言模型，支持视觉输入及思维链输出，在数学、编程、视觉分析、创作以及通用任务上都表现了更佳的能力。</p>
+     */
+    public static final ChatModel QWEN_VL_FLASH = new ChatModel("qwen-vl-flash", MULTIMODAL_PATH);
+
+    /**
+     * QWEN-VL-PLUS
+     * <p>通义千问大规模视觉语言模型增强版。</p>
+     * <p>大幅提升细节识别能力和文字识别能力，支持超百万像素分辨率和任意长宽比规格的图像。在广泛的视觉任务上提供卓越的性能。</p>
+     */
+    public static final ChatModel QWEN_VL_PLUS = new ChatModel("qwen-vl-plus", MULTIMODAL_PATH);
+
+    /**
+     * QWEN-VL-MAX
+     * <p>通义千问超大规模视觉语言模型。</p>
+     * <p>相比增强版，再次提升视觉推理能力和指令遵循能力，提供更高的视觉感知和认知水平。在更多复杂任务上提供最佳的性能。</p>
+     */
+    public static final ChatModel QWEN_VL_MAX = new ChatModel("qwen-vl-max", MULTIMODAL_PATH);
+
+    /**
      * QVQ-MAX
-     * <p>是视觉推理模型，支持视觉输入及思维链输出，在数学、编程、视觉分析、创作以及通用任务上都表现了更强的能力。</p>
+     * <p>视觉推理模型，支持视觉输入及思维链输出，在数学、编程、视觉分析、创作以及通用任务上都表现了更强的能力。</p>
      */
     public static final ChatModel QVQ_MAX = new ChatModel("qvq-max", MULTIMODAL_PATH, Set.of(
             FLOW_OUTPUT_ONLY,
@@ -112,10 +118,37 @@ public class ChatModel extends AlgoModel {
     ));
 
     /**
-     * QWEN3-235B-A22B
+     * QVQ-MAX-LATEST
+     * <p>{@link #QVQ_MAX}最新快照</p>
      */
-    public static final ChatModel QWEN3_235B_A22B = new ChatModel("qwen3-235b-a22b", TEXT_PATH);
+    public static final ChatModel QVQ_MAX_LATEST = new ChatModel("qvq-max-latest", MULTIMODAL_PATH, Set.of(
+            FLOW_OUTPUT_ONLY,
+            INCREMENTAL_OUTPUT_ONLY
+    ));
 
+    /**
+     * QVQ-PLUS
+     * <p>视觉推理模型，支持视觉输入及思维链输出，在数学、编程、视觉分析、创作以及通用任务上都表现了更强的能力。</p>
+     */
+    public static final ChatModel QVQ_PLUS = new ChatModel("qvq-plus", MULTIMODAL_PATH, Set.of(
+            FLOW_OUTPUT_ONLY,
+            INCREMENTAL_OUTPUT_ONLY
+    ));
+
+    /**
+     * QVQ-PLUS-LATEST
+     * <p>{@link #QVQ_PLUS}最新快照</p>
+     */
+    public static final ChatModel QVQ_PLUS_LATEST = new ChatModel("qvq-plus-latest", MULTIMODAL_PATH, Set.of(
+            FLOW_OUTPUT_ONLY,
+            INCREMENTAL_OUTPUT_ONLY
+    ));
+
+    /**
+     * QWEN3-OMNI-FLASH
+     * <p>能够接收文本、图片、音频、视频等多种模态的组合输入，并生成文本或语音形式的回复， 提供多种拟人音色，支持多语言和方言的语音输出。</p>
+     * <p>可应用于文本创作、视觉识别、语音助手等场景。</p>
+     */
     public static final ChatModel QWEN3_OMNI_FLASH = new ChatModel("qwen3-omni-flash", COMPAT_OPENAI_PATH, Set.of(
             COMPAT_OPENAI,
             FLOW_OUTPUT_ONLY,
@@ -123,5 +156,9 @@ public class ChatModel extends AlgoModel {
     ));
 
     public static final ChatModel QWEN_IMAGE = new ChatModel("qwen-image", MULTIMODAL_PATH);
+
+    public static final ChatModel QWEN_WAN = new ChatModel("wan2.6-t2i", MULTIMODAL_PATH, Set.of(
+            ASYNC_OUTPUT_ONLY
+    ));
 
 }
