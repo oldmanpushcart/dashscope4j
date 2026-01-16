@@ -13,6 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -23,58 +24,94 @@ import java.util.stream.Stream;
 
 public class ChatOpTestCase implements LoadingEnv {
 
-    private static final Function<ChatRequest, CompletionStage<ChatResponse>> asyncOp = request -> client.chat().async(request)
-            .thenApply(r -> {
-                ApiAssertions.assertApiResponseSuccessful(r);
-                return r;
-            });
+    private static final Set<Function<ChatRequest, CompletionStage<ChatResponse>>> ops = Set.of(
+            new Function<>() {
+                @Override
+                public CompletionStage<ChatResponse> apply(ChatRequest request) {
+                    return client.chat().async(request)
+                            .thenApply(r -> {
+                                ApiAssertions.assertApiResponseSuccessful(r);
+                                return r;
+                            });
+                }
 
-    private static final Function<ChatRequest, CompletionStage<ChatResponse>> flowOp = request -> {
-        final var newRequest = ChatRequest.newBuilder(request)
-                .parameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
-                .build();
-        return FlowX.fromPublisher(client.chat().flow(newRequest))
-                .doOnNext(ApiAssertions::assertApiResponseSuccessful)
-                .reduce(ChatResponse::accumulate);
-    };
+                @Override
+                public String toString() {
+                    return "asyncOp";
+                }
 
-    private static final Set<Function<ChatRequest, CompletionStage<ChatResponse>>> ops = Set.of(asyncOp, flowOp);
+            },
+            new Function<>() {
+                @Override
+                public CompletionStage<ChatResponse> apply(ChatRequest request) {
+                    final var newRequest = ChatRequest.newBuilder(request)
+                            .parameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
+                            .build();
+                    return FlowX.fromPublisher(client.chat().flow(newRequest))
+                            .doOnNext(ApiAssertions::assertApiResponseSuccessful)
+                            .reduce(ChatResponse::accumulate);
+                }
 
-    static Stream<ChatModel> provideModelsForText() {
-        return Stream.of(
-                ChatModel.QWEN_TURBO,
+                @Override
+                public String toString() {
+                    return "flowOp";
+                }
+
+            }
+    );
+
+    /**
+     * 测试参数
+     *
+     * @param model 模型
+     * @param op    操作
+     */
+    public record Data(ChatModel model, Function<ChatRequest, CompletionStage<ChatResponse>> op) {
+
+        @Override
+        public String toString() {
+            return "%s , %s".formatted(model, op);
+        }
+
+    }
+
+    private static Stream<Data> provideDataFromModels(ChatModel... models) {
+        return Arrays.stream(models)
+                .flatMap(m -> ops.stream().map(op -> new Data(m, op)));
+    }
+
+    static Stream<Data> provideDataForText() {
+        return provideDataFromModels(
+                ChatModel.QWEN_FLASH,
                 ChatModel.QWEN_PLUS,
                 ChatModel.QWEN_MAX,
                 ChatModel.QWEN_LONG,
                 ChatModel.QWEN_VL_PLUS,
                 ChatModel.QWEN_VL_MAX,
                 ChatModel.QWQ_PLUS,
-                ChatModel.QWQ_PLUS_LATEST,
                 ChatModel.QVQ_MAX,
                 ChatModel.QWEN3_OMNI_FLASH
         );
     }
 
     @ParameterizedTest
-    @MethodSource("provideModelsForText")
-    public void test$chat$text(ChatModel model) {
-        ops.forEach(op -> {
-            final var request = ChatRequest.newBuilder()
-                    .model(model)
-                    .addMessage(Message.user("(1+2+3+4)/5=?"))
-                    .build();
-            final var response = op.apply(request)
-                    .toCompletableFuture()
-                    .join();
-            ApiAssertions.assertApiResponseSuccessful(response);
-            DashscopeAssertions.dashscopeAssertText(client, response.output().best().message().text(), "答案是2");
-        });
+    @MethodSource("provideDataForText")
+    public void test$chat$text(Data data) {
+        final var request = ChatRequest.newBuilder()
+                .model(data.model())
+                .addMessage(Message.user("(1+2+3+4)/5=?"))
+                .build();
+        final var response = data.op().apply(request)
+                .toCompletableFuture()
+                .join();
+        ApiAssertions.assertApiResponseSuccessful(response);
+        DashscopeAssertions.dashscopeAssertText(client, response.output().best().message().text(), "答案是2");
     }
 
 
-    static Stream<ChatModel> provideModelsForFunction() {
-        return Stream.of(
-                ChatModel.QWEN_TURBO,
+    static Stream<Data> provideDataForFunction() {
+        return provideDataFromModels(
+                ChatModel.QWEN_FLASH,
                 ChatModel.QWEN_PLUS,
                 ChatModel.QWEN_MAX,
                 ChatModel.QWEN_VL_PLUS,
@@ -86,34 +123,32 @@ public class ChatOpTestCase implements LoadingEnv {
     }
 
     @ParameterizedTest
-    @MethodSource("provideModelsForFunction")
-    public void test$chat$text$function(ChatModel model) {
-        ops.forEach(op -> {
-            final var called = new AtomicBoolean(false);
-            final var request = ChatRequest.newBuilder()
-                    .model(model)
-                    .addMessage(Message.user("请问英语和物理分别是多少分?"))
-                    .addTool(new QueryScoreFunction() {
+    @MethodSource("provideDataForFunction")
+    public void test$chat$text$function(Data data) {
+        final var called = new AtomicBoolean(false);
+        final var request = ChatRequest.newBuilder()
+                .model(data.model())
+                .addMessage(Message.user("请问英语和物理分别是多少分?"))
+                .addTool(new QueryScoreFunction() {
 
-                        @Override
-                        public Result query(Query query) {
-                            called.set(true);
-                            return super.query(query);
-                        }
+                    @Override
+                    public Result query(Query query) {
+                        called.set(true);
+                        return super.query(query);
+                    }
 
-                    }.toTool())
-                    .build();
-            final var response = op.apply(request)
-                    .toCompletableFuture()
-                    .join();
-            final var message = response.output().best().message();
-            Assertions.assertTrue(called.get(), "Expected function to be called, but it was not.");
-            DashscopeAssertions.dashscopeAssertText(client, message.text(), "英语成绩是50分，物理成绩是85分");
-        });
+                }.toTool())
+                .build();
+        final var response = data.op().apply(request)
+                .toCompletableFuture()
+                .join();
+        final var message = response.output().best().message();
+        Assertions.assertTrue(called.get(), "Expected function to be called, but it was not.");
+        DashscopeAssertions.dashscopeAssertText(client, message.text(), "英语成绩是50分，物理成绩是85分");
     }
 
-    static Stream<ChatModel> provideModelsForImage() {
-        return Stream.of(
+    static Stream<Data> provideDataForImage() {
+        return provideDataFromModels(
                 ChatModel.QWEN_VL_PLUS,
                 ChatModel.QWEN_VL_MAX,
                 ChatModel.QWEN3_OMNI_FLASH,
@@ -122,58 +157,54 @@ public class ChatOpTestCase implements LoadingEnv {
     }
 
     @ParameterizedTest
-    @MethodSource("provideModelsForImage")
-    public void test$chat$image(ChatModel model) {
-        ops.forEach(op -> {
-            final var request = ChatRequest.newBuilder()
-                    .model(model)
-                    .addMessage(Message.user(List.of(
-                            Content.text("请描述图片的内容"),
-                            Content.image(new File("./test-data/image/red-cup.jpeg").toURI())
-                    )))
-                    .build();
-            final var response = op.apply(request)
-                    .toCompletableFuture()
-                    .join();
-            ApiAssertions.assertApiResponseSuccessful(response);
-            DashscopeAssertions.dashscopeAssertText(client,
-                    response.output().best().message().text(),
-                    "这是一个红色的马克杯"
-            );
-        });
+    @MethodSource("provideDataForImage")
+    public void test$chat$image(Data data) {
+        final var request = ChatRequest.newBuilder()
+                .model(data.model())
+                .addMessage(Message.user(List.of(
+                        Content.text("请描述图片的内容"),
+                        Content.image(new File("./test-data/image/red-cup.jpeg").toURI())
+                )))
+                .build();
+        final var response = data.op().apply(request)
+                .toCompletableFuture()
+                .join();
+        ApiAssertions.assertApiResponseSuccessful(response);
+        DashscopeAssertions.dashscopeAssertText(client,
+                response.output().best().message().text(),
+                "这是一个红色的马克杯"
+        );
     }
 
 
-    static Stream<ChatModel> provideModelsForAudio() {
-        return Stream.of(
+    static Stream<Data> provideDataForAudio() {
+        return provideDataFromModels(
                 ChatModel.QWEN3_OMNI_FLASH
         );
     }
 
     @ParameterizedTest
-    @MethodSource("provideModelsForAudio")
-    public void test$chat$audio(ChatModel model) {
-        ops.forEach(op -> {
-            final var request = ChatRequest.newBuilder()
-                    .model(model)
-                    .addMessage(Message.user(List.of(
-                            Content.text("这个音频文件提到了什么?"),
-                            Content.audio(new File("./test-data/audio/beach-woman-dog.wav").toURI())
-                    )))
-                    .build();
-            final var response = op.apply(request)
-                    .toCompletableFuture()
-                    .join();
-            ApiAssertions.assertApiResponseSuccessful(response);
-            DashscopeAssertions.dashscopeAssertText(client,
-                    response.output().best().message().text(),
-                    "提到了：海滩、女人和狗"
-            );
-        });
+    @MethodSource("provideDataForAudio")
+    public void test$chat$audio(Data data) {
+        final var request = ChatRequest.newBuilder()
+                .model(data.model())
+                .addMessage(Message.user(List.of(
+                        Content.text("这个音频文件提到了什么?"),
+                        Content.audio(new File("./test-data/audio/beach-woman-dog.wav").toURI())
+                )))
+                .build();
+        final var response = data.op().apply(request)
+                .toCompletableFuture()
+                .join();
+        ApiAssertions.assertApiResponseSuccessful(response);
+        DashscopeAssertions.dashscopeAssertText(client,
+                response.output().best().message().text(),
+                "提到了：海滩、女人和狗"
+        );
     }
 
-    static Stream<ChatModel> provideModelsForVideo() {
-        return Stream.of(
+    static Stream<Data> provideDataForVideo() {
+        return provideDataFromModels(
                 ChatModel.QWEN_VL_PLUS,
                 ChatModel.QWEN_VL_MAX,
                 ChatModel.QWEN3_OMNI_FLASH
@@ -181,107 +212,94 @@ public class ChatOpTestCase implements LoadingEnv {
     }
 
     @ParameterizedTest
-    @MethodSource("provideModelsForVideo")
-    public void test$chat$video$images(ChatModel model) {
-        ops.forEach(op -> {
-            final var imageURIs = Stream.of(Objects.requireNonNull(new File("./test-data/image/video-001-images").listFiles()))
-                    .filter(File::isFile)
-                    .map(File::toURI)
-                    .limit(20)
-                    .toList();
+    @MethodSource("provideDataForVideo")
+    public void test$chat$video$images(Data data) {
+        final var imageURIs = Stream.of(Objects.requireNonNull(new File("./test-data/image/video-001-images").listFiles()))
+                .filter(File::isFile)
+                .map(File::toURI)
+                .limit(20)
+                .toList();
 
-            final var request = ChatRequest.newBuilder()
-                    .model(model)
-                    .addMessage(Message.system("请用中文回答"))
-                    .addMessage(Message.user(List.of(
-                            Content.text("请告诉我视频中的性别和对应数量"),
-                            Content.video(imageURIs)
-                    )))
-                    .build();
+        final var request = ChatRequest.newBuilder()
+                .model(data.model())
+                .addMessage(Message.system("请用中文回答"))
+                .addMessage(Message.user(List.of(
+                        Content.text("请告诉我视频中的性别和对应数量"),
+                        Content.video(imageURIs)
+                )))
+                .build();
 
-            final var response = op.apply(request)
-                    .toCompletableFuture()
-                    .join();
-            ApiAssertions.assertApiResponseSuccessful(response);
-            DashscopeAssertions.dashscopeAssertText(client,
-                    response.output().best().message().text(),
-                    "视频中有2男1女"
-            );
-        });
+        final var response = data.op().apply(request)
+                .toCompletableFuture()
+                .join();
+        ApiAssertions.assertApiResponseSuccessful(response);
+        DashscopeAssertions.dashscopeAssertText(client,
+                response.output().best().message().text(),
+                "视频中有2男1女"
+        );
     }
 
 
-    static Stream<ChatModel> provideModelsForLong() {
-        return Stream.of(
+    static Stream<Data> provideDataForLong() {
+        return provideDataFromModels(
                 ChatModel.QWEN_LONG,
                 ChatModel.QWEN_LONG_LATEST
         );
     }
 
     @ParameterizedTest
-    @MethodSource("provideModelsForLong")
-    public void test$chat$long(ChatModel model) {
+    @MethodSource("provideDataForLong")
+    public void test$chat$long(Data data) {
+        final var request = ChatRequest.newBuilder()
+                .model(data.model())
+                .addMessage(Message.system("you are a helpful assistant"))
+                .addMessage(Message.system("fileid://file-fe-58febfa682b34d898b1693a6"))
+                .addMessage(Message.user("请帮我分析这个文件，并给出一个总结"))
+                //.parameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
+                .build();
 
-        ops.forEach(op -> {
+        final var response = data.op().apply(request)
+                .toCompletableFuture()
+                .join();
 
-            final var request = ChatRequest.newBuilder()
-                    .model(model)
-                    .addMessage(Message.system("you are a helpful assistant"))
-                    .addMessage(Message.system("fileid://file-fe-58febfa682b34d898b1693a6"))
-                    .addMessage(Message.user("请帮我分析这个文件，并给出一个总结"))
-                    //.parameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
-                    .build();
-
-            final var response = op.apply(request)
-                    .toCompletableFuture()
-                    .join();
-
-            DashscopeAssertions.dashscopeAssertText(
-                    client,
-                    response.output().best().message().text(),
-                    "这篇文章说的是中国第十四个五年规划"
-            );
-
-        });
-
-
+        DashscopeAssertions.dashscopeAssertText(
+                client,
+                response.output().best().message().text(),
+                "这篇文章说的是中国第十四个五年规划"
+        );
     }
 
-    static Stream<ChatModel> provideModelsForGenImage() {
-        return Stream.of(
+    static Stream<Data> provideDataForGenImage() {
+        return provideDataFromModels(
                 ChatModel.QWEN_IMAGE,
                 ChatModel.QWEN_WAN
         );
     }
 
     @ParameterizedTest
-    @MethodSource("provideModelsForGenImage")
-    public void test$chat$genImage(ChatModel model) {
+    @MethodSource("provideDataForGenImage")
+    public void test$chat$genImage(Data data) {
+        final var request = ChatRequest.newBuilder()
+                .model(data.model())
+                .addMessage(Message.user("帮我画一朵紫色的向日葵"))
+                .build();
 
-        ops.forEach(op -> {
-            final var request = ChatRequest.newBuilder()
-                    .model(model)
-                    .addMessage(Message.user("帮我画一朵紫色的向日葵"))
-                    .build();
+        final var imageURIs = data.op().apply(request)
+                .thenApply(response -> {
+                    final var message = response.output().best().message();
+                    return message.contents().stream()
+                            .filter(ImageContent.class::isInstance)
+                            .map(ImageContent.class::cast)
+                            .map(ImageContent::image)
+                            .toList();
+                })
+                .toCompletableFuture()
+                .join();
 
-            final var imageURIs = op.apply(request)
-                    .thenApply(response -> {
-                        final var message = response.output().best().message();
-                        return message.contents().stream()
-                                .filter(ImageContent.class::isInstance)
-                                .map(ImageContent.class::cast)
-                                .map(ImageContent::image)
-                                .toList();
-                    })
-                    .toCompletableFuture()
-                    .join();
-
-            Assertions.assertFalse(imageURIs.isEmpty());
-            for (final var imageURI : imageURIs) {
-                DashscopeAssertions.dashscopeAssertImage(client, imageURI, "这是一朵紫色的向日葵");
-            }
-        });
-
+        Assertions.assertFalse(imageURIs.isEmpty());
+        for (final var imageURI : imageURIs) {
+            DashscopeAssertions.dashscopeAssertImage(client, imageURI, "这是一朵紫色的向日葵");
+        }
     }
 
 }

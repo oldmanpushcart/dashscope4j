@@ -89,12 +89,6 @@ public class ChatModel extends AlgoModel {
     ));
 
     /**
-     * QWEN-VL-FLASH
-     * <p>通义千问大规模视觉语言模型，支持视觉输入及思维链输出，在数学、编程、视觉分析、创作以及通用任务上都表现了更佳的能力。</p>
-     */
-    public static final ChatModel QWEN_VL_FLASH = new ChatModel("qwen-vl-flash", MULTIMODAL_PATH);
-
-    /**
      * QWEN-VL-PLUS
      * <p>通义千问大规模视觉语言模型增强版。</p>
      * <p>大幅提升细节识别能力和文字识别能力，支持超百万像素分辨率和任意长宽比规格的图像。在广泛的视觉任务上提供卓越的性能。</p>
