@@ -19,7 +19,6 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtil
 
 public class DefaultAsyncApi implements AsyncApi {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String host;
     private final String ak;
     private final HttpClient http;
@@ -28,11 +27,6 @@ public class DefaultAsyncApi implements AsyncApi {
         this.host = host;
         this.ak = ak;
         this.http = http;
-    }
-
-    @Override
-    public String toString() {
-        return "dashscope4j-client://async";
     }
 
     @Override

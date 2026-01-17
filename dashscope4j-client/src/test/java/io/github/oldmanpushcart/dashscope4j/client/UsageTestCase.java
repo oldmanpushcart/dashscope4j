@@ -38,6 +38,15 @@ public class UsageTestCase {
         Assertions.assertEquals(51, usage.total(item -> item.name().equals("output_tokens")));
         Assertions.assertEquals(1316, usage.total(item-> item.name().equals("total_tokens")));
         Assertions.assertEquals(4, usage.items().size());
+        Assertions.assertEquals(3, usage.children().size());
+
+        Assertions.assertEquals(1249, usage.children().get("input_tokens_details").total(item -> item.name().equals("image_tokens")));
+        Assertions.assertEquals(16, usage.children().get("input_tokens_details").total(item -> item.name().equals("text_tokens")));
+        Assertions.assertEquals(0, usage.children().get("prompt_tokens_details").total(item -> item.name().equals("cached_tokens")));
+        Assertions.assertEquals(51, usage.children().get("output_tokens_details").total(item -> item.name().equals("text_tokens")));
+
+        Assertions.assertEquals(0, usage.children().get("prompt_tokens_details").total(item -> item.name().equals("cached_tokens")));
+
 
     }
 

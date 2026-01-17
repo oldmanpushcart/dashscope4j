@@ -4,10 +4,13 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -18,7 +21,7 @@ import java.util.function.Predicate;
  * @param items 使用项集合
  */
 @JsonDeserialize(using = Usage.UsageJsonDeserializer.class)
-public record Usage(List<Item> items) {
+public record Usage(List<Item> items, Map<String, Usage> children) {
 
     /**
      * 计算总用量
@@ -48,7 +51,7 @@ public record Usage(List<Item> items) {
      * @return 空用量
      */
     public static Usage empty() {
-        return new Usage(List.of());
+        return new Usage(List.of(), Map.of());
     }
 
     /**
@@ -68,18 +71,48 @@ public record Usage(List<Item> items) {
     static class UsageJsonDeserializer extends JsonDeserializer<Usage> {
 
         @Override
-        public Usage deserialize(JsonParser parser, DeserializationContext ctx) throws IOException {
-            final var map = parser.getCodec().readValue(parser, new TypeReference<Map<String, Object>>() {
-            });
-            final var items = new ArrayList<Item>();
-            map.forEach((k, v) -> {
-                if (v instanceof Number num) {
-                    items.add(new Item(k, num.intValue()));
-                }
-            });
-            return new Usage(items);
+        public Usage deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            JsonNode node = p.getCodec().readTree(p);
+            return buildUsage(node);
         }
 
+        private Usage buildUsage(JsonNode node) {
+            if (!node.isObject()) {
+                throw new IllegalArgumentException("Root must be a JSON object");
+            }
+
+            List<Item> items = new ArrayList<>();
+            Map<String, Usage> children = new LinkedHashMap<>(); // 保持顺序（可选）
+
+            ObjectNode objectNode = (ObjectNode) node;
+            objectNode.fields().forEachRemaining(entry -> {
+                String fieldName = entry.getKey();
+                JsonNode value = entry.getValue();
+
+                if (value.isNumber() && value.isIntegralNumber()) {
+                    // 叶子节点：整数 → Item
+                    items.add(new Item(fieldName, value.intValue()));
+                } else if (value.isObject()) {
+                    // 嵌套对象 → child Usage
+                    children.put(fieldName, buildUsage(value));
+                } else if (value.isNumber()) {
+                    // 非整数数字（如 double）→ 取整或报错
+                    items.add(new Item(fieldName, value.intValue())); // 或抛异常
+                } else if (value.isTextual()) {
+                    // 字符串数字？按需处理
+                    try {
+                        int cost = Integer.parseInt(value.textValue());
+                        items.add(new Item(fieldName, cost));
+                    } catch (NumberFormatException e) {
+                        // 忽略非数字字符串，或按业务处理
+                    }
+                }
+                // 其他类型（boolean, array, null）默认忽略
+            });
+
+            return new Usage(items, children);
+
+        }
     }
 
 }

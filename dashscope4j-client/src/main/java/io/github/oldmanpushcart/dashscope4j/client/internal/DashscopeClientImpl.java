@@ -2,13 +2,16 @@ package io.github.oldmanpushcart.dashscope4j.client.internal;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
+import io.github.oldmanpushcart.dashscope4j.client.api.image.ImageOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.ChatOpImpl;
+import io.github.oldmanpushcart.dashscope4j.client.internal.api.image.ImageOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.OmniOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultAsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultFlowApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
@@ -25,6 +28,7 @@ public class DashscopeClientImpl implements DashscopeClient {
     private final OmniOp omniOp;
     private final ChatOp chatOp;
     private final BaseOp baseOp;
+    private final ImageOp imageOp;
 
     private DashscopeClientImpl(Builder builder) {
         this.host = requireNonBlankString(builder.host, "host must not be blank!");
@@ -34,10 +38,12 @@ public class DashscopeClientImpl implements DashscopeClient {
         final var asyncApi = new DefaultAsyncApi(host, ak, http);
         final var flowApi = new DefaultFlowApi(host, ak, http);
         final var exchangeApi = new ExchangeApi(ak, http);
+        final var taskApi = new DefaultTaskApi(host, ak, http, asyncApi);
 
         this.chatOp = new ChatOpImpl(this, asyncApi, flowApi);
         this.omniOp = new OmniOpImpl(host, exchangeApi);
-        this.baseOp = new BaseOpImpl(asyncApi);
+        this.baseOp = new BaseOpImpl(asyncApi, flowApi, taskApi);
+        this.imageOp = new ImageOpImpl(this, taskApi);
 
     }
 
@@ -49,6 +55,11 @@ public class DashscopeClientImpl implements DashscopeClient {
     @Override
     public ChatOp chat() {
         return chatOp;
+    }
+
+    @Override
+    public ImageOp image() {
+        return imageOp;
     }
 
     @Override

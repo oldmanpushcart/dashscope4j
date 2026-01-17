@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
+import io.github.oldmanpushcart.dashscope4j.client.api.image.ImageOp;
 import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.DashscopeClientImpl;
@@ -13,6 +14,8 @@ public interface DashscopeClient {
     String host();
 
     ChatOp chat();
+
+    ImageOp image();
 
     OmniOp omni();
 

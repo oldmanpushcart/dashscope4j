@@ -43,7 +43,7 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> implements A
 
     ) {
 
-        super(request, uuid, code, desc, cleanUsage(usage));
+        super(request, uuid, code, desc, usage);
         this.output = output;
 
     }
@@ -53,31 +53,6 @@ public class ChatResponse extends AlgoResponse<ChatResponse.Output> implements A
         return (ChatRequest) super.request();
     }
 
-    /*
-     * 清除无用的使用情况
-     */
-    private static Usage cleanUsage(Usage usage) {
-
-        /*
-         * 当chat调用出错（限流、命中敏感词等原因）时，usage为null
-         * 此时需要进行特殊处理
-         */
-        if (null == usage) {
-            return null;
-        }
-
-        final var items = usage.items()
-                .stream()
-
-                /*
-                 * Chat的系列会将tokens的使用总量以及所有子项的使用量都放在一起返回，导致使用过程中无法准确统计。
-                 * 所以这里对总量进行过滤。如果想计算总量，则可直接对所有子项进行相加
-                 */
-                .filter(item -> !"total_tokens".equals(item.name()))
-
-                .toList();
-        return new Usage(items);
-    }
 
     @Override
     public ChatResponse accumulate(ChatResponse next) {

@@ -38,6 +38,14 @@ public abstract class AlgoRequest<M extends AlgoModel, R extends AlgoResponse<?>
     private final M model;
     private final Parameters parameters;
 
+    protected AlgoRequest(Class<R> responseType, M model, Parameters parameters) {
+        super(responseType);
+        requireNonNull(model, "model is null!");
+        requireNonNull(parameters, "parameters is null!");
+        this.model = model;
+        this.parameters = parameters;
+    }
+
     /**
      * 构造请求
      *

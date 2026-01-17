@@ -269,7 +269,7 @@ public class ChatOpTestCase implements LoadingEnv {
         );
     }
 
-    static Stream<Data> provideDataForGenImage() {
+    static Stream<Data> provideDataForText2Image() {
         return provideDataFromModels(
                 ChatModel.QWEN_IMAGE,
                 ChatModel.QWEN_WAN
@@ -277,8 +277,8 @@ public class ChatOpTestCase implements LoadingEnv {
     }
 
     @ParameterizedTest
-    @MethodSource("provideDataForGenImage")
-    public void test$chat$genImage(Data data) {
+    @MethodSource("provideDataForText2Image")
+    public void test$chat$text2image(Data data) {
         final var request = ChatRequest.newBuilder()
                 .model(data.model())
                 .addMessage(Message.user("帮我画一朵紫色的向日葵"))

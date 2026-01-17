@@ -15,6 +15,10 @@ public abstract class ApiRequest<R extends ApiResponse> {
 
     private final Class<R> responseType;
 
+    protected ApiRequest(Class<R> responseType) {
+        this.responseType = responseType;
+    }
+
     /**
      * 构造请求
      *
