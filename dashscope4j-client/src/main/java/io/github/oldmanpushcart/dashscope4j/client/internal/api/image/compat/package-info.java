@@ -1,1 +1,0 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.api.image.compat;

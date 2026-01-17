@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.base.store;
 
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.chat.ChatModel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

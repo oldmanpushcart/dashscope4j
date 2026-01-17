@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
 
 import java.lang.reflect.Type;
 import java.net.http.HttpResponse;

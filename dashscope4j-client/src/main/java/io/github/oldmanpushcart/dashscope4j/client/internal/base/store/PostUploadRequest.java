@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.MultipartBodyPublisherBuilder;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonXmlUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;

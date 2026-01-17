@@ -1,25 +1,21 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatParameterKeys;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.Content;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeExchange.ManualVad;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeOp;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeParameterKeys;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeSession;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.handler.SimpleOmniRealtimeExchangeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.chat.ChatParameterKeys;
+import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.client.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.client.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.chat.message.content.Content;
+import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.OmniRealtimeExchange.ManualVad;
+import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.OmniRealtimeOp;
+import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.OmniRealtimeParameterKeys;
+import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.OmniRealtimeSession;
+import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.event.client.OmniRealtimeClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.handler.SimpleOmniRealtimeExchangeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
-import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.exchange.ExchangeConnector;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.SchemaUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.junit.jupiter.api.Test;
@@ -30,7 +26,6 @@ import java.io.File;
 import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -38,7 +33,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.client.api.omni.realtime.OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME;
+import static io.github.oldmanpushcart.dashscope4j.client.omni.realtime.OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME;
 
 public class DebugTestCase implements LoadingEnv {
 
@@ -55,7 +50,7 @@ public class DebugTestCase implements LoadingEnv {
 
         new ExchangeConnector(() -> {
             final var parameters = new Parameters();
-            return realtimeOp.newManualVad(parameters, QWEN3_OMNI_FLASH_REALTIME, new SimpleOmniRealtimeExchangeHandler() {
+            return realtimeOp.newManualVad(QWEN3_OMNI_FLASH_REALTIME, parameters, new SimpleOmniRealtimeExchangeHandler() {
 
                 @Override
                 public CompletionStage<Void> onResponseTextDelta(String responseId, String delta) {

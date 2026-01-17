@@ -1,8 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.base.files;
 
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiAssertions;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.SystemMessage;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;

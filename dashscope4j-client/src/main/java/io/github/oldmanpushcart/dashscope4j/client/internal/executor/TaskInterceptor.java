@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.executor;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.client.task.Task;
+import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.Task;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;

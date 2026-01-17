@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.oldmanpushcart.dashscope4j.client.api.Usage;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

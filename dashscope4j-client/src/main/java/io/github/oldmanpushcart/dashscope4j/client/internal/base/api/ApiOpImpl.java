@@ -1,12 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.api;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.base.api.ApiOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.TaskApi;
-import io.github.oldmanpushcart.dashscope4j.client.task.Task;
+import io.github.oldmanpushcart.dashscope4j.client.Task;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;

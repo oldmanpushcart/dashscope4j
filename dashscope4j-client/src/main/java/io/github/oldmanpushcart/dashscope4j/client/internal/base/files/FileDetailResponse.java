@@ -5,8 +5,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.OpenAiError;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.OpenAiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.internal.OpenAiError;
+import io.github.oldmanpushcart.dashscope4j.client.internal.OpenAiResponse;
 
 import java.time.Instant;
 

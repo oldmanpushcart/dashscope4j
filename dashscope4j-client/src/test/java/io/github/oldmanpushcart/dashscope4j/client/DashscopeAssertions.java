@@ -1,10 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.message.content.Content;
+import io.github.oldmanpushcart.dashscope4j.client.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.client.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.client.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.chat.message.content.Content;
 
 import java.net.URI;
 import java.util.List;

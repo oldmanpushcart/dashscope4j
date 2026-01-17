@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.base.files;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.OpenAiError;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.OpenAiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.internal.OpenAiError;
+import io.github.oldmanpushcart.dashscope4j.client.internal.OpenAiResponse;
 
 public class FileDeleteResponse extends OpenAiResponse {
 

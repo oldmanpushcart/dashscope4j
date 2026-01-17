@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.executor;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 
 public interface Interceptor {
 

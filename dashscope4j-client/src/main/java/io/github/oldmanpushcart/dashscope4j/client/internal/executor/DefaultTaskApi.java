@@ -1,15 +1,15 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.executor;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.ApiException;
+import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.task.TaskCancelRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.task.TaskGetRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.task.TaskGetResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.task.TaskHalfResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.task.Task;
-import io.github.oldmanpushcart.dashscope4j.client.task.TaskException;
+import io.github.oldmanpushcart.dashscope4j.client.Task;
+import io.github.oldmanpushcart.dashscope4j.client.TaskException;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

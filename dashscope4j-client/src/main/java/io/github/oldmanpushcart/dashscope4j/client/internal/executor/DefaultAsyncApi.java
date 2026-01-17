@@ -1,12 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.executor;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.ApiException;
+import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;

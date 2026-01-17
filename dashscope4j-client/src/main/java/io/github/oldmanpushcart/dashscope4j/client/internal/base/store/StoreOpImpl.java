@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.AlgoModel;
+import io.github.oldmanpushcart.dashscope4j.client.AlgoModel;
 import io.github.oldmanpushcart.dashscope4j.client.base.store.StoreOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApi;
 

@@ -9,9 +9,9 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.client.api.Usage;
-import io.github.oldmanpushcart.dashscope4j.client.task.Task;
+import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.Usage;
+import io.github.oldmanpushcart.dashscope4j.client.Task;
 
 import java.io.IOException;
 

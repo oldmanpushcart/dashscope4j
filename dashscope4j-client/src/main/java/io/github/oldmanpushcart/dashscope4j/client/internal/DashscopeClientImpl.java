@@ -1,18 +1,18 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
-import io.github.oldmanpushcart.dashscope4j.client.api.chat.ChatOp;
-import io.github.oldmanpushcart.dashscope4j.client.api.image.ImageOp;
-import io.github.oldmanpushcart.dashscope4j.client.api.omni.OmniOp;
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.chat.ChatOpImpl;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.image.ImageOpImpl;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.omni.OmniOpImpl;
+import io.github.oldmanpushcart.dashscope4j.client.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
+import io.github.oldmanpushcart.dashscope4j.client.internal.chat.ChatOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultAsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultFlowApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.image.VisionOpImpl;
+import io.github.oldmanpushcart.dashscope4j.client.internal.omni.OmniOpImpl;
+import io.github.oldmanpushcart.dashscope4j.client.omni.OmniOp;
+import io.github.oldmanpushcart.dashscope4j.client.vision.VisionOp;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
@@ -23,17 +23,15 @@ import static java.util.Objects.requireNonNull;
 
 public class DashscopeClientImpl implements DashscopeClient {
 
-    private final String host;
-
     private final OmniOp omniOp;
     private final ChatOp chatOp;
     private final BaseOp baseOp;
-    private final ImageOp imageOp;
+    private final VisionOp visionOp;
 
     private DashscopeClientImpl(Builder builder) {
-        this.host = requireNonBlankString(builder.host, "host must not be blank!");
-        String ak = CheckUtils.requireNonBlankString(builder.ak, "ak must not be blank!");
-        HttpClient http = requireNonNull(builder.http, "http must not be null!");
+        final var host = requireNonBlankString(builder.host, "host must not be blank!");
+        final var ak = CheckUtils.requireNonBlankString(builder.ak, "ak must not be blank!");
+        final var http = requireNonNull(builder.http, "http must not be null!");
 
         final var asyncApi = new DefaultAsyncApi(host, ak, http);
         final var flowApi = new DefaultFlowApi(host, ak, http);
@@ -43,13 +41,8 @@ public class DashscopeClientImpl implements DashscopeClient {
         this.chatOp = new ChatOpImpl(this, asyncApi, flowApi);
         this.omniOp = new OmniOpImpl(host, exchangeApi);
         this.baseOp = new BaseOpImpl(asyncApi, flowApi, taskApi);
-        this.imageOp = new ImageOpImpl(this, taskApi);
+        this.visionOp = new VisionOpImpl(this, taskApi);
 
-    }
-
-    @Override
-    public String host() {
-        return host;
     }
 
     @Override
@@ -58,8 +51,8 @@ public class DashscopeClientImpl implements DashscopeClient {
     }
 
     @Override
-    public ImageOp image() {
-        return imageOp;
+    public VisionOp image() {
+        return visionOp;
     }
 
     @Override

@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.base.store;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.AlgoModel;
+import io.github.oldmanpushcart.dashscope4j.client.AlgoModel;
 
 import java.net.URI;
 import java.util.concurrent.CompletionStage;
