@@ -24,11 +24,11 @@ public class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
     private final String filename;
     private final Purpose purpose;
 
-    protected FileCreateRequest(Builder builder) {
-        super(FileCreateResponse.class, builder);
-        this.resource = builder.resource;
-        this.filename = builder.filename;
-        this.purpose = builder.purpose;
+    public FileCreateRequest(URI resource, String filename, Purpose purpose) {
+        super(FileCreateResponse.class);
+        this.resource = resource;
+        this.filename = filename;
+        this.purpose = purpose;
     }
 
     @Override
@@ -52,52 +52,6 @@ public class FileCreateRequest extends OpenAiRequest<FileCreateResponse> {
             logger.debug("dashscope4j-client://base/files/create <<< {}", responseBody);
             return JacksonJsonUtils.toApiResponse(responseBody, FileCreateResponse.class, this, httpResponse);
         };
-    }
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static Builder newBuilder(FileCreateRequest request) {
-        return new Builder(request);
-    }
-
-    public static class Builder extends OpenAiRequest.Builder<FileCreateRequest, Builder> {
-
-        private URI resource;
-        private String filename;
-        private Purpose purpose;
-
-        public Builder() {
-        }
-
-        public Builder(FileCreateRequest request) {
-            super(request);
-            this.resource = request.resource;
-            this.filename = request.filename;
-            this.purpose = request.purpose;
-        }
-
-        public Builder resource(URI resource) {
-            this.resource = resource;
-            return this;
-        }
-
-        public Builder filename(String filename) {
-            this.filename = filename;
-            return this;
-        }
-
-        public Builder purpose(Purpose purpose) {
-            this.purpose = purpose;
-            return this;
-        }
-
-        @Override
-        public FileCreateRequest build() {
-            return new FileCreateRequest(this);
-        }
-
     }
 
 }

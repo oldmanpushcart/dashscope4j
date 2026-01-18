@@ -15,9 +15,9 @@ public class FileDeleteRequest extends OpenAiRequest<FileDeleteResponse> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String identity;
 
-    protected FileDeleteRequest(Builder builder) {
-        super(FileDeleteResponse.class, builder);
-        this.identity = builder.identity;
+    public FileDeleteRequest(String identity) {
+        super(FileDeleteResponse.class);
+        this.identity = identity;
     }
 
     @Override
@@ -35,38 +35,6 @@ public class FileDeleteRequest extends OpenAiRequest<FileDeleteResponse> {
             logger.debug("dashscope4j-client://base/files/delete <<< {}", responseBody);
             return JacksonJsonUtils.toApiResponse(responseBody, FileDeleteResponse.class, this, httpResponse);
         });
-    }
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static Builder newBuilder(FileDeleteRequest request) {
-        return new Builder(request);
-    }
-
-    public static class Builder extends OpenAiRequest.Builder<FileDeleteRequest, Builder> {
-
-        private String identity;
-
-        public Builder() {
-        }
-
-        public Builder(FileDeleteRequest request) {
-            super(request);
-            this.identity = request.identity;
-        }
-
-        public Builder identity(String identity) {
-            this.identity = identity;
-            return this;
-        }
-
-        @Override
-        public FileDeleteRequest build() {
-            return new FileDeleteRequest(this);
-        }
-
     }
 
 }

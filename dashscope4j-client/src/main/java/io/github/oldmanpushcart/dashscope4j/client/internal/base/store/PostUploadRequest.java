@@ -28,10 +28,10 @@ public class PostUploadRequest extends ApiRequest<PostUploadResponse> {
     private final URI resource;
     private final String ossKey;
 
-    protected PostUploadRequest(Builder builder) {
-        super(PostUploadResponse.class, builder);
-        this.policy = builder.policy;
-        this.resource = builder.resource;
+    public PostUploadRequest(Policy policy, URI resource) {
+        super(PostUploadResponse.class);
+        this.policy = policy;
+        this.resource = resource;
         this.ossKey = computeOssKey(policy, resource);
     }
 
@@ -47,7 +47,6 @@ public class PostUploadRequest extends ApiRequest<PostUploadResponse> {
                 suffix
         );
     }
-
 
     @Override
     public HttpRequest toHttpRequest(String host) {
@@ -96,48 +95,6 @@ public class PostUploadRequest extends ApiRequest<PostUploadResponse> {
 
             return new PostUploadResponse(this, uuid, URI.create("oss://%s".formatted(ossKey)));
         };
-    }
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static Builder newBuilder(PostUploadRequest request) {
-        return new Builder(request);
-    }
-
-    public static class Builder extends ApiRequest.Builder<PostUploadRequest, Builder> {
-
-        private Policy policy;
-        private URI resource;
-
-        public Builder() {
-
-        }
-
-        public Builder(PostUploadRequest request) {
-            super(request);
-            this.policy = request.policy;
-            this.resource = request.resource;
-        }
-
-        public Builder policy(Policy policy) {
-            this.policy = requireNonNull(policy);
-            return this;
-        }
-
-        public Builder resource(URI resource) {
-            this.resource = requireNonNull(resource);
-            return this;
-        }
-
-        @Override
-        public PostUploadRequest build() {
-            requireNonNull(policy);
-            requireNonNull(resource);
-            return new PostUploadRequest(this);
-        }
-
     }
 
 }

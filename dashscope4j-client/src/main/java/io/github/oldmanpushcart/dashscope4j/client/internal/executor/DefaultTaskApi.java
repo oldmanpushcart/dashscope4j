@@ -1,15 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.executor;
 
-import io.github.oldmanpushcart.dashscope4j.client.ApiException;
-import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.internal.task.TaskCancelRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.task.TaskGetRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.task.TaskGetResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.task.TaskHalfResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.Task;
-import io.github.oldmanpushcart.dashscope4j.client.TaskException;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +71,7 @@ public class DefaultTaskApi implements TaskApi {
         }
     }
 
-    private <R> CompletionStage<R> rolling(TaskGetRequest request, Task.WaitStrategy strategy, Function<String, R> decoder) {
+    private <R extends ApiResponse> CompletionStage<R> rolling(TaskGetRequest request, Task.WaitStrategy strategy, Function<String, R> decoder) {
         return _rolling(request, strategy)
                 .thenApply(response -> decoder.apply(response.raw()));
     }
@@ -91,7 +87,7 @@ public class DefaultTaskApi implements TaskApi {
                     }
 
                     if (task.status() == Task.Status.FAILED) {
-                        throw new TaskException.TaskFailedException(task.taskId(), response);
+                        throw new TaskException.TaskFailedException(task);
                     }
 
                     if (task.status() == Task.Status.SUCCEEDED) {

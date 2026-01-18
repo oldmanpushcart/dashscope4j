@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Task {
+public class Task extends Ret {
 
     private final String taskId;
     private final Status status;
@@ -25,6 +25,12 @@ public class Task {
 
     @JsonCreator
     private Task(
+
+            @JsonProperty("code")
+            String code,
+
+            @JsonProperty("message")
+            String desc,
 
             @JsonProperty("task_id")
             String taskId,
@@ -48,6 +54,7 @@ public class Task {
             Date endAt
 
     ) {
+        super(code, desc);
         this.taskId = taskId;
         this.status = status;
         this.metrics = metrics;

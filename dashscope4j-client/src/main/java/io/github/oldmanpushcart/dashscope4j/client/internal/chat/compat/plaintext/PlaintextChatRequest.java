@@ -10,8 +10,8 @@ import java.util.HashMap;
 
 public class PlaintextChatRequest extends ChatRequest {
 
-    protected PlaintextChatRequest(Builder builder) {
-        super(builder);
+    public PlaintextChatRequest(ChatRequest chatRequest) {
+        super(ChatRequest.newBuilder(chatRequest));
     }
 
     @Override
@@ -32,31 +32,6 @@ public class PlaintextChatRequest extends ChatRequest {
                 });
             }});
         }};
-    }
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static Builder newBuilder(PlaintextChatRequest request) {
-        return new Builder(request);
-    }
-
-    public static class Builder extends ChatRequest.Builder {
-
-        public Builder() {
-            super();
-        }
-
-        public Builder(PlaintextChatRequest request) {
-            super(request);
-        }
-
-        @Override
-        public PlaintextChatRequest build() {
-            return new PlaintextChatRequest(this);
-        }
-
     }
 
 }

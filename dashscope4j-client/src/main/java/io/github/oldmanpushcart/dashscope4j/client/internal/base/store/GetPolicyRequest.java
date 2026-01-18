@@ -17,21 +17,13 @@ public class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final AlgoModel model;
 
-    private GetPolicyRequest(Builder builder) {
-        super(GetPolicyResponse.class, builder);
-        this.model = builder.model;
+    public GetPolicyRequest(AlgoModel model) {
+        super(GetPolicyResponse.class);
+        this.model = model;
     }
 
     public AlgoModel model() {
         return model;
-    }
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static Builder newBuilder(GetPolicyRequest request) {
-        return new Builder(request);
     }
 
     @Override
@@ -51,32 +43,6 @@ public class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {
             logger.debug("dashscope4j-client://base/store/get-policy <<< {}", responseBody);
             return JacksonJsonUtils.toApiResponse(responseBody, GetPolicyResponse.class, this, httpResponse);
         };
-    }
-
-    public static class Builder extends ApiRequest.Builder<GetPolicyRequest, Builder> {
-
-        private AlgoModel model;
-
-        public Builder() {
-
-        }
-
-        public Builder(GetPolicyRequest request) {
-            super(request);
-            this.model = request.model;
-        }
-
-        public Builder model(AlgoModel model) {
-            this.model = Objects.requireNonNull(model);
-            return this;
-        }
-
-        @Override
-        public GetPolicyRequest build() {
-            Objects.requireNonNull(model);
-            return new GetPolicyRequest(this);
-        }
-
     }
 
 }

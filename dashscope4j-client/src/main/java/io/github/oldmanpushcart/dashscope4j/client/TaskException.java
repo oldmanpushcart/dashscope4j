@@ -46,13 +46,12 @@ public class TaskException extends RuntimeException {
         /**
          * 构造任务失败异常
          *
-         * @param taskId   任务ID
-         * @param response 应答
+         * @param task   任务
          */
-        public TaskFailedException(String taskId, ApiResponse response) {
-            super(taskId, "Task: %s failed! code=%s;desc=%s;".formatted(taskId, response.code(), response.desc()));
-            this.code = response.code();
-            this.desc = response.desc();
+        public TaskFailedException(Task task) {
+            super(task.taskId(), "Task: %s failed! code=%s;desc=%s;".formatted(task.taskId(), task.code(), task.desc()));
+            this.code = task.code();
+            this.desc = task.desc();
         }
 
         public String code() {

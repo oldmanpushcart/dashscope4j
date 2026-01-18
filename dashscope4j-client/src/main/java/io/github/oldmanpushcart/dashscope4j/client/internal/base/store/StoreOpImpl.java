@@ -35,9 +35,7 @@ public class StoreOpImpl implements StoreOp {
         if (nonNull(policy) && !policy.isExpired()) {
             return completedFuture(policy);
         }
-        final GetPolicyRequest request = GetPolicyRequest.newBuilder()
-                .model(model)
-                .build();
+        final GetPolicyRequest request = new GetPolicyRequest(model);
         return asyncApi.execute(request)
                 .thenApply(GetPolicyResponse::output)
                 .thenApply(GetPolicyResponse.Output::policy)
@@ -49,10 +47,7 @@ public class StoreOpImpl implements StoreOp {
     }
 
     private CompletionStage<URI> upload(Policy policy, URI resource) {
-        final var request = PostUploadRequest.newBuilder()
-                .policy(policy)
-                .resource(resource)
-                .build();
+        final var request = new PostUploadRequest(policy, resource);
         return asyncApi.execute(request)
                 .thenApply(PostUploadResponse::uploaded);
     }

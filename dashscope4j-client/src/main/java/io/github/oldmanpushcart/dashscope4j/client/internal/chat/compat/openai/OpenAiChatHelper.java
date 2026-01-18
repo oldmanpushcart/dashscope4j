@@ -20,13 +20,7 @@ public class OpenAiChatHelper {
      * @return {@code OpenAi}兼容模式问答请求
      */
     public static OpenAiChatRequest toOpenAiChatRequest(ChatRequest request) {
-        return OpenAiChatRequest.newBuilder()
-                .ref(request)
-                .model(request.model())
-                .parameters(request.parameters())
-                .messages(request.messages())
-                .tools(request.tools())
-                .build();
+        return new OpenAiChatRequest(request);
     }
 
     /**

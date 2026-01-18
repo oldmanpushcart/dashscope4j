@@ -18,10 +18,10 @@ public class FileListRequest extends OpenAiRequest<FileListResponse> {
     private final String after;
     private final int limit;
 
-    protected FileListRequest(Builder builder) {
-        super(FileListResponse.class, builder);
-        this.after = builder.after;
-        this.limit = builder.limit;
+    public FileListRequest(String after, int limit) {
+        super(FileListResponse.class);
+        this.after = after;
+        this.limit = limit;
     }
 
     private URI genQueryURI(String host) {
@@ -50,45 +50,6 @@ public class FileListRequest extends OpenAiRequest<FileListResponse> {
             logger.debug("dashscope4j-client://base/files/list <<< {}", responseBody);
             return JacksonJsonUtils.toApiResponse(responseBody, FileListResponse.class, this, httpResponse);
         });
-    }
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static Builder newBuilder(FileListRequest request) {
-        return new Builder(request);
-    }
-
-    public static class Builder extends OpenAiRequest.Builder<FileListRequest, Builder> {
-
-        private String after;
-        private int limit;
-
-        public Builder() {
-        }
-
-        public Builder(FileListRequest request) {
-            super(request);
-            this.after = request.after;
-            this.limit = request.limit;
-        }
-
-        public Builder after(String after) {
-            this.after = after;
-            return this;
-        }
-
-        public Builder limit(int limit) {
-            this.limit = limit;
-            return this;
-        }
-
-        @Override
-        public FileListRequest build() {
-            return new FileListRequest(this);
-        }
-
     }
 
 }

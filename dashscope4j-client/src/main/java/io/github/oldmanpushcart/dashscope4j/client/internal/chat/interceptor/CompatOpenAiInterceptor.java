@@ -48,13 +48,12 @@ public class CompatOpenAiInterceptor implements FlowInterceptor, AsyncIntercepto
         }
 
         return CompletableFuture.completedStage(chatRequest)
+                .thenApply(r-> ChatRequest.newBuilder(r)
+                        .parameter("stream", true)
+                        .parameter("stream_options", Map.of("include_usage", true))
+                        .parameter("enable_omni_output_audio_url", true)
+                        .build())
                 .thenApply(OpenAiChatHelper::toOpenAiChatRequest)
-                .thenApply(r ->
-                        OpenAiChatRequest.newBuilder(r)
-                                .parameter("stream", true)
-                                .parameter("stream_options", Map.of("include_usage", true))
-                                .parameter("enable_omni_output_audio_url", true)
-                                .build())
                 .thenCompose(chain::proceed)
                 .thenApply(v -> {
                     //noinspection unchecked

@@ -15,10 +15,11 @@ public class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String identity;
 
-    protected FileDetailRequest(Builder builder) {
-        super(FileDetailResponse.class, builder);
-        this.identity = builder.identity;
+    public FileDetailRequest(String identity) {
+        super(FileDetailResponse.class);
+        this.identity = identity;
     }
+
 
     @Override
     public HttpRequest toHttpRequest(String host) {
@@ -35,39 +36,6 @@ public class FileDetailRequest extends OpenAiRequest<FileDetailResponse> {
             logger.debug("dashscope4j-client://base/files/detail <<< {}", responseBody);
             return JacksonJsonUtils.toApiResponse(responseBody, FileDetailResponse.class, this, httpResponse);
         });
-    }
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static Builder newBuilder(FileDetailRequest request) {
-        return new Builder(request);
-    }
-
-    public static class Builder extends OpenAiRequest.Builder<FileDetailRequest, Builder> {
-
-        private String identity;
-
-        public Builder() {
-
-        }
-
-        public Builder(FileDetailRequest request) {
-            super(request);
-            this.identity = request.identity;
-        }
-
-        public Builder identity(String identity) {
-            this.identity = identity;
-            return this;
-        }
-
-        @Override
-        public FileDetailRequest build() {
-            return new FileDetailRequest(this);
-        }
-
     }
 
 }
