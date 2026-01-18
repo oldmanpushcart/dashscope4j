@@ -1,121 +1,32 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.chat.message.content.Content;
-import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.OmniRealtimeExchange.ManualVad;
-import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.OmniRealtimeOp;
-import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.OmniRealtimeParameterKeys;
-import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.OmniRealtimeSession;
-import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.event.client.OmniRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.omni.realtime.handler.SimpleOmniRealtimeExchangeHandler;
-import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeOp;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeParameterKeys;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeSession;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeSessionUpdateClientEvent;
 import org.junit.jupiter.api.Test;
 
-import javax.imageio.ImageIO;
-import javax.sound.sampled.AudioSystem;
 import java.io.File;
 import java.net.http.HttpClient;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.client.omni.realtime.OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME;
-
 public class DebugTestCase implements LoadingEnv {
 
     private final HttpClient http = HttpClient.newHttpClient();
-
-    @Test
-    public void debug3() throws Exception {
-
-        final var image = ImageIO.read(new File("./test-data/image/red-cup.jpeg"));
-        final var audioFile = new File("./test-data/audio/say-what-you-see.wav");
-
-        final var latch = new CountDownLatch(1);
-        final var realtimeOp = client.omni().realtime();
-
-        new ExchangeConnector(() -> {
-            final var parameters = new Parameters();
-            return realtimeOp.newManualVad(QWEN3_OMNI_FLASH_REALTIME, parameters, new SimpleOmniRealtimeExchangeHandler() {
-
-                @Override
-                public CompletionStage<Void> onResponseTextDelta(String responseId, String delta) {
-                    System.out.println(delta);
-                    return CompletableFuture.completedStage(null);
-                }
-
-                @Override
-                public CompletionStage<Void> onResponseAudioDelta(String responseId, ByteBuffer delta) {
-                    return CompletableFuture.completedStage(null);
-                }
-
-                @Override
-                public CompletionStage<Void> onResponseCreated(String responseId) {
-                    return CompletableFuture.completedStage(null);
-                }
-
-                @Override
-                public CompletionStage<Void> onResponseFinished(String responseId, OmniRealtimeServerEvent.Status status) {
-                    latch.countDown();
-                    return CompletableFuture.completedStage(null);
-                }
-
-                @Override
-                public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
-
-                    final var manualVad = (ManualVad) exchange;
-                    manualVad
-                            .newInput()
-                            .thenCompose(ManualVad.InputOp::clear)
-                            .thenCompose(inputOp -> {
-                                try (final var ais = AudioSystem.getAudioInputStream(audioFile)) {
-                                    CompletionStage<?> stage = CompletableFuture.completedStage(null);
-                                    int bytesRead;
-                                    final var bytes = new byte[10240];
-                                    while ((bytesRead = ais.read(bytes)) != -1) {
-                                        final int read = bytesRead;
-                                        stage = stage.thenCompose(v -> inputOp.audio(bytes, 0, read));
-                                    }
-                                    return stage.thenApply(v -> inputOp);
-                                } catch (Throwable ex) {
-                                    return CompletableFuture.failedStage(ex);
-                                }
-                            })
-                            .thenCompose(inputOp -> inputOp.image(image))
-                            .thenCompose(ManualVad.InputOp::commit)
-                            .thenCompose(ManualVad.ResponseOp::create);
-
-                }
-
-                @Override
-                public void onClosed(Throwable ex) {
-                    ex.printStackTrace();
-                    latch.countDown();
-                }
-
-            });
-        }).connect(ExchangeConnector.ReconnectStrategies.immediateForever())
-                .toCompletableFuture()
-                .join();
-
-        latch.await();
-
-    }
-
 
     @Test
     public void debug4() {
@@ -227,7 +138,7 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug6() {
 
-        for(int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             client.base().files().create(new File("./test-data/image/red-cup.jpeg"), Purpose.FILE_EXTRACT)
                     .toCompletableFuture()
                     .join();
@@ -235,7 +146,7 @@ public class DebugTestCase implements LoadingEnv {
 
         FlowX.fromPublisher(client.base().files().flow(1))
                 .blockingCollect(Collectors.toList())
-                .forEach(meta-> {
+                .forEach(meta -> {
                     client.base().files().detail(meta.identity())
                             .toCompletableFuture()
                             .join();

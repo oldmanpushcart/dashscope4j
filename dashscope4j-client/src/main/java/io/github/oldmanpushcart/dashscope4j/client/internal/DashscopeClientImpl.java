@@ -10,8 +10,8 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultFlow
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.image.VisionOpImpl;
-import io.github.oldmanpushcart.dashscope4j.client.internal.omni.OmniOpImpl;
-import io.github.oldmanpushcart.dashscope4j.client.omni.OmniOp;
+import io.github.oldmanpushcart.dashscope4j.client.internal.realtime.RealtimeOpImpl;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeOp;
 import io.github.oldmanpushcart.dashscope4j.client.vision.VisionOp;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
@@ -23,7 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 public class DashscopeClientImpl implements DashscopeClient {
 
-    private final OmniOp omniOp;
+    private final RealtimeOp realtimeOp;
     private final ChatOp chatOp;
     private final BaseOp baseOp;
     private final VisionOp visionOp;
@@ -39,7 +39,7 @@ public class DashscopeClientImpl implements DashscopeClient {
         final var taskApi = new DefaultTaskApi(host, ak, http, asyncApi);
 
         this.chatOp = new ChatOpImpl(this, asyncApi, flowApi);
-        this.omniOp = new OmniOpImpl(host, exchangeApi);
+        this.realtimeOp = new RealtimeOpImpl(host, exchangeApi);
         this.baseOp = new BaseOpImpl(asyncApi, flowApi, taskApi);
         this.visionOp = new VisionOpImpl(this, taskApi);
 
@@ -56,8 +56,8 @@ public class DashscopeClientImpl implements DashscopeClient {
     }
 
     @Override
-    public OmniOp omni() {
-        return omniOp;
+    public RealtimeOp realtime() {
+        return realtimeOp;
     }
 
     @Override

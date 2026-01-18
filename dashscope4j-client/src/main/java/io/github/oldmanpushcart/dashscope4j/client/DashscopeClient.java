@@ -1,10 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatOp;
-import io.github.oldmanpushcart.dashscope4j.client.vision.VisionOp;
-import io.github.oldmanpushcart.dashscope4j.client.omni.OmniOp;
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
+import io.github.oldmanpushcart.dashscope4j.client.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.DashscopeClientImpl;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeOp;
+import io.github.oldmanpushcart.dashscope4j.client.vision.VisionOp;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.http.HttpClient;
@@ -15,7 +15,7 @@ public interface DashscopeClient {
 
     VisionOp image();
 
-    OmniOp omni();
+    RealtimeOp realtime();
 
     BaseOp base();
 
