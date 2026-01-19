@@ -13,6 +13,11 @@ public interface ChatModelTags {
     String ASYNC_OUTPUT_ONLY = "async-output-only:1";
 
     /**
+     * 仅支持任务输出
+     */
+    String TASK_OUTPUT_ONLY = "task-output-only:1";
+
+    /**
      * 仅支持增量输出
      */
     String INCREMENTAL_OUTPUT_ONLY = "incremental-output-only:1";
