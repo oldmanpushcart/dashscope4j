@@ -1,6 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.realtime.omni;
 
 import io.github.oldmanpushcart.dashscope4j.client.Parameters;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange.ManualVad;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange.ServerVad;
@@ -10,26 +13,30 @@ import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimePar
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeParameterKeys.TurnDetection;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 public class OmniRealtimeOpImpl implements OmniRealtimeOp {
 
     private final String host;
     private final ExchangeApi exchangeApi;
-    private final Function<OmniRealtimeClientEvent, String> encoder;
-    private final Function<String, OmniRealtimeServerEvent> decoder;
+    private final OmniRealtimeExchange.Codec codec;
 
     public OmniRealtimeOpImpl(String host, ExchangeApi exchangeApi) {
         this.host = host;
         this.exchangeApi = exchangeApi;
-        this.encoder = JacksonJsonUtils::toJson;
-        this.decoder = s -> JacksonJsonUtils.toObject(s, OmniRealtimeServerEvent.class);
+        this.codec = new OmniRealtimeExchange.Codec() {
+            @Override
+            public String encode(OmniRealtimeClientEvent data) {
+                return JacksonJsonUtils.toJson(OmniRealtimeClientEvent.class, data);
+            }
+
+            @Override
+            public OmniRealtimeServerEvent decode(String json) {
+                return JacksonJsonUtils.toObject(json, OmniRealtimeServerEvent.class);
+            }
+        };
     }
 
     private static Parameters adjust(Parameters parameters, TurnDetection.Type tuneDetectionType) {
@@ -55,7 +62,7 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
         final var parametersAdjusted = adjust(parameters, TurnDetection.Type.MANUAL_VAD);
         final var manualVadHandler = new ManualVadHandler(handler);
         final var handshakeHandler = new SessionHandshakeHandler(parametersAdjusted, manualVadHandler);
-        return exchangeApi.newExchange(endpoint, encoder, decoder, handshakeHandler)
+        return exchangeApi.newExchange(endpoint, codec, handshakeHandler)
                 .thenCompose(unused -> manualVadHandler.completeStage());
     }
 
@@ -65,7 +72,7 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
         final var parametersAdjusted = adjust(parameters, TurnDetection.Type.SERVER_VAD);
         final var serverVadHandler = new ServerVadHandler(handler);
         final var handshakeHandler = new SessionHandshakeHandler(parametersAdjusted, serverVadHandler);
-        return exchangeApi.newExchange(endpoint, encoder, decoder, handshakeHandler)
+        return exchangeApi.newExchange(endpoint, codec, handshakeHandler)
                 .thenCompose(unused -> serverVadHandler.completeStage());
     }
 

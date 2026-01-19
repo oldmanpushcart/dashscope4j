@@ -22,6 +22,13 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> 
     OmniRealtimeSession session();
 
     /**
+     * 编解码器
+     */
+    interface Codec extends Exchange.Codec<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
+
+    }
+
+    /**
      * 手动 VAD
      */
     interface ManualVad extends OmniRealtimeExchange {

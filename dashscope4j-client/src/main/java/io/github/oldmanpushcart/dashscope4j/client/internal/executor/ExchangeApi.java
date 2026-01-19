@@ -28,12 +28,11 @@ public class ExchangeApi {
 
     public <T, R> CompletionStage<Exchange<T>> newExchange(
             URI endpoint,
-            Function<T, String> encoder,
-            Function<String, R> decoder,
+            Exchange.Codec<T, R> codec,
             Exchange.Handler<T, R> handler
     ) {
         final var id = UUIDUtils.genUUID22();
-        final var listener = new ListenerImpl<>(id, endpoint, encoder, decoder, handler);
+        final var listener = new ListenerImpl<>(id, endpoint, codec, handler);
         return http.newWebSocketBuilder()
                 .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
                 .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
@@ -143,8 +142,7 @@ public class ExchangeApi {
         private final Logger logger = LoggerFactory.getLogger(getClass());
         private final String id;
         private final URI endpoint;
-        private final Function<T, String> encoder;
-        private final Function<String, R> decoder;
+        private final Exchange.Codec<T, R> codec;
         private final Exchange.Handler<T, R> handler;
 
         private final CompletableFuture<Exchange<T>> exchangeF = new CompletableFuture<>();
@@ -156,14 +154,12 @@ public class ExchangeApi {
         private ListenerImpl(
                 final String id,
                 final URI endpoint,
-                final Function<T, String> encoder,
-                final Function<String, R> decoder,
+                final Exchange.Codec<T, R> codec,
                 final Exchange.Handler<T, R> handler
         ) {
             this.id = id;
             this.endpoint = endpoint;
-            this.encoder = encoder;
-            this.decoder = decoder;
+            this.codec = codec;
             this.handler = handler;
             this._toString = "dashscope4j-client://exchange/%s".formatted(id);
         }
@@ -180,7 +176,7 @@ public class ExchangeApi {
         @Override
         public void onOpen(WebSocket ws) {
             try {
-                final var exchange = new ExchangeImpl<>(id, ws, encoder, closeF);
+                final var exchange = new ExchangeImpl<>(id, ws, codec::encode, closeF);
                 handler.onOpen(exchange);
                 exchangeF.complete(exchange);
                 ws.request(1L);
@@ -265,7 +261,7 @@ public class ExchangeApi {
 
             logger.debug("{} <<< {}", this, body);
             return CompletableFuture.completedStage(body)
-                    .thenApply(decoder)
+                    .thenApply(codec::decode)
                     .thenCompose(handler::onData)
                     .whenComplete((unused, ex) -> {
                         if (null == ex) {

@@ -8,7 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-public interface TaskInterceptor {
+public interface TaskInterceptor extends Interceptor {
 
     CompletionStage<? extends Task.Half<?>> intercept(Chain chain);
 

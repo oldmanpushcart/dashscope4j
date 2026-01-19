@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.base.api.ApiOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.base.files.FilesOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.base.store.StoreOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.TaskApi;
 
@@ -17,10 +18,10 @@ public class BaseOpImpl implements BaseOp {
     private final FilesOp filesOp;
     private final ApiOp apiOp;
 
-    public BaseOpImpl(AsyncApi asyncApi, FlowApi flowApi, TaskApi taskApi) {
+    public BaseOpImpl(AsyncApi asyncApi, FlowApi flowApi, TaskApi taskApi, ExchangeApi exchangeApi) {
         this.storeOp = new StoreOpImpl(asyncApi);
         this.filesOp = new FilesOpImpl(asyncApi);
-        this.apiOp = new ApiOpImpl(asyncApi, flowApi, taskApi);
+        this.apiOp = new ApiOpImpl(asyncApi, flowApi, taskApi, exchangeApi);
     }
 
     @Override

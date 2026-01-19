@@ -170,6 +170,34 @@ public interface Exchange<T> extends Closeable {
     }
 
     /**
+     * 应用数据编解码器
+     *
+     * @param <T> 发送数据类型
+     * @param <R> 接收数据类型
+     */
+    interface Codec<T, R> {
+
+        /**
+         * {@code T -> JSON}
+         * 将发送数据编码为{@code JSON}
+         *
+         * @param data 发送数据
+         * @return JSON
+         */
+        String encode(T data);
+
+        /**
+         * {@code JSON -> R}
+         * 将收到的{@code JSON}解码为接收数据
+         *
+         * @param json 接收 JSON
+         * @return R
+         */
+        R decode(String json);
+
+    }
+
+    /**
      * 数据交换连接的事件处理器，用于响应连接生命周期中的关键事件。
      *
      * <p>该接口定义了四个核心回调方法，分别对应：

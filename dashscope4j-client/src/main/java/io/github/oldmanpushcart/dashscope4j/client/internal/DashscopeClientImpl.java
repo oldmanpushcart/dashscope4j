@@ -40,7 +40,7 @@ public class DashscopeClientImpl implements DashscopeClient {
 
         this.chatOp = new ChatOpImpl(this, asyncApi, flowApi);
         this.realtimeOp = new RealtimeOpImpl(host, exchangeApi);
-        this.baseOp = new BaseOpImpl(asyncApi, flowApi, taskApi);
+        this.baseOp = new BaseOpImpl(asyncApi, flowApi, taskApi, exchangeApi);
         this.visionOp = new VisionOpImpl(this, taskApi);
 
     }
