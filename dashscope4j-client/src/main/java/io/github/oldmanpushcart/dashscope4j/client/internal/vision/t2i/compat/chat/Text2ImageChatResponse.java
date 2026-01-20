@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.image.t2i.compat.chat;
+package io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i.compat.chat;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;

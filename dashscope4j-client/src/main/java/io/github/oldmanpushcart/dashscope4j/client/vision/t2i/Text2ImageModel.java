@@ -17,7 +17,7 @@ public class Text2ImageModel extends AlgoModel {
     public static final Text2ImageModel QWEN_IMAGE_PLUS = new Text2ImageModel("qwen-image-plus", "/api/v1/services/aigc/text2image/image-synthesis");
     public static final Text2ImageModel QWEN_IMAGE = new Text2ImageModel("qwen-image", "/api/v1/services/aigc/text2image/image-synthesis");
 
-    public static final Text2ImageModel WANX = new Text2ImageModel("wan2.6-t2i", "/api/v1/services/aigc/image-generation/generation", Set.of(
+    public static final Text2ImageModel WAN_T2I = new Text2ImageModel("wan2.6-t2i", "/api/v1/services/aigc/image-generation/generation", Set.of(
             Text2ImageModelTags.COMPAT_TASK_CHAT
     ));
 

@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.chat.compat.openai.O
 import io.github.oldmanpushcart.dashscope4j.client.internal.chat.compat.openai.OpenAiChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.TagUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
 import java.util.Map;
@@ -24,7 +25,7 @@ public class CompatOpenAiInterceptor implements FlowInterceptor, AsyncIntercepto
         }
 
         final var model = chatRequest.model();
-        if(!model.tags().contains(ChatModelTags.COMPAT_OPENAI)) {
+        if(!TagUtils.contains(model.tags(), "compat", "openai")) {
             return chain.proceed();
         }
 
@@ -43,7 +44,7 @@ public class CompatOpenAiInterceptor implements FlowInterceptor, AsyncIntercepto
         }
 
         final var model = chatRequest.model();
-        if(!model.tags().contains(ChatModelTags.COMPAT_OPENAI)) {
+        if(!TagUtils.contains(model.tags(), "compat", "openai")) {
             return chain.proceed();
         }
 

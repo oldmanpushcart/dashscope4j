@@ -272,7 +272,8 @@ public class ChatOpTestCase implements LoadingEnv {
     static Stream<Data> provideDataForText2Image() {
         return provideDataFromModels(
                 ChatModel.QWEN_IMAGE,
-                ChatModel.QWEN_WAN
+                ChatModel.WAN_T2I,
+                ChatModel.WAN_IMAGE
         );
     }
 
@@ -282,6 +283,8 @@ public class ChatOpTestCase implements LoadingEnv {
         final var request = ChatRequest.newBuilder()
                 .model(data.model())
                 .addMessage(Message.user("帮我画一朵紫色的向日葵"))
+                .parameter("enable_interleave", true)
+                .parameter("stream", true)
                 .build();
 
         final var imageURIs = data.op().apply(request)

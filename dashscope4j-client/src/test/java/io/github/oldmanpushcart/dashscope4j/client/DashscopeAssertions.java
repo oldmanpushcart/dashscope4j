@@ -91,4 +91,34 @@ public class DashscopeAssertions {
         }
     }
 
+    public static void dashscopeAssertVideo(DashscopeClient client, URI videoURI, String expect) {
+        final String prompt = """
+                请你判断视频内容符合预期。如果符合，请只输出 TRUE；如果不满足，请只输出 FALSE。不要添加任何解释或额外信息。
+                
+                预期
+                ----------
+                %s
+                ----------
+                """.formatted(expect);
+        final ChatRequest request = ChatRequest.newBuilder()
+                .model(ChatModel.QWEN_VL_MAX)
+                .addMessage(Message.user(List.of(
+                        Content.text(prompt),
+                        Content.video(videoURI)
+                )))
+                .build();
+        final ChatResponse response = client.chat().async(request)
+                .toCompletableFuture()
+                .join();
+        if (!response.output().best().message().text().contains("TRUE")) {
+            throw new AssertionError("""
+                    预期与实际图片不符
+                    
+                    预期：
+                    %s
+                    """.formatted(expect)
+            );
+        }
+    }
+
 }

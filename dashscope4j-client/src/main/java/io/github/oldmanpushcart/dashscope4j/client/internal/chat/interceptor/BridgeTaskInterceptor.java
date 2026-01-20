@@ -5,7 +5,9 @@ import io.github.oldmanpushcart.dashscope4j.client.chat.ChatModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.TaskInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.TagUtils;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public class BridgeTaskInterceptor implements TaskInterceptor {
@@ -19,13 +21,18 @@ public class BridgeTaskInterceptor implements TaskInterceptor {
 
         final var model = request.model();
 
+        // TASK 模式不用桥接，直接输出
+        if (model.tags().contains(ChatModelTags.RESPONSE_MODE_TASK)) {
+            return chain.proceed();
+        }
+
         // 桥接 ASYNC 式输出
-        if (model.tags().contains(ChatModelTags.ASYNC_OUTPUT_ONLY)) {
+        else if (model.tags().contains(ChatModelTags.RESPONSE_MODE_ASYNC)) {
             return bridgeAsync(chain, request);
         }
 
-        // 桥接 TASK 式输出
-        else if (model.tags().contains(ChatModelTags.FLOW_OUTPUT_ONLY)) {
+        // 桥接 FLOW 式输出
+        else if (model.tags().contains(ChatModelTags.RESPONSE_MODE_FLOW)) {
             return bridgeFlow(chain, request);
         }
 
@@ -36,19 +43,11 @@ public class BridgeTaskInterceptor implements TaskInterceptor {
     }
 
     private CompletionStage<? extends Task.Half<?>> bridgeAsync(Chain chain, ChatRequest request) {
-        final var task = new Task.Half<>()
-        final var half = new Task.Half<ChatResponse>() {
-
-            @Override
-            public CompletionStage<ChatResponse> waitingFor(Task.WaitStrategy strategy) {
-                strategy.performWait()
-                return null;
-            }
-
-        };
+        return CompletableFuture.failedStage(new UnsupportedOperationException("Not supported"));
     }
 
     private CompletionStage<? extends Task.Half<?>> bridgeFlow(Chain chain, ChatRequest request) {
+        return CompletableFuture.failedStage(new UnsupportedOperationException("Not supported"));
     }
 
 }

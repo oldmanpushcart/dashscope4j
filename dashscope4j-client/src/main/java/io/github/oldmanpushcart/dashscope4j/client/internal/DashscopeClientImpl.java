@@ -9,7 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultAsyn
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultFlowApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.DefaultTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
-import io.github.oldmanpushcart.dashscope4j.client.internal.image.VisionOpImpl;
+import io.github.oldmanpushcart.dashscope4j.client.internal.vision.VisionOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.realtime.RealtimeOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeOp;
 import io.github.oldmanpushcart.dashscope4j.client.vision.VisionOp;
@@ -38,7 +38,7 @@ public class DashscopeClientImpl implements DashscopeClient {
         final var exchangeApi = new ExchangeApi(ak, http);
         final var taskApi = new DefaultTaskApi(host, ak, http, asyncApi);
 
-        this.chatOp = new ChatOpImpl(this, asyncApi, flowApi);
+        this.chatOp = new ChatOpImpl(this, asyncApi, flowApi, taskApi);
         this.realtimeOp = new RealtimeOpImpl(host, exchangeApi);
         this.baseOp = new BaseOpImpl(asyncApi, flowApi, taskApi, exchangeApi);
         this.visionOp = new VisionOpImpl(this, taskApi);
@@ -51,7 +51,7 @@ public class DashscopeClientImpl implements DashscopeClient {
     }
 
     @Override
-    public VisionOp image() {
+    public VisionOp vision() {
         return visionOp;
     }
 

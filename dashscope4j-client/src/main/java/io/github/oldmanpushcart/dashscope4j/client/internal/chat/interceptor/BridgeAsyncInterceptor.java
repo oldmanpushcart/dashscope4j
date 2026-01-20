@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.client.chat.ChatParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.TagUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
 import java.time.Duration;
@@ -23,13 +24,18 @@ public class BridgeAsyncInterceptor implements AsyncInterceptor {
 
         final var model = request.model();
 
+        // ASYNC 模式不用桥接，直接返回
+        if (model.tags().contains(ChatModelTags.RESPONSE_MODE_ASYNC)) {
+            return chain.proceed();
+        }
+
         // 桥接 FLOW 式输出
-        if (model.tags().contains(ChatModelTags.FLOW_OUTPUT_ONLY)) {
+        else if (model.tags().contains(ChatModelTags.RESPONSE_MODE_FLOW)) {
             return bridgeFlow(chain, request);
         }
 
         // 桥接 TASK 式输出
-        else if (model.tags().contains(ChatModelTags.TASK_OUTPUT_ONLY)) {
+        else if (model.tags().contains(ChatModelTags.RESPONSE_MODE_TASK)) {
             return bridgeTask(chain, request);
         }
 

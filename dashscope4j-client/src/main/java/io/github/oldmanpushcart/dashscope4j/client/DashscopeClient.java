@@ -13,7 +13,7 @@ public interface DashscopeClient {
 
     ChatOp chat();
 
-    VisionOp image();
+    VisionOp vision();
 
     RealtimeOp realtime();
 

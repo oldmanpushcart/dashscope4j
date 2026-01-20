@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.image.t2i.interceptor;
+package io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i.interceptor;
 
 import io.github.oldmanpushcart.dashscope4j.client.vision.t2i.Text2ImageRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.TaskInterceptor;

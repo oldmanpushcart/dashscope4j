@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.image.t2i;
+package io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Task;
@@ -8,18 +8,20 @@ import io.github.oldmanpushcart.dashscope4j.client.vision.t2i.Text2ImageResponse
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.InterceptionTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.TaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.TaskInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.image.t2i.interceptor.CompatChatInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.image.t2i.interceptor.UploadFilesInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i.interceptor.CompatChatInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i.interceptor.UploadFilesInterceptor;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.reverseListImmutable;
+
 public class Text2ImageOpImpl implements Text2ImageOp {
 
-    private final List<TaskInterceptor> interceptors = List.of(
+    private final List<TaskInterceptor> interceptors = reverseListImmutable(List.of(
             new UploadFilesInterceptor(),
             new CompatChatInterceptor()
-    );
+    ));
 
     private final TaskApi taskApi;
 

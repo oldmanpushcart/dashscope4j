@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.chat.compat.plaintext.PlaintextChatHelper;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.TagUtils;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -20,7 +21,7 @@ public class CompatPlaintextInterceptor implements FlowInterceptor, AsyncInterce
         }
 
         final var model = chatRequest.model();
-        if (!model.tags().contains(ChatModelTags.COMPAT_PLAINTEXT)) {
+        if (!TagUtils.contains(model.tags(), "compat","plaintext")) {
             return chain.proceed();
         }
 
@@ -37,7 +38,7 @@ public class CompatPlaintextInterceptor implements FlowInterceptor, AsyncInterce
         }
 
         final var model = chatRequest.model();
-        if (!model.tags().contains(ChatModelTags.COMPAT_PLAINTEXT)) {
+        if (!TagUtils.contains(model.tags(), "compat","plaintext")) {
             return chain.proceed();
         }
 

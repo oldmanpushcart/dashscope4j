@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.chat;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
+import io.github.oldmanpushcart.dashscope4j.client.Task;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatResponse;
@@ -19,6 +20,7 @@ public class ChatOpImpl implements ChatOp {
 
     private final AsyncApi asyncApi;
     private final FlowApi flowApi;
+    private final TaskApi taskApi;
 
     private static final List<Interceptor> interceptors = reverseListImmutable(List.of(
 
@@ -31,11 +33,11 @@ public class ChatOpImpl implements ChatOp {
             // 音视频通过 BASE64 内联
             new InlineFilesInterceptor(),
 
-            // 支持仅流式输出模型
-            new FlowOutputOnlyInterceptor(),
+            new BridgeAsyncInterceptor(),
 
-            // 支持仅异步输出模型
-            new AsyncOutputOnlyInterceptor(),
+            new BridgeFlowInterceptor(),
+
+            new BridgeTaskInterceptor(),
 
             // 兼容纯文本协议
             new CompatPlaintextInterceptor(),
@@ -55,7 +57,8 @@ public class ChatOpImpl implements ChatOp {
             .map(AsyncInterceptor.class::cast)
             .toList();
 
-    public ChatOpImpl(DashscopeClient client, AsyncApi asyncApi, FlowApi flowApi) {
+    public ChatOpImpl(DashscopeClient client, AsyncApi asyncApi, FlowApi flowApi, TaskApi taskApi) {
+        this.taskApi = taskApi;
         this.asyncApi = InterceptionAsyncApi.group(client, asyncApi, asyncInterceptors);
         this.flowApi = InterceptionFlowApi.group(client, flowApi, flowInterceptors);
     }
@@ -69,8 +72,13 @@ public class ChatOpImpl implements ChatOp {
 
     @Override
     public Flow.Publisher<ChatResponse> flow(ChatRequest request) {
-        return FlowX.defer(() -> flowApi.execute(request))
+        return FlowX.fromPublisher(flowApi.execute(request))
                 .transform(new ToolCallFlowHandler(this));
+    }
+
+    @Override
+    public CompletionStage<? extends Task.Half<ChatResponse>> task(ChatRequest request) {
+        return taskApi.execute(request);
     }
 
 }

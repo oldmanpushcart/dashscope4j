@@ -9,6 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.client.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.chat.tool.Tool;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -46,7 +47,9 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
 
     @Override
     protected Object input() {
-        return new Input();
+        return new HashMap<>(){{
+            put("messages", messages);
+        }};
     }
 
     @JsonProperty("parameters")
@@ -71,15 +74,6 @@ public class ChatRequest extends AlgoRequest<ChatModel, ChatResponse> {
     @Override
     public Parameters parameters() {
         return super.parameters();
-    }
-
-    private class Input {
-
-        @JsonProperty("messages")
-        List<Message> messages() {
-            return messages;
-        }
-
     }
 
     public boolean inlineEnabled() {

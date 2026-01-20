@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.image.t2i.compat.chat;
+package io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i.compat.chat;
 
 import io.github.oldmanpushcart.dashscope4j.client.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.client.Parameters;

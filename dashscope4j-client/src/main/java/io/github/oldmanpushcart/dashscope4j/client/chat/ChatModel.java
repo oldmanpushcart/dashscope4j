@@ -74,8 +74,8 @@ public class ChatModel extends AlgoModel {
      * <p>通义千问对话模型推理（稳定版）</p>
      */
     public static final ChatModel QWQ_PLUS = new ChatModel("qwq-plus", PATH_TEXT, Set.of(
-            FLOW_OUTPUT_ONLY,
-            INCREMENTAL_OUTPUT_ONLY
+            INCREMENTAL_OUTPUT_ONLY,
+            RESPONSE_MODE_FLOW
     ));
 
     /**
@@ -83,8 +83,8 @@ public class ChatModel extends AlgoModel {
      * <p>通义千问对话模型推理（最新版）</p>
      */
     public static final ChatModel QWQ_PLUS_LATEST = new ChatModel("qwq-plus-latest", PATH_TEXT, Set.of(
-            FLOW_OUTPUT_ONLY,
-            INCREMENTAL_OUTPUT_ONLY
+            INCREMENTAL_OUTPUT_ONLY,
+            RESPONSE_MODE_FLOW
     ));
 
     /**
@@ -106,8 +106,8 @@ public class ChatModel extends AlgoModel {
      * <p>视觉推理模型，支持视觉输入及思维链输出，在数学、编程、视觉分析、创作以及通用任务上都表现了更强的能力。</p>
      */
     public static final ChatModel QVQ_MAX = new ChatModel("qvq-max", PATH_MULTIMODAL, Set.of(
-            FLOW_OUTPUT_ONLY,
-            INCREMENTAL_OUTPUT_ONLY
+            INCREMENTAL_OUTPUT_ONLY,
+            RESPONSE_MODE_FLOW
     ));
 
     /**
@@ -115,8 +115,8 @@ public class ChatModel extends AlgoModel {
      * <p>{@link #QVQ_MAX}最新快照</p>
      */
     public static final ChatModel QVQ_MAX_LATEST = new ChatModel("qvq-max-latest", PATH_MULTIMODAL, Set.of(
-            FLOW_OUTPUT_ONLY,
-            INCREMENTAL_OUTPUT_ONLY
+            INCREMENTAL_OUTPUT_ONLY,
+            RESPONSE_MODE_FLOW
     ));
 
     /**
@@ -124,8 +124,8 @@ public class ChatModel extends AlgoModel {
      * <p>视觉推理模型，支持视觉输入及思维链输出，在数学、编程、视觉分析、创作以及通用任务上都表现了更强的能力。</p>
      */
     public static final ChatModel QVQ_PLUS = new ChatModel("qvq-plus", PATH_MULTIMODAL, Set.of(
-            FLOW_OUTPUT_ONLY,
-            INCREMENTAL_OUTPUT_ONLY
+            INCREMENTAL_OUTPUT_ONLY,
+            RESPONSE_MODE_FLOW
     ));
 
     /**
@@ -133,8 +133,8 @@ public class ChatModel extends AlgoModel {
      * <p>{@link #QVQ_PLUS}最新快照</p>
      */
     public static final ChatModel QVQ_PLUS_LATEST = new ChatModel("qvq-plus-latest", PATH_MULTIMODAL, Set.of(
-            FLOW_OUTPUT_ONLY,
-            INCREMENTAL_OUTPUT_ONLY
+            INCREMENTAL_OUTPUT_ONLY,
+            RESPONSE_MODE_FLOW
     ));
 
     /**
@@ -143,15 +143,21 @@ public class ChatModel extends AlgoModel {
      * <p>可应用于文本创作、视觉识别、语音助手等场景。</p>
      */
     public static final ChatModel QWEN3_OMNI_FLASH = new ChatModel("qwen3-omni-flash", InternalContents.PATH_COMPAT_OPENAI, Set.of(
-            COMPAT_OPENAI,
-            FLOW_OUTPUT_ONLY,
-            INCREMENTAL_OUTPUT_ONLY
+            INCREMENTAL_OUTPUT_ONLY,
+            RESPONSE_MODE_FLOW,
+            COMPAT_OPENAI
     ));
 
     public static final ChatModel QWEN_IMAGE = new ChatModel("qwen-image", PATH_MULTIMODAL);
 
-    public static final ChatModel QWEN_WAN = new ChatModel("wan2.6-t2i", PATH_MULTIMODAL, Set.of(
-            ASYNC_OUTPUT_ONLY
+    public static final ChatModel WAN_T2I = new ChatModel("wan2.6-t2i", PATH_MULTIMODAL, Set.of(
+            RESPONSE_MODE_ASYNC
     ));
+
+    public static final ChatModel WAN_IMAGE = new ChatModel("wan2.6-image", PATH_MULTIMODAL, Set.of(
+            RESPONSE_MODE_FLOW,
+            RESPONSE_MODE_TASK
+    ));
+
 
 }
