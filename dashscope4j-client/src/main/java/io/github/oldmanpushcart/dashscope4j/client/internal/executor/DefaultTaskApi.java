@@ -54,7 +54,7 @@ public class DefaultTaskApi implements TaskApi {
                     .thenApply(httpResponse -> {
                         final var halfResponseBody = httpResponse.body();
                         logger.debug("dashscope4j-client://task/half <<< {}", halfResponseBody);
-                        final var halfResponse = JacksonJsonUtils.toApiResponse(halfResponseBody, TaskHalfResponse.class, request, httpResponse);
+                        final var halfResponse = JacksonJsonUtils.<TaskHalfResponse>toApiResponse(halfResponseBody, TaskHalfResponse.class, request, httpResponse);
                         if (!halfResponse.isSuccess()) {
                             throw new ApiException(halfResponse);
                         }

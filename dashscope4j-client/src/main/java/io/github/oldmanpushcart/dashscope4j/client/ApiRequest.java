@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client;
 
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
+import java.lang.reflect.Type;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.function.BiFunction;
@@ -13,9 +14,9 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class ApiRequest<R extends ApiResponse> {
 
-    private final Class<R> responseType;
+    private final Type responseType;
 
-    protected ApiRequest(Class<R> responseType) {
+    protected ApiRequest(Type responseType) {
         this.responseType = responseType;
     }
 
@@ -33,7 +34,7 @@ public abstract class ApiRequest<R extends ApiResponse> {
     /**
      * @return 响应类型
      */
-    public Class<R> responseType() {
+    public Type responseType() {
         return responseType;
     }
 

@@ -126,7 +126,7 @@ public class DefaultFlowApi implements FlowApi {
                             .defer(() -> {
                                 try {
                                     final var body = baos.toString(charset);
-                                    final var response = JacksonJsonUtils.toApiResponse(body, request.responseType(), request, httpResponse);
+                                    final var response = JacksonJsonUtils.<R>toApiResponse(body, request.responseType(), request, httpResponse);
                                     return !response.isSuccess()
                                             ? FlowX.error(new ApiException(response))
                                             : FlowX.just(response);
