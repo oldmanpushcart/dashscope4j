@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.Usage;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
@@ -20,10 +21,10 @@ public class AigcResponse<O> extends ApiResponse {
      * @param desc    应答描述
      */
     @JsonCreator
-    protected AigcResponse(
+    public AigcResponse(
 
             @JacksonInject("dashscope/request")
-            AigcRequest<?,?,?> request,
+            ApiRequest<?> request,
 
             @JsonProperty("request_id")
             String uuid,

@@ -1,12 +1,11 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.chat.compat.openai;
+package io.github.oldmanpushcart.dashscope4j.client.internal.aigc.chat.compat.openai;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.Parameters;
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.Model;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.OpenAiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
@@ -20,33 +19,23 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_CONTENT_TYPE;
-import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
-import static java.util.Objects.requireNonNull;
 
 @JsonSerialize(using = OpenAiChatRequestJsonSerializer.class)
 public class OpenAiChatRequest extends OpenAiRequest<OpenAiChatResponse> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final ChatModel model;
+    private final Model<?,?> model;
     private final Parameters parameters;
     private final List<Message> messages;
-    private final List<Tool> tools;
-    private final ChatRequest ref;
 
-    public OpenAiChatRequest(ChatRequest chatRequest) {
+    public OpenAiChatRequest(Model<?,?> model, Parameters parameters, List<Message> messages) {
         super(OpenAiChatResponse.class);
-        this.ref = chatRequest;
-        this.model = chatRequest.model();
-        this.parameters = chatRequest.parameters();
-        this.messages = chatRequest.messages();
-        this.tools = chatRequest.tools();
+        this.model = model;
+        this.parameters = parameters;
+        this.messages = messages;
     }
 
-    public ChatRequest ref() {
-        return ref;
-    }
-
-    public ChatModel model() {
+    public Model<?,?> model() {
         return model;
     }
 
@@ -56,10 +45,6 @@ public class OpenAiChatRequest extends OpenAiRequest<OpenAiChatResponse> {
 
     public List<Message> messages() {
         return messages;
-    }
-
-    public List<Tool> tools() {
-        return tools;
     }
 
     @Override

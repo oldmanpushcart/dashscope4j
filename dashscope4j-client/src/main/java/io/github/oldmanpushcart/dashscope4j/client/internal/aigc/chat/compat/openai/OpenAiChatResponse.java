@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.chat.compat.openai;
+package io.github.oldmanpushcart.dashscope4j.client.internal.aigc.chat.compat.openai;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonAlias;
@@ -6,8 +6,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.Usage;
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatResponse.Finish;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message.Role;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output.Finish;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.OpenAiError;
 import io.github.oldmanpushcart.dashscope4j.client.internal.OpenAiResponse;
@@ -45,10 +44,6 @@ public class OpenAiChatResponse extends OpenAiResponse {
         this.usage = null == usage ? Usage.empty() : usage;
     }
 
-    public OpenAiChatRequest request() {
-        return (OpenAiChatRequest) super.request();
-    }
-
     public List<Choice> choices() {
         return choices;
     }
@@ -80,7 +75,7 @@ public class OpenAiChatResponse extends OpenAiResponse {
     public record Message(
 
             @JsonProperty("role")
-            Role role,
+            io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message.Role role,
 
             @JsonProperty("content")
             String content,
@@ -110,5 +105,6 @@ public class OpenAiChatResponse extends OpenAiResponse {
     ) {
 
     }
+
 
 }

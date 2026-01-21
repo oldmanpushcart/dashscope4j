@@ -11,17 +11,23 @@ import java.util.concurrent.Flow;
 
 public interface ChatOp {
 
-    CompletionStage<AigcResponse<Output>> async(AigcRequest<?, Output, ChatModel> request);
-
     CompletionStage<AigcResponse<Output>> async(AigcRequest<?, Output, ChatModel> request, List<AsyncInterceptor> interceptors);
-
-    CompletionStage<? extends Task.Half<AigcResponse<Output>>> task(AigcRequest<?, Output, ChatModel> request);
 
     CompletionStage<? extends Task.Half<AigcResponse<Output>>> task(AigcRequest<?, Output, ChatModel> request, List<TaskInterceptor> interceptors);
 
-    Flow.Publisher<AigcResponse<Output>> flow(AigcRequest<?, Output, ChatModel> request);
-
     Flow.Publisher<AigcResponse<Output>> flow(AigcRequest<?, Output, ChatModel> request, List<FlowInterceptor> interceptors);
+
+    default CompletionStage<AigcResponse<Output>> async(AigcRequest<?, Output, ChatModel> request) {
+        return async(request, List.of());
+    }
+
+    default CompletionStage<? extends Task.Half<AigcResponse<Output>>> task(AigcRequest<?, Output, ChatModel> request) {
+        return task(request, List.of());
+    }
+
+    default Flow.Publisher<AigcResponse<Output>> flow(AigcRequest<?, Output, ChatModel> request) {
+        return flow(request, List.of());
+    }
 
     static Builder newBuilder() {
         return null;

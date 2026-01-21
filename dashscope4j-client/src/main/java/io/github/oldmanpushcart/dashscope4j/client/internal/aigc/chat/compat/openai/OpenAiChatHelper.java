@@ -1,7 +1,10 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.chat.compat.openai;
+package io.github.oldmanpushcart.dashscope4j.client.internal.aigc.chat.compat.openai;
 
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
@@ -13,14 +16,12 @@ import java.util.Collections;
 
 public class OpenAiChatHelper {
 
-    /**
-     * 通义千问问答请求转换为{@code OpenAi}兼容模式问答请求
-     *
-     * @param request 通义千问问答请求
-     * @return {@code OpenAi}兼容模式问答请求
-     */
-    public static OpenAiChatRequest toOpenAiChatRequest(ChatRequest request) {
-        return new OpenAiChatRequest(request);
+    public static OpenAiChatRequest toOpenAiChatRequest(AigcRequest<Input, ?, ?> request) {
+        return new OpenAiChatRequest(
+                request.model(),
+                request.parameters(),
+                request.input().messages()
+        );
     }
 
     /**
@@ -29,18 +30,17 @@ public class OpenAiChatHelper {
      * @param response {@code OpenAi}兼容模式问答应答
      * @return 通义千问问答应答
      */
-    public static ChatResponse toChatResponse(OpenAiChatResponse response) {
-        final var request = toChatRequest(response.request());
+    public static AigcResponse<Output> toAigcResponse(OpenAiChatResponse response) {
         final var choices = response.choices()
                 .stream()
                 .map(OpenAiChatHelper::toChoice)
                 .toList();
-        final var output = new ChatResponse.Output(
+        final var output = new ChatModel.Output(
                 null,
                 choices
         );
-        return new ChatResponse(
-                request,
+        return new AigcResponse<>(
+                response.request(),
                 response.uuid(),
                 response.code(),
                 response.desc(),
@@ -49,13 +49,9 @@ public class OpenAiChatHelper {
         );
     }
 
-    private static ChatRequest toChatRequest(OpenAiChatRequest request) {
-        return request.ref();
-    }
-
-    private static ChatResponse.Choice toChoice(OpenAiChatResponse.Choice choice) {
+    private static ChatModel.Output.Choice toChoice(OpenAiChatResponse.Choice choice) {
         final var message = toMessage(choice.message());
-        return new ChatResponse.Choice(choice.finish(), message);
+        return new ChatModel.Output.Choice(choice.finish(), message);
     }
 
     private static AssistantMessage toMessage(OpenAiChatResponse.Message message) {

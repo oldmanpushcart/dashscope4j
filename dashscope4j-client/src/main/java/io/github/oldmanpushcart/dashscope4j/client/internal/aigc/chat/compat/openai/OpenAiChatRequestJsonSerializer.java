@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.chat.compat.openai;
+package io.github.oldmanpushcart.dashscope4j.client.internal.aigc.chat.compat.openai;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -19,9 +19,6 @@ public class OpenAiChatRequestJsonSerializer extends JsonSerializer<OpenAiChatRe
             put("model", request.model());
             put("messages", serializeMessageList(request.messages()));
             request.parameters().forEach(this::put);
-            if (!request.tools().isEmpty()) {
-                put("tools", request.tools());
-            }
         }};
         generator.writeObject(requestPojo);
     }
@@ -132,6 +129,8 @@ public class OpenAiChatRequestJsonSerializer extends JsonSerializer<OpenAiChatRe
                 put("total_pixels", video.totalPixels());
             }};
         }
+
+        // other
         return null;
     }
 
