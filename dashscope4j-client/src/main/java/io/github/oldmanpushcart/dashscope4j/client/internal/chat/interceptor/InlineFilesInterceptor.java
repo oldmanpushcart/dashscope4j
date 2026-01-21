@@ -1,12 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.chat.interceptor;
 
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.UserMessage;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.content.AudioContent;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.content.ImageContent;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.content.VideoContent;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.AudioContent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.ImageContent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.VideoContent;
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.codec.AsyncFileBase64Encoder;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 

@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.client.Parameters;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.UserMessage;
-import io.github.oldmanpushcart.dashscope4j.client.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
 import java.util.Collection;
 import java.util.HashMap;

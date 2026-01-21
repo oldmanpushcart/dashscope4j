@@ -4,7 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Task;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.InterceptionTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.TaskApi;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.TaskInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.TaskInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2v.interceptor.UploadFilesInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.vision.t2v.Text2VideoOp;
 import io.github.oldmanpushcart.dashscope4j.client.vision.t2v.Text2VideoRequest;

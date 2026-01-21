@@ -1,10 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.chat.interceptor;
 
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.chat.compat.plaintext.PlaintextChatHelper;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.FlowInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.AsyncInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.FlowInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.TagUtils;
 
 import java.util.concurrent.CompletableFuture;

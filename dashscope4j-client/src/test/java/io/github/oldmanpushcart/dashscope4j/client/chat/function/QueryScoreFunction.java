@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.client.chat.function;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.client.chat.tool.FunctionTool;
-import io.github.oldmanpushcart.dashscope4j.client.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
 import java.util.HashMap;
 import java.util.Map;

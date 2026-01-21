@@ -91,6 +91,10 @@ public class Parameters {
         return map.isEmpty();
     }
 
+    public void clear() {
+        map.clear();
+    }
+
     /**
      * 遍历参数项
      *

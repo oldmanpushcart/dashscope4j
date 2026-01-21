@@ -7,15 +7,22 @@ import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeOp;
 import io.github.oldmanpushcart.dashscope4j.client.vision.VisionOp;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
+import java.net.URI;
 import java.net.http.HttpClient;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Flow;
 
 public interface DashscopeClient {
 
-    ChatOp chat();
+    <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> async(T request, List<AsyncInterceptor> interceptors);
 
-    VisionOp vision();
+    <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> flow(T request, List<FlowInterceptor> interceptors);
 
-    RealtimeOp realtime();
+    <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> task(T request, List<TaskInterceptor> interceptors);
+
+    <T, R> CompletionStage<? extends Exchange<T>> newExchange(URI endpoint, Exchange.Codec<T, R> codec, Exchange.Handler<T, R> handler);
+
 
     BaseOp base();
 

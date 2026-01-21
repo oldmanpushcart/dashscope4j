@@ -7,11 +7,11 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.Model;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2i.TextToImageModel;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatParameterKeys;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.content.Content;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeOp;
@@ -39,7 +39,7 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug() {
 
-        final var request = AigcRequest.newBuilder(new TextToImageModel())
+        final var request = AigcRequest.newBuilder(TextToImageModel.QWEN_IMAGE)
                 .input(TextToImageModel.Input.newBuilder()
                         .prompt("Red Cup")
                         .build())
@@ -81,7 +81,7 @@ public class DebugTestCase implements LoadingEnv {
                 }
                 """;
 
-        final Model<?,?> model = new TextToImageModel();
+        final Model<?,?> model = TextToImageModel.QWEN_IMAGE;
         final Type type = JacksonJsonUtils.newMapper()
                 .getTypeFactory()
                 .constructParametricType(AigcResponse.class, model.outputType());

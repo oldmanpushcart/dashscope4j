@@ -7,7 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.client.vision.t2i.Text2ImageRequest;
 import io.github.oldmanpushcart.dashscope4j.client.vision.t2i.Text2ImageResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.InterceptionTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.executor.TaskApi;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.TaskInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.TaskInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i.interceptor.CompatChatInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i.interceptor.UploadFilesInterceptor;
 

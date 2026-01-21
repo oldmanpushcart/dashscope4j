@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.executor;
 
+import io.github.oldmanpushcart.dashscope4j.client.AsyncInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;

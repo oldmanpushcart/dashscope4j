@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.chat.compat.openai;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.*;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.content.*;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.*;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.*;
 
 import java.io.IOException;
 import java.util.HashMap;

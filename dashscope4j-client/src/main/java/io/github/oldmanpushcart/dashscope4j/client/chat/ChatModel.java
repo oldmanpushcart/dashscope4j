@@ -5,7 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents;
 
 import java.util.Set;
 
-import static io.github.oldmanpushcart.dashscope4j.client.chat.ChatModelTags.*;
+import static io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModelTags.*;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.PATH_MULTIMODAL;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.PATH_TEXT;
 

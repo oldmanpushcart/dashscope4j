@@ -1,8 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2v.interceptor;
 
 import io.github.oldmanpushcart.dashscope4j.client.Task;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.TaskInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.vision.t2i.Text2ImageRequest;
+import io.github.oldmanpushcart.dashscope4j.client.TaskInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.vision.t2v.Text2VideoRequest;
 
 import java.net.URI;

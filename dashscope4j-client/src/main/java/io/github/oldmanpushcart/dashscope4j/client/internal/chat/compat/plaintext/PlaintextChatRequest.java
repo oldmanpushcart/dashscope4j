@@ -1,9 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.chat.compat.plaintext;
 
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.AssistantMessage;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.SystemMessage;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.SystemMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
 
 import java.util.ArrayList;
 import java.util.HashMap;

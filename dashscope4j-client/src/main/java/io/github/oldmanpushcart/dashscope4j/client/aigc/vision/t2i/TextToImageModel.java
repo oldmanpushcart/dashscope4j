@@ -9,38 +9,24 @@ import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import java.net.URI;
 import java.util.List;
 
-public class TextToImageModel implements Model<TextToImageModel.Input, TextToImageModel.Output> {
+public record TextToImageModel(
+        String name,
+        String path
+) implements Model<TextToImageModel.Input, TextToImageModel.Output> {
 
-    @Override
-    public String name() {
-        return "qwen-image";
-    }
+    public static final TextToImageModel QWEN_IMAGE = new TextToImageModel("qwen-image", "/api/v1/services/aigc/text2image/image-synthesis");
 
-    @Override
-    public String path() {
-        return "/api/v1/services/aigc/text2image/image-synthesis";
-    }
+    /**
+     * 输入参数
+     */
+    public static final class Input {
 
-    @Override
-    public Class<Input> inputType() {
-        return Input.class;
-    }
-
-    @Override
-    public Class<Output> outputType() {
-        return Output.class;
-    }
-
-    public record Input(
-            @JsonProperty("prompt") String prompt,
-            @JsonProperty("negative") String negative
-    ) {
+        private final String prompt;
+        private final String negative;
 
         private Input(Builder builder) {
-            this(
-                    builder.prompt,
-                    builder.negative
-            );
+            this.prompt = builder.prompt;
+            this.negative = builder.negative;
         }
 
         public static Builder newBuilder() {
@@ -49,6 +35,16 @@ public class TextToImageModel implements Model<TextToImageModel.Input, TextToIma
 
         public static Builder newBuilder(Input input) {
             return new Builder(input);
+        }
+
+        @JsonProperty("prompt")
+        public String prompt() {
+            return prompt;
+        }
+
+        @JsonProperty("negative")
+        public String negative() {
+            return negative;
         }
 
         public static class Builder implements Buildable<Input, Builder> {
@@ -83,16 +79,35 @@ public class TextToImageModel implements Model<TextToImageModel.Input, TextToIma
 
     }
 
-    public record Output(
-            @JsonProperty("results") List<Item> items
-    ) {
+
+    /**
+     * 输出参数
+     */
+    public static final class Output {
+
+        private final List<Item> items;
+
+        @JsonCreator
+        private Output(
+
+                @JsonProperty("results")
+                List<Item> items
+
+        ) {
+            this.items = items;
+        }
+
+        public List<Item> items() {
+            return items;
+        }
+
 
         public static class Item extends Ret {
 
             private final URI image;
 
             @JsonCreator
-            protected Item(
+            private Item(
 
                     @JsonProperty("code")
                     String code,

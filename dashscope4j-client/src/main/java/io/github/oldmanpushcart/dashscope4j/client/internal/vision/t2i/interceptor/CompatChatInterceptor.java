@@ -1,12 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i.interceptor;
 
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.content.ImageContent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.ImageContent;
 import io.github.oldmanpushcart.dashscope4j.client.vision.t2i.Text2ImageModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.vision.t2i.Text2ImageRequest;
 import io.github.oldmanpushcart.dashscope4j.client.vision.t2i.Text2ImageResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i.compat.chat.Text2ImageChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i.compat.chat.Text2ImageChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.TaskInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.TaskInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.Task;
 
 import java.util.List;

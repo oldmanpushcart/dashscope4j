@@ -2,9 +2,9 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.chat.compat.openai;
 
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatResponse;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.AssistantMessage;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.content.Content;
-import io.github.oldmanpushcart.dashscope4j.client.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 
 import java.net.URI;

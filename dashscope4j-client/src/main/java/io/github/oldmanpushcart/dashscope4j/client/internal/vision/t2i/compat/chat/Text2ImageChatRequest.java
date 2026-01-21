@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i.compat.c
 
 import io.github.oldmanpushcart.dashscope4j.client.AlgoRequest;
 import io.github.oldmanpushcart.dashscope4j.client.Parameters;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.vision.t2i.Text2ImageModel;
 import io.github.oldmanpushcart.dashscope4j.client.vision.t2i.Text2ImageRequest;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;

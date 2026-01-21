@@ -4,10 +4,9 @@ import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.content.Content;
-import io.github.oldmanpushcart.dashscope4j.client.chat.message.content.ImageContent;
-import io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.ImageContent;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
