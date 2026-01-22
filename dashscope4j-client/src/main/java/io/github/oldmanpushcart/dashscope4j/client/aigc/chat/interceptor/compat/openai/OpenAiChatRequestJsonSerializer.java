@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.aigc.chat.compat.openai;
+package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.openai;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
-public class OpenAiChatRequestJsonSerializer extends JsonSerializer<OpenAiChatRequest> {
+class OpenAiChatRequestJsonSerializer extends JsonSerializer<OpenAiChatRequest> {
 
     @Override
     public void serialize(OpenAiChatRequest request, JsonGenerator generator, SerializerProvider provider) throws IOException {

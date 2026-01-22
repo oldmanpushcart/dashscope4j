@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.aigc.chat.interceptor;
+package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.openai;
 
 import io.github.oldmanpushcart.dashscope4j.client.AsyncInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.FlowInterceptor;
@@ -6,21 +6,23 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
-import io.github.oldmanpushcart.dashscope4j.client.internal.aigc.chat.compat.plaintext.PlaintextChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.TagUtils;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
-public class CompatPlaintextInterceptor implements FlowInterceptor, AsyncInterceptor {
+public class CompatOpenAiInterceptor implements FlowInterceptor, AsyncInterceptor {
 
     @Override
     public CompletionStage<?> intercept(AsyncInterceptor.Chain chain) {
 
         if (!(chain.request() instanceof AigcRequest<?, ?, ?> aigcRequest)
                 || !(aigcRequest.model() instanceof ChatModel model)
-                || !TagUtils.contains(model.tags(), "compat", "plaintext")) {
+                || !TagUtils.contains(model.tags(), "compat", "openai")) {
             return chain.proceed();
         }
 
@@ -28,14 +30,10 @@ public class CompatPlaintextInterceptor implements FlowInterceptor, AsyncInterce
         final var chatRequest = (AigcRequest<Input, Output, ChatModel>) aigcRequest;
 
         return CompletableFuture.completedStage(chatRequest)
-                .thenApply(r -> {
-                    final var plaintextChatModel = new PlaintextChatModel(model.name(), model.path());
-                    return AigcRequest.newBuilder(plaintextChatModel)
-                            .parameters(chatRequest.parameters())
-                            .input(new PlaintextChatModel.Input(chatRequest.input().messages()))
-                            .build();
-                })
-                .thenCompose(chain::proceed);
+                .thenApply(OpenAiChatHelper::toOpenAiChatRequest)
+                .thenCompose(chain::proceed)
+                .thenApply(v -> (OpenAiChatResponse) v)
+                .thenApply(OpenAiChatHelper::toAigcResponse);
     }
 
     @Override
@@ -43,7 +41,7 @@ public class CompatPlaintextInterceptor implements FlowInterceptor, AsyncInterce
 
         if (!(chain.request() instanceof AigcRequest<?, ?, ?> aigcRequest)
                 || !(aigcRequest.model() instanceof ChatModel model)
-                || !TagUtils.contains(model.tags(), "compat", "plaintext")) {
+                || !model.tags().contains(ChatModelTags.COMPAT_OPENAI)) {
             return chain.proceed();
         }
 
@@ -51,15 +49,22 @@ public class CompatPlaintextInterceptor implements FlowInterceptor, AsyncInterce
         final var chatRequest = (AigcRequest<Input, Output, ChatModel>) aigcRequest;
 
         return CompletableFuture.completedStage(chatRequest)
-                .thenApply(r -> {
-                    final var plaintextChatModel = new PlaintextChatModel(model.name(), model.path());
-                    return AigcRequest.newBuilder(plaintextChatModel)
-                            .parameters(chatRequest.parameters())
-                            .input(new PlaintextChatModel.Input(chatRequest.input().messages()))
-                            .build();
+                .thenApply(r ->
+                        AigcRequest.newBuilder(r)
+                                .addParameter("stream", true)
+                                .addParameter("stream_options", Map.of("include_usage", true))
+                                .addParameter("enable_omni_output_audio_url", true)
+                                .build())
+                .thenApply(OpenAiChatHelper::toOpenAiChatRequest)
+                .thenCompose(chain::proceed)
+                .thenApply(v -> {
+                    //noinspection unchecked
+                    return (Flow.Publisher<OpenAiChatResponse>) v;
                 })
-                .thenCompose(chain::proceed);
+                .thenApply(publisher ->
+                        FlowX.fromPublisher(publisher)
+                                .map(OpenAiChatHelper::toAigcResponse)
+                );
     }
 
 }
-

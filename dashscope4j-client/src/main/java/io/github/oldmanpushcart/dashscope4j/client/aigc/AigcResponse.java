@@ -6,11 +6,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.Usage;
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 
-public class AigcResponse<O> extends ApiResponse {
+public class AigcResponse<O> extends ApiResponse implements Accumulator<AigcResponse<O>> {
 
     private final O output;
+    private final Usage usage;
 
     /**
      * 构造应答
@@ -44,10 +45,38 @@ public class AigcResponse<O> extends ApiResponse {
     ) {
         super(request, uuid, code, desc);
         this.output = output;
+        this.usage = usage;
     }
 
     public O output() {
         return output;
+    }
+
+    public Usage usage() {
+        return usage;
+    }
+
+    @Override
+    public AigcResponse<O> accumulate(AigcResponse<O> next) {
+
+        O mergeOutput;
+        if (output == null) {
+            mergeOutput = next.output;
+        } else if (output instanceof Accumulator<?> && next.output instanceof Accumulator<?>) {
+            //noinspection unchecked
+            mergeOutput = ((Accumulator<O>) output).accumulate(next.output);
+        } else {
+            throw new UnsupportedOperationException("Output is not accumulator");
+        }
+
+        return new AigcResponse<>(
+                next.request(),
+                next.uuid(),
+                next.code(),
+                next.desc(),
+                next.usage,
+                mergeOutput
+        );
     }
 
 }

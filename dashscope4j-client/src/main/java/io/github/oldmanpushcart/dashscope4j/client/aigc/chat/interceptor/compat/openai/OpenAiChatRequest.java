@@ -1,10 +1,9 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.aigc.chat.compat.openai;
+package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.openai;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.Model;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.OpenAiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
@@ -21,7 +20,7 @@ import java.util.function.Function;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_CONTENT_TYPE;
 
 @JsonSerialize(using = OpenAiChatRequestJsonSerializer.class)
-public class OpenAiChatRequest extends OpenAiRequest<OpenAiChatResponse> {
+class OpenAiChatRequest extends OpenAiRequest<OpenAiChatResponse> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Model<?,?> model;

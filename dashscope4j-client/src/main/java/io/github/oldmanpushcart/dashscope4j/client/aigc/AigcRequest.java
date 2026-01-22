@@ -84,6 +84,11 @@ public class AigcRequest<I, O, M extends Model<I, O>> extends ApiRequest<AigcRes
         };
     }
 
+    public <UI, UO, UM extends Model<UI, UO>> AigcRequest<UI, UO, UM> as(UM model) {
+        //noinspection unchecked
+        return (AigcRequest<UI, UO, UM>) this;
+    }
+
     public static <I, O, M extends Model<I, O>> Builder<I, O, M> newBuilder(M model) {
         return new Builder<>(model);
     }

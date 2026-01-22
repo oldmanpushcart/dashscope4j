@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.aigc.chat.compat.plaintext;
+package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.plaintext;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.Model;
@@ -11,7 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage
 import java.util.HashMap;
 import java.util.List;
 
-public record PlaintextChatModel(
+record PlaintextChatModel(
         String name,
         String path
 ) implements Model<PlaintextChatModel.Input, ChatModel.Output> {

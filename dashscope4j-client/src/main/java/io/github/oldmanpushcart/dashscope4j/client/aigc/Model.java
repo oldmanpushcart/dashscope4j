@@ -18,6 +18,10 @@ public interface Model<I, O> {
         return Set.of();
     }
 
+    default Set<Interceptor> interceptors() {
+        return Set.of();
+    }
+
     default Class<I> inputType() {
         final ParameterizedType parameterizedType = GenericReflectUtils.findFirst(getClass(), Model.class);
         //noinspection unchecked

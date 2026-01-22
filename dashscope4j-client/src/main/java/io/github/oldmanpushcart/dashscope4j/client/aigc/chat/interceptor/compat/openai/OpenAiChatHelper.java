@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.aigc.chat.compat.openai;
+package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.openai;
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
@@ -14,7 +14,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class OpenAiChatHelper {
+class OpenAiChatHelper {
 
     public static OpenAiChatRequest toOpenAiChatRequest(AigcRequest<Input, ?, ?> request) {
         return new OpenAiChatRequest(

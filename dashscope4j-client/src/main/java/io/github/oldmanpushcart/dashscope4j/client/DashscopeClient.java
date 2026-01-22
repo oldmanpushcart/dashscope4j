@@ -1,10 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.DashscopeClientImpl;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeOp;
-import io.github.oldmanpushcart.dashscope4j.client.vision.VisionOp;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.URI;
@@ -23,6 +20,17 @@ public interface DashscopeClient {
 
     <T, R> CompletionStage<? extends Exchange<T>> newExchange(URI endpoint, Exchange.Codec<T, R> codec, Exchange.Handler<T, R> handler);
 
+    default <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> async(T request) {
+        return async(request, List.of());
+    }
+
+    default <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> flow(T request) {
+        return flow(request, List.of());
+    }
+
+    default <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> task(T request) {
+        return task(request, List.of());
+    }
 
     BaseOp base();
 

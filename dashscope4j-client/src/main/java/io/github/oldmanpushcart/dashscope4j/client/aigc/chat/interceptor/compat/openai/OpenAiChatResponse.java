@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.aigc.chat.compat.openai;
+package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.openai;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonAlias;
@@ -15,7 +15,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.Duratio
 import java.time.Duration;
 import java.util.List;
 
-public class OpenAiChatResponse extends OpenAiResponse {
+class OpenAiChatResponse extends OpenAiResponse {
 
     private final List<Choice> choices;
     private final Usage usage;

@@ -1,9 +1,15 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.Model;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.*;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.openai.CompatOpenAiInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.plaintext.CompatPlaintextInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
@@ -11,10 +17,26 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.util.Collections.unmodifiableList;
 
 public record ChatModel(String name, String path) implements Model<ChatModel.Input, ChatModel.Output> {
+
+    private static final Set<Interceptor> interceptors = Set.of(
+            new InlineFilesInterceptor(),
+            new UploadFilesInterceptor(),
+            new BridgeAsyncInterceptor(),
+            new BridgeTaskInterceptor(),
+            new BridgeFlowInterceptor(),
+            new IncrementalOutputOnlyInterceptor(),
+            new CompatPlaintextInterceptor(),
+            new CompatOpenAiInterceptor()
+    );
+
+    public Set<Interceptor> interceptors() {
+        return interceptors;
+    }
 
     /**
      * 输入参数
@@ -22,15 +44,74 @@ public record ChatModel(String name, String path) implements Model<ChatModel.Inp
     public static class Input {
 
         private final List<Message> messages;
+        private final boolean uploadEnabled;
+        private final boolean inlineEnabled;
 
         private Input(Builder builder) {
             this.messages = unmodifiableList(builder.messages);
+            this.uploadEnabled = builder.uploadEnabled;
+            this.inlineEnabled = builder.inlineEnabled;
         }
 
         @JsonProperty("messages")
         public List<Message> messages() {
             return messages;
         }
+
+        @JsonIgnore
+        public boolean uploadEnabled() {
+            return uploadEnabled;
+        }
+
+        @JsonIgnore
+        public boolean inlineEnabled() {
+            return inlineEnabled;
+        }
+
+        public Message lastMessage() {
+            return !messages.isEmpty()
+                    ? messages.get(messages.size() - 1)
+                    : null;
+        }
+
+        public boolean hasUserInputMessage() {
+            return !messages.isEmpty()
+                    && lastMessage().role() == Message.Role.USER;
+        }
+
+        public UserMessage userInputMessage() {
+
+            if (!hasUserInputMessage()) {
+                return null;
+            }
+
+            final var last = lastMessage();
+            if (last instanceof UserMessage userMessage) {
+                return userMessage;
+            } else {
+                return null;
+            }
+
+        }
+
+        /**
+         * 提取历史信息
+         * <p>
+         * 消息列表中下标范围[0,n-1]信息为历史信息
+         * </p>
+         *
+         * @return 历史信息
+         */
+        public List<Message> historyMessages() {
+            if (messages.isEmpty()) {
+                return List.of();
+            }
+            if (!hasUserInputMessage()) {
+                return messages;
+            }
+            return messages.subList(0, messages.size() - 1);
+        }
+
 
         public static Builder newBuilder() {
             return new Builder();
@@ -43,6 +124,8 @@ public record ChatModel(String name, String path) implements Model<ChatModel.Inp
         public static class Builder implements Buildable<Input, Builder> {
 
             private final List<Message> messages = new ArrayList<>();
+            private boolean uploadEnabled;
+            private boolean inlineEnabled;
 
             public Builder() {
 
@@ -50,6 +133,8 @@ public record ChatModel(String name, String path) implements Model<ChatModel.Inp
 
             public Builder(Input input) {
                 this.messages.addAll(input.messages);
+                this.uploadEnabled = input.uploadEnabled;
+                this.inlineEnabled = input.inlineEnabled;
             }
 
             public Builder messages(List<Message> messages) {
@@ -65,6 +150,16 @@ public record ChatModel(String name, String path) implements Model<ChatModel.Inp
 
             public Builder addMessages(List<Message> messages) {
                 this.messages.addAll(messages);
+                return this;
+            }
+
+            public Builder uploadEnabled(boolean uploadEnabled) {
+                this.uploadEnabled = uploadEnabled;
+                return this;
+            }
+
+            public Builder inlineEnabled(boolean inlineEnabled) {
+                this.inlineEnabled = inlineEnabled;
                 return this;
             }
 
@@ -88,7 +183,7 @@ public record ChatModel(String name, String path) implements Model<ChatModel.Inp
             @JsonProperty("choices")
             List<Choice> choices
 
-    ) {
+    ) implements Accumulator<Output> {
 
         /**
          * @return 最佳候选结果
@@ -97,6 +192,40 @@ public record ChatModel(String name, String path) implements Model<ChatModel.Inp
             return Optional.ofNullable(choices)
                     .flatMap(choices -> choices.stream().sorted().findFirst())
                     .orElseThrow(() -> new IllegalArgumentException("No choices found!"));
+        }
+
+        @Override
+        public Output accumulate(Output next) {
+
+            /*
+             * 检查等待合并的候选结果数量与当前对话应答的候选结果数量是否相等
+             * 如果不相等则说明无法合并
+             */
+            final List<Choice> currChoices = choices;
+            final List<Choice> nextChoices = next.choices;
+            if (currChoices.size() != nextChoices.size()) {
+                throw new IllegalArgumentException("The number of choices is not equal! expect:%s but %s".formatted(
+                        currChoices.size(),
+                        nextChoices.size()
+                ));
+            }
+
+            /*
+             * 合并所有的候选结果
+             * 多个候选结果的顺序应该要保持一致
+             */
+            final List<Choice> newChoices = new ArrayList<>();
+            final int length = currChoices.size();
+            for (int index = 0; index < length; index++) {
+                final Choice currChoice = currChoices.get(index);
+                final Choice nextChoice = nextChoices.get(index);
+                newChoices.add(currChoice.accumulate(nextChoice));
+            }
+
+            return new Output(
+                    next.search,
+                    newChoices
+            );
         }
 
         /**
