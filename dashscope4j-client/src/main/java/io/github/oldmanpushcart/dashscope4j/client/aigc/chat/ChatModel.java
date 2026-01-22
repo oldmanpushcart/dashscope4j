@@ -18,10 +18,45 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.util.Collections.unmodifiableList;
 
-public record ChatModel(String name, String path) implements AigcModel<ChatModel.Input, ChatModel.Output> {
+public record ChatModel(
+        String name,
+        String path,
+        Set<String> tags
+) implements AigcModel<ChatModel.Input, ChatModel.Output> {
+
+    private static final String PATH_TEXT = "/api/v1/services/aigc/text-generation/generation";
+    private static final String PATH_MULTIMODAL = "/api/v1/services/aigc/multimodal-generation/generation";
+    private static final String PATH_COMPAT_OPENAI = "/compatible-mode/v1/chat/completions";
+
+    public static final ChatModel QWEN_FLASH = new ChatModel("qwen-flash", PATH_TEXT);
+    public static final ChatModel QWEN_PLUS = new ChatModel("qwen-plus", PATH_TEXT);
+    public static final ChatModel QWEN_MAX = new ChatModel("qwen-max", PATH_TEXT);
+    public static final ChatModel QWEN_LONG = new ChatModel("qwen-long", PATH_TEXT, Set.of(
+            ChatModelTags.COMPAT_PLAINTEXT
+    ));
+
+    public static final ChatModel QWEN_VL_PLUS = new ChatModel("qwen-vl-plus", PATH_MULTIMODAL);
+    public static final ChatModel QWEN_VL_MAX = new ChatModel("qwen-vl-max", PATH_MULTIMODAL);
+
+    public static final ChatModel QWQ_PLUS = new ChatModel("qwq-plus", PATH_TEXT, Set.of(
+            ChatModelTags.RESPONSE_MODE_FLOW,
+            ChatModelTags.INCREMENTAL_OUTPUT_ONLY
+    ));
+    public static final ChatModel QVQ_MAX = new ChatModel("qvq-max", PATH_MULTIMODAL, Set.of(
+            ChatModelTags.RESPONSE_MODE_FLOW,
+            ChatModelTags.INCREMENTAL_OUTPUT_ONLY
+    ));
+    public static final ChatModel QWEN3_OMNI_FLASH = new ChatModel("qwen3-omni-flash", PATH_COMPAT_OPENAI, Set.of(
+            ChatModelTags.COMPAT_OPENAI,
+            ChatModelTags.RESPONSE_MODE_FLOW,
+            ChatModelTags.INCREMENTAL_OUTPUT_ONLY
+    ));
+
+    public static final ChatModel QWEN_IMAGE_MAX = new ChatModel("qwen-image-max", PATH_MULTIMODAL);
 
     private static final List<Interceptor> interceptors = List.of(
             new InlineFilesInterceptor(),
@@ -34,6 +69,10 @@ public record ChatModel(String name, String path) implements AigcModel<ChatModel
             new CompatOpenAiInterceptor(),
             new ToolCallInterceptor()
     );
+
+    public ChatModel(String name, String path) {
+        this(name, path, Set.of());
+    }
 
     public List<Interceptor> interceptors() {
         return interceptors;

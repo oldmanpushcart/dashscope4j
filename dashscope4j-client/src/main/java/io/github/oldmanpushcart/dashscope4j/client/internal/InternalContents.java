@@ -31,7 +31,4 @@ public interface InternalContents {
 
     String HTTP_HEADER_X_OSS_OBJECT_ACL = "x-oss-object-acl";
 
-    String PATH_TEXT = "/api/v1/services/aigc/text-generation/generation";
-    String PATH_MULTIMODAL = "/api/v1/services/aigc/multimodal-generation/generation";
-    String PATH_COMPAT_OPENAI = "/compatible-mode/v1/chat/completions";
 }
