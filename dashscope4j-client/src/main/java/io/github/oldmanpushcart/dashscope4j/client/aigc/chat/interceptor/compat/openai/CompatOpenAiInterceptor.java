@@ -20,14 +20,14 @@ public class CompatOpenAiInterceptor implements FlowInterceptor, AsyncIntercepto
     @Override
     public CompletionStage<?> intercept(AsyncInterceptor.Chain chain) {
 
-        if (!(chain.request() instanceof AigcRequest<?, ?, ?> aigcRequest)
+        if (!(chain.request() instanceof AigcRequest<?, ?> aigcRequest)
                 || !(aigcRequest.model() instanceof ChatModel model)
                 || !TagUtils.contains(model.tags(), "compat", "openai")) {
             return chain.proceed();
         }
 
         //noinspection unchecked
-        final var chatRequest = (AigcRequest<Input, Output, ChatModel>) aigcRequest;
+        final var chatRequest = (AigcRequest<Input, Output>) aigcRequest;
 
         return CompletableFuture.completedStage(chatRequest)
                 .thenApply(OpenAiChatHelper::toOpenAiChatRequest)
@@ -39,14 +39,14 @@ public class CompatOpenAiInterceptor implements FlowInterceptor, AsyncIntercepto
     @Override
     public CompletionStage<? extends Flow.Publisher<?>> intercept(FlowInterceptor.Chain chain) {
 
-        if (!(chain.request() instanceof AigcRequest<?, ?, ?> aigcRequest)
+        if (!(chain.request() instanceof AigcRequest<?, ?> aigcRequest)
                 || !(aigcRequest.model() instanceof ChatModel model)
                 || !model.tags().contains(ChatModelTags.COMPAT_OPENAI)) {
             return chain.proceed();
         }
 
         //noinspection unchecked
-        final var chatRequest = (AigcRequest<Input, Output, ChatModel>) aigcRequest;
+        final var chatRequest = (AigcRequest<Input, Output>) aigcRequest;
 
         return CompletableFuture.completedStage(chatRequest)
                 .thenApply(r ->
