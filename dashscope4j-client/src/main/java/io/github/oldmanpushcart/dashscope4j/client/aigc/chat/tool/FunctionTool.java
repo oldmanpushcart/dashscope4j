@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.github.oldmanpushcart.dashscope4j.client.internal.aigc.chat.tool.DefaultFunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 

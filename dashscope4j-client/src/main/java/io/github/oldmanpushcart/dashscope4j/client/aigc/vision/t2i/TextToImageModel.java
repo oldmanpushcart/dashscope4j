@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2i;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.Ret;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.Model;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.URI;
@@ -12,7 +12,7 @@ import java.util.List;
 public record TextToImageModel(
         String name,
         String path
-) implements Model<TextToImageModel.Input, TextToImageModel.Output> {
+) implements AigcModel<TextToImageModel.Input, TextToImageModel.Output> {
 
     public static final TextToImageModel QWEN_IMAGE = new TextToImageModel("qwen-image", "/api/v1/services/aigc/text2image/image-synthesis");
 

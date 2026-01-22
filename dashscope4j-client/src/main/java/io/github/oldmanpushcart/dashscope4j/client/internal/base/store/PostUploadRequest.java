@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.MultipartBodyPublisherBuilder;
+import io.github.oldmanpushcart.dashscope4j.client.internal.base.api.executor.http.MultipartBodyPublisherBuilder;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonXmlUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 import org.slf4j.Logger;
@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_X_OSS_OBJECT_ACL;
-import static io.github.oldmanpushcart.dashscope4j.client.internal.executor.http.HttpHeader.HEADER_CONTENT_TYPE;
+import static io.github.oldmanpushcart.dashscope4j.client.internal.base.api.executor.http.HttpHeader.HEADER_CONTENT_TYPE;
 import static java.util.Objects.requireNonNull;
 
 public class PostUploadRequest extends ApiRequest<PostUploadResponse> {

@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.openai;
 
-import io.github.oldmanpushcart.dashscope4j.client.AsyncInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.FlowInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.AsyncInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.FlowInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;

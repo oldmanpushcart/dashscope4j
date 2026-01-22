@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.Parameters;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.Model;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.OpenAiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
@@ -23,18 +23,18 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalConte
 class OpenAiChatRequest extends OpenAiRequest<OpenAiChatResponse> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Model<?,?> model;
+    private final AigcModel<?,?> model;
     private final Parameters parameters;
     private final List<Message> messages;
 
-    public OpenAiChatRequest(Model<?,?> model, Parameters parameters, List<Message> messages) {
+    public OpenAiChatRequest(AigcModel<?,?> model, Parameters parameters, List<Message> messages) {
         super(OpenAiChatResponse.class);
         this.model = model;
         this.parameters = parameters;
         this.messages = messages;
     }
 
-    public Model<?,?> model() {
+    public AigcModel<?,?> model() {
         return model;
     }
 

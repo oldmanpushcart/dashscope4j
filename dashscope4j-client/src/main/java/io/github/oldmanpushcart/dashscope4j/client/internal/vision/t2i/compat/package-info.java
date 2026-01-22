@@ -1,1 +1,0 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.vision.t2i.compat;

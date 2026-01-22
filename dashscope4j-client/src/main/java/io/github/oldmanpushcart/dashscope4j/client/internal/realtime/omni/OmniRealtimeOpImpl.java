@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.realtime.omni;
 
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Parameters;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.ExchangeApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange;
@@ -19,13 +19,11 @@ import java.util.concurrent.CompletionStage;
 
 public class OmniRealtimeOpImpl implements OmniRealtimeOp {
 
-    private final String host;
-    private final ExchangeApi exchangeApi;
+    private final DashscopeClient client;
     private final OmniRealtimeExchange.Codec codec;
 
-    public OmniRealtimeOpImpl(String host, ExchangeApi exchangeApi) {
-        this.host = host;
-        this.exchangeApi = exchangeApi;
+    public OmniRealtimeOpImpl(DashscopeClient client) {
+        this.client = client;
         this.codec = new OmniRealtimeExchange.Codec() {
             @Override
             public String encode(OmniRealtimeClientEvent data) {
@@ -58,21 +56,21 @@ public class OmniRealtimeOpImpl implements OmniRealtimeOp {
 
     @Override
     public CompletionStage<ManualVad> newManualVad(OmniRealtimeModel model, Parameters parameters, OmniRealtimeExchange.Handler handler) {
-        final var endpoint = EndpointUtils.wss(host, model.path());
+        final var endpoint = EndpointUtils.wss(client.base().api().host(), model.path());
         final var parametersAdjusted = adjust(parameters, TurnDetection.Type.MANUAL_VAD);
         final var manualVadHandler = new ManualVadHandler(handler);
         final var handshakeHandler = new SessionHandshakeHandler(parametersAdjusted, manualVadHandler);
-        return exchangeApi.newExchange(endpoint, codec, handshakeHandler)
+        return client.base().api().newExchange(endpoint, codec, handshakeHandler)
                 .thenCompose(unused -> manualVadHandler.completeStage());
     }
 
     @Override
     public CompletionStage<ServerVad> newServerVad(OmniRealtimeModel model, Parameters parameters, OmniRealtimeExchange.Handler handler) {
-        final var endpoint = EndpointUtils.wss(host, model.path());
+        final var endpoint = EndpointUtils.wss(client.base().api().host(), model.path());
         final var parametersAdjusted = adjust(parameters, TurnDetection.Type.SERVER_VAD);
         final var serverVadHandler = new ServerVadHandler(handler);
         final var handshakeHandler = new SessionHandshakeHandler(parametersAdjusted, serverVadHandler);
-        return exchangeApi.newExchange(endpoint, codec, handshakeHandler)
+        return client.base().api().newExchange(endpoint, codec, handshakeHandler)
                 .thenCompose(unused -> serverVadHandler.completeStage());
     }
 

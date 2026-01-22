@@ -1,18 +1,32 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.Model;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v.interceptor.UploadFilesInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Set;
 
 public record TextToVideoModel(
         String name,
         String path
-) implements Model<TextToVideoModel.Input, TextToVideoModel.Output> {
+) implements AigcModel<TextToVideoModel.Input, TextToVideoModel.Output> {
 
     public static final TextToVideoModel WAN_T2V = new TextToVideoModel("wan2.6-t2v", "/api/v1/services/aigc/video-generation/video-synthesis");
+
+    private static final List<Interceptor> interceptors = List.of(
+            new UploadFilesInterceptor()
+    );
+
+    @Override
+    public List<Interceptor> interceptors() {
+        return interceptors;
+    }
 
     /**
      * 输入参数
@@ -22,11 +36,13 @@ public record TextToVideoModel(
         private final String prompt;
         private final String negative;
         private final URI audio;
+        private final boolean uploadEnabled;
 
         private Input(Builder builder) {
             this.prompt = builder.prompt;
             this.negative = builder.negative;
             this.audio = builder.audio;
+            this.uploadEnabled = builder.uploadEnabled;
         }
 
         @JsonProperty("prompt")
@@ -44,6 +60,11 @@ public record TextToVideoModel(
             return audio;
         }
 
+        @JsonIgnore
+        public boolean uploadEnabled() {
+            return uploadEnabled;
+        }
+
         public static Builder newBuilder() {
             return new Builder();
         }
@@ -57,6 +78,7 @@ public record TextToVideoModel(
             private String prompt;
             private String negative;
             private URI audio;
+            private boolean uploadEnabled;
 
             public Builder() {
             }
@@ -65,6 +87,7 @@ public record TextToVideoModel(
                 this.prompt = input.prompt;
                 this.negative = input.negative;
                 this.audio = input.audio;
+                this.uploadEnabled = input.uploadEnabled;
             }
 
             public Builder prompt(String prompt) {
@@ -79,6 +102,11 @@ public record TextToVideoModel(
 
             public Builder audio(URI audio) {
                 this.audio = audio;
+                return this;
+            }
+
+            public Builder uploadEnabled(boolean uploadEnabled) {
+                this.uploadEnabled = uploadEnabled;
                 return this;
             }
 

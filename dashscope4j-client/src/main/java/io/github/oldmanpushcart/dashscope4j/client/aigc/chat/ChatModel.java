@@ -2,14 +2,15 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.Model;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.*;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.openai.CompatOpenAiInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.plaintext.CompatPlaintextInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.tool.ToolCallInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
@@ -17,13 +18,12 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static java.util.Collections.unmodifiableList;
 
-public record ChatModel(String name, String path) implements Model<ChatModel.Input, ChatModel.Output> {
+public record ChatModel(String name, String path) implements AigcModel<ChatModel.Input, ChatModel.Output> {
 
-    private static final Set<Interceptor> interceptors = Set.of(
+    private static final List<Interceptor> interceptors = List.of(
             new InlineFilesInterceptor(),
             new UploadFilesInterceptor(),
             new BridgeAsyncInterceptor(),
@@ -31,10 +31,11 @@ public record ChatModel(String name, String path) implements Model<ChatModel.Inp
             new BridgeFlowInterceptor(),
             new IncrementalOutputOnlyInterceptor(),
             new CompatPlaintextInterceptor(),
-            new CompatOpenAiInterceptor()
+            new CompatOpenAiInterceptor(),
+            new ToolCallInterceptor()
     );
 
-    public Set<Interceptor> interceptors() {
+    public List<Interceptor> interceptors() {
         return interceptors;
     }
 

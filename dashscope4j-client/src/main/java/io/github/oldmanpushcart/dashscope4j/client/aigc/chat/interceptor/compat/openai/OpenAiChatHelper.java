@@ -16,7 +16,7 @@ import java.util.Collections;
 
 class OpenAiChatHelper {
 
-    public static OpenAiChatRequest toOpenAiChatRequest(AigcRequest<Input, ?, ?> request) {
+    public static OpenAiChatRequest toOpenAiChatRequest(AigcRequest<Input, ?> request) {
         return new OpenAiChatRequest(
                 request.model(),
                 request.parameters(),

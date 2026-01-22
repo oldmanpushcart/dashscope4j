@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.plaintext;
 
-import io.github.oldmanpushcart.dashscope4j.client.AsyncInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.FlowInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.AsyncInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.FlowInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
@@ -18,14 +18,14 @@ public class CompatPlaintextInterceptor implements FlowInterceptor, AsyncInterce
     @Override
     public CompletionStage<?> intercept(AsyncInterceptor.Chain chain) {
 
-        if (!(chain.request() instanceof AigcRequest<?, ?, ?> aigcRequest)
+        if (!(chain.request() instanceof AigcRequest<?, ?> aigcRequest)
                 || !(aigcRequest.model() instanceof ChatModel model)
                 || !model.tags().contains(ChatModelTags.COMPAT_PLAINTEXT)) {
             return chain.proceed();
         }
 
         //noinspection unchecked
-        final var chatRequest = (AigcRequest<Input, Output, ChatModel>) aigcRequest;
+        final var chatRequest = (AigcRequest<Input, Output>) aigcRequest;
 
         return CompletableFuture.completedStage(chatRequest)
                 .thenApply(r -> {
@@ -41,14 +41,14 @@ public class CompatPlaintextInterceptor implements FlowInterceptor, AsyncInterce
     @Override
     public CompletionStage<? extends Flow.Publisher<?>> intercept(FlowInterceptor.Chain chain) {
 
-        if (!(chain.request() instanceof AigcRequest<?, ?, ?> aigcRequest)
+        if (!(chain.request() instanceof AigcRequest<?, ?> aigcRequest)
                 || !(aigcRequest.model() instanceof ChatModel model)
                 || !TagUtils.contains(model.tags(), "compat", "plaintext")) {
             return chain.proceed();
         }
 
         //noinspection unchecked
-        final var chatRequest = (AigcRequest<Input, Output, ChatModel>) aigcRequest;
+        final var chatRequest = (AigcRequest<Input, Output>) aigcRequest;
 
         return CompletableFuture.completedStage(chatRequest)
                 .thenApply(r -> {

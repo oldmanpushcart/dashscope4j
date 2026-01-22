@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor;
 
-import io.github.oldmanpushcart.dashscope4j.client.FlowInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.FlowInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModelTags;
@@ -19,7 +19,7 @@ public class BridgeFlowInterceptor implements FlowInterceptor {
     @Override
     public CompletionStage<? extends Flow.Publisher<?>> intercept(Chain chain) {
 
-        if (!(chain.request() instanceof AigcRequest<?, ?, ?> aigcRequest)
+        if (!(chain.request() instanceof AigcRequest<?, ?> aigcRequest)
                 || !(aigcRequest.model() instanceof ChatModel model)) {
             return chain.proceed();
         }
@@ -45,22 +45,22 @@ public class BridgeFlowInterceptor implements FlowInterceptor {
         }
     }
 
-    private CompletionStage<? extends Flow.Publisher<?>> bridgeAsync(Chain chain, AigcRequest<?, ?, ?> request) {
+    private CompletionStage<? extends Flow.Publisher<?>> bridgeAsync(Chain chain, AigcRequest<?, ?> request) {
         final var flow = FlowX.defer(() -> {
             final var newRequest = AigcRequest.newBuilder(request)
                     .addParameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, false)
                     .build();
-            return FlowX.fromCompletionStage(chain.client().async(newRequest).thenApply(FlowX::just));
+            return FlowX.fromCompletionStage(chain.client().aigc().async(newRequest).thenApply(FlowX::just));
         });
         return CompletableFuture.completedStage(flow);
     }
 
-    private CompletionStage<? extends Flow.Publisher<?>> bridgeTask(Chain chain, AigcRequest<?, ?, ?> request) {
+    private CompletionStage<? extends Flow.Publisher<?>> bridgeTask(Chain chain, AigcRequest<?, ?> request) {
         final var flow = FlowX.defer(() -> {
             final var newRequest = AigcRequest.newBuilder(request)
                     .addParameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, false)
                     .build();
-            final var stage = chain.client().task(newRequest)
+            final var stage = chain.client().aigc().task(newRequest)
                     .thenCompose(half -> half.waitingFor(always(ofSeconds(1L))));
             return FlowX.fromCompletionStage(stage.thenApply(FlowX::just));
         });

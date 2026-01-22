@@ -1,11 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.files;
 
 import io.github.oldmanpushcart.dashscope4j.client.ApiException;
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Ret;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
@@ -16,23 +16,23 @@ import java.util.concurrent.Flow;
 
 public class FilesOpImpl implements FilesOp {
 
-    private final AsyncApi asyncApi;
+    private final DashscopeClient client;
 
-    public FilesOpImpl(AsyncApi asyncApi) {
-        this.asyncApi = asyncApi;
+    public FilesOpImpl(DashscopeClient client) {
+        this.client = client;
     }
 
     @Override
     public CompletionStage<FileMeta> create(URI resource, String filename, Purpose purpose) {
         final var request = new FileCreateRequest(resource, filename, purpose);
-        return asyncApi.execute(request)
+        return client.base().api().async(request)
                 .thenApply(FileCreateResponse::meta);
     }
 
     @Override
     public CompletionStage<FileMeta> detail(String identity) {
         final var request = new FileDetailRequest(identity);
-        return asyncApi.execute(request)
+        return client.base().api().async(request)
                 .thenApply(FileDetailResponse::meta)
                 .handle((meta, ex) -> {
 
@@ -63,7 +63,7 @@ public class FilesOpImpl implements FilesOp {
     @Override
     public CompletionStage<Boolean> delete(String identity) {
         final var request = new FileDeleteRequest(identity);
-        return asyncApi.execute(request)
+        return client.base().api().async(request)
                 .thenApply(FileDeleteResponse::deleted)
                 .handle((deleted, ex) -> {
                     if (ex == null) {
@@ -81,7 +81,7 @@ public class FilesOpImpl implements FilesOp {
 
     private CompletionStage<FileListResponse> list(String after, int limit) {
         final var request = new FileListRequest(after, limit);
-        return asyncApi.execute(request);
+        return client.base().api().async(request);
     }
 
     @Override

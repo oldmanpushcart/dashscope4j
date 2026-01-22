@@ -7,6 +7,10 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.AsyncInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.FlowInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.TaskInterceptor;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -16,7 +20,7 @@ public interface RewriteUserInputInterceptor extends AsyncInterceptor, FlowInter
 
     @Override
     default CompletionStage<?> intercept(AsyncInterceptor.Chain chain) {
-        if (chain.request() instanceof AigcRequest<?, ?, ?> aigcRequest
+        if (chain.request() instanceof AigcRequest<?, ?> aigcRequest
                 && aigcRequest.model() instanceof ChatModel model) {
             return CompletableFuture.completedStage(null)
                     .thenCompose(unused -> rewriteAigcRequest(chain, aigcRequest.as(model)))
@@ -28,7 +32,7 @@ public interface RewriteUserInputInterceptor extends AsyncInterceptor, FlowInter
 
     @Override
     default CompletionStage<? extends Flow.Publisher<?>> intercept(FlowInterceptor.Chain chain) {
-        if (chain.request() instanceof AigcRequest<?, ?, ?> aigcRequest
+        if (chain.request() instanceof AigcRequest<?, ?> aigcRequest
                 && aigcRequest.model() instanceof ChatModel model) {
             return CompletableFuture.completedStage(null)
                     .thenCompose(unused -> rewriteAigcRequest(chain, aigcRequest.as(model)))
@@ -40,7 +44,7 @@ public interface RewriteUserInputInterceptor extends AsyncInterceptor, FlowInter
 
     @Override
     default CompletionStage<? extends Task.Half<?>> intercept(TaskInterceptor.Chain chain) {
-        if (chain.request() instanceof AigcRequest<?, ?, ?> aigcRequest
+        if (chain.request() instanceof AigcRequest<?, ?> aigcRequest
                 && aigcRequest.model() instanceof ChatModel model) {
             return CompletableFuture.completedStage(null)
                     .thenCompose(unused -> rewriteAigcRequest(chain, aigcRequest.as(model)))
@@ -50,10 +54,10 @@ public interface RewriteUserInputInterceptor extends AsyncInterceptor, FlowInter
         }
     }
 
-    private CompletionStage<AigcRequest<Input, Output, ChatModel>> rewriteAigcRequest(Interceptor.Chain chain, AigcRequest<Input, Output, ChatModel> request) {
+    private CompletionStage<AigcRequest<Input, Output>> rewriteAigcRequest(Interceptor.Chain chain, AigcRequest<Input, Output> request) {
         final var inputMessage = request.input().userInputMessage();
         return CompletableFuture.completedStage(null)
-                .thenCompose(v -> rewriteUserInputMessage(chain, inputMessage))
+                .thenCompose(v -> rewriteUserInputMessage(chain, request, inputMessage))
                 .thenApply(newInputMessage ->
                         AigcRequest.newBuilder(request)
                                 .input(Input.newBuilder(request.input())
@@ -63,7 +67,7 @@ public interface RewriteUserInputInterceptor extends AsyncInterceptor, FlowInter
                                 .build());
     }
 
-    CompletionStage<Message> rewriteUserInputMessage(Interceptor.Chain chain, AigcRequest<Input, Output, ChatModel> request, UserMessage message);
+    CompletionStage<Message> rewriteUserInputMessage(Interceptor.Chain chain, AigcRequest<Input, Output> request, UserMessage message);
 
 
 }

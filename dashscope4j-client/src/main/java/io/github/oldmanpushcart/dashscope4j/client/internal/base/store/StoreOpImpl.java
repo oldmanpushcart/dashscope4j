@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 
-import io.github.oldmanpushcart.dashscope4j.client.AlgoModel;
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
+import io.github.oldmanpushcart.dashscope4j.client.Model;
 import io.github.oldmanpushcart.dashscope4j.client.base.store.StoreOp;
-import io.github.oldmanpushcart.dashscope4j.client.internal.executor.AsyncApi;
 
 import java.net.URI;
 import java.util.Map;
@@ -16,27 +16,27 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 
 public class StoreOpImpl implements StoreOp {
 
-    private final AsyncApi asyncApi;
+    private final DashscopeClient client;
     private final Map<String, Policy> policiesCache = new ConcurrentHashMap<>();
 
-    public StoreOpImpl(AsyncApi asyncApi) {
-        this.asyncApi = asyncApi;
+    public StoreOpImpl(DashscopeClient client) {
+        this.client = client;
     }
 
     @Override
-    public CompletionStage<URI> upload(URI resource, AlgoModel model) {
+    public CompletionStage<URI> upload(URI resource, Model model) {
         return CompletableFuture.completedStage(null)
                 .thenCompose(unused -> fetchPolicy(model))
                 .thenCompose(policy -> upload(policy, resource));
     }
 
-    private CompletionStage<Policy> fetchPolicy(AlgoModel model) {
+    private CompletionStage<Policy> fetchPolicy(Model model) {
         final Policy policy = policiesCache.get(model.name());
         if (nonNull(policy) && !policy.isExpired()) {
             return completedFuture(policy);
         }
         final GetPolicyRequest request = new GetPolicyRequest(model);
-        return asyncApi.execute(request)
+        return client.base().api().async(request)
                 .thenApply(GetPolicyResponse::output)
                 .thenApply(GetPolicyResponse.Output::policy)
                 .whenComplete((v, ex) -> {
@@ -48,7 +48,7 @@ public class StoreOpImpl implements StoreOp {
 
     private CompletionStage<URI> upload(Policy policy, URI resource) {
         final var request = new PostUploadRequest(policy, resource);
-        return asyncApi.execute(request)
+        return client.base().api().async(request)
                 .thenApply(PostUploadResponse::uploaded);
     }
 

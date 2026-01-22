@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 
-import io.github.oldmanpushcart.dashscope4j.client.AlgoModel;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.Model;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.slf4j.Logger;
@@ -9,20 +9,19 @@ import org.slf4j.LoggerFactory;
 
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Objects;
 import java.util.function.BiFunction;
 
 public class GetPolicyRequest extends ApiRequest<GetPolicyResponse> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final AlgoModel model;
+    private final Model model;
 
-    public GetPolicyRequest(AlgoModel model) {
+    public GetPolicyRequest(Model model) {
         super(GetPolicyResponse.class);
         this.model = model;
     }
 
-    public AlgoModel model() {
+    public Model model() {
         return model;
     }
 

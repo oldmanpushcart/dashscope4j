@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.Model;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2i.TextToImageModel;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
 import io.github.oldmanpushcart.dashscope4j.client.chat.ChatModel;
@@ -81,7 +81,7 @@ public class DebugTestCase implements LoadingEnv {
                 }
                 """;
 
-        final Model<?,?> model = TextToImageModel.QWEN_IMAGE;
+        final AigcModel<?,?> model = TextToImageModel.QWEN_IMAGE;
         final Type type = JacksonJsonUtils.newMapper()
                 .getTypeFactory()
                 .constructParametricType(AigcResponse.class, model.outputType());

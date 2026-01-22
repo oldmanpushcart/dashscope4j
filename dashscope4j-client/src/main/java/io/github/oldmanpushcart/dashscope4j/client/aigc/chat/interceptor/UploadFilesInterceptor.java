@@ -1,8 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor;
 
-import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
@@ -23,7 +22,7 @@ public class UploadFilesInterceptor implements RewriteUserInputInterceptor {
     }
 
     @Override
-    public CompletionStage<Message> rewriteUserInputMessage(Interceptor.Chain chain, AigcRequest<Input, Output, ChatModel> request, UserMessage message) {
+    public CompletionStage<Message> rewriteUserInputMessage(Interceptor.Chain chain, AigcRequest<Input, Output> request, UserMessage message) {
         if (!request.input().uploadEnabled()) {
             return CompletableFuture.completedStage(message);
         }

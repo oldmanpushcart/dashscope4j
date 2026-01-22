@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor;
 
-import io.github.oldmanpushcart.dashscope4j.client.FlowInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.FlowInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
@@ -19,7 +19,7 @@ public class IncrementalOutputOnlyInterceptor implements FlowInterceptor {
     @Override
     public CompletionStage<? extends Flow.Publisher<?>> intercept(Chain chain) {
 
-        if (!(chain.request() instanceof AigcRequest<?, ?, ?> aigcRequest)
+        if (!(chain.request() instanceof AigcRequest<?, ?> aigcRequest)
                 || !(aigcRequest.parameters().has(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true))
                 || !(aigcRequest.model() instanceof ChatModel model)
                 || !model.tags().contains(ChatModelTags.INCREMENTAL_OUTPUT_ONLY)) {
@@ -27,7 +27,7 @@ public class IncrementalOutputOnlyInterceptor implements FlowInterceptor {
         }
 
         //noinspection unchecked
-        final var chatRequest = (AigcRequest<Input, Output, ChatModel>) aigcRequest;
+        final var chatRequest = (AigcRequest<Input, Output>) aigcRequest;
 
         final var newChatRequest = AigcRequest.newBuilder(chatRequest.model())
                 .addParameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)

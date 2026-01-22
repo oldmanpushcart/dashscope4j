@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.base.store;
 
-import io.github.oldmanpushcart.dashscope4j.client.AlgoModel;
+import io.github.oldmanpushcart.dashscope4j.client.Model;
 
 import java.net.URI;
 import java.util.concurrent.CompletionStage;
@@ -19,6 +19,6 @@ public interface StoreOp {
      * @param model    模型
      * @return 存储地址
      */
-    CompletionStage<URI> upload(URI resource, AlgoModel model);
+    CompletionStage<URI> upload(URI resource, Model model);
 
 }
