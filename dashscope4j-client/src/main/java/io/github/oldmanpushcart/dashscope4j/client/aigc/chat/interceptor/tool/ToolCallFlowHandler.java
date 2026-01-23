@@ -14,7 +14,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
-import static io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT;
+import static io.github.oldmanpushcart.dashscope4j.client.aigc.AigcParameterKeys.INCREMENTAL_OUTPUT;
 
 /**
  * 流式工具调用处理器
@@ -92,7 +92,7 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<AigcResponse<O
         if (null == request) {
             return null;
         }
-        final var incremental = request.parameters().has(ENABLE_INCREMENTAL_OUTPUT, true);
+        final var incremental = request.parameters().has(INCREMENTAL_OUTPUT, true);
         return segments.stream()
                 .reduce((c1, c2) -> incremental ? c1.accumulate(c2) : c2)
                 .orElse(null);

@@ -7,6 +7,8 @@ import io.github.oldmanpushcart.dashscope4j.client.interceptor.TaskInterceptor;
 
 import java.util.concurrent.CompletionStage;
 
+import static io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils.isFileURI;
+
 public class UploadFilesInterceptor implements TaskInterceptor {
 
     @Override
@@ -22,7 +24,12 @@ public class UploadFilesInterceptor implements TaskInterceptor {
             return chain.proceed();
         }
 
-        return chain.client().base().store().upload(request.input().audio(), request.model())
+        final var audioURI = request.input().audio();
+        if (!isFileURI(audioURI)) {
+            return chain.proceed();
+        }
+
+        return chain.client().base().store().upload(audioURI, request.model())
                 .thenCompose(uploadedURI -> {
                     final var newRequest = AigcRequest.newBuilder(request)
                             .input(TextToVideoModel.Input.newBuilder()

@@ -15,11 +15,9 @@ import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class UploadFilesInterceptor implements RewriteUserInputInterceptor {
+import static io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils.isFileURI;
 
-    private static boolean isFileURI(URI resourceURI) {
-        return "file".equalsIgnoreCase(resourceURI.getScheme());
-    }
+public class UploadFilesInterceptor implements RewriteUserInputInterceptor {
 
     @Override
     public CompletionStage<Message> rewriteUserInputMessage(Interceptor.Chain chain, AigcRequest<Input, Output> request, UserMessage message) {

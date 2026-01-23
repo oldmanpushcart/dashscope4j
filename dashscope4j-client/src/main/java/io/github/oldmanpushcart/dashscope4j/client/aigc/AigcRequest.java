@@ -15,7 +15,15 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_CONTENT_TYPE;
+import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
+import static java.util.Objects.requireNonNull;
 
+/**
+ * 算法请求
+ *
+ * @param <I> 模型输入类型
+ * @param <O> 模型输出类型
+ */
 public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -23,20 +31,46 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
     private final I input;
     private final Parameters parameters;
 
+    /**
+     * 构造函数
+     * <p>
+     * 留给后续继承扩展使用
+     * </p>
+     *
+     * @param model      模型
+     * @param input      模型输入
+     * @param parameters 请求参数
+     */
     protected AigcRequest(AigcModel<I, O> model, I input, Parameters parameters) {
-        super(newType(model));
+        super(newResponseType(model));
+        requireNonNull(model, "model must not be null!");
+        requireNonNull(input, "input must not be null!");
+        requireNonNull(parameters, "parameters must not be null!");
         this.model = model;
         this.input = input;
         this.parameters = parameters;
     }
 
-    private static Type newType(AigcModel<?, ?> model) {
+    /**
+     * 构建应答类型{@code AigcResponse<O>}
+     * <p>用户反序列化</p>
+     *
+     * @param model 模型
+     * @return 应答类型
+     */
+    private static Type newResponseType(AigcModel<?, ?> model) {
         return JacksonJsonUtils.newMapper()
                 .getTypeFactory()
                 .constructParametricType(AigcResponse.class, model.outputType());
     }
 
-    public AigcRequest(Builder<I, O> builder) {
+    /**
+     * 构造函数
+     * <p>用于构造器构建，私有不外放。约束请求只能通过构造器进行构造。</p>
+     *
+     * @param builder 构造器
+     */
+    private AigcRequest(Builder<I, O> builder) {
         this(
                 builder.model,
                 builder.input,
@@ -44,16 +78,25 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
         );
     }
 
+    /**
+     * @return 模型
+     */
     @JsonProperty("model")
     public AigcModel<I, O> model() {
         return model;
     }
 
+    /**
+     * @return 模型输入
+     */
     @JsonProperty("input")
     public I input() {
         return input;
     }
 
+    /**
+     * @return 请求参数
+     */
     @JsonProperty("parameters")
     public Parameters parameters() {
         return parameters;
@@ -68,6 +111,7 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
                 .build();
     }
 
+    // 请求编码
     protected Function<ApiRequest<?>, String> requestEncoder() {
         return request -> {
             final var requestBody = JacksonJsonUtils.toJson(this);
@@ -84,7 +128,15 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
         };
     }
 
-    public <UI, UO> AigcRequest<UI, UO> as(AigcModel<UI, UO> model) {
+    /**
+     * 转换为指定模型的请求
+     *
+     * @param ignoredModel 模型
+     * @param <UI>         模型输入类型
+     * @param <UO>         模型输出类型
+     * @return 转换后的模型请求
+     */
+    public <UI, UO> AigcRequest<UI, UO> as(AigcModel<UI, UO> ignoredModel) {
         //noinspection unchecked
         return (AigcRequest<UI, UO>) this;
     }
@@ -116,22 +168,26 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
         }
 
         public Builder<I, O> input(I input) {
+            requireNonNull(input, "input must not be null!");
             this.input = input;
             return self();
         }
 
         public Builder<I, O> parameters(Parameters parameters) {
+            requireNonNull(parameters, "parameters must not be null!");
             this.parameters.clear();
             this.parameters.merge(parameters);
             return self();
         }
 
         public <PT, PR> Builder<I, O> addParameter(Parameters.ParameterKey<PT, PR> parameterKey, PT value) {
+            requireNonNull(parameterKey, "parameterKey must not be null!");
             parameters.append(parameterKey, value);
             return self();
         }
 
         public Builder<I, O> addParameter(String name, Object value) {
+            requireNonBlankString(name, "name must not be blank!");
             parameters.append(name, value);
             return self();
         }

@@ -1,10 +1,9 @@
-package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor;
+package io.github.oldmanpushcart.dashscope4j.client.aigc.interceptor;
 
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModelTags;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModelTags;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.interceptor.AsyncInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
@@ -19,23 +18,24 @@ public class BridgeAsyncInterceptor implements AsyncInterceptor {
     @Override
     public CompletionStage<?> intercept(Chain chain) {
 
-        if (!(chain.request() instanceof AigcRequest<?, ?> aigcRequest)
-                || !(aigcRequest.model() instanceof ChatModel model)) {
+        if (!(chain.request() instanceof AigcRequest<?, ?> aigcRequest)) {
             return chain.proceed();
         }
 
+        final var model = aigcRequest.model();
+
         // ASYNC 模式不用桥接，直接返回
-        if (model.tags().contains(ChatModelTags.RESPONSE_MODE_ASYNC)) {
+        if (model.tags().contains(AigcModelTags.RESPONSE_MODE_ASYNC)) {
             return chain.proceed();
         }
 
         // 桥接 FLOW 式输出
-        else if (model.tags().contains(ChatModelTags.RESPONSE_MODE_FLOW)) {
+        else if (model.tags().contains(AigcModelTags.RESPONSE_MODE_FLOW)) {
             return bridgeFlow(chain, aigcRequest);
         }
 
         // 桥接 TASK 式输出
-        else if (model.tags().contains(ChatModelTags.RESPONSE_MODE_TASK)) {
+        else if (model.tags().contains(AigcModelTags.RESPONSE_MODE_TASK)) {
             return bridgeTask(chain, aigcRequest);
         }
 
@@ -48,7 +48,7 @@ public class BridgeAsyncInterceptor implements AsyncInterceptor {
 
     private CompletionStage<?> bridgeFlow(Chain chain, AigcRequest<?, ?> request) {
         final var newRequest = AigcRequest.newBuilder(request)
-                .addParameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
+                .addParameter(AigcParameterKeys.INCREMENTAL_OUTPUT, true)
                 .build();
         return FlowX.fromPublisher(chain.client().aigc().flow(newRequest))
                 .collect(Collectors.toList())

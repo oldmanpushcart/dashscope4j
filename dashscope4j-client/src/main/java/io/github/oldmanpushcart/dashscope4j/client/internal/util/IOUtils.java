@@ -1,5 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.util;
 
+import java.net.URI;
+
 public class IOUtils {
 
     public static void closeQuietly(AutoCloseable closeable) {
@@ -10,6 +12,10 @@ public class IOUtils {
                 // ignore
             }
         }
+    }
+
+    public static boolean isFileURI(URI resourceURI) {
+        return "file".equalsIgnoreCase(resourceURI.getScheme());
     }
 
 }

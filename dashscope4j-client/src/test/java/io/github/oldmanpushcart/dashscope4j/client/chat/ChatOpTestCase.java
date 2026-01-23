@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.chat;
 import io.github.oldmanpushcart.dashscope4j.client.ApiAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
@@ -50,7 +51,7 @@ public class ChatOpTestCase implements LoadingEnv {
                 @Override
                 public CompletionStage<AigcResponse<ChatModel.Output>> apply(AigcRequest<ChatModel.Input, ChatModel.Output> request) {
                     final var newRequest = AigcRequest.newBuilder(request)
-                            .addParameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
+                            .addParameter(AigcParameterKeys.INCREMENTAL_OUTPUT, true)
                             .build();
                     return FlowX.fromPublisher(client.aigc().flow(newRequest))
                             .doOnNext(ApiAssertions::assertApiResponseSuccessful)

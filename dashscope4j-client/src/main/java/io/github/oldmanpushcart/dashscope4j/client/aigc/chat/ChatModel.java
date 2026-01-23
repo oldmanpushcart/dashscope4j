@@ -3,7 +3,10 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.*;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModelTags;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.InlineFilesInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.SettingInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.UploadFilesInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.openai.CompatOpenAiInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.plaintext.CompatPlaintextInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.tool.ToolCallInterceptor;
@@ -19,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static java.util.Collections.unmodifiableList;
 
@@ -43,43 +47,57 @@ public record ChatModel(
     public static final ChatModel QWEN_VL_MAX = new ChatModel("qwen-vl-max", PATH_MULTIMODAL);
 
     public static final ChatModel QWQ_PLUS = new ChatModel("qwq-plus", PATH_TEXT, Set.of(
-            ChatModelTags.RESPONSE_MODE_FLOW,
-            ChatModelTags.INCREMENTAL_OUTPUT_ONLY
+            AigcModelTags.RESPONSE_MODE_FLOW,
+            AigcModelTags.INCREMENTAL_OUTPUT_ONLY
     ));
     public static final ChatModel QVQ_MAX = new ChatModel("qvq-max", PATH_MULTIMODAL, Set.of(
-            ChatModelTags.RESPONSE_MODE_FLOW,
-            ChatModelTags.INCREMENTAL_OUTPUT_ONLY
+            AigcModelTags.RESPONSE_MODE_FLOW,
+            AigcModelTags.INCREMENTAL_OUTPUT_ONLY
     ));
     public static final ChatModel QWEN3_OMNI_FLASH = new ChatModel("qwen3-omni-flash", PATH_COMPAT_OPENAI, Set.of(
             ChatModelTags.COMPAT_OPENAI,
-            ChatModelTags.RESPONSE_MODE_FLOW,
-            ChatModelTags.INCREMENTAL_OUTPUT_ONLY
+            AigcModelTags.RESPONSE_MODE_FLOW,
+            AigcModelTags.INCREMENTAL_OUTPUT_ONLY
     ));
 
     public static final ChatModel QWEN_IMAGE_MAX = new ChatModel("qwen-image-max", PATH_MULTIMODAL);
 
     public static final ChatModel WAN_T2I = new ChatModel("wan2.6-t2i", PATH_MULTIMODAL, Set.of(
-            ChatModelTags.RESPONSE_MODE_ASYNC,
-            ChatModelTags.RESPONSE_MODE_TASK
+            AigcModelTags.RESPONSE_MODE_ASYNC,
+            AigcModelTags.RESPONSE_MODE_TASK
     ));
 
-    private static final List<Interceptor> interceptors = List.of(
-            new SettingInterceptor(),
-            new ToolCallInterceptor(),
-            new InlineFilesInterceptor(),
-            new UploadFilesInterceptor(),
-            new BridgeAsyncInterceptor(),
-            new BridgeTaskInterceptor(),
-            new BridgeFlowInterceptor(),
-            new IncrementalOutputOnlyInterceptor(),
-            new CompatPlaintextInterceptor(),
-            new CompatOpenAiInterceptor()
-    );
 
+    /*
+     * 对话模型的拦截器列表
+     * 这里实现了 ToolCall、自动上传、BASE64内联等对话模型的增强功能。
+     *
+     * PS：请务必注意拦截器的顺序
+     */
+    private static final List<Interceptor> interceptors = Stream.concat(
+                    AigcModel.interceptors.stream(),
+                    Stream.of(
+                            new SettingInterceptor(),
+                            new ToolCallInterceptor(),
+                            new InlineFilesInterceptor(),
+                            new UploadFilesInterceptor(),
+                            new CompatPlaintextInterceptor(),
+                            new CompatOpenAiInterceptor()
+                    )
+            )
+            .toList();
+
+    /**
+     * 构造对话模型
+     *
+     * @param name 名称
+     * @param path 路径
+     */
     public ChatModel(String name, String path) {
         this(name, path, Set.of());
     }
 
+    @Override
     public List<Interceptor> interceptors() {
         return interceptors;
     }
@@ -99,44 +117,62 @@ public record ChatModel(
             this.inlineEnabled = builder.inlineEnabled;
         }
 
+        /**
+         * @return 消息列表
+         */
         @JsonProperty("messages")
         public List<Message> messages() {
             return messages;
         }
 
+        /**
+         * @return 上传文件是否启用
+         */
         @JsonIgnore
         public boolean uploadEnabled() {
             return uploadEnabled;
         }
 
+        /**
+         * @return 内联文件是否启用
+         */
         @JsonIgnore
         public boolean inlineEnabled() {
             return inlineEnabled;
         }
 
+        /**
+         * @return 最后一条消息
+         */
         public Message lastMessage() {
             return !messages.isEmpty()
                     ? messages.get(messages.size() - 1)
                     : null;
         }
 
+        /**
+         * 是否有用户输入信息
+         *
+         * @return TRUE | FALSE
+         */
         public boolean hasUserInputMessage() {
             return !messages.isEmpty()
-                    && lastMessage().role() == Message.Role.USER;
+                    && null != userInputMessage();
         }
 
+        /**
+         * 提取用户输入信息
+         * <p>
+         * 消息列表中最后一条信息，且{@code role == USER}，为用户输入信息。
+         * </p>
+         *
+         * @return 用户输入信息
+         */
         public UserMessage userInputMessage() {
-
-            if (!hasUserInputMessage()) {
-                return null;
-            }
-
             final var last = lastMessage();
-            if (last instanceof UserMessage userMessage) {
-                return userMessage;
-            } else {
-                return null;
-            }
+            return last instanceof UserMessage userMessage
+                    ? userMessage
+                    : null;
 
         }
 
@@ -149,13 +185,9 @@ public record ChatModel(
          * @return 历史信息
          */
         public List<Message> historyMessages() {
-            if (messages.isEmpty()) {
-                return List.of();
-            }
-            if (!hasUserInputMessage()) {
-                return messages;
-            }
-            return messages.subList(0, messages.size() - 1);
+            return hasUserInputMessage()
+                    ? messages.subList(0, messages.size() - 1)
+                    : messages;
         }
 
 
@@ -259,7 +291,7 @@ public record ChatModel(
                 final List<Choice> currChoices = choices;
                 final List<Choice> nextChoices = next.choices;
                 if (currChoices.size() != nextChoices.size()) {
-                    throw new IllegalArgumentException("The number of choices is not equal! expect:%s but %s".formatted(
+                    throw new IllegalArgumentException("The size of choices is not equal! expect:%s but %s".formatted(
                             currChoices.size(),
                             nextChoices.size()
                     ));

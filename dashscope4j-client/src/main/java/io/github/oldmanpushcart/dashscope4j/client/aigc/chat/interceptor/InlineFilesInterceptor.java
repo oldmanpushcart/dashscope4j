@@ -18,11 +18,9 @@ import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class InlineFilesInterceptor implements RewriteUserInputInterceptor {
+import static io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils.isFileURI;
 
-    private static boolean isFileURI(URI resourceURI) {
-        return "file".equalsIgnoreCase(resourceURI.getScheme());
-    }
+public class InlineFilesInterceptor implements RewriteUserInputInterceptor {
 
     @Override
     public CompletionStage<Message> rewriteUserInputMessage(Interceptor.Chain chain, AigcRequest<Input, Output> request, UserMessage message) {
@@ -34,7 +32,7 @@ public class InlineFilesInterceptor implements RewriteUserInputInterceptor {
         return CompletableFutureUtils
                 .sequentialMap(message.contents(), content -> {
 
-                    // 处理图片内容
+                    // 处理图像内容
                     if (content instanceof ImageContent imageContent) {
                         final var imageURI = imageContent.image();
                         if (!isFileURI(imageURI)) {
