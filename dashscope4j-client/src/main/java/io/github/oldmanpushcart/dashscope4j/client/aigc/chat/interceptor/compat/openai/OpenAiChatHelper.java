@@ -17,11 +17,7 @@ import java.util.Collections;
 class OpenAiChatHelper {
 
     public static OpenAiChatRequest toOpenAiChatRequest(AigcRequest<Input, ?> request) {
-        return new OpenAiChatRequest(
-                request.model(),
-                request.parameters(),
-                request.input().messages()
-        );
+        return new OpenAiChatRequest(request);
     }
 
     /**
@@ -40,7 +36,7 @@ class OpenAiChatHelper {
                 choices
         );
         return new AigcResponse<>(
-                response.request(),
+                response.request().ref(),
                 response.uuid(),
                 response.code(),
                 response.desc(),

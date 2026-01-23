@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.aigc;
 
-import io.github.oldmanpushcart.dashscope4j.client.*;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
+import io.github.oldmanpushcart.dashscope4j.client.Task;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcOp;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
@@ -23,31 +23,60 @@ public class AigcOpImpl implements AigcOp {
         this.client = client;
     }
 
-    private static <T extends Interceptor> List<T> mergeInterceptors(Class<T> type, AigcModel<?, ?> model, List<T> interceptors) {
+    /**
+     * 合并拦截器
+     * <p>
+     * 会严格按照以下顺序拼接拦截器链条
+     * <li>1. 全局拦截器（目前没有）</li>
+     * <li>2. 请求拦截器</li>
+     * <li>3. 模型拦截器</li>
+     * </p>
+     *
+     * @param interceptorsFromRequest 来自请求传入的拦截器
+     * @param interceptorsFromModel   来自模型声明的拦截器
+     * @param <T>                     拦截器类型
+     * @return 合并后的拦截器链
+     */
+    private static <T extends Interceptor> List<T> mergeInterceptors(List<T> interceptorsFromRequest, List<T> interceptorsFromModel) {
         final var merged = new ArrayList<T>();
-        merged.addAll(interceptors);
-        merged.addAll(model.interceptors().stream()
-                .filter(type::isInstance)
-                .map(type::cast)
-                .toList());
+        merged.addAll(interceptorsFromRequest);
+        merged.addAll(interceptorsFromModel);
         return merged;
     }
 
     @Override
     public <I, O> CompletionStage<AigcResponse<O>> async(AigcRequest<I, O> request, List<AsyncInterceptor> interceptors) {
-        final var merged = mergeInterceptors(AsyncInterceptor.class, request.model(), interceptors);
+        final var merged = mergeInterceptors(
+                interceptors,
+                request.model().interceptors().stream()
+                        .filter(AsyncInterceptor.class::isInstance)
+                        .map(AsyncInterceptor.class::cast)
+                        .toList()
+        );
         return client.base().api().async(request, merged);
     }
 
     @Override
     public <I, O> Flow.Publisher<AigcResponse<O>> flow(AigcRequest<I, O> request, List<FlowInterceptor> interceptors) {
-        final var merged = mergeInterceptors(FlowInterceptor.class, request.model(), interceptors);
+        final var merged = mergeInterceptors(
+                interceptors,
+                request.model().interceptors().stream()
+                        .filter(FlowInterceptor.class::isInstance)
+                        .map(FlowInterceptor.class::cast)
+                        .toList()
+        );
         return client.base().api().flow(request, merged);
     }
 
     @Override
     public <I, O> CompletionStage<? extends Task.Half<AigcResponse<O>>> task(AigcRequest<I, O> request, List<TaskInterceptor> interceptors) {
-        final var merged = mergeInterceptors(TaskInterceptor.class, request.model(), interceptors);
+        final var merged = mergeInterceptors(
+                interceptors,
+                request.model().interceptors().stream()
+                        .filter(TaskInterceptor.class::isInstance)
+                        .map(TaskInterceptor.class::cast)
+                        .toList()
+        );
         return client.base().api().task(request, merged);
     }
 }

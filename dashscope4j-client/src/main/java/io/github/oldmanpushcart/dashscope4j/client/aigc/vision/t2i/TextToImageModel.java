@@ -4,17 +4,27 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.Ret;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModelTags;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
 
 public record TextToImageModel(
         String name,
-        String path
+        String path,
+        Set<String> tags
 ) implements AigcModel<TextToImageModel.Input, TextToImageModel.Output> {
 
     public static final TextToImageModel QWEN_IMAGE = new TextToImageModel("qwen-image", "/api/v1/services/aigc/text2image/image-synthesis");
+    public static final TextToImageModel WAN_T2I = new TextToImageModel("wan2.6-t2i", "/api/v1/services/aigc/image-generation/generation", Set.of(
+            ChatModelTags.RESPONSE_MODE_TASK
+    ));
+
+    public TextToImageModel(String name, String path) {
+        this(name, path, Set.of());
+    }
 
     /**
      * 输入参数

@@ -111,6 +111,7 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
         protected Builder(AigcRequest<I, O> request) {
             super(request);
             this.model = request.model;
+            this.input = request.input;
             this.parameters.merge(request.parameters);
         }
 

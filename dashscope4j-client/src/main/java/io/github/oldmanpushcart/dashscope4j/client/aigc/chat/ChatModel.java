@@ -58,7 +58,14 @@ public record ChatModel(
 
     public static final ChatModel QWEN_IMAGE_MAX = new ChatModel("qwen-image-max", PATH_MULTIMODAL);
 
+    public static final ChatModel WAN_T2I = new ChatModel("wan2.6-t2i", PATH_MULTIMODAL, Set.of(
+            ChatModelTags.RESPONSE_MODE_ASYNC,
+            ChatModelTags.RESPONSE_MODE_TASK
+    ));
+
     private static final List<Interceptor> interceptors = List.of(
+            new SettingInterceptor(),
+            new ToolCallInterceptor(),
             new InlineFilesInterceptor(),
             new UploadFilesInterceptor(),
             new BridgeAsyncInterceptor(),
@@ -66,8 +73,7 @@ public record ChatModel(
             new BridgeFlowInterceptor(),
             new IncrementalOutputOnlyInterceptor(),
             new CompatPlaintextInterceptor(),
-            new CompatOpenAiInterceptor(),
-            new ToolCallInterceptor()
+            new CompatOpenAiInterceptor()
     );
 
     public ChatModel(String name, String path) {
@@ -238,28 +244,37 @@ public record ChatModel(
         public Output accumulate(Output next) {
 
             /*
-             * 检查等待合并的候选结果数量与当前对话应答的候选结果数量是否相等
-             * 如果不相等则说明无法合并
+             * 这里做一个特殊的兼容
+             * 当 OpenAi 格式的返回流中，最后一个承载 usage 的 response 是没有 choices 的
              */
-            final List<Choice> currChoices = choices;
-            final List<Choice> nextChoices = next.choices;
-            if (currChoices.size() != nextChoices.size()) {
-                throw new IllegalArgumentException("The number of choices is not equal! expect:%s but %s".formatted(
-                        currChoices.size(),
-                        nextChoices.size()
-                ));
-            }
+            final var newChoices = new ArrayList<Choice>();
+            if (choices.isEmpty() || next.choices.isEmpty()) {
+                newChoices.addAll(next.choices);
+                newChoices.addAll(choices);
+            } else {
+                /*
+                 * 检查等待合并的候选结果数量与当前对话应答的候选结果数量是否相等
+                 * 如果不相等则说明无法合并
+                 */
+                final List<Choice> currChoices = choices;
+                final List<Choice> nextChoices = next.choices;
+                if (currChoices.size() != nextChoices.size()) {
+                    throw new IllegalArgumentException("The number of choices is not equal! expect:%s but %s".formatted(
+                            currChoices.size(),
+                            nextChoices.size()
+                    ));
+                }
 
-            /*
-             * 合并所有的候选结果
-             * 多个候选结果的顺序应该要保持一致
-             */
-            final List<Choice> newChoices = new ArrayList<>();
-            final int length = currChoices.size();
-            for (int index = 0; index < length; index++) {
-                final Choice currChoice = currChoices.get(index);
-                final Choice nextChoice = nextChoices.get(index);
-                newChoices.add(currChoice.accumulate(nextChoice));
+                /*
+                 * 合并所有的候选结果
+                 * 多个候选结果的顺序应该要保持一致
+                 */
+                final int length = currChoices.size();
+                for (int index = 0; index < length; index++) {
+                    final Choice currChoice = currChoices.get(index);
+                    final Choice nextChoice = nextChoices.get(index);
+                    newChoices.add(currChoice.accumulate(nextChoice));
+                }
             }
 
             return new Output(

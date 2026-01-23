@@ -10,7 +10,6 @@ import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Set;
 
 public record TextToVideoModel(
         String name,

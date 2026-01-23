@@ -2,8 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.client.base.api;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.ImageContent;
@@ -27,12 +27,13 @@ public class ApiOpTestCase implements LoadingEnv {
                 .toCompletableFuture()
                 .join();
 
-        final var request = ChatRequest.newBuilder()
-                .model(model)
-                .addMessage(Message.user(List.of(
-                        Content.text("帮我弄成紫色，上边还要画只史努比。"),
-                        Content.image(imageURI)
-                )))
+        final var request = AigcRequest.newBuilder(model)
+                .input(ChatModel.Input.newBuilder()
+                        .addMessage(Message.user(List.of(
+                                Content.text("帮我弄成紫色，上边还要画只史努比。"),
+                                Content.image(imageURI)
+                        )))
+                        .build())
                 .build();
 
         final var response = client.base().api().task(request)

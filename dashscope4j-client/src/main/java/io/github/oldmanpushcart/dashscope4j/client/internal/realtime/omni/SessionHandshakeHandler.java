@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.realtime.omni;
 
+import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeErrorException;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange;
@@ -10,7 +11,6 @@ import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.Om
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeSessionCreatedServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeSessionUpdatedServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;

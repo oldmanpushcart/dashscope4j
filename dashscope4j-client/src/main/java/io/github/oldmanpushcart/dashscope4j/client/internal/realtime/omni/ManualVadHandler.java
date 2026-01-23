@@ -1,12 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.realtime.omni;
 
+import io.github.oldmanpushcart.dashscope4j.client.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.FutureSlot;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange.ManualVad;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.FutureSlot;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.awt.image.BufferedImage;

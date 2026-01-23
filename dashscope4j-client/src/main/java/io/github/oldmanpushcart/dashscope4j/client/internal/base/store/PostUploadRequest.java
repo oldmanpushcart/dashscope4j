@@ -16,7 +16,6 @@ import java.util.function.BiFunction;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_X_OSS_OBJECT_ACL;
 import static io.github.oldmanpushcart.dashscope4j.client.internal.base.api.executor.http.HttpHeader.HEADER_CONTENT_TYPE;
-import static java.util.Objects.requireNonNull;
 
 public class PostUploadRequest extends ApiRequest<PostUploadResponse> {
 

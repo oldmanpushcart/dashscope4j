@@ -44,6 +44,11 @@ class OpenAiChatResponse extends OpenAiResponse {
         this.usage = null == usage ? Usage.empty() : usage;
     }
 
+    @Override
+    public OpenAiChatRequest request() {
+        return (OpenAiChatRequest) super.request();
+    }
+
     public List<Choice> choices() {
         return choices;
     }

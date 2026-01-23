@@ -1,5 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ApiAssertions {
@@ -15,8 +17,8 @@ public class ApiAssertions {
     public static void assertApiResponseSuccessful(ApiResponse response) {
         assertApiResponse(response);
         assertTrue(response.isSuccess());
-        if (response instanceof AlgoResponse<?> algoResponse) {
-            assertNotNull(algoResponse.usage());
+        if (response instanceof AigcResponse<?> aigcResponse) {
+            assertNotNull(aigcResponse.usage());
         }
     }
 

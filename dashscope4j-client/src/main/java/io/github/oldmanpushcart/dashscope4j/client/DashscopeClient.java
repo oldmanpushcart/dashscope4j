@@ -6,11 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.DashscopeClientImpl;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeOp;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
-import java.net.URI;
 import java.net.http.HttpClient;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Flow;
 
 public interface DashscopeClient {
 

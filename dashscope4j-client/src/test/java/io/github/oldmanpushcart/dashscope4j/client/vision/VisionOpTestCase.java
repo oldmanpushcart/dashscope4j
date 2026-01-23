@@ -3,16 +3,14 @@ package io.github.oldmanpushcart.dashscope4j.client.vision;
 import io.github.oldmanpushcart.dashscope4j.client.ApiAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
-import io.github.oldmanpushcart.dashscope4j.client.vision.t2i.Text2ImageModel;
-import io.github.oldmanpushcart.dashscope4j.client.vision.t2i.Text2ImageRequest;
-import io.github.oldmanpushcart.dashscope4j.client.vision.t2v.Text2VideoModel;
-import io.github.oldmanpushcart.dashscope4j.client.vision.t2v.Text2VideoRequest;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2i.TextToImageModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v.TextToVideoModel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
 import java.time.Duration;
 import java.util.stream.Stream;
 
@@ -20,24 +18,24 @@ import static io.github.oldmanpushcart.dashscope4j.client.Task.WaitStrategies.al
 
 public class VisionOpTestCase implements LoadingEnv {
 
-    private static Stream<Text2ImageModel> provideModelsForText2Image() {
+    private static Stream<TextToImageModel> provideModelsForText2Image() {
         return Stream.of(
-                Text2ImageModel.WAN_T2I,
-                Text2ImageModel.QWEN_IMAGE,
-                Text2ImageModel.QWEN_IMAGE_PLUS
+                TextToImageModel.WAN_T2I,
+                TextToImageModel.QWEN_IMAGE
         );
     }
 
     @ParameterizedTest
     @MethodSource("provideModelsForText2Image")
-    public void test$vision$text2image(Text2ImageModel model) {
+    public void test$vision$text2image(TextToImageModel model) {
 
-        final var request = Text2ImageRequest.newBuilder()
-                .model(model)
-                .prompt("画一只紫色的狗")
+        final var request = AigcRequest.newBuilder(model)
+                .input(TextToImageModel.Input.newBuilder()
+                        .prompt("画一只紫色的狗")
+                        .build())
                 .build();
 
-        final var response = client.vision().t2i().task(request)
+        final var response = client.aigc().task(request)
                 .thenCompose(half -> half.waitingFor(always(Duration.ofSeconds(1))))
                 .toCompletableFuture()
                 .join();
@@ -57,12 +55,13 @@ public class VisionOpTestCase implements LoadingEnv {
     @Test
     public void test$vision$text2video() {
 
-        final var request = Text2VideoRequest.newBuilder()
-                .model(Text2VideoModel.WAN_T2V)
-                .prompt("杯子在海滩上跳舞")
+        final var request = AigcRequest.newBuilder(TextToVideoModel.WAN_T2V)
+                .input(TextToVideoModel.Input.newBuilder()
+                        .prompt("杯子在海滩上跳舞")
+                        .build())
                 .build();
 
-        final var response = client.vision().t2v().task(request)
+        final var response = client.aigc().task(request)
                 .thenCompose(half -> half.waitingFor(always(Duration.ofSeconds(1))))
                 .toCompletableFuture()
                 .join();

@@ -1,13 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.compat.plaintext;
 
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.AsyncInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.FlowInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModelTags;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.TagUtils;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.AsyncInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.FlowInterceptor;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -43,7 +42,7 @@ public class CompatPlaintextInterceptor implements FlowInterceptor, AsyncInterce
 
         if (!(chain.request() instanceof AigcRequest<?, ?> aigcRequest)
                 || !(aigcRequest.model() instanceof ChatModel model)
-                || !TagUtils.contains(model.tags(), "compat", "plaintext")) {
+                || !model.tags().contains(ChatModelTags.COMPAT_PLAINTEXT)) {
             return chain.proceed();
         }
 

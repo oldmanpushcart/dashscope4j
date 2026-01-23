@@ -1,10 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.executor;
 
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.AsyncInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.AsyncInterceptor;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -33,8 +35,16 @@ public class InterceptionAsyncApi implements AsyncApi {
     }
 
     public static AsyncApi group(DashscopeClient client, AsyncApi delegate, List<AsyncInterceptor> interceptors) {
+
+        /*
+         * 这里需要对拦截器进行倒序处理，因为拦截器会进行逆序链式调用，因此需要先处理最外层的拦截器。
+         * 这样就可以做到：排在最前边的拦截器最先被执行，符合人类设置的直接观感
+         */
+        final var cloneList = new ArrayList<>(interceptors);
+        Collections.reverse(cloneList);
+
         AsyncApi api = delegate;
-        for (final var interceptor : interceptors) {
+        for (final var interceptor : cloneList) {
             api = new InterceptionAsyncApi(client, api, interceptor);
         }
         return api;

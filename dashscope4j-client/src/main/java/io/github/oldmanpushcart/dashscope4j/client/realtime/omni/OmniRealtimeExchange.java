@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
+import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;

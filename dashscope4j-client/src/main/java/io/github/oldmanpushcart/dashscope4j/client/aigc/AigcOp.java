@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc;
 
+import io.github.oldmanpushcart.dashscope4j.client.Task;
 import io.github.oldmanpushcart.dashscope4j.client.interceptor.AsyncInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.interceptor.FlowInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.Task;
 import io.github.oldmanpushcart.dashscope4j.client.interceptor.TaskInterceptor;
 
 import java.util.List;

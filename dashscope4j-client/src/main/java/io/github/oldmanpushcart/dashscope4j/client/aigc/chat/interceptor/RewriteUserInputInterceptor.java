@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor;
 
-import io.github.oldmanpushcart.dashscope4j.client.*;
+import io.github.oldmanpushcart.dashscope4j.client.Task;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
@@ -55,6 +55,9 @@ public interface RewriteUserInputInterceptor extends AsyncInterceptor, FlowInter
     }
 
     private CompletionStage<AigcRequest<Input, Output>> rewriteAigcRequest(Interceptor.Chain chain, AigcRequest<Input, Output> request) {
+        if(!request.input().hasUserInputMessage()) {
+            return CompletableFuture.completedStage(request);
+        }
         final var inputMessage = request.input().userInputMessage();
         return CompletableFuture.completedStage(null)
                 .thenCompose(v -> rewriteUserInputMessage(chain, request, inputMessage))

@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.Usage;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
@@ -25,7 +24,7 @@ public class AigcResponse<O> extends ApiResponse implements Accumulator<AigcResp
     public AigcResponse(
 
             @JacksonInject("dashscope/request")
-            ApiRequest<?> request,
+            AigcRequest<?, ?> request,
 
             @JsonProperty("request_id")
             String uuid,
@@ -46,6 +45,11 @@ public class AigcResponse<O> extends ApiResponse implements Accumulator<AigcResp
         super(request, uuid, code, desc);
         this.output = output;
         this.usage = usage;
+    }
+
+    @Override
+    public AigcRequest<?, ?> request() {
+        return (AigcRequest<?, ?>) super.request();
     }
 
     public O output() {

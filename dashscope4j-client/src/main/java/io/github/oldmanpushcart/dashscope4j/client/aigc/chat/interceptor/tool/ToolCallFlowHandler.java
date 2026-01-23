@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.tool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcOp;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;

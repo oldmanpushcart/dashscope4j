@@ -1,8 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatRequest;
-import io.github.oldmanpushcart.dashscope4j.client.chat.ChatResponse;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 
@@ -32,11 +31,12 @@ public class DashscopeAssertions {
                 %s
                 ----------
                 """.formatted(text, expect);
-        final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_TURBO)
-                .addMessage(Message.user(prompt))
+        final var request = AigcRequest.newBuilder(ChatModel.QWEN_FLASH)
+                .input(ChatModel.Input.newBuilder()
+                        .addMessage(Message.user(prompt))
+                        .build())
                 .build();
-        final ChatResponse response = dashscope.chat().async(request)
+        final var response = dashscope.aigc().async(request)
                 .toCompletableFuture()
                 .join();
         if (!response.output().best().message().text().contains("TRUE")) {
@@ -70,14 +70,15 @@ public class DashscopeAssertions {
                 %s
                 ----------
                 """.formatted(expect);
-        final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_VL_MAX)
-                .addMessage(Message.user(List.of(
-                        Content.text(prompt),
-                        Content.image(imageURI)
-                )))
+        final var request = AigcRequest.newBuilder(ChatModel.QWEN_VL_MAX)
+                .input(ChatModel.Input.newBuilder()
+                        .addMessage(Message.user(List.of(
+                                Content.text(prompt),
+                                Content.image(imageURI)
+                        )))
+                        .build())
                 .build();
-        final ChatResponse response = client.chat().async(request)
+        final var response = client.aigc().async(request)
                 .toCompletableFuture()
                 .join();
         if (!response.output().best().message().text().contains("TRUE")) {
@@ -100,14 +101,15 @@ public class DashscopeAssertions {
                 %s
                 ----------
                 """.formatted(expect);
-        final ChatRequest request = ChatRequest.newBuilder()
-                .model(ChatModel.QWEN_VL_MAX)
-                .addMessage(Message.user(List.of(
-                        Content.text(prompt),
-                        Content.video(videoURI)
-                )))
+        final var request = AigcRequest.newBuilder(ChatModel.QWEN_VL_MAX)
+                .input(ChatModel.Input.newBuilder()
+                        .addMessage(Message.user(List.of(
+                                Content.text(prompt),
+                                Content.video(videoURI)
+                        )))
+                        .build())
                 .build();
-        final ChatResponse response = client.chat().async(request)
+        final var response = client.aigc().async(request)
                 .toCompletableFuture()
                 .join();
         if (!response.output().best().message().text().contains("TRUE")) {

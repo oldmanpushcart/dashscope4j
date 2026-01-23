@@ -1,13 +1,17 @@
 package io.github.oldmanpushcart.dashscope4j.client.chat;
 
+import io.github.oldmanpushcart.dashscope4j.client.ApiAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
-import io.github.oldmanpushcart.dashscope4j.client.ApiAssertions;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatParameterKeys;
-import io.github.oldmanpushcart.dashscope4j.client.chat.function.QueryScoreFunction;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.ImageContent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.chat.function.QueryScoreFunction;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,11 +29,11 @@ import java.util.stream.Stream;
 
 public class ChatOpTestCase implements LoadingEnv {
 
-    private static final Set<Function<ChatRequest, CompletionStage<ChatResponse>>> ops = Set.of(
+    private static final Set<Function<AigcRequest<ChatModel.Input, ChatModel.Output>, CompletionStage<AigcResponse<ChatModel.Output>>>> ops = Set.of(
             new Function<>() {
                 @Override
-                public CompletionStage<ChatResponse> apply(ChatRequest request) {
-                    return client.chat().async(request)
+                public CompletionStage<AigcResponse<ChatModel.Output>> apply(AigcRequest<ChatModel.Input, ChatModel.Output> request) {
+                    return client.aigc().async(request)
                             .thenApply(r -> {
                                 ApiAssertions.assertApiResponseSuccessful(r);
                                 return r;
@@ -44,13 +48,13 @@ public class ChatOpTestCase implements LoadingEnv {
             },
             new Function<>() {
                 @Override
-                public CompletionStage<ChatResponse> apply(ChatRequest request) {
-                    final var newRequest = ChatRequest.newBuilder(request)
-                            .parameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
+                public CompletionStage<AigcResponse<ChatModel.Output>> apply(AigcRequest<ChatModel.Input, ChatModel.Output> request) {
+                    final var newRequest = AigcRequest.newBuilder(request)
+                            .addParameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
                             .build();
-                    return FlowX.fromPublisher(client.chat().flow(newRequest))
+                    return FlowX.fromPublisher(client.aigc().flow(newRequest))
                             .doOnNext(ApiAssertions::assertApiResponseSuccessful)
-                            .reduce(ChatResponse::accumulate);
+                            .reduce(AigcResponse::accumulate);
                 }
 
                 @Override
@@ -67,11 +71,12 @@ public class ChatOpTestCase implements LoadingEnv {
      * @param model 模型
      * @param op    操作
      */
-    public record Data(ChatModel model, Function<ChatRequest, CompletionStage<ChatResponse>> op) {
+    public record Data(ChatModel model,
+                       Function<AigcRequest<ChatModel.Input, ChatModel.Output>, CompletionStage<AigcResponse<ChatModel.Output>>> op) {
 
         @Override
         public String toString() {
-            return "%s , %s".formatted(model, op);
+            return "%s , %s".formatted(model.name(), op);
         }
 
     }
@@ -98,9 +103,10 @@ public class ChatOpTestCase implements LoadingEnv {
     @ParameterizedTest
     @MethodSource("provideDataForText")
     public void test$chat$text(Data data) {
-        final var request = ChatRequest.newBuilder()
-                .model(data.model())
-                .addMessage(Message.user("(1+2+3+4)/5=?"))
+        final var request = AigcRequest.newBuilder(data.model)
+                .input(ChatModel.Input.newBuilder()
+                        .addMessage(Message.user("(1+2+3+4)/5=?"))
+                        .build())
                 .build();
         final var response = data.op().apply(request)
                 .toCompletableFuture()
@@ -118,7 +124,6 @@ public class ChatOpTestCase implements LoadingEnv {
                 ChatModel.QWEN_VL_PLUS,
                 ChatModel.QWEN_VL_MAX,
                 ChatModel.QWQ_PLUS,
-                ChatModel.QWQ_PLUS_LATEST,
                 ChatModel.QWEN3_OMNI_FLASH
         );
     }
@@ -127,18 +132,21 @@ public class ChatOpTestCase implements LoadingEnv {
     @MethodSource("provideDataForFunction")
     public void test$chat$text$function(Data data) {
         final var called = new AtomicBoolean(false);
-        final var request = ChatRequest.newBuilder()
-                .model(data.model())
-                .addMessage(Message.user("请问英语和物理分别是多少分?"))
-                .addTool(new QueryScoreFunction() {
+        final var request = AigcRequest.newBuilder(data.model)
+                .input(ChatModel.Input.newBuilder()
+                        .addMessage(Message.user("请问英语和物理分别是多少分?"))
+                        .build())
+                .addParameter(ChatParameterKeys.TOOLS, new Tool[]{
+                        new QueryScoreFunction() {
 
-                    @Override
-                    public Result query(Query query) {
-                        called.set(true);
-                        return super.query(query);
-                    }
+                            @Override
+                            public Result query(Query query) {
+                                called.set(true);
+                                return super.query(query);
+                            }
 
-                }.toTool())
+                        }.toTool()
+                })
                 .build();
         final var response = data.op().apply(request)
                 .toCompletableFuture()
@@ -160,12 +168,14 @@ public class ChatOpTestCase implements LoadingEnv {
     @ParameterizedTest
     @MethodSource("provideDataForImage")
     public void test$chat$image(Data data) {
-        final var request = ChatRequest.newBuilder()
-                .model(data.model())
-                .addMessage(Message.user(List.of(
-                        Content.text("请描述图片的内容"),
-                        Content.image(new File("./test-data/image/red-cup.jpeg").toURI())
-                )))
+        final var request = AigcRequest.newBuilder(data.model())
+                .input(ChatModel.Input.newBuilder()
+                        .addMessage(Message.user(List.of(
+                                Content.text("请描述图片的内容"),
+                                Content.image(new File("./test-data/image/red-cup.jpeg").toURI())
+                        )))
+                        .uploadEnabled(true)
+                        .build())
                 .build();
         final var response = data.op().apply(request)
                 .toCompletableFuture()
@@ -187,12 +197,14 @@ public class ChatOpTestCase implements LoadingEnv {
     @ParameterizedTest
     @MethodSource("provideDataForAudio")
     public void test$chat$audio(Data data) {
-        final var request = ChatRequest.newBuilder()
-                .model(data.model())
-                .addMessage(Message.user(List.of(
-                        Content.text("这个音频文件提到了什么?"),
-                        Content.audio(new File("./test-data/audio/beach-woman-dog.wav").toURI())
-                )))
+        final var request = AigcRequest.newBuilder(data.model())
+                .input(ChatModel.Input.newBuilder()
+                        .addMessage(Message.user(List.of(
+                                Content.text("这个音频文件提到了什么?"),
+                                Content.audio(new File("./test-data/audio/beach-woman-dog.wav").toURI())
+                        )))
+                        .inlineEnabled(true)
+                        .build())
                 .build();
         final var response = data.op().apply(request)
                 .toCompletableFuture()
@@ -221,13 +233,15 @@ public class ChatOpTestCase implements LoadingEnv {
                 .limit(20)
                 .toList();
 
-        final var request = ChatRequest.newBuilder()
-                .model(data.model())
-                .addMessage(Message.system("请用中文回答"))
-                .addMessage(Message.user(List.of(
-                        Content.text("请告诉我视频中的性别和对应数量"),
-                        Content.video(imageURIs)
-                )))
+        final var request = AigcRequest.newBuilder(data.model())
+                .input(ChatModel.Input.newBuilder()
+                        .addMessage(Message.system("请用中文回答"))
+                        .addMessage(Message.user(List.of(
+                                Content.text("请告诉我视频中的性别和对应数量"),
+                                Content.video(imageURIs)
+                        )))
+                        .inlineEnabled(true)
+                        .build())
                 .build();
 
         final var response = data.op().apply(request)
@@ -243,20 +257,19 @@ public class ChatOpTestCase implements LoadingEnv {
 
     static Stream<Data> provideDataForLong() {
         return provideDataFromModels(
-                ChatModel.QWEN_LONG,
-                ChatModel.QWEN_LONG_LATEST
+                ChatModel.QWEN_LONG
         );
     }
 
     @ParameterizedTest
     @MethodSource("provideDataForLong")
     public void test$chat$long(Data data) {
-        final var request = ChatRequest.newBuilder()
-                .model(data.model())
-                .addMessage(Message.system("you are a helpful assistant"))
-                .addMessage(Message.system("fileid://file-fe-58febfa682b34d898b1693a6"))
-                .addMessage(Message.user("请帮我分析这个文件，并给出一个总结"))
-                //.parameter(ChatParameterKeys.ENABLE_INCREMENTAL_OUTPUT, true)
+        final var request = AigcRequest.newBuilder(data.model())
+                .input(ChatModel.Input.newBuilder()
+                        // .addMessage(Message.system("you are a helpful assistant"))
+                        .addMessage(Message.system("fileid://file-fe-58febfa682b34d898b1693a6"))
+                        .addMessage(Message.user("请帮我分析这个文件，并给出一个总结"))
+                        .build())
                 .build();
 
         final var response = data.op().apply(request)
@@ -272,20 +285,18 @@ public class ChatOpTestCase implements LoadingEnv {
 
     static Stream<Data> provideDataForText2Image() {
         return provideDataFromModels(
-                ChatModel.QWEN_IMAGE,
-                ChatModel.WAN_T2I,
-                ChatModel.WAN_IMAGE
+                ChatModel.QWEN_IMAGE_MAX,
+                ChatModel.WAN_T2I
         );
     }
 
     @ParameterizedTest
     @MethodSource("provideDataForText2Image")
     public void test$chat$text2image(Data data) {
-        final var request = ChatRequest.newBuilder()
-                .model(data.model())
-                .addMessage(Message.user("帮我画一朵紫色的向日葵"))
-                .parameter("enable_interleave", true)
-                .parameter("stream", true)
+        final var request = AigcRequest.newBuilder(data.model())
+                .input(ChatModel.Input.newBuilder()
+                        .addMessage(Message.user("帮我画一朵紫色的向日葵"))
+                        .build())
                 .build();
 
         final var imageURIs = data.op().apply(request)

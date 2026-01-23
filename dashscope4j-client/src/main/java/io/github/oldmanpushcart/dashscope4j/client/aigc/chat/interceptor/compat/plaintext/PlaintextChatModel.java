@@ -25,10 +25,10 @@ record PlaintextChatModel(
                         if (message instanceof UserMessage
                                 || message instanceof AssistantMessage
                                 || message instanceof SystemMessage) {
-                            return new HashMap<>() {{
-                                put("role", message.role());
-                                put("content", message.text());
-                            }};
+                            final var pojo = new HashMap<>();
+                            pojo.put("role", message.role());
+                            pojo.put("content", message.text());
+                            return pojo;
                         } else {
                             return message;
                         }

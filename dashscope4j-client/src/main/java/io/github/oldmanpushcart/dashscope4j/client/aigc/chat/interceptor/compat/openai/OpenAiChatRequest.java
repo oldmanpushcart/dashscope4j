@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.OpenAiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
@@ -23,32 +25,32 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalConte
 class OpenAiChatRequest extends OpenAiRequest<OpenAiChatResponse> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final AigcModel<?,?> model;
-    private final Parameters parameters;
-    private final List<Message> messages;
+    private final AigcRequest<ChatModel.Input, ?> ref;
 
-    public OpenAiChatRequest(AigcModel<?,?> model, Parameters parameters, List<Message> messages) {
+    public OpenAiChatRequest(AigcRequest<ChatModel.Input, ?> ref) {
         super(OpenAiChatResponse.class);
-        this.model = model;
-        this.parameters = parameters;
-        this.messages = messages;
+        this.ref = ref;
     }
 
-    public AigcModel<?,?> model() {
-        return model;
+    public AigcRequest<ChatModel.Input, ?> ref() {
+        return ref;
+    }
+
+    public AigcModel<?, ?> model() {
+        return ref.model();
     }
 
     public Parameters parameters() {
-        return parameters;
+        return ref.parameters();
     }
 
     public List<Message> messages() {
-        return messages;
+        return ref.input().messages();
     }
 
     @Override
     public HttpRequest toHttpRequest(String host) {
-        final var endpoint = EndpointUtils.https(host, model.path());
+        final var endpoint = EndpointUtils.https(host, model().path());
         return HttpRequest.newBuilder(endpoint)
                 .header(HTTP_HEADER_CONTENT_TYPE, "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(requestEncoder().apply(this)))
@@ -58,7 +60,7 @@ class OpenAiChatRequest extends OpenAiRequest<OpenAiChatResponse> {
     protected Function<ApiRequest<?>, String> requestEncoder() {
         return request -> {
             final var requestBody = JacksonJsonUtils.toJson(this);
-            logger.debug("dashscope4j-client://algo/openai/{} >>> {}", model.name(), requestBody);
+            logger.debug("dashscope4j-client://algo/openai/{} >>> {}", model().name(), requestBody);
             return requestBody;
         };
     }
@@ -66,7 +68,7 @@ class OpenAiChatRequest extends OpenAiRequest<OpenAiChatResponse> {
     @Override
     public BiFunction<HttpResponse<?>, String, OpenAiChatResponse> responseDecoder() {
         return (httpResponse, responseBody) -> {
-            logger.debug("dashscope4j-client://algo/openai/{} <<< {}", model.name(), responseBody);
+            logger.debug("dashscope4j-client://algo/openai/{} <<< {}", model().name(), responseBody);
             return JacksonJsonUtils.toApiResponse(responseBody, responseType(), this, httpResponse);
         };
     }
