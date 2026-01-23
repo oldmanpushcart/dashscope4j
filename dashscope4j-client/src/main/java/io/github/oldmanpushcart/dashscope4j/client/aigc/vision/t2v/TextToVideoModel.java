@@ -1,15 +1,19 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v.interceptor.UploadFilesInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
+
+import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
+import static java.util.Objects.requireNonNull;
 
 public record TextToVideoModel(
         String name,
@@ -30,38 +34,37 @@ public record TextToVideoModel(
     /**
      * 输入参数
      */
-    public static final class Input {
+    public record Input(
 
-        private final String prompt;
-        private final String negative;
-        private final URI audio;
-        private final boolean uploadEnabled;
+            @JsonProperty("prompt")
+            String prompt,
+
+            @JsonProperty("negative_prompt")
+            String negative,
+
+            @JsonProperty("audio_url")
+            URI audio,
+
+            @JsonIgnore
+            boolean uploadEnabled
+
+    ) {
+
+        public Input(String prompt, String negative, URI audio, boolean uploadEnabled) {
+            requireNonBlankString(prompt, "prompt must not be blank!");
+            this.prompt = prompt;
+            this.negative = negative;
+            this.audio = audio;
+            this.uploadEnabled = uploadEnabled;
+        }
 
         private Input(Builder builder) {
-            this.prompt = builder.prompt;
-            this.negative = builder.negative;
-            this.audio = builder.audio;
-            this.uploadEnabled = builder.uploadEnabled;
-        }
-
-        @JsonProperty("prompt")
-        public String prompt() {
-            return prompt;
-        }
-
-        @JsonProperty("negative_prompt")
-        public String negative() {
-            return negative;
-        }
-
-        @JsonProperty("audio_url")
-        public URI audio() {
-            return audio;
-        }
-
-        @JsonIgnore
-        public boolean uploadEnabled() {
-            return uploadEnabled;
+            this(
+                    builder.prompt,
+                    builder.negative,
+                    builder.audio,
+                    builder.uploadEnabled
+            );
         }
 
         public static Builder newBuilder() {
@@ -90,16 +93,19 @@ public record TextToVideoModel(
             }
 
             public Builder prompt(String prompt) {
+                requireNonBlankString(prompt, "prompt must not be blank!");
                 this.prompt = prompt;
                 return this;
             }
 
             public Builder negative(String negative) {
+                requireNonBlankString(negative, "negative must not be blank!");
                 this.negative = negative;
                 return this;
             }
 
             public Builder audio(URI audio) {
+                requireNonNull(audio, "audio must not be null!");
                 this.audio = audio;
                 return this;
             }
@@ -122,42 +128,18 @@ public record TextToVideoModel(
     /**
      * 输出参数
      */
-    public static class Output {
+    public record Output(
 
-        private final URI video;
-        private final String originalPrompt;
-        private final String actualPrompt;
+            @JsonProperty("video_url")
+            URI video,
 
-        @JsonCreator
-        private Output(
+            @JsonProperty("orig_prompt")
+            String originalPrompt,
 
-                @JsonProperty("video_url")
-                URI video,
+            @JsonProperty("actual_prompt")
+            String actualPrompt
 
-                @JsonProperty("orig_prompt")
-                String originalPrompt,
-
-                @JsonProperty("actual_prompt")
-                String actualPrompt
-
-        ) {
-            this.video = video;
-            this.originalPrompt = originalPrompt;
-            this.actualPrompt = actualPrompt;
-        }
-
-        public URI video() {
-            return video;
-        }
-
-        public String originalPrompt() {
-            return originalPrompt;
-        }
-
-        public String actualPrompt() {
-            return actualPrompt;
-        }
-
+    ) {
     }
 
 }

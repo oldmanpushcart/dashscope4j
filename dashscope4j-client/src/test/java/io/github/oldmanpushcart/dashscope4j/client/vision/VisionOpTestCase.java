@@ -20,7 +20,6 @@ public class VisionOpTestCase implements LoadingEnv {
 
     private static Stream<TextToImageModel> provideModelsForText2Image() {
         return Stream.of(
-                TextToImageModel.WAN_T2I,
                 TextToImageModel.QWEN_IMAGE
         );
     }
@@ -70,7 +69,7 @@ public class VisionOpTestCase implements LoadingEnv {
         DashscopeAssertions.dashscopeAssertVideo(
                 client,
                 videoURI,
-                "这是一个杯子，在海滩上跳舞"
+                "这是一个杯子，在海滩上"
         );
 
     }

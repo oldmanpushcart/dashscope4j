@@ -6,10 +6,14 @@ import io.github.oldmanpushcart.dashscope4j.client.Ret;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModelTags;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
+import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
+
+import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
 
 public record TextToImageModel(
         String name,
@@ -18,9 +22,6 @@ public record TextToImageModel(
 ) implements AigcModel<TextToImageModel.Input, TextToImageModel.Output> {
 
     public static final TextToImageModel QWEN_IMAGE = new TextToImageModel("qwen-image", "/api/v1/services/aigc/text2image/image-synthesis");
-    public static final TextToImageModel WAN_T2I = new TextToImageModel("wan2.6-t2i", "/api/v1/services/aigc/image-generation/generation", Set.of(
-            AigcModelTags.RESPONSE_MODE_TASK
-    ));
 
     public TextToImageModel(String name, String path) {
         this(name, path, Set.of());
@@ -29,14 +30,27 @@ public record TextToImageModel(
     /**
      * 输入参数
      */
-    public static final class Input {
+    public record Input(
 
-        private final String prompt;
-        private final String negative;
+            @JsonProperty("prompt")
+            String prompt,
+
+            @JsonProperty("negative")
+            String negative
+
+    ) {
+
+        public Input(String prompt, String negative) {
+            requireNonBlankString(prompt, "prompt must not be blank!");
+            this.prompt = prompt;
+            this.negative = negative;
+        }
 
         private Input(Builder builder) {
-            this.prompt = builder.prompt;
-            this.negative = builder.negative;
+            this(
+                    builder.prompt,
+                    builder.negative
+            );
         }
 
         public static Builder newBuilder() {
@@ -45,16 +59,6 @@ public record TextToImageModel(
 
         public static Builder newBuilder(Input input) {
             return new Builder(input);
-        }
-
-        @JsonProperty("prompt")
-        public String prompt() {
-            return prompt;
-        }
-
-        @JsonProperty("negative")
-        public String negative() {
-            return negative;
         }
 
         public static class Builder implements Buildable<Input, Builder> {
@@ -71,11 +75,13 @@ public record TextToImageModel(
             }
 
             public Builder prompt(String prompt) {
+                requireNonBlankString(prompt, "prompt must not be blank!");
                 this.prompt = prompt;
                 return self();
             }
 
             public Builder negative(String negative) {
+                requireNonBlankString(negative, "negative must not be blank!");
                 this.negative = negative;
                 return self();
             }
@@ -93,23 +99,12 @@ public record TextToImageModel(
     /**
      * 输出参数
      */
-    public static final class Output {
+    public record Output(
 
-        private final List<Item> items;
+            @JsonProperty("results")
+            List<Item> items
 
-        @JsonCreator
-        private Output(
-
-                @JsonProperty("results")
-                List<Item> items
-
-        ) {
-            this.items = items;
-        }
-
-        public List<Item> items() {
-            return items;
-        }
+    ) {
 
 
         public static class Item extends Ret {
