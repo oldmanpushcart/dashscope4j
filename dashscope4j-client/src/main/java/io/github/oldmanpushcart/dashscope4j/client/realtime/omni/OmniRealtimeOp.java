@@ -8,8 +8,8 @@ import java.util.concurrent.CompletionStage;
 
 public interface OmniRealtimeOp {
 
-    CompletionStage<ManualVad> newManualVad(OmniRealtimeModel model, Parameters parameters, OmniRealtimeExchange.Handler handler);
+    CompletionStage<ManualVad> newManualVad(OmniRealtimeModel model, OmniRealtimeSession session, OmniRealtimeExchange.Handler handler);
 
-    CompletionStage<ServerVad> newServerVad(OmniRealtimeModel model, Parameters parameters, OmniRealtimeExchange.Handler handler);
+    CompletionStage<ServerVad> newServerVad(OmniRealtimeModel model, OmniRealtimeSession session, OmniRealtimeExchange.Handler handler);
 
 }

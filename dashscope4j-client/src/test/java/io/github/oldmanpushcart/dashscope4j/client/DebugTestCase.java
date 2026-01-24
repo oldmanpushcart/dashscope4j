@@ -5,9 +5,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2i.TextToImageModel;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeParameterKeys;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeSession;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeSessionUpdateClientEvent;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Type;
@@ -75,15 +72,5 @@ public class DebugTestCase implements LoadingEnv {
 
     }
 
-    @Test
-    public void debug4() {
-
-        final var parameters = new Parameters()
-                .append(OmniRealtimeParameterKeys.VOICE, "OMPC");
-        final var event = new OmniRealtimeSessionUpdateClientEvent("1", new OmniRealtimeSession(parameters));
-        final var json = JacksonJsonUtils.toJson(event);
-        System.out.println(json);
-
-    }
 
 }

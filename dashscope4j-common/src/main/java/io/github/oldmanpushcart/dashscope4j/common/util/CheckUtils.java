@@ -20,7 +20,7 @@ public class CheckUtils {
      */
     public static String requireNonBlankString(String str, Supplier<String> messageSupplier) {
         requireNonNull(messageSupplier);
-        return check(str, CommonUtils::isNotBlankString, messageSupplier);
+        return require(str, CommonUtils::isNotBlankString, messageSupplier);
     }
 
     /**
@@ -44,7 +44,7 @@ public class CheckUtils {
      */
     public static <T extends Collection<?>> T requireNonEmptyCollection(T collection, Supplier<String> messageSupplier) {
         requireNonNull(messageSupplier);
-        return check(collection, CommonUtils::isNotEmptyCollection, messageSupplier);
+        return require(collection, CommonUtils::isNotEmptyCollection, messageSupplier);
     }
 
     /**
@@ -68,11 +68,11 @@ public class CheckUtils {
      * @param <T>       对象类型
      * @return 对象
      */
-    public static <T> T check(T t, Predicate<T> predicate, String message) {
-        return check(t, predicate, () -> message);
+    public static <T> T require(T t, Predicate<T> predicate, String message) {
+        return require(t, predicate, () -> message);
     }
 
-    public static <T> T check(T t, Predicate<T> predicate, Supplier<String> messageSupplier) {
+    public static <T> T require(T t, Predicate<T> predicate, Supplier<String> messageSupplier) {
         if (!predicate.test(t)) {
             throw new IllegalArgumentException(messageSupplier.get());
         }

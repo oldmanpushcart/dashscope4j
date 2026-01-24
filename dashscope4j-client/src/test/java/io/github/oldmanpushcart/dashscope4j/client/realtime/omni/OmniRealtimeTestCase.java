@@ -27,7 +27,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
 
         final var completed = new CompletableFuture<String>();
         client.realtime().omni()
-                .newManualVad(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME, new Parameters(), new SimpleOmniRealtimeExchangeHandler() {
+                .newManualVad(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME, OmniRealtimeSession.newBuilder().build(), new SimpleOmniRealtimeExchangeHandler() {
 
                     private final StringBuilder stringBuf = new StringBuilder();
 

@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.realtime.omni;
 
 import io.github.oldmanpushcart.dashscope4j.client.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeErrorException;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeSession;
@@ -21,14 +20,14 @@ import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID
 
 class SessionHandshakeHandler implements OmniRealtimeExchange.Handler {
 
-    private final Parameters parameters;
+    private final OmniRealtimeSession session;
     private final OmniRealtimeExchange.Handler delegate;
 
     private final AtomicReference<State> stateRef = new AtomicReference<>(State.AWAITING_SESSION_CREATED);
     private volatile Exchange<OmniRealtimeClientEvent> exchange;
 
-    public SessionHandshakeHandler(Parameters parameters, OmniRealtimeExchange.Handler delegate) {
-        this.parameters = parameters;
+    public SessionHandshakeHandler(OmniRealtimeSession session, OmniRealtimeExchange.Handler delegate) {
+        this.session = session;
         this.delegate = delegate;
     }
 
@@ -75,7 +74,6 @@ class SessionHandshakeHandler implements OmniRealtimeExchange.Handler {
             case AWAITING_SESSION_CREATED -> {
                 if (data instanceof OmniRealtimeSessionCreatedServerEvent) {
                     changeState(state, State.AWAITING_SESSION_CONFIRMED);
-                    final var session = new OmniRealtimeSession(parameters);
                     final var event = new OmniRealtimeSessionUpdateClientEvent(genUUID22(), session);
                     yield exchange.send(event);
                 } else {

@@ -1,109 +1,248 @@
 package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.github.oldmanpushcart.dashscope4j.client.Parameters;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.DurationMsJsonDeserializer;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.DurationMsJsonSerializer;
+import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
-import java.io.IOException;
+import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
 
-@JsonDeserialize(using = OmniRealtimeSession.SessionJsonDeserializer.class)
-@JsonSerialize(using = OmniRealtimeSession.SessionJsonSerializer.class)
+import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.require;
+import static java.util.Objects.requireNonNull;
+
 public record OmniRealtimeSession(
+
+        @JsonProperty("id")
         String id,
-        String object,
+
+        @JsonProperty("model")
         String model,
-        Parameters parameters
+
+        @JsonProperty("modalities")
+        Set<Modality> modalities,
+
+        @JsonProperty("voice")
+        String voice,
+
+        @JsonProperty("input_audio_format")
+        AudioFormat inputAudioFormat,
+
+        @JsonProperty("output_audio_format")
+        AudioFormat outputAudioFormat,
+
+        @JsonProperty("smooth_output")
+        Boolean smooth,
+
+        @JsonProperty("instructions")
+        String instructions,
+
+        @JsonProperty("seed")
+        Integer seed,
+
+        @JsonProperty("max_tokens")
+        Integer maxTokens,
+
+        @JsonProperty("repetition_penalty")
+        Float repetitionPenalty,
+
+        @JsonProperty("top_k")
+        Integer topK,
+
+        @JsonProperty("top_p")
+        Float topP,
+
+        @JsonProperty("temperature")
+        Float temperature,
+
+        @JsonProperty("turn_detection")
+        TurnDetection turnDetection
+
 ) {
 
-    private static final String FIELD_ID = "id";
-    private static final String FIELD_OBJECT = "object";
-    private static final String FIELD_MODEL = "model";
-
-    public OmniRealtimeSession(Parameters parameters) {
-        this(null, null, null, parameters);
+    private OmniRealtimeSession(Builder builder) {
+        this(
+                null,
+                null,
+                builder.modalities,
+                builder.voice,
+                builder.inputAudioFormat,
+                builder.outputAudioFormat,
+                builder.smooth,
+                builder.instructions,
+                builder.seed,
+                builder.maxTokens,
+                builder.repetitionPenalty,
+                builder.topK,
+                builder.topP,
+                builder.temperature,
+                builder.turnDetection
+        );
     }
 
-    static class SessionJsonDeserializer extends JsonDeserializer<OmniRealtimeSession> {
+    /**
+     * 模型输出模态
+     */
+    public enum Modality {
+        @JsonProperty("text") TEXT,
+        @JsonProperty("audio") AUDIO
+    }
 
-        @Override
-        public OmniRealtimeSession deserialize(JsonParser parser, DeserializationContext context) throws IOException, JacksonException {
+    /**
+     * 音频格式
+     */
+    public enum AudioFormat {
+        @JsonProperty("pcm16") PCM16,
+        @JsonProperty("pcm24") PCM24
+    }
 
-            final var mapper = (ObjectMapper) parser.getCodec();
-            final var node = mapper.<JsonNode>readTree(parser);
+    /**
+     * 语音活动检测
+     */
+    public record TurnDetection(
 
-            final var id = node.has(FIELD_ID)
-                    ? node.get(FIELD_ID).asText()
-                    : null;
-            final var object = node.has(FIELD_OBJECT)
-                    ? node.get(FIELD_OBJECT).asText()
-                    : null;
-            final var model = node.has(FIELD_MODEL)
-                    ? node.get(FIELD_MODEL).asText()
-                    : null;
+            @JsonProperty("type")
+            Type type,
 
-            final var parameters = new Parameters();
-            final var fields = node.fields();
-            while (fields.hasNext()) {
-                final var entry = fields.next();
-                final var name = entry.getKey();
-                final var valueNode = entry.getValue();
+            @JsonProperty("threshold")
+            Float threshold,
 
-                // 过滤掉固定字段
-                if (FIELD_ID.equals(name) || FIELD_OBJECT.equals(name) || FIELD_MODEL.equals(name)) {
-                    continue;
-                }
+            @JsonProperty("silence_duration_ms")
+            @JsonSerialize(using = DurationMsJsonSerializer.class)
+            @JsonDeserialize(using = DurationMsJsonDeserializer.class)
+            Duration silence
 
-                // 其它的字段根据注册的参数KEY进行反射
-                Parameters.StdParameterKey<?, ?> parameterKey = null;
-                for (var registeredKey : OmniRealtimeParameterKeys.REGISTRIES) {
-                    if (registeredKey.name().equals(name)) {
-                        parameterKey = registeredKey;
-                        break;
-                    }
-                }
-                if (null == parameterKey) {
-                    continue;
-                }
+    ) {
 
-                parameters.append(name, mapper.treeToValue(valueNode, parameterKey.type()));
-            }
-
-            return new OmniRealtimeSession(id, object, model, parameters);
+        /**
+         * 检测方式
+         */
+        public enum Type {
+            @JsonProperty("server_vad") SERVER_VAD,
+            @JsonProperty("manual_vad") MANUAL_VAD
         }
 
     }
 
-    static class SessionJsonSerializer extends JsonSerializer<OmniRealtimeSession> {
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static Builder newBuilder(OmniRealtimeSession session) {
+        return new Builder(session);
+    }
+
+    public static class Builder implements Buildable<OmniRealtimeSession, Builder> {
+
+        private final Set<Modality> modalities = new HashSet<>(Set.of(Modality.TEXT, Modality.AUDIO));
+        private String voice;
+        private AudioFormat inputAudioFormat;
+        private AudioFormat outputAudioFormat;
+        private Boolean smooth;
+        private String instructions;
+        private Integer seed;
+        private Integer maxTokens;
+        private Float repetitionPenalty;
+        private Integer topK;
+        private Float topP;
+        private Float temperature;
+        private TurnDetection turnDetection;
+
+        public Builder() {
+
+        }
+
+        public Builder(OmniRealtimeSession session) {
+            modalities.addAll(session.modalities);
+            voice = session.voice;
+            inputAudioFormat = session.inputAudioFormat;
+            outputAudioFormat = session.outputAudioFormat;
+            smooth = session.smooth;
+            instructions = session.instructions;
+            seed = session.seed;
+            maxTokens = session.maxTokens;
+            repetitionPenalty = session.repetitionPenalty;
+            topK = session.topK;
+            topP = session.topP;
+            temperature = session.temperature;
+            turnDetection = session.turnDetection;
+        }
+
+        public Builder modalities(Modality... modalities) {
+            requireNonNull(modalities);
+            CheckUtils.require(modalities, t-> t.length > 0, "modalities must not be empty");
+            this.modalities.clear();
+            this.modalities.addAll(Set.of(modalities));
+            return this;
+        }
+
+        public Builder voice(String voice) {
+            this.voice = voice;
+            return this;
+        }
+
+        public Builder inputAudioFormat(AudioFormat inputAudioFormat) {
+            this.inputAudioFormat = inputAudioFormat;
+            return this;
+        }
+
+        public Builder outputAudioFormat(AudioFormat outputAudioFormat) {
+            this.outputAudioFormat = outputAudioFormat;
+            return this;
+        }
+
+        public Builder smooth(boolean smooth) {
+            this.smooth = smooth;
+            return this;
+        }
+
+        public Builder instructions(String instructions) {
+            this.instructions = instructions;
+            return this;
+        }
+
+        public Builder seed(int seed) {
+            this.seed = seed;
+            return this;
+        }
+
+        public Builder maxTokens(int maxTokens) {
+            this.maxTokens = maxTokens;
+            return this;
+        }
+
+        public Builder repetitionPenalty(float repetitionPenalty) {
+            this.repetitionPenalty = repetitionPenalty;
+            return this;
+        }
+
+        public Builder topK(int topK) {
+            this.topK = topK;
+            return this;
+        }
+
+        public Builder topP(float topP) {
+            this.topP = topP;
+            return this;
+        }
+
+        public Builder temperature(float temperature) {
+            this.temperature = temperature;
+            return this;
+        }
+
+        public Builder turnDetection(TurnDetection turnDetection) {
+            this.turnDetection = turnDetection;
+            return this;
+        }
 
         @Override
-        public void serialize(OmniRealtimeSession session, JsonGenerator generator, SerializerProvider provider) throws IOException {
-
-            generator.writeStartObject();
-
-            // 写入固定字段
-            if (session.id() != null) {
-                generator.writeStringField(FIELD_ID, session.id());
-            }
-            if (session.object() != null) {
-                generator.writeStringField(FIELD_OBJECT, session.object());
-            }
-            if (session.model() != null) {
-                generator.writeStringField(FIELD_MODEL, session.model());
-            }
-
-            // 写入 parameters 中的所有字段
-            if (session.parameters() != null && !session.parameters().isEmpty()) {
-                for (final var entry : session.parameters().dump().entrySet()) {
-                    generator.writeObjectField(entry.getKey(), entry.getValue());
-                }
-            }
-
-            generator.writeEndObject();
-
+        public OmniRealtimeSession build() {
+            return new OmniRealtimeSession(this);
         }
 
     }
