@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client;
+package io.github.oldmanpushcart.dashscope4j.client.exchange;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;

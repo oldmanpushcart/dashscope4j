@@ -5,8 +5,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcOp;
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.aigc.AigcOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
-import io.github.oldmanpushcart.dashscope4j.client.internal.realtime.RealtimeOpImpl;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeOp;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
@@ -17,7 +15,6 @@ import static java.util.Objects.requireNonNull;
 
 public class DashscopeClientImpl implements DashscopeClient {
 
-    private final RealtimeOp realtimeOp;
     private final AigcOp aigcOp;
     private final BaseOp baseOp;
 
@@ -27,7 +24,6 @@ public class DashscopeClientImpl implements DashscopeClient {
         final var http = requireNonNull(builder.http, "http must not be null!");
 
         this.aigcOp = new AigcOpImpl(this);
-        this.realtimeOp = new RealtimeOpImpl(this);
         this.baseOp = new BaseOpImpl(this, host, ak, http);
 
     }
@@ -36,12 +32,7 @@ public class DashscopeClientImpl implements DashscopeClient {
     public AigcOp aigc() {
         return aigcOp;
     }
-
-    @Override
-    public RealtimeOp realtime() {
-        return realtimeOp;
-    }
-
+    
     @Override
     public BaseOp base() {
         return baseOp;

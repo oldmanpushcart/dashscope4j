@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.github.oldmanpushcart.dashscope4j.client.Usage;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeModality;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.OmniRealtimeEvent;
 
 import java.util.List;
@@ -139,7 +139,7 @@ public class OmniRealtimeServerEvent extends OmniRealtimeEvent {
             @JsonProperty("object") String object,
             @JsonProperty("conversation_id") String conversationId,
             @JsonProperty("status") Status status,
-            @JsonProperty("modalities") Set<OmniRealtimeModality> modalities,
+            @JsonProperty("modalities") Set<OmniRealtimeSession.Modality> modalities,
             @JsonProperty("voice") String voice,
             @JsonProperty("output_audio_format") String outputAudioFormat,
             @JsonProperty("output") List<Item> output,

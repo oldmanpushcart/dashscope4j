@@ -1,9 +1,7 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.realtime.omni;
+package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange;
+import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange.ServerVad;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeBufferAppendAudioClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeBufferAppendImageClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
@@ -16,12 +14,12 @@ import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-class ServerVadHandler implements OmniRealtimeExchange.Handler {
+class ServerVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
-    private final OmniRealtimeExchange.Handler delegate;
+    private final Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
     private final CompletableFuture<ServerVad> completeF = new CompletableFuture<>();
 
-    public ServerVadHandler(OmniRealtimeExchange.Handler delegate) {
+    public ServerVadHandler(Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
         this.delegate = delegate;
     }
 

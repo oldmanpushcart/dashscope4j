@@ -1,52 +1,56 @@
-package io.github.oldmanpushcart.dashscope4j.client;
+package io.github.oldmanpushcart.dashscope4j.client.exchange;
 
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
+import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-/**
- * 支持自动重连的 Exchange 连接器。
- */
-public class ExchangeConnector {
+import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
+import static java.util.Objects.requireNonNull;
+
+public class ExchangeConnector<T, R> {
 
     private static final int ATTEMPT_BEGIN = 1;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String name;
-    private final Supplier<CompletionStage<? extends Exchange<?>>> factory;
-    private final String _toString;
-    private final Timer timer;
+    private final DashscopeClient client;
+    private final URI endpoint;
+    private final Exchange.Codec<T, R> codec;
+    private final Supplier<? extends Exchange.Handler<T, R>> handlerFactory;
+    private final ReconnectStrategy reconnectStrategy;
 
+    private final String _toString;
+    private final Timer timer = new Timer();
     private volatile boolean shutdown = false;
 
-    public ExchangeConnector(Supplier<CompletionStage<? extends Exchange<?>>> factory) {
-        this("normal", factory);
-    }
-
-    public ExchangeConnector(String name, Supplier<CompletionStage<? extends Exchange<?>>> factory) {
-        this.name = name;
-        this.factory = factory;
+    public ExchangeConnector(Builder<T, R, ?, ?> builder) {
+        requireNonBlankString(builder.name, "name must not be blank!");
+        requireNonNull(builder.client, "client must not be null!");
+        requireNonNull(builder.endpoint, "endpoint must not be null!");
+        requireNonNull(builder.codec, "codec must not be null!");
+        requireNonNull(builder.handlerFactory, "handlerFactory must not be null!");
+        requireNonNull(builder.reconnectStrategy, "reconnectStrategy must not be null!");
+        this.name = builder.name;
+        this.client = builder.client;
+        this.endpoint = builder.endpoint;
+        this.codec = builder.codec;
+        this.handlerFactory = builder.handlerFactory;
+        this.reconnectStrategy = builder.reconnectStrategy;
         this._toString = "dashscope4j-client://exchange/connector/%s@%s".formatted(name, System.identityHashCode(this));
-        this.timer = new Timer("%s/timer".formatted(this), true);
     }
 
     @Override
     public String toString() {
         return _toString;
-    }
-
-    /**
-     * 获取连接器的名称。
-     */
-    public String name() {
-        return name;
     }
 
     /**
@@ -67,12 +71,11 @@ public class ExchangeConnector {
     /**
      * 启动连接（从第 1 次尝试开始）。
      */
-    public CompletionStage<Void> connect(ReconnectStrategy strategy) {
-        Objects.requireNonNull(strategy, "strategy must not be null!");
+    public CompletionStage<Void> connect() {
         if (isShutdown()) {
             throw new IllegalStateException("Connector is shutdown!");
         }
-        return reconnect(ATTEMPT_BEGIN, strategy);
+        return reconnect(ATTEMPT_BEGIN, reconnectStrategy);
     }
 
     /**
@@ -86,7 +89,7 @@ public class ExchangeConnector {
             );
         }
 
-        return factory.get()
+        return client.base().api().newExchange(endpoint, codec, handlerFactory.get())
                 .handle((exchange, connectEx) -> {
 
                     // 连接失败，尝试重连
@@ -203,7 +206,6 @@ public class ExchangeConnector {
 
     }
 
-
     /**
      * 重连策略工厂。
      */
@@ -239,6 +241,63 @@ public class ExchangeConnector {
                 return delay.compareTo(maxDelay) > 0 ? maxDelay : delay;
             };
         }
+    }
+
+
+
+    public static abstract class Builder<T, R, C extends ExchangeConnector<T, R>, B extends Builder<T, R, C, B>> implements Buildable<C, B> {
+
+        private String name = "normal";
+        private DashscopeClient client;
+        private URI endpoint;
+        private Exchange.Codec<T, R> codec;
+        private Supplier<? extends Exchange.Handler<T, R>> handlerFactory;
+        private ReconnectStrategy reconnectStrategy;
+
+        protected Builder() {
+
+        }
+
+        protected Builder(ExchangeConnector<T, R> connector) {
+            this.name = connector.name;
+            this.client = connector.client;
+            this.endpoint = connector.endpoint;
+            this.codec = connector.codec;
+            this.handlerFactory = connector.handlerFactory;
+            this.reconnectStrategy = connector.reconnectStrategy;
+        }
+
+        public B name(String name) {
+            this.name = name;
+            return self();
+        }
+
+        public B client(DashscopeClient client) {
+            this.client = client;
+            return self();
+        }
+
+        public B endpoint(URI endpoint) {
+            this.endpoint = endpoint;
+            return self();
+        }
+
+        public B codec(Exchange.Codec<T, R> codec) {
+            this.codec = codec;
+            return self();
+        }
+
+        public B handlerFactory(Supplier<? extends Exchange.Handler<T, R>> handlerFactory) {
+            this.handlerFactory = handlerFactory;
+            return self();
+        }
+
+        public B reconnectStrategy(ReconnectStrategy reconnectStrategy) {
+            this.reconnectStrategy = reconnectStrategy;
+            return self();
+        }
+
+
     }
 
 }

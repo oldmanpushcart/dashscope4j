@@ -6,11 +6,9 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v.interceptor.UploadFilesInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
-import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Objects;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;

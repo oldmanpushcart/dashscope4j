@@ -12,7 +12,6 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 
-import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.require;
 import static java.util.Objects.requireNonNull;
 
 public record OmniRealtimeSession(
@@ -118,6 +117,18 @@ public record OmniRealtimeSession(
 
     ) {
 
+        public static final TurnDetection SERVER_VAD = new TurnDetection(
+                TurnDetection.Type.SERVER_VAD,
+                null,
+                null
+        );
+
+        public static final TurnDetection MANUAL_VAD = new TurnDetection(
+                TurnDetection.Type.MANUAL_VAD,
+                null,
+                null
+        );
+
         /**
          * 检测方式
          */
@@ -139,7 +150,7 @@ public record OmniRealtimeSession(
     public static class Builder implements Buildable<OmniRealtimeSession, Builder> {
 
         private final Set<Modality> modalities = new HashSet<>(Set.of(Modality.TEXT, Modality.AUDIO));
-        private String voice;
+        private String voice = "Cherry";
         private AudioFormat inputAudioFormat;
         private AudioFormat outputAudioFormat;
         private Boolean smooth;
@@ -174,7 +185,7 @@ public record OmniRealtimeSession(
 
         public Builder modalities(Modality... modalities) {
             requireNonNull(modalities);
-            CheckUtils.require(modalities, t-> t.length > 0, "modalities must not be empty");
+            CheckUtils.require(modalities, t -> t.length > 0, "modalities must not be empty");
             this.modalities.clear();
             this.modalities.addAll(Set.of(modalities));
             return this;

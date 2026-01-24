@@ -1,9 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.realtime.omni;
+package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeErrorException;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeSession;
+import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeSessionUpdateClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeErrorServerEvent;
@@ -18,15 +15,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-class SessionHandshakeHandler implements OmniRealtimeExchange.Handler {
+class SessionHandshakeHandler implements Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
     private final OmniRealtimeSession session;
-    private final OmniRealtimeExchange.Handler delegate;
+    private final Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
 
     private final AtomicReference<State> stateRef = new AtomicReference<>(State.AWAITING_SESSION_CREATED);
     private volatile Exchange<OmniRealtimeClientEvent> exchange;
 
-    public SessionHandshakeHandler(OmniRealtimeSession session, OmniRealtimeExchange.Handler delegate) {
+    public SessionHandshakeHandler(OmniRealtimeSession session, Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
         this.session = session;
         this.delegate = delegate;
     }

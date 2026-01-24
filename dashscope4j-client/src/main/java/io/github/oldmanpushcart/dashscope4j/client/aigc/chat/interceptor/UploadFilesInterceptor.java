@@ -11,7 +11,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Vid
 import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
-import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 

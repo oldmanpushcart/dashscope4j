@@ -4,10 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.Ret;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModelTags;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
-import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
-import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 
 import java.net.URI;
 import java.util.List;

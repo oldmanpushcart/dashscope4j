@@ -1,10 +1,8 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.realtime.omni;
+package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FutureSlot;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange.ManualVad;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
@@ -18,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-class ManualVadHandler implements OmniRealtimeExchange.Handler {
+class ManualVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
     private static final String KEY_BUFFER_CLEARED = "input_audio_buffer.cleared";
     private static final String KEY_BUFFER_COMMITTED = "input_audio_buffer.committed";
@@ -26,10 +24,10 @@ class ManualVadHandler implements OmniRealtimeExchange.Handler {
     private static final String KEY_RESPONSE_DONE = "response.done";
 
     private final FutureSlot<String> futureSlot = new FutureSlot<>();
-    private final OmniRealtimeExchange.Handler delegate;
+    private final Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
     private final CompletableFuture<ManualVad> completeF = new CompletableFuture<>();
 
-    public ManualVadHandler(OmniRealtimeExchange.Handler delegate) {
+    public ManualVadHandler(Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
         this.delegate = delegate;
     }
 
