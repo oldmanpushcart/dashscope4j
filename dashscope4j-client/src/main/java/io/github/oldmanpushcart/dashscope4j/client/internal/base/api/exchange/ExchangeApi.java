@@ -177,10 +177,12 @@ public class ExchangeApi {
         public void onOpen(WebSocket ws) {
             try {
                 final var exchange = new ExchangeImpl<>(id, ws, codec::encode, closeF);
-                handler.onOpen(exchange);
-                exchangeF.complete(exchange);
-                ws.request(1L);
-                logger.debug("{} opened. endpoint={};", this, endpoint);
+                handler.onOpen(exchange)
+                        .thenAccept(exchangeF::complete)
+                        .thenAccept(unused -> {
+                            ws.request(1L);
+                            logger.debug("{} opened. endpoint={};", this, endpoint);
+                        });
             } catch (Throwable ex) {
                 fireClosed(ws, ex);
                 logger.warn("{} open failure. endpoint={};", this, endpoint, ex);

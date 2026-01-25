@@ -62,10 +62,10 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                         }
 
                         @Override
-                        public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+                        public CompletionStage<? extends Exchange<OmniRealtimeClientEvent>> onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
 
                             final var manualVad = (OmniRealtimeExchange.ManualVad) exchange;
-                            manualVad
+                            return manualVad
                                     .newInput()
                                     .thenCompose(OmniRealtimeExchange.ManualVad.InputOp::clear)
                                     .thenCompose(inputOp -> {
@@ -84,8 +84,8 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                                     })
                                     .thenCompose(inputOp -> inputOp.image(image))
                                     .thenCompose(OmniRealtimeExchange.ManualVad.InputOp::commit)
-                                    .thenCompose(OmniRealtimeExchange.ManualVad.ResponseOp::create);
-
+                                    .thenCompose(OmniRealtimeExchange.ManualVad.ResponseOp::create)
+                                    .thenApply(v-> manualVad);
                         }
 
                         @Override

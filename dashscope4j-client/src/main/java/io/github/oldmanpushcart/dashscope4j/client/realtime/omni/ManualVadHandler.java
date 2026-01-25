@@ -25,21 +25,18 @@ class ManualVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, Omni
 
     private final FutureSlot<String> futureSlot = new FutureSlot<>();
     private final Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
-    private final CompletableFuture<ManualVad> completeF = new CompletableFuture<>();
+    private final CompletableFuture<Exchange<OmniRealtimeClientEvent>> completeF = new CompletableFuture<>();
 
     public ManualVadHandler(Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
         this.delegate = delegate;
     }
 
-    public CompletionStage<ManualVad> completeStage() {
-        return completeF;
-    }
-
     @Override
-    public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+    public CompletionStage<? extends Exchange<OmniRealtimeClientEvent>> onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
         final var manualVad = new ManualVadImpl((OmniRealtimeExchange) exchange, futureSlot);
-        delegate.onOpen(manualVad);
-        completeF.complete(manualVad);
+        delegate.onOpen(manualVad)
+                .thenAccept(completeF::complete);
+        return completeF;
     }
 
     @Override

@@ -225,7 +225,7 @@ public interface Exchange<T> extends Closeable {
          *                 可通过它发送消息或主动关闭连接；
          *                 保证非 {@code null}
          */
-        void onOpen(Exchange<T> exchange);
+        CompletionStage<? extends Exchange<T>> onOpen(Exchange<T> exchange);
 
         /**
          * 当接收到应用层数据（已反序列化为 {@code R} 类型）时被调用。
@@ -283,48 +283,6 @@ public interface Exchange<T> extends Closeable {
          * @param ex 导致连接关闭的异常；若为正常关闭，则为 {@code null}
          */
         void onClosed(Throwable ex);
-
-    }
-
-
-    /**
-     * 代理数据交换处理器，用于将数据交换处理器转换为代理处理器。
-     *
-     * @param <T> 发送数据的类型（与 {@link Exchange} 的泛型一致）
-     * @param <R> 接收到的数据类型（应用层消息反序列化后的对象类型）
-     */
-    class ProxyHandler<T, R> implements Handler<T, R> {
-
-        private final Handler<T, R> delegate;
-
-        /**
-         * 创建代理数据交换处理器。
-         *
-         * @param delegate 数据交换处理器的实现
-         */
-        public ProxyHandler(Handler<T, R> delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void onOpen(Exchange<T> exchange) {
-            delegate.onOpen(exchange);
-        }
-
-        @Override
-        public CompletionStage<Void> onData(R data) {
-            return delegate.onData(data);
-        }
-
-        @Override
-        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-            return delegate.onBinary(buffer);
-        }
-
-        @Override
-        public void onClosed(Throwable ex) {
-            delegate.onClosed(ex);
-        }
 
     }
 

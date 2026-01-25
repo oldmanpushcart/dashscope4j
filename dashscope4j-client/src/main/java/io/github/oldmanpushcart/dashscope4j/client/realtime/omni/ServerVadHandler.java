@@ -17,21 +17,18 @@ import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID
 class ServerVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
     private final Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
-    private final CompletableFuture<ServerVad> completeF = new CompletableFuture<>();
+    private final CompletableFuture<Exchange<OmniRealtimeClientEvent>> completeF = new CompletableFuture<>();
 
     public ServerVadHandler(Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
         this.delegate = delegate;
     }
 
-    public CompletionStage<ServerVad> completeStage() {
-        return completeF;
-    }
-
     @Override
-    public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+    public CompletionStage<? extends Exchange<OmniRealtimeClientEvent>> onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
         final var serverVad = new ServerVadImpl((OmniRealtimeExchange) exchange);
-        delegate.onOpen(serverVad);
-        completeF.complete(serverVad);
+        delegate.onOpen(serverVad)
+                .thenAccept(completeF::complete);
+        return completeF;
     }
 
     @Override
