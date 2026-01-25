@@ -22,13 +22,6 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> 
     OmniRealtimeSession session();
 
     /**
-     * 编解码器
-     */
-    interface Codec extends Exchange.Codec<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
-
-    }
-
-    /**
      * 手动 VAD
      */
     interface ManualVad extends OmniRealtimeExchange {
@@ -149,13 +142,6 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> 
          * @return 输入结果
          */
         CompletionStage<Void> audio(byte[] bytes, int offset, int length);
-
-    }
-
-    /**
-     * 交换处理器
-     */
-    interface Handler extends Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
     }
 

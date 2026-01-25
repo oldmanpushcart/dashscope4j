@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.realtime.omni.handler;
 
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange;
+import io.github.oldmanpushcart.dashscope4j.client.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.*;
 
 import java.nio.ByteBuffer;
@@ -10,7 +11,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * 简单的 OMNI-REALTIME 数据交换处理器
  */
-public abstract class SimpleOmniRealtimeExchangeHandler implements OmniRealtimeExchange.Handler {
+public abstract class SimpleOmniRealtimeExchangeHandler implements Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
     @Override
     public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
