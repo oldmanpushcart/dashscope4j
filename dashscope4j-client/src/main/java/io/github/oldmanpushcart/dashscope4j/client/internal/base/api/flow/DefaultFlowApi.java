@@ -1,9 +1,9 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.executor;
+package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.flow;
 
 import io.github.oldmanpushcart.dashscope4j.client.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.client.internal.base.api.executor.http.HttpHeader;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.http.HttpHeader;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetection;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;

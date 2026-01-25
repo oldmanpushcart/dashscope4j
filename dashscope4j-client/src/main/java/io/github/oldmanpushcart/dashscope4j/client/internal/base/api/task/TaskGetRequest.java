@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.task;
+package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.task;
 
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
@@ -12,7 +12,7 @@ import java.util.function.BiFunction;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_CONTENT_TYPE;
 
-public class TaskGetRequest extends ApiRequest<TaskGetResponse> {
+class TaskGetRequest extends ApiRequest<TaskGetResponse> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String taskId;

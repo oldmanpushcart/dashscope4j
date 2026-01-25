@@ -1,10 +1,7 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.executor;
+package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.task;
 
 import io.github.oldmanpushcart.dashscope4j.client.*;
-import io.github.oldmanpushcart.dashscope4j.client.internal.task.TaskCancelRequest;
-import io.github.oldmanpushcart.dashscope4j.client.internal.task.TaskGetRequest;
-import io.github.oldmanpushcart.dashscope4j.client.internal.task.TaskGetResponse;
-import io.github.oldmanpushcart.dashscope4j.client.internal.task.TaskHalfResponse;
+import io.github.oldmanpushcart.dashscope4j.client.internal.base.api.async.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import org.slf4j.Logger;

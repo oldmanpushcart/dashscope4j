@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.executor;
+package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.flow;
 
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;

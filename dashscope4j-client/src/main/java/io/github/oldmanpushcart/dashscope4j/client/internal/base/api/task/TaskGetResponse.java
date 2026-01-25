@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.task;
+package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.task;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -16,7 +16,7 @@ import io.github.oldmanpushcart.dashscope4j.client.Usage;
 import java.io.IOException;
 
 @JsonDeserialize(using = TaskGetResponse.TaskGetResponseJsonDeserializer.class)
-public class TaskGetResponse extends ApiResponse {
+class TaskGetResponse extends ApiResponse {
 
     private final Usage usage;
     private final Task task;

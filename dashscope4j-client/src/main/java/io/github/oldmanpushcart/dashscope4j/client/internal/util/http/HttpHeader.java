@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.executor.http;
+package io.github.oldmanpushcart.dashscope4j.client.internal.util.http;
 
 
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.codec.FeatureCodec;
@@ -18,11 +18,6 @@ public class HttpHeader {
      * HTTP-HEADER: Content-Type
      */
     public static final String HEADER_CONTENT_TYPE = "Content-Type";
-
-    /**
-     * HTTP-HEADER: X-DashScope-Client
-     */
-    public static final String HEADER_X_QIANFAN_CLIENT = "x-qianfan-client";
 
     /**
      * HTTP Content-Type
@@ -69,7 +64,7 @@ public class HttpHeader {
                     .orElseGet(() -> new ContentType(MIME_APPLICATION_JSON, emptyMap()));
         }
 
-        // 解析MIME
+        // 解析 MIME
         private static String parseMime(String ct) {
             return ct.substring(0, ct.indexOf(";")).trim();
         }

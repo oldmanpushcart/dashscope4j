@@ -1,6 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.executor;
+package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.exchange;
 
-import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.slf4j.Logger;

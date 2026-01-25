@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.exchange;
+package io.github.oldmanpushcart.dashscope4j.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

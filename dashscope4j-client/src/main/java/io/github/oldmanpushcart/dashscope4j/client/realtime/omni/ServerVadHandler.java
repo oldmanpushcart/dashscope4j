@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
-import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange.ServerVad;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeBufferAppendAudioClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeBufferAppendImageClientEvent;

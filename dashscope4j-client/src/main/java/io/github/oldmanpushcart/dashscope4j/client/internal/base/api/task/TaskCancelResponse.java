@@ -1,11 +1,11 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.task;
+package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.task;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
 
-public class TaskCancelResponse extends ApiResponse {
+class TaskCancelResponse extends ApiResponse {
 
     @JsonCreator
     private TaskCancelResponse(

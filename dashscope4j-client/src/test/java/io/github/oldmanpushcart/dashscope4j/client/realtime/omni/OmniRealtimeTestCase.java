@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
-import io.github.oldmanpushcart.dashscope4j.client.exchange.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.handler.SimpleOmniRealtimeExchangeHandler;

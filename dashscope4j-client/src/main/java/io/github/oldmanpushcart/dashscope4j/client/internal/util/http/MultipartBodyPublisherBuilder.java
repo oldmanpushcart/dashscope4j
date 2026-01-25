@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.executor.http;
+package io.github.oldmanpushcart.dashscope4j.client.internal.util.http;
 
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 

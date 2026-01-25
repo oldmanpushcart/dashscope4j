@@ -1,6 +1,5 @@
-package io.github.oldmanpushcart.dashscope4j.client.exchange;
+package io.github.oldmanpushcart.dashscope4j.client;
 
-import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
