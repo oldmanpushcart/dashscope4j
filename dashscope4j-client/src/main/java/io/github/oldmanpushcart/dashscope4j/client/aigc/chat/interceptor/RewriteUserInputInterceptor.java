@@ -1,60 +1,32 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor;
 
-import io.github.oldmanpushcart.dashscope4j.client.Task;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.AsyncInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.FlowInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.TaskInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Flow;
 
-public interface RewriteUserInputInterceptor extends AsyncInterceptor, FlowInterceptor, TaskInterceptor {
-
-    @Override
-    default CompletionStage<?> intercept(AsyncInterceptor.Chain chain) {
-        if (chain.request() instanceof AigcRequest<?, ?> aigcRequest
-                && aigcRequest.model() instanceof ChatModel model) {
-            return CompletableFuture.completedStage(null)
-                    .thenCompose(unused -> rewriteAigcRequest(chain, aigcRequest.as(model)))
-                    .thenCompose(chain::proceed);
-        } else {
-            return chain.proceed(chain.request());
-        }
-    }
+public interface RewriteUserInputInterceptor extends Interceptor {
 
     @Override
-    default CompletionStage<? extends Flow.Publisher<?>> intercept(FlowInterceptor.Chain chain) {
-        if (chain.request() instanceof AigcRequest<?, ?> aigcRequest
-                && aigcRequest.model() instanceof ChatModel model) {
-            return CompletableFuture.completedStage(null)
-                    .thenCompose(unused -> rewriteAigcRequest(chain, aigcRequest.as(model)))
-                    .thenCompose(chain::proceed);
-        } else {
-            return chain.proceed(chain.request());
+    default CompletionStage<?> intercept(Interceptor.Chain chain) {
+
+        if (!(chain.request() instanceof AigcRequest<?, ?> request)
+                || !(request.model() instanceof ChatModel model)) {
+            return chain.proceed();
         }
+
+        return rewriteRequest(chain, request.as(model))
+                .thenCompose(chain::proceed);
+
     }
 
-    @Override
-    default CompletionStage<? extends Task.Half<?>> intercept(TaskInterceptor.Chain chain) {
-        if (chain.request() instanceof AigcRequest<?, ?> aigcRequest
-                && aigcRequest.model() instanceof ChatModel model) {
-            return CompletableFuture.completedStage(null)
-                    .thenCompose(unused -> rewriteAigcRequest(chain, aigcRequest.as(model)))
-                    .thenCompose(chain::proceed);
-        } else {
-            return chain.proceed(chain.request());
-        }
-    }
-
-    private CompletionStage<AigcRequest<Input, Output>> rewriteAigcRequest(Interceptor.Chain chain, AigcRequest<Input, Output> request) {
+    private CompletionStage<AigcRequest<Input, Output>> rewriteRequest(Interceptor.Chain chain, AigcRequest<Input, Output> request) {
         if(!request.input().hasUserInputMessage()) {
             return CompletableFuture.completedStage(request);
         }

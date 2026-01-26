@@ -25,14 +25,14 @@ public class FilesOpImpl implements FilesOp {
     @Override
     public CompletionStage<FileMeta> create(URI resource, String filename, Purpose purpose) {
         final var request = new FileCreateRequest(resource, filename, purpose);
-        return client.base().api().async(request)
+        return client.async(request)
                 .thenApply(FileCreateResponse::meta);
     }
 
     @Override
     public CompletionStage<FileMeta> detail(String identity) {
         final var request = new FileDetailRequest(identity);
-        return client.base().api().async(request)
+        return client.async(request)
                 .thenApply(FileDetailResponse::meta)
                 .handle((meta, ex) -> {
 
@@ -63,7 +63,7 @@ public class FilesOpImpl implements FilesOp {
     @Override
     public CompletionStage<Boolean> delete(String identity) {
         final var request = new FileDeleteRequest(identity);
-        return client.base().api().async(request)
+        return client.async(request)
                 .thenApply(FileDeleteResponse::deleted)
                 .handle((deleted, ex) -> {
                     if (ex == null) {
@@ -81,7 +81,7 @@ public class FilesOpImpl implements FilesOp {
 
     private CompletionStage<FileListResponse> list(String after, int limit) {
         final var request = new FileListRequest(after, limit);
-        return client.base().api().async(request);
+        return client.async(request);
     }
 
     @Override

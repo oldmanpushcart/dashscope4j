@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.flow;
+package io.github.oldmanpushcart.dashscope4j.client.internal.api.flow;
 
 import io.github.oldmanpushcart.dashscope4j.client.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;

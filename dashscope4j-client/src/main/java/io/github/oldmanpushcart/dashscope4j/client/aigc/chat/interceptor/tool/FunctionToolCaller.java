@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.tool;
 
 
-import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcOp;
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
@@ -26,12 +26,12 @@ import static java.util.concurrent.CompletableFuture.failedStage;
 class FunctionToolCaller implements Tool.Caller {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final AigcOp aigcOp;
+    private final DashscopeClient client;
     private final AigcRequest<Input, Output> request;
     private final AssistantMessage message;
 
-    public FunctionToolCaller(AigcOp aigcOp, AigcRequest<Input, Output> request, AssistantMessage message) {
-        this.aigcOp = aigcOp;
+    public FunctionToolCaller(DashscopeClient client, AigcRequest<Input, Output> request, AssistantMessage message) {
+        this.client = client;
         this.request = request;
         this.message = message;
     }
@@ -47,7 +47,7 @@ class FunctionToolCaller implements Tool.Caller {
                 .thenCompose(unused -> {
                     final var history = newHistory(futureMap);
                     final var newRequest = newHistoryRequest(history);
-                    return aigcOp.async(newRequest);
+                    return client.async(newRequest);
                 });
     }
 
@@ -59,7 +59,7 @@ class FunctionToolCaller implements Tool.Caller {
                     .thenApply(unused -> {
                         final var history = newHistory(futureMap);
                         final var newRequest = newHistoryRequest(history);
-                        return aigcOp.flow(newRequest);
+                        return client.flow(newRequest);
                     }));
         });
     }

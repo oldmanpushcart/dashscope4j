@@ -88,7 +88,7 @@ public class ExchangeConnector<T, R> {
             );
         }
 
-        return client.base().api().newExchange(endpoint, codec, handlerFactory.get())
+        return client.newExchange(endpoint, codec, handlerFactory.get())
                 .handle((exchange, connectEx) -> {
 
                     // 连接失败，尝试重连

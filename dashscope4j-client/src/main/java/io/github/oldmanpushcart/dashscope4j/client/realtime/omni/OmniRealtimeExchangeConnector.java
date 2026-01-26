@@ -89,7 +89,7 @@ public class OmniRealtimeExchangeConnector extends ExchangeConnector<OmniRealtim
 
             super.client(client);
             super.codec(null == codec ? new CodecImpl() : codec);
-            super.endpoint(null == endpoint ? EndpointUtils.wss(client.base().api().host(), model.path()) : endpoint);
+            super.endpoint(null == endpoint ? EndpointUtils.wss(client.host(), model.path()) : endpoint);
             super.handlerFactory(() -> {
                 final var handler = handlerFactory.get();
                 requireNonNull(handler, "handler from factory must not be null!");

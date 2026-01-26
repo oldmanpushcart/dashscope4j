@@ -34,7 +34,7 @@ public class ChatOpTestCase implements LoadingEnv {
             new Function<>() {
                 @Override
                 public CompletionStage<AigcResponse<ChatModel.Output>> apply(AigcRequest<ChatModel.Input, ChatModel.Output> request) {
-                    return client.aigc().async(request)
+                    return client.async(request)
                             .thenApply(r -> {
                                 ApiAssertions.assertApiResponseSuccessful(r);
                                 return r;
@@ -53,7 +53,7 @@ public class ChatOpTestCase implements LoadingEnv {
                     final var newRequest = AigcRequest.newBuilder(request)
                             .addParameter(AigcParameterKeys.INCREMENTAL_OUTPUT, true)
                             .build();
-                    return FlowX.fromPublisher(client.aigc().flow(newRequest))
+                    return FlowX.fromPublisher(client.flow(newRequest))
                             .doOnNext(ApiAssertions::assertApiResponseSuccessful)
                             .reduce(AigcResponse::accumulate);
                 }

@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.task;
+package io.github.oldmanpushcart.dashscope4j.client.internal.api.task;
 
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;

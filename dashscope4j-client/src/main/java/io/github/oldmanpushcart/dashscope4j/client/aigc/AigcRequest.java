@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.Parameters;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.slf4j.Logger;
@@ -100,8 +100,8 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
     @Override
     public List<Interceptor> interceptors() {
         return Stream.of(
-                        model.interceptors(),
-                        super.interceptors()
+                        super.interceptors(),
+                        model.interceptors()
                 )
                 .flatMap(List::stream)
                 .toList();

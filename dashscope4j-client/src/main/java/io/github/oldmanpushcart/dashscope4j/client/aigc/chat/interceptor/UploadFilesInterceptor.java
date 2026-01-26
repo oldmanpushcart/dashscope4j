@@ -8,7 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.AudioContent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.ImageContent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.VideoContent;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.util.concurrent.CompletableFuture;

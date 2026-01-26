@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.task;
+package io.github.oldmanpushcart.dashscope4j.client.internal.api.task;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;

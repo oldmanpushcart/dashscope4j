@@ -4,11 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v.interceptor.UploadFilesInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.URI;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
@@ -20,9 +21,12 @@ public record TextToVideoModel(
 
     public static final TextToVideoModel WAN_T2V = new TextToVideoModel("wan2.6-t2v", "/api/v1/services/aigc/video-generation/video-synthesis");
 
-    private static final List<Interceptor> interceptors = List.of(
-            new UploadFilesInterceptor()
-    );
+    private static final List<Interceptor> interceptors = Stream.concat(
+                    AigcModel.interceptors.stream(),
+                    Stream.of(
+                            new UploadFilesInterceptor()
+                    ))
+            .toList();
 
     @Override
     public List<Interceptor> interceptors() {

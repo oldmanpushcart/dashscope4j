@@ -1,20 +1,21 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v.interceptor;
 
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.Task;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v.TextToVideoModel;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.TaskInterceptor;
 
 import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils.isFileURI;
 
-public class UploadFilesInterceptor implements TaskInterceptor {
+public class UploadFilesInterceptor implements Interceptor {
 
     @Override
-    public CompletionStage<? extends Task.Half<?>> intercept(Chain chain) {
+    public CompletionStage<?> intercept(Chain chain) {
 
-        if (!(chain.request() instanceof AigcRequest<?, ?> aigcRequest)
+        if (chain.type() != Type.TASK
+                || !(chain.request() instanceof AigcRequest<?, ?> aigcRequest)
                 || !(aigcRequest.model() instanceof TextToVideoModel model)) {
             return chain.proceed();
         }

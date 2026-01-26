@@ -1,5 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.DashscopeClientImpl;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;

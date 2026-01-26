@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor.tool;
 
-import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcOp;
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
@@ -21,10 +21,10 @@ import static io.github.oldmanpushcart.dashscope4j.client.aigc.AigcParameterKeys
  */
 class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<AigcResponse<Output>>> {
 
-    private final AigcOp aigcOp;
+    private final DashscopeClient client;
 
-    ToolCallFlowHandler(AigcOp aigcOp) {
-        this.aigcOp = aigcOp;
+    ToolCallFlowHandler(DashscopeClient client) {
+        this.client = client;
     }
 
 
@@ -84,7 +84,7 @@ class ToolCallFlowHandler implements UnaryOperator<Flow.Publisher<AigcResponse<O
                     if (null == tcMessage) {
                         return FlowX.empty();
                     }
-                    return new FunctionToolCaller(aigcOp, request, tcMessage).flowCall();
+                    return new FunctionToolCaller(client, request, tcMessage).flowCall();
                 }));
     }
 

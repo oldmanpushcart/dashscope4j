@@ -5,19 +5,27 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.FlowInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class IncrementalOutputOnlyInterceptor implements FlowInterceptor {
+/**
+ * 增量输出结果拦截器
+ * <p>
+ * 部分模型限定了输出模式必须是流式增量输出，所以这里需要对这种模型输出进行兼容。
+ * 党外部希望是全量输出时，屏蔽掉这类模型的特殊性。
+ * </p>
+ */
+public class IncrementalOutputOnlyInterceptor implements Interceptor {
 
     @Override
-    public CompletionStage<? extends Flow.Publisher<?>> intercept(Chain chain) {
+    public CompletionStage<?> intercept(Chain chain) {
 
         if (!(chain.request() instanceof AigcRequest<?, ?> request)
+                || chain.type() != Type.FLOW
                 || request.parameters().has(AigcParameterKeys.INCREMENTAL_OUTPUT, true)
                 || !request.model().tags().contains(AigcModelTags.INCREMENTAL_OUTPUT_ONLY)) {
             return chain.proceed();

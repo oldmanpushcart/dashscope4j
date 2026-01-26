@@ -36,7 +36,7 @@ public class DashscopeAssertions {
                         .addMessage(Message.user(prompt))
                         .build())
                 .build();
-        final var response = dashscope.aigc().async(request)
+        final var response = dashscope.async(request)
                 .toCompletableFuture()
                 .join();
         if (!response.output().best().message().text().contains("TRUE")) {
@@ -78,7 +78,7 @@ public class DashscopeAssertions {
                         )))
                         .build())
                 .build();
-        final var response = client.aigc().async(request)
+        final var response = client.async(request)
                 .toCompletableFuture()
                 .join();
         if (!response.output().best().message().text().contains("TRUE")) {
@@ -109,7 +109,7 @@ public class DashscopeAssertions {
                         )))
                         .build())
                 .build();
-        final var response = client.aigc().async(request)
+        final var response = client.async(request)
                 .toCompletableFuture()
                 .join();
         if (!response.output().best().message().text().contains("TRUE")) {

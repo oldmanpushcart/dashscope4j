@@ -36,7 +36,7 @@ public class StoreOpImpl implements StoreOp {
             return completedFuture(policy);
         }
         final GetPolicyRequest request = new GetPolicyRequest(model);
-        return client.base().api().async(request)
+        return client.async(request)
                 .thenApply(GetPolicyResponse::output)
                 .thenApply(GetPolicyResponse.Output::policy)
                 .whenComplete((v, ex) -> {
@@ -48,7 +48,7 @@ public class StoreOpImpl implements StoreOp {
 
     private CompletionStage<URI> upload(Policy policy, URI resource) {
         final var request = new PostUploadRequest(policy, resource);
-        return client.base().api().async(request)
+        return client.async(request)
                 .thenApply(PostUploadResponse::uploaded);
     }
 

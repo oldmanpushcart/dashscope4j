@@ -34,7 +34,7 @@ public class VisionOpTestCase implements LoadingEnv {
                         .build())
                 .build();
 
-        final var response = client.aigc().task(request)
+        final var response = client.task(request)
                 .thenCompose(half -> half.waitingFor(always(Duration.ofSeconds(1))))
                 .toCompletableFuture()
                 .join();
@@ -60,7 +60,7 @@ public class VisionOpTestCase implements LoadingEnv {
                         .build())
                 .build();
 
-        final var response = client.aigc().task(request)
+        final var response = client.task(request)
                 .thenCompose(half -> half.waitingFor(always(Duration.ofSeconds(1))))
                 .toCompletableFuture()
                 .join();

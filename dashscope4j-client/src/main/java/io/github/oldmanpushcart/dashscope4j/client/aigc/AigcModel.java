@@ -1,11 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc;
 
 import io.github.oldmanpushcart.dashscope4j.client.Model;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.interceptor.BridgeAsyncInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.interceptor.BridgeFlowInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.interceptor.BridgeTaskInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.interceptor.BridgeInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.interceptor.IncrementalOutputOnlyInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.GenericReflectUtils;
 
 import java.lang.reflect.ParameterizedType;
@@ -18,9 +16,7 @@ public interface AigcModel<I, O> extends Model {
      * 算法模型通用功能
      */
     List<Interceptor> interceptors = List.of(
-            new BridgeAsyncInterceptor(),
-            new BridgeTaskInterceptor(),
-            new BridgeFlowInterceptor(),
+            new BridgeInterceptor(),
             new IncrementalOutputOnlyInterceptor()
     );
 

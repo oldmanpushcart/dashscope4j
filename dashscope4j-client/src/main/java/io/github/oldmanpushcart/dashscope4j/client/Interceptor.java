@@ -1,7 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.interceptor;
-
-import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
+package io.github.oldmanpushcart.dashscope4j.client;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;

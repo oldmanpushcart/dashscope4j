@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.exchange;
+package io.github.oldmanpushcart.dashscope4j.client.internal.api.exchange;
 
 import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
