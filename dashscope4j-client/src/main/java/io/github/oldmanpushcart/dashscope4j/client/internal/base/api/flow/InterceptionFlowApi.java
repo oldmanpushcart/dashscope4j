@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.flow;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.FlowInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
 import java.util.ArrayList;
@@ -16,9 +16,9 @@ public class InterceptionFlowApi implements FlowApi {
 
     private final DashscopeClient client;
     private final FlowApi delegate;
-    private final FlowInterceptor interceptor;
+    private final Interceptor interceptor;
 
-    public InterceptionFlowApi(DashscopeClient client, FlowApi delegate, FlowInterceptor interceptor) {
+    public InterceptionFlowApi(DashscopeClient client, FlowApi delegate, Interceptor interceptor) {
         this.client = client;
         this.delegate = delegate;
         this.interceptor = interceptor;
@@ -27,7 +27,7 @@ public class InterceptionFlowApi implements FlowApi {
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request) {
         return FlowX.defer(() -> {
-            final var chain = new FlowInterceptor.Chain(client, request, r -> CompletableFuture.completedStage(delegate.execute(r)));
+            final var chain = new Interceptor.Chain(Interceptor.Type.FLOW, client, request, r -> CompletableFuture.completedStage(delegate.execute(r)));
             final var stage = interceptor.intercept(chain)
                     .thenApply(r -> {
                         //noinspection unchecked
@@ -37,7 +37,7 @@ public class InterceptionFlowApi implements FlowApi {
         });
     }
 
-    public static FlowApi group(DashscopeClient client, FlowApi delegate, List<FlowInterceptor> interceptors) {
+    public static FlowApi group(DashscopeClient client, FlowApi delegate, List<Interceptor> interceptors) {
 
         /*
          * 这里需要对拦截器进行倒序处理，因为拦截器会进行逆序链式调用，因此需要先处理最外层的拦截器。

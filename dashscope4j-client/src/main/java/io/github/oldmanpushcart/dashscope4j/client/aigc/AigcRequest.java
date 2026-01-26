@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.Parameters;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.slf4j.Logger;
@@ -11,8 +12,10 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Type;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_CONTENT_TYPE;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
@@ -92,6 +95,16 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
     @JsonProperty("input")
     public I input() {
         return input;
+    }
+
+    @Override
+    public List<Interceptor> interceptors() {
+        return Stream.of(
+                        model.interceptors(),
+                        super.interceptors()
+                )
+                .flatMap(List::stream)
+                .toList();
     }
 
     /**

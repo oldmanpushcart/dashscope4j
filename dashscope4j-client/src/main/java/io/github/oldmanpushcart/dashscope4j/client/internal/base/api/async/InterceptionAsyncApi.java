@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.base.api.async;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
-import io.github.oldmanpushcart.dashscope4j.client.interceptor.AsyncInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,9 +15,9 @@ public class InterceptionAsyncApi implements AsyncApi {
 
     private final DashscopeClient client;
     private final AsyncApi delegate;
-    private final AsyncInterceptor interceptor;
+    private final Interceptor interceptor;
 
-    public InterceptionAsyncApi(DashscopeClient client, AsyncApi delegate, AsyncInterceptor interceptor) {
+    public InterceptionAsyncApi(DashscopeClient client, AsyncApi delegate, Interceptor interceptor) {
         this.client = client;
         this.delegate = delegate;
         this.interceptor = interceptor;
@@ -25,7 +25,7 @@ public class InterceptionAsyncApi implements AsyncApi {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> execute(T request) {
-        final var chain = new AsyncInterceptor.Chain(client, request, delegate::execute);
+        final var chain = new Interceptor.Chain(Interceptor.Type.ASYNC, client, request, delegate::execute);
         try {
             //noinspection unchecked
             return (CompletionStage<R>) interceptor.intercept(chain);
@@ -34,7 +34,7 @@ public class InterceptionAsyncApi implements AsyncApi {
         }
     }
 
-    public static AsyncApi group(DashscopeClient client, AsyncApi delegate, List<AsyncInterceptor> interceptors) {
+    public static AsyncApi group(DashscopeClient client, AsyncApi delegate, List<Interceptor> interceptors) {
 
         /*
          * 这里需要对拦截器进行倒序处理，因为拦截器会进行逆序链式调用，因此需要先处理最外层的拦截器。

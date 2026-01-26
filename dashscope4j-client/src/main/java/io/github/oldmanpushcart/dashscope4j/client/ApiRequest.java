@@ -1,10 +1,14 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
+import io.github.oldmanpushcart.dashscope4j.client.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.lang.reflect.Type;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.BiFunction;
 
 import static java.util.Objects.requireNonNull;
@@ -15,9 +19,11 @@ import static java.util.Objects.requireNonNull;
 public abstract class ApiRequest<R extends ApiResponse> {
 
     private final Type responseType;
+    private final List<Interceptor> interceptors;
 
     protected ApiRequest(Type responseType) {
         this.responseType = responseType;
+        this.interceptors = List.of();
     }
 
     /**
@@ -29,6 +35,7 @@ public abstract class ApiRequest<R extends ApiResponse> {
     protected ApiRequest(Class<R> responseType, Builder<?, ?> builder) {
         requireNonNull(responseType, "responseType is null!");
         this.responseType = responseType;
+        this.interceptors = Collections.unmodifiableList(builder.interceptors);
     }
 
     /**
@@ -36,6 +43,13 @@ public abstract class ApiRequest<R extends ApiResponse> {
      */
     public Type responseType() {
         return responseType;
+    }
+
+    /**
+     * @return 拦截器列表
+     */
+    public List<Interceptor> interceptors() {
+        return interceptors;
     }
 
     /**
@@ -69,12 +83,33 @@ public abstract class ApiRequest<R extends ApiResponse> {
      */
     public static abstract class Builder<T extends ApiRequest<?>, B extends Builder<T, B>> implements Buildable<T, B> {
 
+        private final List<Interceptor> interceptors = new ArrayList<>();
+
         protected Builder() {
 
         }
 
         protected Builder(ApiRequest<?> request) {
+            interceptors.addAll(request.interceptors);
+        }
 
+        public B interceptors(List<Interceptor> interceptors) {
+            requireNonNull(interceptors, "interceptors must not be null!");
+            this.interceptors.clear();
+            this.interceptors.addAll(interceptors);
+            return self();
+        }
+
+        public B addInterceptor(Interceptor interceptor) {
+            requireNonNull(interceptor, "interceptor must not be null!");
+            interceptors.add(interceptor);
+            return self();
+        }
+
+        public B addInterceptors(List<Interceptor> interceptors) {
+            requireNonNull(interceptors, "interceptors must not be null!");
+            this.interceptors.addAll(interceptors);
+            return self();
         }
 
     }
