@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.interceptor;
 
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 
 import java.util.concurrent.CompletionStage;
 

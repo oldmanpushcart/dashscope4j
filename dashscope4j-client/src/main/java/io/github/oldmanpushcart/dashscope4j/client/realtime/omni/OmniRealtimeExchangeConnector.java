@@ -3,12 +3,10 @@ package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.ExchangeConnector;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
 
-import java.net.URI;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -42,7 +40,6 @@ public class OmniRealtimeExchangeConnector extends ExchangeConnector<OmniRealtim
         private OmniRealtimeModel model;
         private OmniRealtimeSession session = OmniRealtimeSession.newBuilder().build();
         private DashscopeClient client;
-        private URI endpoint;
         private Exchange.Codec<OmniRealtimeClientEvent, OmniRealtimeServerEvent> codec;
         private Supplier<? extends Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent>> handlerFactory;
 
@@ -59,12 +56,6 @@ public class OmniRealtimeExchangeConnector extends ExchangeConnector<OmniRealtim
         @Override
         public Builder client(DashscopeClient client) {
             this.client = client;
-            return this;
-        }
-
-        @Override
-        public Builder endpoint(URI endpoint) {
-            this.endpoint = endpoint;
             return this;
         }
 
@@ -88,8 +79,8 @@ public class OmniRealtimeExchangeConnector extends ExchangeConnector<OmniRealtim
             requireNonNull(handlerFactory, "handlerFactory must not be null!");
 
             super.client(client);
+            super.model(model);
             super.codec(null == codec ? new CodecImpl() : codec);
-            super.endpoint(null == endpoint ? EndpointUtils.wss(client.host(), model.path()) : endpoint);
             super.handlerFactory(() -> {
                 final var handler = handlerFactory.get();
                 requireNonNull(handler, "handler from factory must not be null!");

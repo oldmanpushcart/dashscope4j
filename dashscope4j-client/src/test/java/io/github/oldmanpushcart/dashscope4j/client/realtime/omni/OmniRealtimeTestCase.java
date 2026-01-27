@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
-import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.client.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.handler.SimpleOmniRealtimeExchangeHandler;
@@ -62,10 +62,10 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                         }
 
                         @Override
-                        public CompletionStage<? extends Exchange<OmniRealtimeClientEvent>> onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+                        public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
 
                             final var manualVad = (OmniRealtimeExchange.ManualVad) exchange;
-                            return manualVad
+                            manualVad
                                     .newInput()
                                     .thenCompose(OmniRealtimeExchange.ManualVad.InputOp::clear)
                                     .thenCompose(inputOp -> {

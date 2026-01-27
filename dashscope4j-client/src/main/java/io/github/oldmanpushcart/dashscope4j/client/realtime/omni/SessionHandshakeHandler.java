@@ -29,9 +29,8 @@ class SessionHandshakeHandler implements Exchange.Handler<OmniRealtimeClientEven
     }
 
     @Override
-    public CompletionStage<? extends Exchange<OmniRealtimeClientEvent>> onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+    public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
         this.exchange = exchange;
-        return CompletableFuture.completedStage(exchange);
     }
 
     private void changeState(State expect, State update) {

@@ -106,9 +106,9 @@ public class CommandExchange<T> implements Exchange<T> {
         }
 
         @Override
-        public CompletionStage<? extends Exchange<Command<?>>> onOpen(Exchange<Command<?>> delegate) {
+        public void onOpen(Exchange<Command<?>> delegate) {
             this.exchange = new CommandExchange<>(mode, delegate);
-            return exchange.start(session)
+            exchange.start(session)
                     .thenApply(unused -> delegate);
         }
 

@@ -225,7 +225,7 @@ public interface Exchange<T> extends Closeable {
          *                 可通过它发送消息或主动关闭连接；
          *                 保证非 {@code null}
          */
-        CompletionStage<? extends Exchange<T>> onOpen(Exchange<T> exchange);
+        void onOpen(Exchange<T> exchange);
 
         /**
          * 当接收到应用层数据（已反序列化为 {@code R} 类型）时被调用。

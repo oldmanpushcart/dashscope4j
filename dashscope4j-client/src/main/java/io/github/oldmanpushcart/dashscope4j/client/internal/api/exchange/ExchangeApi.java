@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.exchange;
 
 import io.github.oldmanpushcart.dashscope4j.client.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.Model;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.slf4j.Logger;
@@ -18,20 +20,23 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalConte
 
 public class ExchangeApi {
 
+    private final String host;
     private final String ak;
     private final HttpClient http;
 
-    public ExchangeApi(String ak, HttpClient http) {
+    public ExchangeApi(String host, String ak, HttpClient http) {
+        this.host = host;
         this.ak = ak;
         this.http = http;
     }
 
     public <T, R> CompletionStage<Exchange<T>> newExchange(
-            URI endpoint,
+            Model model,
             Exchange.Codec<T, R> codec,
             Exchange.Handler<T, R> handler
     ) {
         final var id = UUIDUtils.genUUID22();
+        final var endpoint = EndpointUtils.wss(host, model.path());
         final var listener = new ListenerImpl<>(id, endpoint, codec, handler);
         return http.newWebSocketBuilder()
                 .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
@@ -177,12 +182,10 @@ public class ExchangeApi {
         public void onOpen(WebSocket ws) {
             try {
                 final var exchange = new ExchangeImpl<>(id, ws, codec::encode, closeF);
-                handler.onOpen(exchange)
-                        .thenAccept(exchangeF::complete)
-                        .thenAccept(unused -> {
-                            ws.request(1L);
-                            logger.debug("{} opened. endpoint={};", this, endpoint);
-                        });
+                handler.onOpen(exchange);
+                exchangeF.complete(exchange);
+                ws.request(1L);
+                logger.debug("{} opened. endpoint={};", this, endpoint);
             } catch (Throwable ex) {
                 fireClosed(ws, ex);
                 logger.warn("{} open failure. endpoint={};", this, endpoint, ex);

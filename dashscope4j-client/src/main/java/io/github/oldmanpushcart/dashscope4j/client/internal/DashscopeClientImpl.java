@@ -5,7 +5,6 @@ import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.DefaultAsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.InterceptionAsyncApi;
-import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.exchange.ExchangeApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.flow.DefaultFlowApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.flow.FlowApi;
@@ -13,10 +12,10 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.api.flow.Interceptio
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.DefaultTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.InterceptionTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.TaskApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
@@ -41,7 +40,7 @@ public class DashscopeClientImpl implements DashscopeClient {
         final var asyncApi = new DefaultAsyncApi(host, ak, http);
         final var flowApi = new DefaultFlowApi(host, ak, http);
         final var taskApi = new DefaultTaskApi(host, ak, http, asyncApi);
-        final var exchangeApi = new ExchangeApi(ak, http);
+        final var exchangeApi = new ExchangeApi(host, ak, http);
 
         this.host = host;
         this.asyncApi = asyncApi;
@@ -85,8 +84,8 @@ public class DashscopeClientImpl implements DashscopeClient {
     }
 
     @Override
-    public <T, R> CompletionStage<? extends Exchange<T>> newExchange(URI endpoint, Exchange.Codec<T, R> codec, Exchange.Handler<T, R> handler) {
-        return exchangeApi.newExchange(endpoint, codec, handler);
+    public <T, R> CompletionStage<? extends Exchange<T>> newExchange(Model model, Exchange.Codec<T, R> codec, Exchange.Handler<T, R> handler) {
+        return exchangeApi.newExchange(model, codec, handler);
     }
 
     @Override

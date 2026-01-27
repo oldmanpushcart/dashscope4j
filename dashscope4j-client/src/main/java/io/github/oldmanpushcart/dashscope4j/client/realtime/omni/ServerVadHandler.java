@@ -9,7 +9,6 @@ import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.Om
 
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
@@ -17,18 +16,15 @@ import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID
 class ServerVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
     private final Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
-    private final CompletableFuture<Exchange<OmniRealtimeClientEvent>> completeF = new CompletableFuture<>();
 
     public ServerVadHandler(Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public CompletionStage<? extends Exchange<OmniRealtimeClientEvent>> onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+    public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
         final var serverVad = new ServerVadImpl((OmniRealtimeExchange) exchange);
-        delegate.onOpen(serverVad)
-                .thenAccept(completeF::complete);
-        return completeF;
+        delegate.onOpen(serverVad);
     }
 
     @Override
@@ -44,7 +40,6 @@ class ServerVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, Omni
     @Override
     public void onClosed(Throwable ex) {
         delegate.onClosed(ex);
-        completeF.completeExceptionally(ex);
     }
 
     private static class ServerVadImpl extends Exchange.Proxy<OmniRealtimeClientEvent> implements ServerVad {

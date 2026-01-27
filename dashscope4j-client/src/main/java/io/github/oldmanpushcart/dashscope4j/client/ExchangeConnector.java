@@ -4,7 +4,6 @@ import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.time.Duration;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -22,7 +21,7 @@ public class ExchangeConnector<T, R> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String name;
     private final DashscopeClient client;
-    private final URI endpoint;
+    private final Model model;
     private final Exchange.Codec<T, R> codec;
     private final Supplier<? extends Exchange.Handler<T, R>> handlerFactory;
     private final ReconnectStrategy reconnectStrategy;
@@ -34,13 +33,13 @@ public class ExchangeConnector<T, R> {
     public ExchangeConnector(Builder<T, R, ?, ?> builder) {
         requireNonBlankString(builder.name, "name must not be blank!");
         requireNonNull(builder.client, "client must not be null!");
-        requireNonNull(builder.endpoint, "endpoint must not be null!");
+        requireNonNull(builder.model, "model must not be null!");
         requireNonNull(builder.codec, "codec must not be null!");
         requireNonNull(builder.handlerFactory, "handlerFactory must not be null!");
         requireNonNull(builder.reconnectStrategy, "reconnectStrategy must not be null!");
         this.name = builder.name;
         this.client = builder.client;
-        this.endpoint = builder.endpoint;
+        this.model = builder.model;
         this.codec = builder.codec;
         this.handlerFactory = builder.handlerFactory;
         this.reconnectStrategy = builder.reconnectStrategy;
@@ -88,7 +87,7 @@ public class ExchangeConnector<T, R> {
             );
         }
 
-        return client.newExchange(endpoint, codec, handlerFactory.get())
+        return client.newExchange(model, codec, handlerFactory.get())
                 .handle((exchange, connectEx) -> {
 
                     // 连接失败，尝试重连
@@ -248,7 +247,7 @@ public class ExchangeConnector<T, R> {
 
         private String name = "normal";
         private DashscopeClient client;
-        private URI endpoint;
+        private Model model;
         private Exchange.Codec<T, R> codec;
         private Supplier<? extends Exchange.Handler<T, R>> handlerFactory;
         private ReconnectStrategy reconnectStrategy;
@@ -260,7 +259,7 @@ public class ExchangeConnector<T, R> {
         protected Builder(ExchangeConnector<T, R> connector) {
             this.name = connector.name;
             this.client = connector.client;
-            this.endpoint = connector.endpoint;
+            this.model = connector.model;
             this.codec = connector.codec;
             this.handlerFactory = connector.handlerFactory;
             this.reconnectStrategy = connector.reconnectStrategy;
@@ -276,8 +275,8 @@ public class ExchangeConnector<T, R> {
             return self();
         }
 
-        public B endpoint(URI endpoint) {
-            this.endpoint = endpoint;
+        public B model(Model model) {
+            this.model = model;
             return self();
         }
 

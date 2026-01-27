@@ -1,11 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.interceptor;
 
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
-import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
 import java.util.concurrent.CompletionStage;

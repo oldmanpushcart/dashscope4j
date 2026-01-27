@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v.interceptor;
 
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.Task;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v.TextToVideoModel;
 

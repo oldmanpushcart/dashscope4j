@@ -1,9 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc;
 
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.Model;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.interceptor.BridgeInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.interceptor.IncrementalOutputOnlyInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.GenericReflectUtils;
 
 import java.lang.reflect.ParameterizedType;
