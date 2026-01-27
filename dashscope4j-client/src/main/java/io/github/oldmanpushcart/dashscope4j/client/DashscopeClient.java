@@ -18,7 +18,7 @@ public interface DashscopeClient {
 
     <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> task(T request);
 
-    <T, R> CompletionStage<? extends Exchange<T>> newExchange(Model model, Exchange.Codec<T, R> codec, Exchange.Handler<T, R> handler);
+    <T, R> CompletionStage<ExchangeConnection> newExchange(Model model, Exchange.Handler<String, String> handler);
 
     BaseOp base();
 

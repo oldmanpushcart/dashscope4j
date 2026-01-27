@@ -20,10 +20,7 @@ public class ExchangeConnector<T, R> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String name;
-    private final DashscopeClient client;
-    private final Model model;
-    private final Exchange.Codec<T, R> codec;
-    private final Supplier<? extends Exchange.Handler<T, R>> handlerFactory;
+    private final Supplier<CompletionStage<ExchangeConnection>> connectionFactory;
     private final ReconnectStrategy reconnectStrategy;
 
     private final String _toString;
@@ -32,16 +29,10 @@ public class ExchangeConnector<T, R> {
 
     public ExchangeConnector(Builder<T, R, ?, ?> builder) {
         requireNonBlankString(builder.name, "name must not be blank!");
-        requireNonNull(builder.client, "client must not be null!");
-        requireNonNull(builder.model, "model must not be null!");
-        requireNonNull(builder.codec, "codec must not be null!");
-        requireNonNull(builder.handlerFactory, "handlerFactory must not be null!");
+        requireNonNull(builder.connectionFactory, "connectionFactory must not be null!");
         requireNonNull(builder.reconnectStrategy, "reconnectStrategy must not be null!");
         this.name = builder.name;
-        this.client = builder.client;
-        this.model = builder.model;
-        this.codec = builder.codec;
-        this.handlerFactory = builder.handlerFactory;
+        this.connectionFactory = builder.connectionFactory;
         this.reconnectStrategy = builder.reconnectStrategy;
         this._toString = "dashscope4j-client://exchange/connector/%s@%s".formatted(name, System.identityHashCode(this));
     }
@@ -87,8 +78,8 @@ public class ExchangeConnector<T, R> {
             );
         }
 
-        return client.newExchange(model, codec, handlerFactory.get())
-                .handle((exchange, connectEx) -> {
+        return connectionFactory.get()
+                .handle((connection, connectEx) -> {
 
                     // 连接失败，尝试重连
                     if (null != connectEx) {
@@ -96,7 +87,7 @@ public class ExchangeConnector<T, R> {
                     }
 
                     // 连接成功，注册重连
-                    exchange.closeFuture()
+                    connection.closeFuture()
                             .whenComplete((v, closeEx) -> {
                                 if (null == closeEx) {
                                     logger.debug("{} connection closed normally at attempt {}", this, attempt);
@@ -246,10 +237,7 @@ public class ExchangeConnector<T, R> {
     public static abstract class Builder<T, R, C extends ExchangeConnector<T, R>, B extends Builder<T, R, C, B>> implements Buildable<C, B> {
 
         private String name = "normal";
-        private DashscopeClient client;
-        private Model model;
-        private Exchange.Codec<T, R> codec;
-        private Supplier<? extends Exchange.Handler<T, R>> handlerFactory;
+        private Supplier<CompletionStage<ExchangeConnection>> connectionFactory;
         private ReconnectStrategy reconnectStrategy;
 
         protected Builder() {
@@ -258,10 +246,7 @@ public class ExchangeConnector<T, R> {
 
         protected Builder(ExchangeConnector<T, R> connector) {
             this.name = connector.name;
-            this.client = connector.client;
-            this.model = connector.model;
-            this.codec = connector.codec;
-            this.handlerFactory = connector.handlerFactory;
+            this.connectionFactory = connector.connectionFactory;
             this.reconnectStrategy = connector.reconnectStrategy;
         }
 
@@ -270,23 +255,8 @@ public class ExchangeConnector<T, R> {
             return self();
         }
 
-        public B client(DashscopeClient client) {
-            this.client = client;
-            return self();
-        }
-
-        public B model(Model model) {
-            this.model = model;
-            return self();
-        }
-
-        public B codec(Exchange.Codec<T, R> codec) {
-            this.codec = codec;
-            return self();
-        }
-
-        public B handlerFactory(Supplier<? extends Exchange.Handler<T, R>> handlerFactory) {
-            this.handlerFactory = handlerFactory;
+        public B connectionFactory(Supplier<CompletionStage<ExchangeConnection>> connectionFactory) {
+            this.connectionFactory = connectionFactory;
             return self();
         }
 

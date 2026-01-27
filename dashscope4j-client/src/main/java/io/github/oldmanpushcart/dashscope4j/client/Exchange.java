@@ -14,24 +14,7 @@ import java.util.concurrent.CompletionStage;
  *
  * @param <T> 应用层发送的数据类型（如 JSON 对象、自定义消息等）
  */
-public interface Exchange<T> extends Closeable {
-
-    /**
-     * 获取当前数据交换的唯一标识符。
-     *
-     * @return 数据交换的 ID，通常用于日志追踪、会话管理等
-     */
-    String id();
-
-    /**
-     * 判断当前数据交换是否已关闭。
-     *
-     * <p>一旦返回 {@code true}，后续调用 {@link #send(Object)} 或 {@link #send(ByteBuffer)}
-     * 将抛出 {@link IllegalStateException}。
-     *
-     * @return {@code true} 表示已关闭，{@code false} 表示仍处于活跃状态
-     */
-    boolean isClosed();
+public interface Exchange<T> extends ExchangeConnection {
 
     /**
      * 发起关闭流程并等待服务端响应，但不阻塞当前线程。
@@ -44,31 +27,6 @@ public interface Exchange<T> extends Closeable {
      * @throws IllegalStateException 如果数据交换已经关闭
      */
     CompletionStage<Void> closing();
-
-    /**
-     * 立即关闭数据交换（同步方式）。
-     *
-     * <p>此方法会立即关闭数据交换，不等待服务端相应。不会阻塞当前线程。
-     *
-     * <p>该方法是幂等的：多次调用不会产生副作用。
-     * 该方法满足 {@link Closeable} 接口契约，可用于 try-with-resources。
-     *
-     * @throws RuntimeException 如果关闭过程中发生错误（如 I/O 异常）
-     */
-    @Override
-    void close();
-
-    /**
-     * 获取表示关闭完成状态的 {@link CompletionStage}。
-     *
-     * <p>无论通过 {@link #closing()} 还是 {@link #close()} 发起关闭，
-     * 此 Stage 都会在底层连接真正释放后完成。
-     *
-     * <p>可用于注册关闭后的清理逻辑（如释放资源、更新状态等）。
-     *
-     * @return 关闭完成的异步通知对象；若已关闭，则返回已完成的 Stage
-     */
-    CompletionStage<Void> closeFuture();
 
     /**
      * 异步发送应用层数据。
@@ -169,33 +127,6 @@ public interface Exchange<T> extends Closeable {
 
     }
 
-    /**
-     * 应用数据编解码器
-     *
-     * @param <T> 发送数据类型
-     * @param <R> 接收数据类型
-     */
-    interface Codec<T, R> {
-
-        /**
-         * {@code T -> JSON}
-         * 将发送数据编码为{@code JSON}
-         *
-         * @param data 发送数据
-         * @return JSON
-         */
-        String encode(T data);
-
-        /**
-         * {@code JSON -> R}
-         * 将收到的{@code JSON}解码为接收数据
-         *
-         * @param json 接收 JSON
-         * @return R
-         */
-        R decode(String json);
-
-    }
 
     /**
      * 数据交换连接的事件处理器，用于响应连接生命周期中的关键事件。
