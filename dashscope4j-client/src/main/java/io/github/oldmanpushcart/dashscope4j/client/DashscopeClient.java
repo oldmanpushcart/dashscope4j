@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client;
 
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.DashscopeClientImpl;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.http.HttpClient;
@@ -19,6 +20,8 @@ public interface DashscopeClient {
     <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> task(T request);
 
     <T, R> CompletionStage<ExchangeConnection> newExchange(Model model, Exchange.Handler<String, String> handler);
+
+    <S, I, O> CompletionStage<ExchangeConnection> connect(RealtimeModel<S,I,O> model, S session, Exchange.Handler<I,O> handler);
 
     BaseOp base();
 
