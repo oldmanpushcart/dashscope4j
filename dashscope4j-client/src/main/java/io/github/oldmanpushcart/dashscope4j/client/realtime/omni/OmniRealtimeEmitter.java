@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 
 import java.awt.image.BufferedImage;
@@ -11,7 +11,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * OMNI-REALTIME 数据交换接口
  */
-public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> {
+public interface OmniRealtimeEmitter extends Realtime.Emitter<OmniRealtimeClientEvent> {
 
     /**
      * 获取会话
@@ -23,58 +23,58 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> 
     /**
      * 手动 VAD
      */
-    interface ManualVad extends OmniRealtimeExchange {
+    interface ManualVad extends OmniRealtimeEmitter {
 
         /**
-         * 创建一个新地输入操作
+         * 创建一个新地提交操作
          * <p>
-         * 你可以进行图片和音频的输入。需要注意的是，图像输入必需要在音频输入之后进行
+         * 你可以进行图片和音频的提交。需要注意的是，图像提交必需要在音频之后进行
          * </p>
          *
-         * @return 输入操作
+         * @return 提交操作
          */
-        CompletionStage<InputOp> newInput();
+        CompletionStage<SubmissionOp> newSubmission();
 
         /**
-         * 输入操作
+         * 提交操作
          */
-        interface InputOp {
+        interface SubmissionOp {
 
             /**
-             * 输入图片
+             * 提交图片
              *
              * @param image 图片
-             * @return 输入操作
+             * @return 提交操作
              */
-            CompletionStage<InputOp> image(BufferedImage image);
+            CompletionStage<SubmissionOp> image(BufferedImage image);
 
             /**
-             * 输入音频
+             * 提交音频
              *
              * @param buffer 音频数据
-             * @return 输入操作
+             * @return 提交操作
              */
-            CompletionStage<InputOp> audio(ByteBuffer buffer);
+            CompletionStage<SubmissionOp> audio(ByteBuffer buffer);
 
             /**
-             * 输入音频
+             * 提交音频
              *
              * @param bytes  音频数据
              * @param offset 偏移量
              * @param length 长度
-             * @return 输入操作
+             * @return 提交操作
              */
-            CompletionStage<InputOp> audio(byte[] bytes, int offset, int length);
+            CompletionStage<SubmissionOp> audio(byte[] bytes, int offset, int length);
 
             /**
-             * 清空输入
+             * 清空提交
              *
-             * @return 输入操作
+             * @return 提交操作
              */
-            CompletionStage<InputOp> clear();
+            CompletionStage<SubmissionOp> clear();
 
             /**
-             * 提交输入
+             * 提交
              * <p>
              * 输入被提交之后将无法继续输入，开始转入到响应操作。在响应输入阶段进行响应提交、取消的操作。
              * </p>
@@ -84,7 +84,7 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> 
             CompletionStage<ResponseOp> commit();
 
             /**
-             * 取消输入
+             * 取消提交
              * <p>
              * 输入被取消之后将无法继续输入，响应输入将无法继续进行。
              * </p>
@@ -114,7 +114,7 @@ public interface OmniRealtimeExchange extends Exchange<OmniRealtimeClientEvent> 
     /**
      * 服务器 VAD
      */
-    interface ServerVad extends OmniRealtimeExchange {
+    interface ServerVad extends OmniRealtimeEmitter {
 
         /**
          * 输入图片

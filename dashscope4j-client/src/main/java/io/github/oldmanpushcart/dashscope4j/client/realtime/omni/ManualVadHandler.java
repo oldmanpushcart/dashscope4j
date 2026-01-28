@@ -2,7 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
 import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FutureSlot;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange.ManualVad;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeEmitter.ManualVad;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
@@ -16,7 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-class ManualVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
+class ManualVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> {
 
     private static final String KEY_BUFFER_CLEARED = "input_audio_buffer.cleared";
     private static final String KEY_BUFFER_COMMITTED = "input_audio_buffer.committed";
@@ -24,15 +25,15 @@ class ManualVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, Omni
     private static final String KEY_RESPONSE_DONE = "response.done";
 
     private final FutureSlot<String> futureSlot = new FutureSlot<>();
-    private final Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
+    private final Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> delegate;
 
-    public ManualVadHandler(Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
+    public ManualVadHandler(Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
-        final var manualVad = new ManualVadImpl((OmniRealtimeExchange) exchange, futureSlot);
+    public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> exchange) {
+        final var manualVad = new ManualVadImpl((OmniRealtimeEmitter) exchange, futureSlot);
         delegate.onOpen(manualVad);
     }
 
@@ -54,14 +55,13 @@ class ManualVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, Omni
     }
 
 
-    private static class ManualVadImpl extends Exchange.Proxy<OmniRealtimeClientEvent> implements ManualVad {
+    private static class ManualVadImpl implements ManualVad {
 
-        private final OmniRealtimeExchange origin;
+        private final OmniRealtimeEmitter origin;
         private final FutureSlot<String> futureSlot;
         private final AtomicReference<State> stateRef = new AtomicReference<>(State.IDLE);
 
-        private ManualVadImpl(OmniRealtimeExchange origin, FutureSlot<String> futureSlot) {
-            super(origin);
+        private ManualVadImpl(OmniRealtimeEmitter origin, FutureSlot<String> futureSlot) {
             this.origin = origin;
             this.futureSlot = futureSlot;
         }
@@ -83,9 +83,9 @@ class ManualVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, Omni
         }
 
         @Override
-        public CompletionStage<InputOp> newInput() {
+        public CompletionStage<SubmissionOp> newSubmission() {
             changeState(State.IDLE, State.INPUT_READY);
-            return CompletableFuture.completedStage(new InputOpImpl());
+            return CompletableFuture.completedStage(new SubmissionOpImpl());
         }
 
         @Override
@@ -93,38 +93,78 @@ class ManualVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, Omni
             return origin.session();
         }
 
-        private class InputOpImpl implements InputOp {
+        @Override
+        public CompletionStage<Void> emit(OmniRealtimeClientEvent output) {
+            return origin.emit(output);
+        }
+
+        @Override
+        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
+            return origin.emitBinary(buffer);
+        }
+
+        @Override
+        public CompletionStage<Void> emitClose() {
+            return origin.emitClose();
+        }
+
+        @Override
+        public CompletionStage<Void> emitClose(Throwable ex) {
+            return origin.emitClose(ex);
+        }
+
+        @Override
+        public String id() {
+            return origin.id();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return origin.isClosed();
+        }
+
+        @Override
+        public void close() {
+            origin.close();
+        }
+
+        @Override
+        public CompletionStage<Void> closeFuture() {
+            return origin.closeFuture();
+        }
+
+        private class SubmissionOpImpl implements SubmissionOp {
 
             @Override
-            public CompletionStage<InputOp> image(BufferedImage image) {
+            public CompletionStage<SubmissionOp> image(BufferedImage image) {
                 tryChangeState(State.INPUT_READY, State.INPUT);
                 checkState(State.INPUT);
                 final var event = new OmniRealtimeBufferAppendImageClientEvent(genUUID22(), image);
-                return origin.send(event)
+                return origin.emit(event)
                         .thenApply(unused -> this);
             }
 
             @Override
-            public CompletionStage<InputOp> audio(ByteBuffer buffer) {
+            public CompletionStage<SubmissionOp> audio(ByteBuffer buffer) {
                 tryChangeState(State.INPUT_READY, State.INPUT);
                 checkState(State.INPUT);
                 final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
-                return origin.send(event)
+                return origin.emit(event)
                         .thenApply(unused -> this);
             }
 
             @Override
-            public CompletionStage<InputOp> audio(byte[] bytes, int offset, int length) {
+            public CompletionStage<SubmissionOp> audio(byte[] bytes, int offset, int length) {
                 tryChangeState(State.INPUT_READY, State.INPUT);
                 checkState(State.INPUT);
                 final var buffer = ByteBuffer.wrap(bytes, offset, length);
                 final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
-                return origin.send(event)
+                return origin.emit(event)
                         .thenApply(unused -> this);
             }
 
             @Override
-            public CompletionStage<InputOp> clear() {
+            public CompletionStage<SubmissionOp> clear() {
 
                 /*
                  * 在没有任何输入之前，clear 操作无效
@@ -136,7 +176,7 @@ class ManualVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, Omni
                 changeState(State.INPUT, State.INPUT_READY);
                 final var clearedF = futureSlot.acquire(KEY_BUFFER_CLEARED);
                 final var event = new OmniRealtimeBufferClearClientEvent(genUUID22());
-                return origin.send(event)
+                return origin.emit(event)
                         .thenCompose(unused -> clearedF)
                         .whenComplete((v, ex) -> futureSlot.release(KEY_BUFFER_CLEARED, clearedF))
                         .thenApply(unused -> this);
@@ -147,7 +187,7 @@ class ManualVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, Omni
                 changeState(State.INPUT, State.COMMITTED);
                 final var committedF = futureSlot.acquire(KEY_BUFFER_COMMITTED);
                 final var event = new OmniRealtimeBufferCommitClientEvent(genUUID22());
-                return origin.send(event)
+                return origin.emit(event)
                         .thenCompose(unused -> committedF)
                         .whenComplete((v, ex) -> futureSlot.release(KEY_BUFFER_COMMITTED, committedF))
                         .thenApply(unused -> new ResponseOpImpl());
@@ -179,7 +219,7 @@ class ManualVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, Omni
                 final var createdF = futureSlot.acquire(KEY_RESPONSE_CREATED);
                 final var doneF = futureSlot.acquire(KEY_RESPONSE_DONE);
                 final var createE = new OmniRealtimeResponseCreateClientEvent(genUUID22());
-                return origin.send(createE)
+                return origin.emit(createE)
 
                         .thenCompose(unused -> createdF)
                         .whenComplete((v, ex) -> futureSlot.release(KEY_RESPONSE_CREATED, createdF))
@@ -193,7 +233,7 @@ class ManualVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, Omni
                                 return CompletableFuture.failedStage(cause);
                             }
                             final var cancelE = new OmniRealtimeResponseCancelClientEvent(genUUID22());
-                            return origin.send(cancelE)
+                            return origin.emit(cancelE)
                                     .thenCompose(unused -> doneF)
                                     .whenComplete((v, unusedEx) -> futureSlot.release(KEY_RESPONSE_DONE, doneF));
                         })
@@ -213,7 +253,7 @@ class ManualVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, Omni
          *
          * <p><strong>关键约定：</strong>
          * <ul>
-         *   <li>仅在 {@code IDLE} 状态允许调用 {@link OmniRealtimeExchange.ManualVad#newInput()}；</li>
+         *   <li>仅在 {@code IDLE} 状态允许调用 {@link OmniRealtimeEmitter.ManualVad#newSubmission()}；</li>
          *   <li>进入 {@code RESPONSE} 后，必须等待其完成（成功/失败/取消），然后自动回到 {@code IDLE}；</li>
          *   <li>从 {@code RESPONSE} 返回 {@code IDLE} 时，必须清理所有临时资源（buffer、图像、future 等）。</li>
          * </ul>

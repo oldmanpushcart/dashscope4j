@@ -19,13 +19,13 @@ public interface Realtime {
 
     interface Emitter<O> extends Connection {
 
-        CompletionStage<?> emit(O output);
+        CompletionStage<Void> emit(O output);
 
-        CompletionStage<?> emitBinary(ByteBuffer buffer);
+        CompletionStage<Void> emitBinary(ByteBuffer buffer);
 
-        CompletionStage<?> emitClose();
+        CompletionStage<Void> emitClose();
 
-        CompletionStage<?> emitClose(Throwable ex);
+        CompletionStage<Void> emitClose(Throwable ex);
 
     }
 
@@ -33,9 +33,9 @@ public interface Realtime {
 
         void onOpen(Emitter<O> emitter);
 
-        CompletionStage<?> onData(I input);
+        CompletionStage<Void> onData(I input);
 
-        CompletionStage<?> onBinary(ByteBuffer buffer);
+        CompletionStage<Void> onBinary(ByteBuffer buffer);
 
         void onClosed(Throwable ex);
 

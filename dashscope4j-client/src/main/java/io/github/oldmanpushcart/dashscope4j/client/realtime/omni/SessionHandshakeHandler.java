@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
 import io.github.oldmanpushcart.dashscope4j.client.Exchange;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeSessionUpdateClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeErrorServerEvent;
@@ -15,22 +16,22 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-class SessionHandshakeHandler implements Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
+class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> {
 
     private final OmniRealtimeSession session;
-    private final Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
+    private final Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> delegate;
 
     private final AtomicReference<State> stateRef = new AtomicReference<>(State.AWAITING_SESSION_CREATED);
-    private volatile Exchange<OmniRealtimeClientEvent> exchange;
+    private volatile Realtime.Emitter<OmniRealtimeClientEvent> emitter;
 
-    public SessionHandshakeHandler(OmniRealtimeSession session, Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
+    public SessionHandshakeHandler(OmniRealtimeSession session, Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> delegate) {
         this.session = session;
         this.delegate = delegate;
     }
 
     @Override
-    public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
-        this.exchange = exchange;
+    public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> emitter) {
+        this.emitter = emitter;
     }
 
     private void changeState(State expect, State update) {
@@ -72,7 +73,7 @@ class SessionHandshakeHandler implements Exchange.Handler<OmniRealtimeClientEven
                 if (data instanceof OmniRealtimeSessionCreatedServerEvent) {
                     changeState(state, State.AWAITING_SESSION_CONFIRMED);
                     final var event = new OmniRealtimeSessionUpdateClientEvent(genUUID22(), session);
-                    yield exchange.send(event);
+                    yield emitter.emit(event);
                 } else {
                     final var cause = new IllegalStateException("Expect %s event, but was: %s".formatted(
                             "session.created",
@@ -85,7 +86,7 @@ class SessionHandshakeHandler implements Exchange.Handler<OmniRealtimeClientEven
                 if (data instanceof OmniRealtimeSessionUpdatedServerEvent event) {
                     changeState(state, State.HANDSHAKE_COMPLETED);
                     final var session = event.session();
-                    final var omniRealtimeExchange = new OmniRealtimeExchangeImpl(exchange, session);
+                    final var omniRealtimeExchange = new OmniRealtimeEmitterImpl(emitter, session);
                     delegate.onOpen(omniRealtimeExchange);
                     yield CompletableFuture.completedStage(null);
                 } else {
@@ -130,8 +131,9 @@ class SessionHandshakeHandler implements Exchange.Handler<OmniRealtimeClientEven
 
     }
 
-    private static class OmniRealtimeExchangeImpl extends Exchange.Proxy<OmniRealtimeClientEvent> implements OmniRealtimeExchange {
+    private static class OmniRealtimeEmitterImpl implements OmniRealtimeEmitter {
 
+        private final Realtime.Emitter<OmniRealtimeClientEvent> delegate;
         private final OmniRealtimeSession session;
 
         /**
@@ -140,14 +142,54 @@ class SessionHandshakeHandler implements Exchange.Handler<OmniRealtimeClientEven
          * @param delegate 被代理的原始数据交换对象，不可为 {@code null}
          * @throws NullPointerException 如果 {@code origin} 为 {@code null}
          */
-        protected OmniRealtimeExchangeImpl(Exchange<OmniRealtimeClientEvent> delegate, OmniRealtimeSession session) {
-            super(delegate);
+        protected OmniRealtimeEmitterImpl(Realtime.Emitter<OmniRealtimeClientEvent> delegate, OmniRealtimeSession session) {
+            this.delegate = delegate;
             this.session = session;
         }
 
         @Override
         public OmniRealtimeSession session() {
             return session;
+        }
+
+        @Override
+        public CompletionStage<Void> emit(OmniRealtimeClientEvent output) {
+            return delegate.emit(output);
+        }
+
+        @Override
+        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
+            return delegate.emitBinary(buffer);
+        }
+
+        @Override
+        public CompletionStage<Void> emitClose() {
+            return delegate.emitClose();
+        }
+
+        @Override
+        public CompletionStage<Void> emitClose(Throwable ex) {
+            return delegate.emitClose(ex);
+        }
+
+        @Override
+        public String id() {
+            return delegate.id();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return delegate.isClosed();
+        }
+
+        @Override
+        public void close() {
+            delegate.close();
+        }
+
+        @Override
+        public CompletionStage<Void> closeFuture() {
+            return delegate.closeFuture();
         }
 
     }

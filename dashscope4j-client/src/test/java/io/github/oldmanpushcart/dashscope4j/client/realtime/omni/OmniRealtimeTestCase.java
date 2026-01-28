@@ -5,7 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.handler.SimpleOmniRealtimeExchangeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.handler.SimpleOmniRealtimeHandler;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
@@ -35,7 +35,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                 .client(client)
                 .reconnectStrategy((attempt, ex) -> Duration.ofSeconds(1L))
                 .handlerFactory(() -> {
-                    return new SimpleOmniRealtimeExchangeHandler() {
+                    return new SimpleOmniRealtimeHandler() {
 
                         private final StringBuilder stringBuf = new StringBuilder();
 
@@ -64,27 +64,27 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                         @Override
                         public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
 
-                            final var manualVad = (OmniRealtimeExchange.ManualVad) exchange;
+                            final var manualVad = (OmniRealtimeEmitter.ManualVad) exchange;
                             manualVad
-                                    .newInput()
-                                    .thenCompose(OmniRealtimeExchange.ManualVad.InputOp::clear)
-                                    .thenCompose(inputOp -> {
+                                    .newSubmission()
+                                    .thenCompose(OmniRealtimeEmitter.ManualVad.SubmissionOp::clear)
+                                    .thenCompose(submissionOp -> {
                                         try (final var ais = AudioSystem.getAudioInputStream(audioFile)) {
                                             CompletionStage<?> stage = CompletableFuture.completedStage(null);
                                             int bytesRead;
                                             final var bytes = new byte[10240];
                                             while ((bytesRead = ais.read(bytes)) != -1) {
                                                 final int read = bytesRead;
-                                                stage = stage.thenCompose(v -> inputOp.audio(bytes, 0, read));
+                                                stage = stage.thenCompose(v -> submissionOp.audio(bytes, 0, read));
                                             }
-                                            return stage.thenApply(v -> inputOp);
+                                            return stage.thenApply(v -> submissionOp);
                                         } catch (Throwable ex) {
                                             return CompletableFuture.failedStage(ex);
                                         }
                                     })
-                                    .thenCompose(inputOp -> inputOp.image(image))
-                                    .thenCompose(OmniRealtimeExchange.ManualVad.InputOp::commit)
-                                    .thenCompose(OmniRealtimeExchange.ManualVad.ResponseOp::create)
+                                    .thenCompose(submissionOp -> submissionOp.image(image))
+                                    .thenCompose(OmniRealtimeEmitter.ManualVad.SubmissionOp::commit)
+                                    .thenCompose(OmniRealtimeEmitter.ManualVad.ResponseOp::create)
                                     .thenApply(v-> manualVad);
                         }
 

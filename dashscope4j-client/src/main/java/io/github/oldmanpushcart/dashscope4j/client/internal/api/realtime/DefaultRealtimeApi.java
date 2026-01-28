@@ -1,8 +1,8 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.api.exchange;
+package io.github.oldmanpushcart.dashscope4j.client.internal.api.realtime;
 
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.Model;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.slf4j.Logger;
@@ -14,30 +14,27 @@ import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.*;
 
-public class ExchangeApi {
+public class DefaultRealtimeApi implements RealtimeApi {
 
     private final String host;
     private final String ak;
     private final HttpClient http;
 
-    public ExchangeApi(String host, String ak, HttpClient http) {
+    public DefaultRealtimeApi(String host, String ak, HttpClient http) {
         this.host = host;
         this.ak = ak;
         this.http = http;
     }
 
-    public <T, R> CompletionStage<Exchange<T>> newExchange(
-            Model model,
-            Exchange.Codec<T, R> codec,
-            Exchange.Handler<T, R> handler
-    ) {
+    @Override
+    public <S, I, O> CompletionStage<? extends Realtime.Connection> realtime(RealtimeModel<S, I, O> model, S session, Realtime.Handler<I, O> handler) {
         final var id = UUIDUtils.genUUID22();
         final var endpoint = EndpointUtils.wss(host, model.path());
-        final var listener = new ListenerImpl<>(id, endpoint, codec, handler);
+        final var stringHandler = model.provider().apply(session, handler);
+        final var listener = new ListenerImpl(id, endpoint, stringHandler);
         return http.newWebSocketBuilder()
                 .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
                 .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
@@ -48,21 +45,19 @@ public class ExchangeApi {
                 .thenCompose(ws -> listener.getFuture());
     }
 
-    private static class ExchangeImpl<T> implements Exchange<T> {
+    private static class Emitter implements Realtime.Emitter<String> {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
         private final String id;
         private final WebSocket ws;
-        private final Function<T, String> encoder;
         private final CompletableFuture<Void> closeF;
         private final String _toString;
 
-        private ExchangeImpl(String id, WebSocket ws, Function<T, String> encoder, CompletableFuture<Void> closeF) {
+        private Emitter(String id, WebSocket ws, CompletableFuture<Void> closeF) {
             this.id = id;
             this.ws = ws;
-            this.encoder = encoder;
             this.closeF = closeF;
-            this._toString = "dashscope4j-client://exchange/%s".formatted(id);
+            this._toString = "dashscope4j-client://realtime/%s".formatted(id);
         }
 
         @Override
@@ -71,23 +66,13 @@ public class ExchangeApi {
         }
 
         @Override
-        public String id() {
-            return id;
-        }
-
-        @Override
-        public boolean isClosed() {
-            return closeF.isDone();
-        }
-
-        @Override
-        public CompletionStage<Void> closing() {
-            return ws.sendClose(WebSocket.NORMAL_CLOSURE, "bye!")
+        public CompletionStage<Void> emit(String output) {
+            return ws.sendText(output, true)
                     .whenComplete((v, ex) -> {
                         if (null == ex) {
-                            logger.debug("{} >>> CLOSING", this);
+                            logger.debug("{}/text >>> {}", this, output);
                         } else {
-                            logger.warn("{} >>> CLOSING", this, ex);
+                            logger.warn("{}/text >>> {}", this, output, ex);
                         }
                     })
                     .thenAccept(unused -> {
@@ -95,33 +80,7 @@ public class ExchangeApi {
         }
 
         @Override
-        public void close() {
-            ws.abort();
-            logger.debug("{} >>> CLOSED", this);
-        }
-
-        @Override
-        public CompletionStage<Void> closeFuture() {
-            return closeF;
-        }
-
-        @Override
-        public CompletionStage<Void> send(T data) {
-            final var body = encoder.apply(data);
-            return ws.sendText(body, true)
-                    .whenComplete((v, ex) -> {
-                        if (null == ex) {
-                            logger.debug("{}/text >>> {}", this, body);
-                        } else {
-                            logger.warn("{}/text >>> {}", this, body, ex);
-                        }
-                    })
-                    .thenAccept(unused -> {
-                    });
-        }
-
-        @Override
-        public CompletionStage<Void> send(ByteBuffer buffer) {
+        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
             final var byteCnt = buffer.remaining();
             return ws.sendBinary(buffer, true)
                     .whenComplete((v, ex) -> {
@@ -135,45 +94,76 @@ public class ExchangeApi {
                     });
         }
 
+        @Override
+        public CompletionStage<Void> emitClose() {
+            return requestClose(WebSocket.NORMAL_CLOSURE, "bye!");
+        }
+
+        @Override
+        public CompletionStage<Void> emitClose(Throwable ex) {
+            return requestClose(1008, "Inner Error!");
+        }
+
+        private CompletionStage<Void> requestClose(int code, String reason) {
+            return ws.sendClose(code, reason)
+                    .whenComplete((v, ex) -> {
+                        if (null == ex) {
+                            logger.debug("{} >>> CLOSING", this);
+                        } else {
+                            logger.warn("{} >>> CLOSING", this, ex);
+                        }
+                    })
+                    .thenAccept(unused -> {
+
+                    });
+        }
+
+        @Override
+        public String id() {
+            return id;
+        }
+
+        @Override
+        public boolean isClosed() {
+            return false;
+        }
+
+        @Override
+        public void close() {
+            ws.abort();
+            logger.debug("{} >>> CLOSED", this);
+        }
+
+        @Override
+        public CompletionStage<Void> closeFuture() {
+            return closeF;
+        }
     }
 
-
-    /*
-     * Exchange的WebSocket监听器
-     * 用于驱动Exchange处理器
-     */
-    private static class ListenerImpl<T, R> implements WebSocket.Listener {
+    private static class ListenerImpl implements WebSocket.Listener {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
         private final String id;
         private final URI endpoint;
-        private final Exchange.Codec<T, R> codec;
-        private final Exchange.Handler<T, R> handler;
+        private final Realtime.Handler<String, String> handler;
 
-        private final CompletableFuture<Exchange<T>> exchangeF = new CompletableFuture<>();
+        private final CompletableFuture<Realtime.Emitter<String>> completeF = new CompletableFuture<>();
         private final CompletableFuture<Void> closeF = new CompletableFuture<>();
         private final StringBuilder stringBuf = new StringBuilder();
 
         private final String _toString;
 
-        private ListenerImpl(
-                final String id,
-                final URI endpoint,
-                final Exchange.Codec<T, R> codec,
-                final Exchange.Handler<T, R> handler
-        ) {
+        private ListenerImpl(String id, URI endpoint, Realtime.Handler<String, String> handler) {
             this.id = id;
             this.endpoint = endpoint;
-            this.codec = codec;
             this.handler = handler;
-            this._toString = "dashscope4j-client://exchange/%s".formatted(id);
+            this._toString = "dashscope4j-client://realtime/%s".formatted(id);
         }
 
-        public CompletionStage<Exchange<T>> getFuture() {
-            return exchangeF;
+        public CompletionStage<Realtime.Emitter<String>> getFuture() {
+            return completeF;
         }
 
-        @Override
         public String toString() {
             return _toString;
         }
@@ -181,15 +171,56 @@ public class ExchangeApi {
         @Override
         public void onOpen(WebSocket ws) {
             try {
-                final var exchange = new ExchangeImpl<>(id, ws, codec::encode, closeF);
-                handler.onOpen(exchange);
-                exchangeF.complete(exchange);
+                final var emitter = new Emitter(id, ws, closeF);
+                handler.onOpen(emitter);
+                completeF.complete(emitter);
                 ws.request(1L);
                 logger.debug("{} opened. endpoint={};", this, endpoint);
             } catch (Throwable ex) {
                 fireClosed(ws, ex);
                 logger.warn("{} open failure. endpoint={};", this, endpoint, ex);
             }
+        }
+
+        @Override
+        public CompletionStage<?> onText(WebSocket ws, CharSequence string, boolean last) {
+            /*
+             * 滚动添加文本
+             * 直last==true时，将滚动添加的文本转为字符串，并清空滚动添加的文本缓存
+             */
+            stringBuf.append(string);
+            if (!last) {
+                ws.request(1);
+                return null;
+            }
+            final var body = stringBuf.toString();
+            stringBuf.setLength(0);
+
+            logger.debug("{} <<< {}", this, body);
+            return CompletableFuture.completedStage(body)
+                    .thenCompose(handler::onData)
+                    .whenComplete((unused, ex) -> {
+                        if (null == ex) {
+                            ws.request(1);
+                        } else {
+                            fireClosed(ws, ex);
+                        }
+                    });
+        }
+
+        @Override
+        public CompletionStage<?> onBinary(WebSocket ws, ByteBuffer data, boolean last) {
+            final var byteCnt = data.remaining();
+            logger.debug("{} <<< bytes[{}]!", this, byteCnt);
+            return CompletableFuture.completedStage(data)
+                    .thenCompose(handler::onBinary)
+                    .whenComplete((unused, ex) -> {
+                        if (null == ex) {
+                            ws.request(1);
+                        } else {
+                            fireClosed(ws, ex);
+                        }
+                    });
         }
 
         private boolean tryClose(Throwable ex) {
@@ -250,49 +281,6 @@ public class ExchangeApi {
         }
 
         @Override
-        public CompletionStage<?> onText(WebSocket ws, CharSequence string, boolean last) {
-
-            /*
-             * 滚动添加文本
-             * 直last==true时，将滚动添加的文本转为字符串，并清空滚动添加的文本缓存
-             */
-            stringBuf.append(string);
-            if (!last) {
-                ws.request(1);
-                return null;
-            }
-            final var body = stringBuf.toString();
-            stringBuf.setLength(0);
-
-            logger.debug("{} <<< {}", this, body);
-            return CompletableFuture.completedStage(body)
-                    .thenApply(codec::decode)
-                    .thenCompose(handler::onData)
-                    .whenComplete((unused, ex) -> {
-                        if (null == ex) {
-                            ws.request(1);
-                        } else {
-                            fireClosed(ws, ex);
-                        }
-                    });
-        }
-
-        @Override
-        public CompletionStage<?> onBinary(WebSocket ws, ByteBuffer data, boolean last) {
-            final var byteCnt = data.remaining();
-            logger.debug("{} <<< bytes[{}]!", this, byteCnt);
-            return CompletableFuture.completedStage(data)
-                    .thenCompose(handler::onBinary)
-                    .whenComplete((unused, ex) -> {
-                        if (null == ex) {
-                            ws.request(1);
-                        } else {
-                            fireClosed(ws, ex);
-                        }
-                    });
-        }
-
-        @Override
         public CompletionStage<?> onPing(WebSocket ws, ByteBuffer message) {
             final var byteCnt = message.remaining();
             logger.debug("{} <<< PING({}bytes)", this, byteCnt);
@@ -318,7 +306,7 @@ public class ExchangeApi {
         public CompletionStage<?> onClose(WebSocket ws, int status, String reason) {
             logger.trace("{} <<< CLOSE! status={};reason={};", this, status, reason);
             final var ex = status != WebSocket.NORMAL_CLOSURE
-                    ? new WebSocketCloseException(status, reason)
+                    ? new IllegalStateException("websocket closed with status %d: %s".formatted(status, reason))
                     : null;
             fireClosed(ws, ex);
             return null;
@@ -327,20 +315,6 @@ public class ExchangeApi {
         @Override
         public void onError(WebSocket ws, Throwable ex) {
             fireClosed(ws, ex);
-        }
-
-    }
-
-    /**
-     * WebSocket 关闭异常
-     */
-    private static class WebSocketCloseException extends Exception {
-
-        private WebSocketCloseException(int status, String reason) {
-            super("WebSocket closed with status %d: %s".formatted(
-                    status,
-                    reason != null ? reason : "(no reason)"
-            ));
         }
 
     }

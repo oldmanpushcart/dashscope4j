@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeExchange.ServerVad;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.OmniRealtimeEmitter.ServerVad;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeBufferAppendAudioClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeBufferAppendImageClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
@@ -13,17 +13,17 @@ import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-class ServerVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
+class ServerVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> {
 
-    private final Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
+    private final Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> delegate;
 
-    public ServerVadHandler(Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
+    public ServerVadHandler(Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
-        final var serverVad = new ServerVadImpl((OmniRealtimeExchange) exchange);
+    public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> exchange) {
+        final var serverVad = new ServerVadImpl((OmniRealtimeEmitter) exchange);
         delegate.onOpen(serverVad);
     }
 
@@ -42,37 +42,76 @@ class ServerVadHandler implements Exchange.Handler<OmniRealtimeClientEvent, Omni
         delegate.onClosed(ex);
     }
 
-    private static class ServerVadImpl extends Exchange.Proxy<OmniRealtimeClientEvent> implements ServerVad {
+    private static class ServerVadImpl implements ServerVad {
 
-        private final OmniRealtimeExchange origin;
+        private final OmniRealtimeEmitter origin;
 
-        private ServerVadImpl(OmniRealtimeExchange origin) {
-            super(origin);
+        private ServerVadImpl(OmniRealtimeEmitter origin) {
             this.origin = origin;
         }
 
         @Override
         public CompletionStage<Void> image(BufferedImage image) {
             final var event = new OmniRealtimeBufferAppendImageClientEvent(genUUID22(), image);
-            return origin.send(event);
+            return origin.emit(event);
         }
 
         @Override
         public CompletionStage<Void> audio(ByteBuffer buffer) {
             final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
-            return origin.send(event);
+            return origin.emit(event);
         }
 
         @Override
         public CompletionStage<Void> audio(byte[] bytes, int offset, int length) {
             final var buffer = ByteBuffer.wrap(bytes, offset, length);
             final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
-            return origin.send(event);
+            return origin.emit(event);
         }
 
         @Override
         public OmniRealtimeSession session() {
             return origin.session();
+        }
+
+        @Override
+        public CompletionStage<Void> emit(OmniRealtimeClientEvent output) {
+            return origin.emit(output);
+        }
+
+        @Override
+        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
+            return origin.emitBinary(buffer);
+        }
+
+        @Override
+        public CompletionStage<Void> emitClose() {
+            return origin.emitClose();
+        }
+
+        @Override
+        public CompletionStage<Void> emitClose(Throwable ex) {
+            return origin.emitClose(ex);
+        }
+
+        @Override
+        public String id() {
+            return origin.id();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return origin.isClosed();
+        }
+
+        @Override
+        public void close() {
+            origin.close();
+        }
+
+        @Override
+        public CompletionStage<Void> closeFuture() {
+            return origin.closeFuture();
         }
     }
 

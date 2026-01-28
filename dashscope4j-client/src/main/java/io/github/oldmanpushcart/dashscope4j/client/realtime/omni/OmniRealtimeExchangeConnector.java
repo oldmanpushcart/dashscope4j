@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.ExchangeConnector;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeConnector;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
-public class OmniRealtimeExchangeConnector extends ExchangeConnector<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
+public class OmniRealtimeExchangeConnector extends RealtimeConnector<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
     private OmniRealtimeExchangeConnector(Builder builder) {
         super(builder);
@@ -35,7 +35,7 @@ public class OmniRealtimeExchangeConnector extends ExchangeConnector<OmniRealtim
         return new Builder();
     }
 
-    public static class Builder extends ExchangeConnector.Builder<OmniRealtimeClientEvent, OmniRealtimeServerEvent, OmniRealtimeExchangeConnector, Builder> {
+    public static class Builder extends RealtimeConnector.Builder<OmniRealtimeClientEvent, OmniRealtimeServerEvent, OmniRealtimeExchangeConnector, Builder> {
 
         private OmniRealtimeModel model;
         private OmniRealtimeSession session = OmniRealtimeSession.newBuilder().build();

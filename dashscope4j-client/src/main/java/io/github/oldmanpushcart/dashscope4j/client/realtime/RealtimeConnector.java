@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client;
+package io.github.oldmanpushcart.dashscope4j.client.realtime;
 
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import org.slf4j.Logger;
@@ -14,20 +14,20 @@ import java.util.function.Supplier;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
 
-public class ExchangeConnector<T, R> {
+public class RealtimeConnector<T, R> {
 
     private static final int ATTEMPT_BEGIN = 1;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String name;
-    private final Supplier<CompletionStage<ExchangeConnection>> connectionFactory;
+    private final Supplier<CompletionStage<? extends Realtime.Connection>> connectionFactory;
     private final ReconnectStrategy reconnectStrategy;
 
     private final String _toString;
     private final Timer timer = new Timer();
     private volatile boolean shutdown = false;
 
-    public ExchangeConnector(Builder<T, R, ?, ?> builder) {
+    private RealtimeConnector(Builder<T, R, ?, ?> builder) {
         requireNonBlankString(builder.name, "name must not be blank!");
         requireNonNull(builder.connectionFactory, "connectionFactory must not be null!");
         requireNonNull(builder.reconnectStrategy, "reconnectStrategy must not be null!");
@@ -233,18 +233,17 @@ public class ExchangeConnector<T, R> {
     }
 
 
-
-    public static abstract class Builder<T, R, C extends ExchangeConnector<T, R>, B extends Builder<T, R, C, B>> implements Buildable<C, B> {
+    public static abstract class Builder<T, R, C extends RealtimeConnector<T, R>, B extends Builder<T, R, C, B>> implements Buildable<C, B> {
 
         private String name = "normal";
-        private Supplier<CompletionStage<ExchangeConnection>> connectionFactory;
+        private Supplier<CompletionStage<? extends Realtime.Connection>> connectionFactory;
         private ReconnectStrategy reconnectStrategy;
 
         protected Builder() {
 
         }
 
-        protected Builder(ExchangeConnector<T, R> connector) {
+        protected Builder(RealtimeConnector<T, R> connector) {
             this.name = connector.name;
             this.connectionFactory = connector.connectionFactory;
             this.reconnectStrategy = connector.reconnectStrategy;
@@ -255,7 +254,7 @@ public class ExchangeConnector<T, R> {
             return self();
         }
 
-        public B connectionFactory(Supplier<CompletionStage<ExchangeConnection>> connectionFactory) {
+        public B connectionFactory(Supplier<CompletionStage<? extends Realtime.Connection>> connectionFactory) {
             this.connectionFactory = connectionFactory;
             return self();
         }
