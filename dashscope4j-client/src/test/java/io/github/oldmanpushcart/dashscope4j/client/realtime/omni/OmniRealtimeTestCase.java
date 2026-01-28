@@ -1,8 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeConnector;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.handler.SimpleOmniRealtimeHandler;
@@ -29,13 +30,10 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                 .turnDetection(OmniRealtimeSession.TurnDetection.MANUAL_VAD)
                 .build();
 
-        OmniRealtimeExchangeConnector.newBuilder()
-                .model(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME)
-                .session(session)
-                .client(client)
+        RealtimeConnector.newBuilder()
                 .reconnectStrategy((attempt, ex) -> Duration.ofSeconds(1L))
-                .handlerFactory(() -> {
-                    return new SimpleOmniRealtimeHandler() {
+                .connectionFactory(() -> {
+                    return client.realtime(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME, session, new SimpleOmniRealtimeHandler() {
 
                         private final StringBuilder stringBuf = new StringBuilder();
 
@@ -62,7 +60,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                         }
 
                         @Override
-                        public void onOpen(Exchange<OmniRealtimeClientEvent> exchange) {
+                        public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> exchange) {
 
                             final var manualVad = (OmniRealtimeEmitter.ManualVad) exchange;
                             manualVad
@@ -85,14 +83,14 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                                     .thenCompose(submissionOp -> submissionOp.image(image))
                                     .thenCompose(OmniRealtimeEmitter.ManualVad.SubmissionOp::commit)
                                     .thenCompose(OmniRealtimeEmitter.ManualVad.ResponseOp::create)
-                                    .thenApply(v-> manualVad);
+                                    .thenApply(v -> manualVad);
                         }
 
                         @Override
                         public void onClosed(Throwable ex) {
                             completed.completeExceptionally(ex);
                         }
-                    };
+                    });
                 })
                 .build()
                 .connect();

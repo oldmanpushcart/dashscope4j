@@ -1,22 +1,20 @@
 package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
-import io.github.oldmanpushcart.dashscope4j.client.CodecExchangeHandler;
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
-import io.github.oldmanpushcart.dashscope4j.client.Model;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.CodecHandler;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
 
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static io.github.oldmanpushcart.dashscope4j.common.Constants.DEFAULT_REALTIME_PATH;
 
 public record OmniRealtimeModel(
         String name,
         String path
-) implements RealtimeModel<OmniRealtimeSession, OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
+) implements RealtimeModel<OmniRealtimeSession, OmniRealtimeServerEvent, OmniRealtimeClientEvent> {
 
     public OmniRealtimeModel(String name) {
         this(name, String.format("%s?model=%s".formatted(DEFAULT_REALTIME_PATH, name)));
@@ -26,9 +24,9 @@ public record OmniRealtimeModel(
 
 
     @Override
-    public BiFunction<OmniRealtimeSession, Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent>, Exchange.Handler<String, String>> provider() {
+    public BiFunction<OmniRealtimeSession, Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent>, Realtime.Handler<String, String>> provider() {
         return (session, handler) ->
-                new CodecExchangeHandler<>(
+                new CodecHandler<>(
                         JacksonJsonUtils::toJson,
                         s -> JacksonJsonUtils.toObject(s, OmniRealtimeServerEvent.class),
                         new SessionHandshakeHandler(
@@ -38,13 +36,13 @@ public record OmniRealtimeModel(
                 );
     }
 
-    private Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handlerFactory(OmniRealtimeSession session, Exchange.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handler) {
+    private Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> handlerFactory(OmniRealtimeSession session, Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> handler) {
         if (null == session
                 || null == session.turnDetection()
                 || OmniRealtimeSession.TurnDetection.Type.SERVER_VAD == session.turnDetection().type()) {
-            return new SessionHandshakeHandler(session, new ServerVadHandler(handler));
+            return new ServerVadHandler(handler);
         } else {
-            return new SessionHandshakeHandler(session, new ManualVadHandler(handler));
+            return new ManualVadHandler(handler);
         }
     }
 

@@ -1,18 +1,24 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal;
 
-import io.github.oldmanpushcart.dashscope4j.client.*;
+import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
+import io.github.oldmanpushcart.dashscope4j.client.Task;
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.DefaultAsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.InterceptionAsyncApi;
-import io.github.oldmanpushcart.dashscope4j.client.internal.api.exchange.ExchangeApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.flow.DefaultFlowApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.flow.FlowApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.flow.InterceptionFlowApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.api.realtime.DefaultRealtimeApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.api.realtime.RealtimeApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.DefaultTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.InterceptionTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.TaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
@@ -30,7 +36,7 @@ public class DashscopeClientImpl implements DashscopeClient {
     private final AsyncApi asyncApi;
     private final FlowApi flowApi;
     private final TaskApi taskApi;
-    private final ExchangeApi exchangeApi;
+    private final RealtimeApi realtimeApi;
 
     private DashscopeClientImpl(Builder builder) {
         final var host = requireNonBlankString(builder.host, "host must not be blank!");
@@ -40,13 +46,13 @@ public class DashscopeClientImpl implements DashscopeClient {
         final var asyncApi = new DefaultAsyncApi(host, ak, http);
         final var flowApi = new DefaultFlowApi(host, ak, http);
         final var taskApi = new DefaultTaskApi(host, ak, http, asyncApi);
-        final var exchangeApi = new ExchangeApi(host, ak, http);
+        final var realtimeApi = new DefaultRealtimeApi(host, ak, http);
 
         this.host = host;
         this.asyncApi = asyncApi;
         this.flowApi = flowApi;
         this.taskApi = taskApi;
-        this.exchangeApi = exchangeApi;
+        this.realtimeApi = realtimeApi;
         this.baseOp = new BaseOpImpl(this);
 
     }
@@ -84,9 +90,10 @@ public class DashscopeClientImpl implements DashscopeClient {
     }
 
     @Override
-    public <T, R> CompletionStage<? extends Exchange<T>> newExchange(Model model, Exchange.Codec<T, R> codec, Exchange.Handler<T, R> handler) {
-        return exchangeApi.newExchange(model, codec, handler);
+    public <S, I, O> CompletionStage<? extends Realtime.Connection> realtime(RealtimeModel<S, I, O> model, S session, Realtime.Handler<I, O> handler) {
+        return realtimeApi.realtime(model, session, handler);
     }
+
 
     @Override
     public BaseOp base() {

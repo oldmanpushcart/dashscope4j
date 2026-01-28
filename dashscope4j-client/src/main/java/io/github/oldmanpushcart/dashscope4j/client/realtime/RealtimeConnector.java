@@ -14,12 +14,11 @@ import java.util.function.Supplier;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
 
-public class RealtimeConnector<T, R> {
+public class RealtimeConnector {
 
     private static final int ATTEMPT_BEGIN = 1;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final String name;
     private final Supplier<CompletionStage<? extends Realtime.Connection>> connectionFactory;
     private final ReconnectStrategy reconnectStrategy;
 
@@ -27,14 +26,13 @@ public class RealtimeConnector<T, R> {
     private final Timer timer = new Timer();
     private volatile boolean shutdown = false;
 
-    private RealtimeConnector(Builder<T, R, ?, ?> builder) {
+    private RealtimeConnector(Builder builder) {
         requireNonBlankString(builder.name, "name must not be blank!");
         requireNonNull(builder.connectionFactory, "connectionFactory must not be null!");
         requireNonNull(builder.reconnectStrategy, "reconnectStrategy must not be null!");
-        this.name = builder.name;
         this.connectionFactory = builder.connectionFactory;
         this.reconnectStrategy = builder.reconnectStrategy;
-        this._toString = "dashscope4j-client://exchange/connector/%s@%s".formatted(name, System.identityHashCode(this));
+        this._toString = "dashscope4j-client://exchange/connector/%s@%s".formatted(builder.name, System.identityHashCode(this));
     }
 
     @Override
@@ -232,38 +230,36 @@ public class RealtimeConnector<T, R> {
         }
     }
 
+    public static Builder newBuilder() {
+        return new Builder();
+    }
 
-    public static abstract class Builder<T, R, C extends RealtimeConnector<T, R>, B extends Builder<T, R, C, B>> implements Buildable<C, B> {
+    public static class Builder implements Buildable<RealtimeConnector, Builder> {
 
         private String name = "normal";
         private Supplier<CompletionStage<? extends Realtime.Connection>> connectionFactory;
         private ReconnectStrategy reconnectStrategy;
 
-        protected Builder() {
-
-        }
-
-        protected Builder(RealtimeConnector<T, R> connector) {
-            this.name = connector.name;
-            this.connectionFactory = connector.connectionFactory;
-            this.reconnectStrategy = connector.reconnectStrategy;
-        }
-
-        public B name(String name) {
+        public Builder name(String name) {
             this.name = name;
-            return self();
+            return this;
         }
 
-        public B connectionFactory(Supplier<CompletionStage<? extends Realtime.Connection>> connectionFactory) {
+        public Builder connectionFactory(Supplier<CompletionStage<? extends Realtime.Connection>> connectionFactory) {
             this.connectionFactory = connectionFactory;
-            return self();
+            return this;
         }
 
-        public B reconnectStrategy(ReconnectStrategy reconnectStrategy) {
+        public Builder reconnectStrategy(ReconnectStrategy reconnectStrategy) {
             this.reconnectStrategy = reconnectStrategy;
-            return self();
+            return this;
         }
 
+
+        @Override
+        public RealtimeConnector build() {
+            return new RealtimeConnector(this);
+        }
 
     }
 

@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
-import io.github.oldmanpushcart.dashscope4j.client.Exchange;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeSessionUpdateClientEvent;
@@ -86,8 +85,8 @@ class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeServerEven
                 if (data instanceof OmniRealtimeSessionUpdatedServerEvent event) {
                     changeState(state, State.HANDSHAKE_COMPLETED);
                     final var session = event.session();
-                    final var omniRealtimeExchange = new OmniRealtimeEmitterImpl(emitter, session);
-                    delegate.onOpen(omniRealtimeExchange);
+                    final var omniRealtimeEmitter = new OmniRealtimeEmitterImpl(emitter, session);
+                    delegate.onOpen(omniRealtimeEmitter);
                     yield CompletableFuture.completedStage(null);
                 } else {
                     final var cause = new IllegalStateException("Expect %s event, but was: %s".formatted(
