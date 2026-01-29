@@ -74,18 +74,14 @@ public record ChatModel(
      *
      * PS：请务必注意拦截器的顺序
      */
-    private static final List<Interceptor> interceptors = Stream.concat(
-                    AigcModel.interceptors.stream(),
-                    Stream.of(
-                            new SettingInterceptor(),
-                            new ToolCallInterceptor(),
-                            new InlineFilesInterceptor(),
-                            new UploadFilesInterceptor(),
-                            new CompatPlaintextInterceptor(),
-                            new CompatOpenAiInterceptor()
-                    )
-            )
-            .toList();
+    private static final List<Interceptor> interceptors = List.of(
+            new SettingInterceptor(),
+            new ToolCallInterceptor(),
+            new InlineFilesInterceptor(),
+            new UploadFilesInterceptor(),
+            new CompatPlaintextInterceptor(),
+            new CompatOpenAiInterceptor()
+    );
 
     /**
      * 构造对话模型
@@ -99,7 +95,9 @@ public record ChatModel(
 
     @Override
     public List<Interceptor> interceptors() {
-        return interceptors;
+        return Stream.of(AigcModel.super.interceptors(), interceptors)
+                .flatMap(List::stream)
+                .toList();
     }
 
     /**

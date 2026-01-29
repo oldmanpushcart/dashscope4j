@@ -41,8 +41,8 @@ public class CommandHandler implements Realtime.Handler<String, String> {
     }
 
     @Override
-    public CompletionStage<Void> onData(String input) {
-        final var event = JacksonJsonUtils.toObject(input, Event.class);
+    public CompletionStage<Void> onData(String output) {
+        final var event = JacksonJsonUtils.toObject(output, Event.class);
         if (!event.header.isSuccess()) {
             return CompletableFuture.failedStage(new CommandErrorException(event.header));
         }
@@ -117,10 +117,10 @@ public class CommandHandler implements Realtime.Handler<String, String> {
         }
 
         @Override
-        public CompletionStage<Void> emit(String output) {
+        public CompletionStage<Void> emit(String input) {
             final var command = new Command(
                     new Command.Header(genUUID22(), mode, CONTINUE),
-                    output
+                    input
             );
             final var commandJson = JacksonJsonUtils.toJson(command);
             return delegate.emit(commandJson);

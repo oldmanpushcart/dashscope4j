@@ -13,17 +13,17 @@ import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-class ServerVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> {
+class ServerVadHandler implements Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
-    private final Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> delegate;
+    private final Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
 
-    public ServerVadHandler(Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> delegate) {
+    public ServerVadHandler(Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> exchange) {
-        final var serverVad = new ServerVadImpl((OmniRealtimeEmitter) exchange);
+    public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> emitter) {
+        final var serverVad = new ServerVadImpl((OmniRealtimeEmitter) emitter);
         delegate.onOpen(serverVad);
     }
 
@@ -75,8 +75,8 @@ class ServerVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, Omni
         }
 
         @Override
-        public CompletionStage<Void> emit(OmniRealtimeClientEvent output) {
-            return origin.emit(output);
+        public CompletionStage<Void> emit(OmniRealtimeClientEvent input) {
+            return origin.emit(input);
         }
 
         @Override

@@ -17,9 +17,9 @@ public interface Realtime {
 
     }
 
-    interface Emitter<O> extends Connection {
+    interface Emitter<I> extends Connection {
 
-        CompletionStage<Void> emit(O output);
+        CompletionStage<Void> emit(I input);
 
         CompletionStage<Void> emitBinary(ByteBuffer buffer);
 
@@ -31,9 +31,9 @@ public interface Realtime {
 
     interface Handler<I, O> {
 
-        void onOpen(Emitter<O> emitter);
+        void onOpen(Emitter<I> emitter);
 
-        CompletionStage<Void> onData(I input);
+        CompletionStage<Void> onData(O input);
 
         CompletionStage<Void> onBinary(ByteBuffer buffer);
 

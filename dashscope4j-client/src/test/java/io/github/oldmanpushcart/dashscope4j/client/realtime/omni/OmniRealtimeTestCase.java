@@ -67,24 +67,24 @@ public class OmniRealtimeTestCase implements LoadingEnv {
 
                             final var manualVad = (OmniRealtimeEmitter.ManualVad) exchange;
                             manualVad
-                                    .newSubmission()
-                                    .thenCompose(OmniRealtimeEmitter.ManualVad.SubmissionOp::clear)
-                                    .thenCompose(submissionOp -> {
+                                    .newInput()
+                                    .thenCompose(OmniRealtimeEmitter.ManualVad.InputOp::clear)
+                                    .thenCompose(inputOp -> {
                                         try (final var ais = AudioSystem.getAudioInputStream(audioFile)) {
                                             CompletionStage<?> stage = CompletableFuture.completedStage(null);
                                             int bytesRead;
                                             final var bytes = new byte[10240];
                                             while ((bytesRead = ais.read(bytes)) != -1) {
                                                 final int read = bytesRead;
-                                                stage = stage.thenCompose(v -> submissionOp.audio(bytes, 0, read));
+                                                stage = stage.thenCompose(v -> inputOp.audio(bytes, 0, read));
                                             }
-                                            return stage.thenApply(v -> submissionOp);
+                                            return stage.thenApply(v -> inputOp);
                                         } catch (Throwable ex) {
                                             return CompletableFuture.failedStage(ex);
                                         }
                                     })
-                                    .thenCompose(submissionOp -> submissionOp.image(image))
-                                    .thenCompose(OmniRealtimeEmitter.ManualVad.SubmissionOp::commit)
+                                    .thenCompose(inputOp -> inputOp.image(image))
+                                    .thenCompose(OmniRealtimeEmitter.ManualVad.InputOp::commit)
                                     .thenCompose(OmniRealtimeEmitter.ManualVad.ResponseOp::create)
                                     .thenApply(v -> manualVad);
                         }

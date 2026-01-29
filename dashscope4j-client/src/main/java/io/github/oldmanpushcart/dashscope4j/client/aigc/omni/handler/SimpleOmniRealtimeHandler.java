@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.omni.handler;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.event.server.*;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.event.client.OmniRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.*;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
@@ -12,7 +11,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * 简单的 OMNI-REALTIME 数据交换处理器
  */
-public abstract class SimpleOmniRealtimeHandler implements Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> {
+public abstract class SimpleOmniRealtimeHandler implements Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
     @Override
     public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {

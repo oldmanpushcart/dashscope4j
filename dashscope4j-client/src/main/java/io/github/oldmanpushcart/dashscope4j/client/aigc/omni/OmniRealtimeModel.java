@@ -14,7 +14,7 @@ import static io.github.oldmanpushcart.dashscope4j.common.Constants.DEFAULT_REAL
 public record OmniRealtimeModel(
         String name,
         String path
-) implements RealtimeModel<OmniRealtimeSession, OmniRealtimeServerEvent, OmniRealtimeClientEvent> {
+) implements RealtimeModel<OmniRealtimeSession, OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
     public OmniRealtimeModel(String name) {
         this(name, String.format("%s?model=%s".formatted(DEFAULT_REALTIME_PATH, name)));
@@ -24,7 +24,7 @@ public record OmniRealtimeModel(
 
 
     @Override
-    public BiFunction<OmniRealtimeSession, Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent>, Realtime.Handler<String, String>> provider() {
+    public BiFunction<OmniRealtimeSession, Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent>, Realtime.Handler<String, String>> provider() {
         return (session, handler) ->
                 new CodecHandler<>(
                         JacksonJsonUtils::toJson,
@@ -36,7 +36,7 @@ public record OmniRealtimeModel(
                 );
     }
 
-    private Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> handlerFactory(OmniRealtimeSession session, Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> handler) {
+    private Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handlerFactory(OmniRealtimeSession session, Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handler) {
         if (null == session
                 || null == session.turnDetection()
                 || OmniRealtimeSession.TurnDetection.Type.SERVER_VAD == session.turnDetection().type()) {

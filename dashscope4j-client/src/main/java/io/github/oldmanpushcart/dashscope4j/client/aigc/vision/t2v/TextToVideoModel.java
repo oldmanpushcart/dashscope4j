@@ -21,16 +21,15 @@ public record TextToVideoModel(
 
     public static final TextToVideoModel WAN_T2V = new TextToVideoModel("wan2.6-t2v", "/api/v1/services/aigc/video-generation/video-synthesis");
 
-    private static final List<Interceptor> interceptors = Stream.concat(
-                    AigcModel.interceptors.stream(),
-                    Stream.of(
-                            new UploadFilesInterceptor()
-                    ))
-            .toList();
+    private static final List<Interceptor> interceptors = List.of(
+            new UploadFilesInterceptor()
+    );
 
     @Override
     public List<Interceptor> interceptors() {
-        return interceptors;
+        return Stream.of(AigcModel.super.interceptors(), interceptors)
+                .flatMap(List::stream)
+                .toList();
     }
 
     /**

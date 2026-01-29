@@ -33,12 +33,12 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<OmniRealtimeClient
          *
          * @return 提交操作
          */
-        CompletionStage<SubmissionOp> newSubmission();
+        CompletionStage<InputOp> newInput();
 
         /**
          * 提交操作
          */
-        interface SubmissionOp {
+        interface InputOp {
 
             /**
              * 提交图片
@@ -46,7 +46,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<OmniRealtimeClient
              * @param image 图片
              * @return 提交操作
              */
-            CompletionStage<SubmissionOp> image(BufferedImage image);
+            CompletionStage<InputOp> image(BufferedImage image);
 
             /**
              * 提交音频
@@ -54,7 +54,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<OmniRealtimeClient
              * @param buffer 音频数据
              * @return 提交操作
              */
-            CompletionStage<SubmissionOp> audio(ByteBuffer buffer);
+            CompletionStage<InputOp> audio(ByteBuffer buffer);
 
             /**
              * 提交音频
@@ -64,14 +64,14 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<OmniRealtimeClient
              * @param length 长度
              * @return 提交操作
              */
-            CompletionStage<SubmissionOp> audio(byte[] bytes, int offset, int length);
+            CompletionStage<InputOp> audio(byte[] bytes, int offset, int length);
 
             /**
              * 清空提交
              *
              * @return 提交操作
              */
-            CompletionStage<SubmissionOp> clear();
+            CompletionStage<InputOp> clear();
 
             /**
              * 提交

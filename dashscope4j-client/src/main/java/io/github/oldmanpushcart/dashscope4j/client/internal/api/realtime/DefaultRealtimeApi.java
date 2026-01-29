@@ -66,13 +66,13 @@ public class DefaultRealtimeApi implements RealtimeApi {
         }
 
         @Override
-        public CompletionStage<Void> emit(String output) {
-            return ws.sendText(output, true)
+        public CompletionStage<Void> emit(String input) {
+            return ws.sendText(input, true)
                     .whenComplete((v, ex) -> {
                         if (null == ex) {
-                            logger.debug("{}/text >>> {}", this, output);
+                            logger.debug("{}/text >>> {}", this, input);
                         } else {
-                            logger.warn("{}/text >>> {}", this, output, ex);
+                            logger.warn("{}/text >>> {}", this, input, ex);
                         }
                     })
                     .thenAccept(unused -> {

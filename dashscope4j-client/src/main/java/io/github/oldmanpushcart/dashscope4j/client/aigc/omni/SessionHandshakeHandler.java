@@ -15,15 +15,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> {
+class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
     private final OmniRealtimeSession session;
-    private final Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> delegate;
+    private final Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
 
     private final AtomicReference<State> stateRef = new AtomicReference<>(State.AWAITING_SESSION_CREATED);
     private volatile Realtime.Emitter<OmniRealtimeClientEvent> emitter;
 
-    public SessionHandshakeHandler(OmniRealtimeSession session, Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> delegate) {
+    public SessionHandshakeHandler(OmniRealtimeSession session, Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
         this.session = session;
         this.delegate = delegate;
     }
@@ -152,8 +152,8 @@ class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeServerEven
         }
 
         @Override
-        public CompletionStage<Void> emit(OmniRealtimeClientEvent output) {
-            return delegate.emit(output);
+        public CompletionStage<Void> emit(OmniRealtimeClientEvent input) {
+            return delegate.emit(input);
         }
 
         @Override
