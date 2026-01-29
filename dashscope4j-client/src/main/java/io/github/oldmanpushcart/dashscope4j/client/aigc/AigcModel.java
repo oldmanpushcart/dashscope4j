@@ -2,8 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc;
 
 import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.Model;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.interceptor.BridgeInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.interceptor.IncrementalOutputOnlyInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.GenericReflectUtils;
 
 import java.lang.reflect.ParameterizedType;
@@ -11,14 +9,6 @@ import java.util.List;
 import java.util.Set;
 
 public interface AigcModel<I, O> extends Model {
-
-    /**
-     * 算法模型通用功能
-     */
-    List<Interceptor> interceptors = List.of(
-            new BridgeInterceptor(),
-            new IncrementalOutputOnlyInterceptor()
-    );
 
     /**
      * 模型标签
@@ -35,7 +25,7 @@ public interface AigcModel<I, O> extends Model {
      * @return 模型拦截器列表（所有模型通用）
      */
     default List<Interceptor> interceptors() {
-        return interceptors;
+        return List.of();
     }
 
     /**

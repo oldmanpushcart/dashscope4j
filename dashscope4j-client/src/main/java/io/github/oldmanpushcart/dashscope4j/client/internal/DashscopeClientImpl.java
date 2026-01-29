@@ -1,8 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal;
 
+import io.github.oldmanpushcart.dashscope4j.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
+import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.Task;
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.AsyncApi;
@@ -17,14 +18,18 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.DefaultTask
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.InterceptionTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.TaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
+import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
 import java.net.http.HttpClient;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
+import java.util.stream.Stream;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
@@ -37,6 +42,11 @@ public class DashscopeClientImpl implements DashscopeClient {
     private final FlowApi flowApi;
     private final TaskApi taskApi;
     private final RealtimeApi realtimeApi;
+
+    private static final List<Interceptor> globalInterceptors = List.of(
+            new BridgeInterceptor(),
+            new IncrementalOutputOnlyInterceptor()
+    );
 
     private DashscopeClientImpl(Builder builder) {
         final var host = requireNonBlankString(builder.host, "host must not be blank!");
@@ -62,9 +72,15 @@ public class DashscopeClientImpl implements DashscopeClient {
         return host;
     }
 
+    private static List<Interceptor> mergeInterceptors(List<Interceptor> globalInterceptors, List<Interceptor> requestInterceptors) {
+        return Stream.of(globalInterceptors, requestInterceptors)
+                .flatMap(List::stream)
+                .toList();
+    }
+
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> async(T request) {
-        final var interceptors = request.interceptors();
+        final var interceptors = mergeInterceptors(globalInterceptors, request.interceptors());
         final var asyncApi = interceptors.isEmpty()
                 ? this.asyncApi
                 : InterceptionAsyncApi.group(this, this.asyncApi, interceptors);
@@ -73,7 +89,7 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> flow(T request) {
-        final var interceptors = request.interceptors();
+        final var interceptors = mergeInterceptors(globalInterceptors, request.interceptors());
         final var flowApi = interceptors.isEmpty()
                 ? this.flowApi
                 : InterceptionFlowApi.group(this, this.flowApi, interceptors);
@@ -82,7 +98,7 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> task(T request) {
-        final var interceptors = request.interceptors();
+        final var interceptors = mergeInterceptors(globalInterceptors, request.interceptors());
         final var taskApi = interceptors.isEmpty()
                 ? this.taskApi
                 : InterceptionTaskApi.group(this, this.taskApi, interceptors);

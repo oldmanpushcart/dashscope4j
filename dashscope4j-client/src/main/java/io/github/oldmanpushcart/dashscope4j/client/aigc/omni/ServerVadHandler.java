@@ -1,0 +1,118 @@
+package io.github.oldmanpushcart.dashscope4j.client.aigc.omni;
+
+import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.OmniRealtimeEmitter.ServerVad;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.event.client.OmniRealtimeBufferAppendAudioClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.event.client.OmniRealtimeBufferAppendImageClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.event.client.OmniRealtimeClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.event.server.OmniRealtimeServerEvent;
+
+import java.awt.image.BufferedImage;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletionStage;
+
+import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
+
+class ServerVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> {
+
+    private final Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> delegate;
+
+    public ServerVadHandler(Realtime.Handler<OmniRealtimeServerEvent, OmniRealtimeClientEvent> delegate) {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> exchange) {
+        final var serverVad = new ServerVadImpl((OmniRealtimeEmitter) exchange);
+        delegate.onOpen(serverVad);
+    }
+
+    @Override
+    public CompletionStage<Void> onData(OmniRealtimeServerEvent data) {
+        return delegate.onData(data);
+    }
+
+    @Override
+    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+        return delegate.onBinary(buffer);
+    }
+
+    @Override
+    public void onClosed(Throwable ex) {
+        delegate.onClosed(ex);
+    }
+
+    private static class ServerVadImpl implements ServerVad {
+
+        private final OmniRealtimeEmitter origin;
+
+        private ServerVadImpl(OmniRealtimeEmitter origin) {
+            this.origin = origin;
+        }
+
+        @Override
+        public CompletionStage<Void> image(BufferedImage image) {
+            final var event = new OmniRealtimeBufferAppendImageClientEvent(genUUID22(), image);
+            return origin.emit(event);
+        }
+
+        @Override
+        public CompletionStage<Void> audio(ByteBuffer buffer) {
+            final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
+            return origin.emit(event);
+        }
+
+        @Override
+        public CompletionStage<Void> audio(byte[] bytes, int offset, int length) {
+            final var buffer = ByteBuffer.wrap(bytes, offset, length);
+            final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
+            return origin.emit(event);
+        }
+
+        @Override
+        public OmniRealtimeSession session() {
+            return origin.session();
+        }
+
+        @Override
+        public CompletionStage<Void> emit(OmniRealtimeClientEvent output) {
+            return origin.emit(output);
+        }
+
+        @Override
+        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
+            return origin.emitBinary(buffer);
+        }
+
+        @Override
+        public CompletionStage<Void> emitClose() {
+            return origin.emitClose();
+        }
+
+        @Override
+        public CompletionStage<Void> emitClose(Throwable ex) {
+            return origin.emitClose(ex);
+        }
+
+        @Override
+        public String id() {
+            return origin.id();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return origin.isClosed();
+        }
+
+        @Override
+        public void close() {
+            origin.close();
+        }
+
+        @Override
+        public CompletionStage<Void> closeFuture() {
+            return origin.closeFuture();
+        }
+    }
+
+}

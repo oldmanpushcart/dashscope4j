@@ -2,11 +2,14 @@ package io.github.oldmanpushcart.dashscope4j.client.realtime.omni;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.OmniRealtimeEmitter;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.OmniRealtimeModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeConnector;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.client.OmniRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.omni.handler.SimpleOmniRealtimeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.event.client.OmniRealtimeClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.omni.handler.SimpleOmniRealtimeHandler;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
