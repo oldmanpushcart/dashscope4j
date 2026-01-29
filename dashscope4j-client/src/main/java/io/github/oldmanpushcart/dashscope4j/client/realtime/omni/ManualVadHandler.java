@@ -83,7 +83,7 @@ class ManualVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, Omni
 
         @Override
         public CompletionStage<SubmissionOp> newSubmission() {
-            changeState(State.IDLE, State.INPUT_READY);
+            changeState(State.IDLE, State.SUBMISSION_READY);
             return CompletableFuture.completedStage(new SubmissionOpImpl());
         }
 
@@ -136,8 +136,8 @@ class ManualVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, Omni
 
             @Override
             public CompletionStage<SubmissionOp> image(BufferedImage image) {
-                tryChangeState(State.INPUT_READY, State.INPUT);
-                checkState(State.INPUT);
+                tryChangeState(State.SUBMISSION_READY, State.SUBMISSION);
+                checkState(State.SUBMISSION);
                 final var event = new OmniRealtimeBufferAppendImageClientEvent(genUUID22(), image);
                 return origin.emit(event)
                         .thenApply(unused -> this);
@@ -145,8 +145,8 @@ class ManualVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, Omni
 
             @Override
             public CompletionStage<SubmissionOp> audio(ByteBuffer buffer) {
-                tryChangeState(State.INPUT_READY, State.INPUT);
-                checkState(State.INPUT);
+                tryChangeState(State.SUBMISSION_READY, State.SUBMISSION);
+                checkState(State.SUBMISSION);
                 final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
                 return origin.emit(event)
                         .thenApply(unused -> this);
@@ -154,8 +154,8 @@ class ManualVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, Omni
 
             @Override
             public CompletionStage<SubmissionOp> audio(byte[] bytes, int offset, int length) {
-                tryChangeState(State.INPUT_READY, State.INPUT);
-                checkState(State.INPUT);
+                tryChangeState(State.SUBMISSION_READY, State.SUBMISSION);
+                checkState(State.SUBMISSION);
                 final var buffer = ByteBuffer.wrap(bytes, offset, length);
                 final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
                 return origin.emit(event)
@@ -168,11 +168,11 @@ class ManualVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, Omni
                 /*
                  * 在没有任何输入之前，clear 操作无效
                  */
-                if (stateRef.get() == State.INPUT_READY) {
+                if (stateRef.get() == State.SUBMISSION_READY) {
                     return CompletableFuture.completedStage(this);
                 }
 
-                changeState(State.INPUT, State.INPUT_READY);
+                changeState(State.SUBMISSION, State.SUBMISSION_READY);
                 final var clearedF = futureSlot.acquire(KEY_BUFFER_CLEARED);
                 final var event = new OmniRealtimeBufferClearClientEvent(genUUID22());
                 return origin.emit(event)
@@ -183,7 +183,7 @@ class ManualVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, Omni
 
             @Override
             public CompletionStage<ResponseOp> commit() {
-                changeState(State.INPUT, State.COMMITTED);
+                changeState(State.SUBMISSION, State.COMMITTED);
                 final var committedF = futureSlot.acquire(KEY_BUFFER_COMMITTED);
                 final var event = new OmniRealtimeBufferCommitClientEvent(genUUID22());
                 return origin.emit(event)
@@ -198,11 +198,11 @@ class ManualVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, Omni
                 /*
                  * 在没有任何输入之前，cancel 操作无效
                  */
-                if (stateRef.get() == State.INPUT_READY) {
+                if (stateRef.get() == State.SUBMISSION_READY) {
                     return CompletableFuture.completedStage(null);
                 }
 
-                changeState(State.INPUT, State.IDLE);
+                changeState(State.SUBMISSION, State.IDLE);
                 return clear()
                         .thenAccept(v -> {
                         });
@@ -259,6 +259,8 @@ class ManualVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, Omni
          */
         private enum State {
 
+            // Submission
+
             /**
              * 会话空闲，可开始新一轮输入。
              * <p>在此状态下，调用 {@code newInput()} 将切换至 {@code INPUT}。
@@ -266,17 +268,17 @@ class ManualVadHandler implements Realtime.Handler<OmniRealtimeServerEvent, Omni
             IDLE,
 
             /**
-             * 输入已就绪，等待开始输入。
-             * <p>在此状态下，调用 {@code audio()}/{@code image()} 将切换至 {@code INPUT}。
+             * 提交准备已就绪，等待开始提交内容。
+             * <p>在此状态下，调用 {@code audio()}/{@code image()} 将切换至 {@code SUBMISSION}。
              */
-            INPUT_READY,
+            SUBMISSION_READY,
 
             /**
              * 正在接收多模态输入（音频和/或图像）。
              * <p>可通过 {@code audio()}/{@code image()} 追加数据，或通过 {@code clear()} 重置，
              * 或通过 {@code commit()}/{@code cancel()} 结束本轮输入。
              */
-            INPUT,
+            SUBMISSION,
 
             /**
              * 输入已提交，等待启动响应生成。

@@ -136,7 +136,7 @@ class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeServerEven
         private final OmniRealtimeSession session;
 
         /**
-         * 构造一个代理实例，包装给定的原始 {@link Exchange}。
+         * 构造一个代理实例，包装给定的原始 {@link Realtime.Emitter}。
          *
          * @param delegate 被代理的原始数据交换对象，不可为 {@code null}
          * @throws NullPointerException 如果 {@code origin} 为 {@code null}
