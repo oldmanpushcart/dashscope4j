@@ -1,10 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal;
 
 import io.github.oldmanpushcart.dashscope4j.client.*;
-import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.Task;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.DefaultAsyncApi;
@@ -20,8 +20,8 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.TaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 

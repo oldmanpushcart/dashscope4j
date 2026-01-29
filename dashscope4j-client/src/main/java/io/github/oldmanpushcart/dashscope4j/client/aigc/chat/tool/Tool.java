@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 
 import java.util.concurrent.CompletionStage;

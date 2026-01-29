@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal;
 
-import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.client.Ret;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.Ret;
 
 public class OpenAiResponse extends ApiResponse {
 

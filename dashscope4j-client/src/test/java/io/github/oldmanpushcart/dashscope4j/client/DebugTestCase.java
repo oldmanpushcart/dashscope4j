@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
-import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcModel;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2i.TextToImageModel;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.junit.jupiter.api.Test;
@@ -11,7 +11,7 @@ import java.lang.reflect.Type;
 import java.net.http.HttpClient;
 import java.time.Duration;
 
-import static io.github.oldmanpushcart.dashscope4j.client.Task.WaitStrategies.always;
+import static io.github.oldmanpushcart.dashscope4j.client.api.task.Task.WaitStrategies.always;
 
 public class DebugTestCase implements LoadingEnv {
 

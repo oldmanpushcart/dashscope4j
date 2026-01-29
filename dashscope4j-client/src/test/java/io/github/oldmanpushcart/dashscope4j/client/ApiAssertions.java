@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
-import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 
 import static org.junit.jupiter.api.Assertions.*;
 

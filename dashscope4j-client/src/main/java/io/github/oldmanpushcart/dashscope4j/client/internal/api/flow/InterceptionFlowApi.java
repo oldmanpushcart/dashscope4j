@@ -1,9 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.flow;
 
-import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
-import io.github.oldmanpushcart.dashscope4j.client.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 
 import java.util.ArrayList;

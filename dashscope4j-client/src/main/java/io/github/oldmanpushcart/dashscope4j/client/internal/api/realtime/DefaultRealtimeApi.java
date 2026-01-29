@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.realtime;
 
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.slf4j.Logger;

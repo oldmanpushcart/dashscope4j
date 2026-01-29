@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
-import io.github.oldmanpushcart.dashscope4j.client.aigc.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;

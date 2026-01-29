@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.realtime;
 
-import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeModel;
 
 import java.util.concurrent.CompletionStage;
 

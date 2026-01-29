@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.task;
 
-import io.github.oldmanpushcart.dashscope4j.client.*;
+import io.github.oldmanpushcart.dashscope4j.client.api.*;
+import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
+import io.github.oldmanpushcart.dashscope4j.client.api.task.TaskException;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;

@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
-import io.github.oldmanpushcart.dashscope4j.client.Model;
+import io.github.oldmanpushcart.dashscope4j.client.api.Model;
 import io.github.oldmanpushcart.dashscope4j.client.base.store.StoreOp;
 
 import java.net.URI;

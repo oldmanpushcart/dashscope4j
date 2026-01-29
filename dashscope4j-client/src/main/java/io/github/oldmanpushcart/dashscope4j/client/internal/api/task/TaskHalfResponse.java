@@ -3,9 +3,9 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.task;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.ApiRequest;
-import io.github.oldmanpushcart.dashscope4j.client.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.client.Task;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
 
 class TaskHalfResponse extends ApiResponse {
 

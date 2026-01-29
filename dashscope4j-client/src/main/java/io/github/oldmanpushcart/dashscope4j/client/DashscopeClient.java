@@ -1,9 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.client;
 
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.DashscopeClientImpl;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.realtime.RealtimeModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.http.HttpClient;
