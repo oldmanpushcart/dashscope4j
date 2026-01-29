@@ -72,7 +72,7 @@ public class DashscopeClientImpl implements DashscopeClient {
         return host;
     }
 
-    private static List<Interceptor> mergeInterceptors(List<Interceptor> globalInterceptors, List<Interceptor> requestInterceptors) {
+    private static List<Interceptor> mergeInterceptors(List<Interceptor> requestInterceptors) {
         return Stream.of(globalInterceptors, requestInterceptors)
                 .flatMap(List::stream)
                 .toList();
@@ -80,7 +80,7 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> async(T request) {
-        final var interceptors = mergeInterceptors(globalInterceptors, request.interceptors());
+        final var interceptors = mergeInterceptors(request.interceptors());
         final var asyncApi = interceptors.isEmpty()
                 ? this.asyncApi
                 : InterceptionAsyncApi.group(this, this.asyncApi, interceptors);
@@ -89,7 +89,7 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> flow(T request) {
-        final var interceptors = mergeInterceptors(globalInterceptors, request.interceptors());
+        final var interceptors = mergeInterceptors(request.interceptors());
         final var flowApi = interceptors.isEmpty()
                 ? this.flowApi
                 : InterceptionFlowApi.group(this, this.flowApi, interceptors);
@@ -98,7 +98,7 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> task(T request) {
-        final var interceptors = mergeInterceptors(globalInterceptors, request.interceptors());
+        final var interceptors = mergeInterceptors(request.interceptors());
         final var taskApi = interceptors.isEmpty()
                 ? this.taskApi
                 : InterceptionTaskApi.group(this, this.taskApi, interceptors);
