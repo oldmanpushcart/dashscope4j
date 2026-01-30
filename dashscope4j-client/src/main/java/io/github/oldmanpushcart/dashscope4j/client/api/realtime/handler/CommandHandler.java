@@ -8,6 +8,8 @@ import io.github.oldmanpushcart.dashscope4j.client.api.Ret;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.ToStringDeserializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
@@ -19,6 +21,7 @@ import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID
 
 public class CommandHandler implements Realtime.Handler<String, String> {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Mode mode;
     private final Object session;
     private final Realtime.Handler<String, String> handler;
@@ -43,7 +46,17 @@ public class CommandHandler implements Realtime.Handler<String, String> {
     @Override
     public CompletionStage<Void> onData(String output) {
         final var event = JacksonJsonUtils.toObject(output, Event.class);
+
+        /*
+         * 接收到服务端发送任务失败数据帧，只能表明内部发生了部分的错误，
+         * 说明需要立即关闭整个连接
+         */
         if (!event.header.isSuccess()) {
+            logger.warn("dashscope4j-client://realtime/command/{} execute failed!, code={};desc={}",
+                    emitter.id(),
+                    event.header().code(),
+                    event.header().desc()
+            );
             return CompletableFuture.failedStage(new CommandErrorException(event.header));
         }
         final var s = state.get();
@@ -66,7 +79,45 @@ public class CommandHandler implements Realtime.Handler<String, String> {
                     )));
                 }
             }
-            case STARTED -> handler.onData(event.payload());
+            case STARTED -> {
+
+                /*
+                 * 接收到服务端发送任务结束数据帧，说明本次连接的任务已经完成，
+                 * 可以优雅地关闭连接。
+                 */
+                if (event.header().type() == Event.Type.FINISHED) {
+                    logger.debug("dashscope4j-client://realtime/command/{} execute finished!", emitter.id());
+
+                    /*
+                     * FINISHED 数据帧中有些场景会包含了最终的数据结果
+                     */
+                    handler.onData(event.payload());
+
+                    // 强制关闭连接
+                    emitter.close();
+
+                    return CompletableFuture.completedStage(null);
+                }
+
+                /*
+                 * 接收到服务端发送的文本数据帧，
+                 * 转换为数据交换应答对象
+                 */
+                else if (event.header().type() == Event.Type.GENERATED) {
+                    handler.onData(event.payload());
+                    return CompletableFuture.completedStage(null);
+                }
+
+                /*
+                 * 其他类型说明出现了新的不兼容类型，需要完善处理
+                 */
+                else {
+                    return CompletableFuture.failedStage(new UnsupportedOperationException("Unsupported event type: %s".formatted(
+                            event.header().type()
+                    )));
+                }
+
+            }
         }
 
         return handler.onData(event.payload());

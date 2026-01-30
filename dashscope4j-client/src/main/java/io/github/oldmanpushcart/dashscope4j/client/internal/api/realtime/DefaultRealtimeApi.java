@@ -51,12 +51,14 @@ public class DefaultRealtimeApi implements RealtimeApi {
         private final String id;
         private final WebSocket ws;
         private final CompletableFuture<Void> closeF;
+        private final ListenerImpl listener;
         private final String _toString;
 
-        private Emitter(String id, WebSocket ws, CompletableFuture<Void> closeF) {
+        private Emitter(String id, WebSocket ws, CompletableFuture<Void> closeF, ListenerImpl listener) {
             this.id = id;
             this.ws = ws;
             this.closeF = closeF;
+            this.listener = listener;
             this._toString = "dashscope4j-client://realtime/%s".formatted(id);
         }
 
@@ -131,6 +133,7 @@ public class DefaultRealtimeApi implements RealtimeApi {
         @Override
         public void close() {
             ws.abort();
+            listener.fireClosed(ws, null);
             logger.debug("{} >>> CLOSED", this);
         }
 
@@ -171,7 +174,7 @@ public class DefaultRealtimeApi implements RealtimeApi {
         @Override
         public void onOpen(WebSocket ws) {
             try {
-                final var emitter = new Emitter(id, ws, closeF);
+                final var emitter = new Emitter(id, ws, closeF, this);
                 handler.onOpen(emitter);
                 completeF.complete(emitter);
                 ws.request(1L);
@@ -240,7 +243,7 @@ public class DefaultRealtimeApi implements RealtimeApi {
          * @param ws websocket
          * @param ex 错误信息
          */
-        private void fireClosed(WebSocket ws, Throwable ex) {
+        void fireClosed(WebSocket ws, Throwable ex) {
 
             /*
              * 错误标志位，防止重复触发

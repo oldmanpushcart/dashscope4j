@@ -33,7 +33,7 @@ public interface Realtime {
 
         void onOpen(Emitter<I> emitter);
 
-        CompletionStage<Void> onData(O input);
+        CompletionStage<Void> onData(O output);
 
         CompletionStage<Void> onBinary(ByteBuffer buffer);
 
