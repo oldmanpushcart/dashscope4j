@@ -17,7 +17,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandler.Command.Action.*;
-import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
 public class CommandHandler implements Realtime.Handler<String, String> {
 
@@ -38,9 +37,17 @@ public class CommandHandler implements Realtime.Handler<String, String> {
     @Override
     public void onOpen(Realtime.Emitter<String> delegate) {
         final var emitter = new Emitter(mode, delegate);
-        emitter.start(session);
         this.emitter = emitter;
-        handler.onOpen(emitter);
+        emitter.start(session)
+                .whenComplete((unused, ex) -> {
+                    if (null != ex) {
+                        logger.warn("dashscope4j-client://realtime/command/{} start failed!",
+                                emitter.id(),
+                                ex
+                        );
+                        onClosed(ex);
+                    }
+                });
     }
 
     @Override
@@ -138,20 +145,12 @@ public class CommandHandler implements Realtime.Handler<String, String> {
         STARTED
     }
 
-    private static class Emitter implements Realtime.Emitter<String> {
-
-        private final Mode mode;
-        private final Realtime.Emitter<String> delegate;
-
-        private Emitter(Mode mode, Realtime.Emitter<String> delegate) {
-            this.mode = mode;
-            this.delegate = delegate;
-        }
+    private record Emitter(Mode mode, Realtime.Emitter<String> delegate) implements Realtime.Emitter<String> {
 
         private CompletionStage<Void> start(Object session) {
             final var payload = JacksonJsonUtils.toJson(session);
             final var command = new Command(
-                    new Command.Header(genUUID22(), mode, RUN),
+                    new Command.Header(id(), mode, RUN),
                     payload
             );
             final var commandJson = JacksonJsonUtils.toJson(command);
@@ -160,7 +159,7 @@ public class CommandHandler implements Realtime.Handler<String, String> {
 
         private CompletionStage<Void> finish() {
             final var command = new Command(
-                    new Command.Header(genUUID22(), mode, FINISH),
+                    new Command.Header(id(), mode, FINISH),
                     "{\"input\": {}}"
             );
             final var commandJson = JacksonJsonUtils.toJson(command);
@@ -170,7 +169,7 @@ public class CommandHandler implements Realtime.Handler<String, String> {
         @Override
         public CompletionStage<Void> emit(String input) {
             final var command = new Command(
-                    new Command.Header(genUUID22(), mode, CONTINUE),
+                    new Command.Header(id(), mode, CONTINUE),
                     input
             );
             final var commandJson = JacksonJsonUtils.toJson(command);
@@ -214,8 +213,7 @@ public class CommandHandler implements Realtime.Handler<String, String> {
 
     }
 
-
-    public record Command(
+    record Command(
 
             @JsonProperty("header")
             Header header,
@@ -256,7 +254,7 @@ public class CommandHandler implements Realtime.Handler<String, String> {
 
     }
 
-    public record Event(
+    record Event(
 
             @JsonProperty("header")
             Header header,
@@ -337,7 +335,7 @@ public class CommandHandler implements Realtime.Handler<String, String> {
 
     }
 
-    public static class CommandErrorException extends RuntimeException {
+    static class CommandErrorException extends RuntimeException {
 
         private final String code;
         private final String reason;

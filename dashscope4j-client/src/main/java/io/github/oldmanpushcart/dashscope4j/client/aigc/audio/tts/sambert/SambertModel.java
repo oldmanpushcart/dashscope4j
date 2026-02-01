@@ -74,7 +74,7 @@ public record SambertModel(
             @JsonProperty("output")
             Output output,
 
-            @JsonProperty
+            @JsonProperty("usage")
             Usage usage
 
     ) {
