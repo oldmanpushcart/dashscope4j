@@ -1,54 +1,75 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts;
 
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert.SambertModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert.SambertParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert.SambertSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
 
 public class SambertTestCase implements LoadingEnv {
 
     @Test
-    public void test$sambert() throws InterruptedException {
+    public void test$sambert() throws IOException, InterruptedException {
 
-        final var latch = new CountDownLatch(1);
-        client.realtime(
-                SambertModel.ZHINAN,
-                SambertSession.newBuilder()
-                        .text("床前明月光，疑似地上霜。")
-                        .build(),
-                new Realtime.Handler<>() {
-                    @Override
-                    public void onOpen(Realtime.Emitter<SambertModel.In> emitter) {
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
-                    }
+            client.realtime(
+                            SambertModel.ZHINAN,
+                            SambertSession.newBuilder()
+                                    .text("床前明月光，疑似地上霜。举头望明月，低头思故乡。")
+                                    .addParameter(SambertParameterKeys.FORMAT, SambertParameterKeys.Format.PCM)
+                                    .addParameter(SambertParameterKeys.SAMPLE_RATE, 8000)
+                                    .build(),
+                            new Realtime.Handler<>() {
 
-                    @Override
-                    public CompletionStage<Void> onData(SambertModel.Out output) {
-                        System.out.println(output);
-                        return CompletableFuture.completedStage(null);
-                    }
+                                private final byte[] bytes = new byte[1024];
 
-                    @Override
-                    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                        return CompletableFuture.completedStage(null);
-                    }
+                                @Override
+                                public void onOpen(Realtime.Emitter<SambertModel.In> emitter) {
 
-                    @Override
-                    public void onClosed(Throwable ex) {
-                        if (null != ex) {
-                            ex.printStackTrace();
-                        }
-                        latch.countDown();
-                    }
-                });
+                                }
 
-        latch.await();
+                                @Override
+                                public CompletionStage<Void> onData(SambertModel.Out output) {
+                                    System.out.println(output);
+                                    return CompletableFuture.completedStage(null);
+                                }
+
+                                @Override
+                                public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+                                    while (buffer.hasRemaining()) {
+                                        int len = Math.min(buffer.remaining(), bytes.length);
+                                        buffer.get(bytes, 0, len);
+                                        baos.write(bytes, 0, len);
+                                    }
+                                    return CompletableFuture.completedStage(null);
+                                }
+
+                                @Override
+                                public void onClosed(Throwable ex) {
+                                }
+
+                            })
+                    .thenCompose(Realtime.Connection::closeFuture)
+                    .toCompletableFuture()
+                    .join();
+
+            final var tempF = Files.createTempFile("test_audio_", ".pcm");
+            Files.write(tempF, baos.toByteArray());
+
+            DashscopeAssertions.dashscopeAssertAudio(client, tempF.toUri(), "一个男声在朗读《静夜思》。");
+
+        }
+
 
     }
 

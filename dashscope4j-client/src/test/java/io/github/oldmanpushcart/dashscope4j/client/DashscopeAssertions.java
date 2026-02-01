@@ -76,6 +76,7 @@ public class DashscopeAssertions {
                                 Content.text(prompt),
                                 Content.image(imageURI)
                         )))
+                        .inlineEnabled(true)
                         .build())
                 .build();
         final var response = client.async(request)
@@ -83,7 +84,7 @@ public class DashscopeAssertions {
                 .join();
         if (!response.output().best().message().text().contains("TRUE")) {
             throw new AssertionError("""
-                    预期与实际图片不符
+                    预期与实际不符
                     
                     预期：
                     %s
@@ -107,6 +108,7 @@ public class DashscopeAssertions {
                                 Content.text(prompt),
                                 Content.video(videoURI)
                         )))
+                        .inlineEnabled(true)
                         .build())
                 .build();
         final var response = client.async(request)
@@ -114,7 +116,39 @@ public class DashscopeAssertions {
                 .join();
         if (!response.output().best().message().text().contains("TRUE")) {
             throw new AssertionError("""
-                    预期与实际图片不符
+                    预期与实际不符
+                    
+                    预期：
+                    %s
+                    """.formatted(expect)
+            );
+        }
+    }
+
+    public static void dashscopeAssertAudio(DashscopeClient client, URI audioURI, String expect) {
+        final var prompt = """
+                请你判断音频内容符合预期。如果符合，请只输出 TRUE；如果不满足，请只输出 FALSE。不要添加任何解释或额外信息。
+                
+                预期
+                ----------
+                %s
+                ----------
+                """.formatted(expect);
+        final var request = AigcRequest.newBuilder(ChatModel.QWEN3_OMNI_FLASH)
+                .input(ChatModel.Input.newBuilder()
+                        .addMessage(Message.user(List.of(
+                                Content.text(prompt),
+                                Content.audio(audioURI)
+                        )))
+                        .inlineEnabled(true)
+                        .build())
+                .build();
+        final var response = client.async(request)
+                .toCompletableFuture()
+                .join();
+        if (!response.output().best().message().text().contains("TRUE")) {
+            throw new AssertionError("""
+                    预期与实际不符
                     
                     预期：
                     %s

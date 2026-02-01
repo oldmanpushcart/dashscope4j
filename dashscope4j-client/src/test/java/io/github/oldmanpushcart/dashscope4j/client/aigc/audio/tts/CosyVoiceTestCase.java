@@ -1,12 +1,17 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts;
 
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
@@ -14,46 +19,65 @@ import java.util.concurrent.CountDownLatch;
 public class CosyVoiceTestCase implements LoadingEnv {
 
     @Test
-    public void test$cosy_voice() throws InterruptedException {
+    public void test$cosy_voice() throws IOException, InterruptedException {
 
-        final var latch = new CountDownLatch(1);
-        client.realtime(
-                CosyVoiceModel.COSYVOICE_V3_FLASH,
-                CosyVoiceSession.newBuilder()
-                        .addParameter("voice", "longanyang")
-                        .addParameter("word_timestamp_enabled", true)
-                        .build(),
-                new Realtime.Handler<>() {
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
-                    @Override
-                    public void onOpen(Realtime.Emitter<CosyVoiceModel.In> emitter) {
-                        CompletableFuture.completedStage(null)
-                                .thenCompose(v -> emitter.emit(CosyVoiceModel.In.of("床前明月光，疑似地上霜。")))
-                                .thenCompose(v -> emitter.emitClose());
-                    }
+            client.realtime(
+                            CosyVoiceModel.COSYVOICE_V3_FLASH,
+                            CosyVoiceSession.newBuilder()
+                                    .addParameter("voice", "longanyang")
+                                    .addParameter("word_timestamp_enabled", true)
+                                    .addParameter(CosyVoiceParameterKeys.FORMAT, CosyVoiceParameterKeys.Format.PCM)
+                                    .addParameter(CosyVoiceParameterKeys.SAMPLE_RATE, 8000)
+                                    .build(),
+                            new Realtime.Handler<>() {
 
-                    @Override
-                    public CompletionStage<Void> onData(CosyVoiceModel.Out output) {
-                        System.out.println(output);
-                        return CompletableFuture.completedStage(null);
-                    }
+                                private final byte[] bytes = new byte[1024];
 
-                    @Override
-                    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                        return CompletableFuture.completedStage(null);
-                    }
+                                @Override
+                                public void onOpen(Realtime.Emitter<CosyVoiceModel.In> emitter) {
+                                    CompletableFuture.<Void>completedStage(null)
+                                            .thenCompose(v -> emitter.emit(CosyVoiceModel.In.of("床前明月光，")))
+                                            .thenCompose(v -> emitter.emit(CosyVoiceModel.In.of("疑似地上霜。")))
+                                            .thenCompose(v -> emitter.emit(CosyVoiceModel.In.of("举头望明月，")))
+                                            .thenCompose(v -> emitter.emit(CosyVoiceModel.In.of("低头思故乡。")))
+                                            .thenCompose(v -> emitter.emitClose());
+                                }
 
-                    @Override
-                    public void onClosed(Throwable ex) {
-                        latch.countDown();
-                        if (null != ex) {
-                            ex.printStackTrace();
-                        }
-                    }
+                                @Override
+                                public CompletionStage<Void> onData(CosyVoiceModel.Out output) {
+                                    return CompletableFuture.completedStage(null);
+                                }
 
-                }
-        );
-        latch.await();
+                                @Override
+                                public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+                                    while (buffer.hasRemaining()) {
+                                        int len = Math.min(buffer.remaining(), bytes.length);
+                                        buffer.get(bytes, 0, len);
+                                        baos.write(bytes, 0, len);
+                                    }
+                                    return CompletableFuture.completedStage(null);
+                                }
+
+                                @Override
+                                public void onClosed(Throwable ex) {
+
+                                }
+
+                            }
+                    )
+                    .thenCompose(Realtime.Connection::closeFuture)
+                    .toCompletableFuture()
+                    .join();
+
+            final var tempF = Files.createTempFile("test_audio_", ".pcm");
+            Files.write(tempF, baos.toByteArray());
+
+            DashscopeAssertions.dashscopeAssertAudio(client, tempF.toUri(), "一个男声在朗读《静夜思》。");
+
+        }
+
 
     }
 

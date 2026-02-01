@@ -19,10 +19,14 @@ public record CosyVoiceModel(
 
     private static final String PATH = "/api-ws/v1/inference/";
 
-    public static final CosyVoiceModel COSYVOICE_V1 = new CosyVoiceModel("cosyvoice-v1", PATH);
-    public static final CosyVoiceModel COSYVOICE_V2 = new CosyVoiceModel("cosyvoice-v2", PATH);
-    public static final CosyVoiceModel COSYVOICE_V3_PLUS = new CosyVoiceModel("cosyvoice-v3-plus", PATH);
-    public static final CosyVoiceModel COSYVOICE_V3_FLASH = new CosyVoiceModel("cosyvoice-v3-flash", PATH);
+    public static final CosyVoiceModel COSYVOICE_V1 = new CosyVoiceModel("cosyvoice-v1");
+    public static final CosyVoiceModel COSYVOICE_V2 = new CosyVoiceModel("cosyvoice-v2");
+    public static final CosyVoiceModel COSYVOICE_V3_PLUS = new CosyVoiceModel("cosyvoice-v3-plus");
+    public static final CosyVoiceModel COSYVOICE_V3_FLASH = new CosyVoiceModel("cosyvoice-v3-flash");
+
+    public CosyVoiceModel(String name) {
+        this(name, PATH);
+    }
 
     @Override
     public BiFunction<CosyVoiceSession, Realtime.Handler<In, Out>, Realtime.Handler<String, String>> provider() {
@@ -45,6 +49,10 @@ public record CosyVoiceModel(
         };
     }
 
+
+    /**
+     * 模型输入
+     */
     public record In(
 
             @JsonProperty("input")
@@ -67,6 +75,13 @@ public record CosyVoiceModel(
 
     }
 
+
+    /**
+     * 模型输出
+     *
+     * @param output 输出结果
+     * @param usage  使用情况
+     */
     public record Out(
 
             @JsonProperty("output")

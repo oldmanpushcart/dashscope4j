@@ -1,11 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert.timespan.SentenceTimeSpan;
-import io.github.oldmanpushcart.dashscope4j.client.api.Model;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
-import io.github.oldmanpushcart.dashscope4j.client.api.Ret;
 import io.github.oldmanpushcart.dashscope4j.client.api.Usage;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeModel;
@@ -26,7 +23,7 @@ public record SambertModel(
     public static final SambertModel ZHINAN = new SambertModel(
             "sambert-zhinan-v1",
             new Parameters()
-                    .append("sample_rate", 48000)
+                    .append(SambertParameterKeys.SAMPLE_RATE, 48000)
     );
 
     public SambertModel(String name, Parameters parameters) {
@@ -61,6 +58,9 @@ public record SambertModel(
         };
     }
 
+    /**
+     * 模型输入
+     */
     public static class In {
 
         private In() {
@@ -69,6 +69,12 @@ public record SambertModel(
 
     }
 
+    /**
+     * 模型输出
+     *
+     * @param output 输出结果
+     * @param usage  使用情况
+     */
     public record Out(
 
             @JsonProperty("output")
