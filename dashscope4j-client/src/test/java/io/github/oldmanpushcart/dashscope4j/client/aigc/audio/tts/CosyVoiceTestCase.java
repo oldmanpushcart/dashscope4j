@@ -26,14 +26,12 @@ public class CosyVoiceTestCase implements LoadingEnv {
             client.realtime(
                             CosyVoiceModel.COSYVOICE_V3_FLASH,
                             CosyVoiceSession.newBuilder()
-                                    .addParameter("voice", "longanyang")
-                                    .addParameter("word_timestamp_enabled", true)
+                                    .addParameter(CosyVoiceParameterKeys.VOICE, "longanyang")
+                                    .addParameter(CosyVoiceParameterKeys.WORD_TIMESTAMP_ENABLED, true)
                                     .addParameter(CosyVoiceParameterKeys.FORMAT, CosyVoiceParameterKeys.Format.PCM)
                                     .addParameter(CosyVoiceParameterKeys.SAMPLE_RATE, 8000)
                                     .build(),
                             new Realtime.Handler<>() {
-
-                                private final byte[] bytes = new byte[1024];
 
                                 @Override
                                 public void onOpen(Realtime.Emitter<CosyVoiceModel.In> emitter) {
@@ -52,6 +50,7 @@ public class CosyVoiceTestCase implements LoadingEnv {
 
                                 @Override
                                 public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+                                    final var bytes = new byte[1024];
                                     while (buffer.hasRemaining()) {
                                         int len = Math.min(buffer.remaining(), bytes.length);
                                         buffer.get(bytes, 0, len);

@@ -31,8 +31,6 @@ public class SambertTestCase implements LoadingEnv {
                                     .build(),
                             new Realtime.Handler<>() {
 
-                                private final byte[] bytes = new byte[1024];
-
                                 @Override
                                 public void onOpen(Realtime.Emitter<SambertModel.In> emitter) {
 
@@ -40,12 +38,12 @@ public class SambertTestCase implements LoadingEnv {
 
                                 @Override
                                 public CompletionStage<Void> onData(SambertModel.Out output) {
-                                    System.out.println(output);
                                     return CompletableFuture.completedStage(null);
                                 }
 
                                 @Override
                                 public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+                                    final var bytes = new byte[1024];
                                     while (buffer.hasRemaining()) {
                                         int len = Math.min(buffer.remaining(), bytes.length);
                                         buffer.get(bytes, 0, len);
