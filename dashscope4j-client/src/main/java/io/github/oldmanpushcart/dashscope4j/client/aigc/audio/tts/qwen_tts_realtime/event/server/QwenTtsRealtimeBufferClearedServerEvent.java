@@ -9,7 +9,7 @@ public class QwenTtsRealtimeBufferClearedServerEvent extends QwenTtsRealtimeServ
     @JsonCreator
     public QwenTtsRealtimeBufferClearedServerEvent(
 
-            @JsonProperty("id")
+            @JsonProperty("event_id")
             String id,
 
             @JsonProperty("type")

@@ -9,7 +9,7 @@ public class OmniRealtimeConversationItemCreatedServerEvent extends OmniRealtime
 
     @JsonCreator
     public OmniRealtimeConversationItemCreatedServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("item") Item item
     ) {

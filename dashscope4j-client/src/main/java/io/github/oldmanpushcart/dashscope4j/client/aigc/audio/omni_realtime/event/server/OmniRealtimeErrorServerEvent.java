@@ -10,7 +10,7 @@ public class OmniRealtimeErrorServerEvent extends OmniRealtimeServerEvent {
 
     @JsonCreator
     public OmniRealtimeErrorServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("error") Error error
     ) {

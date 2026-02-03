@@ -8,7 +8,7 @@ public class QwenTtsRealtimeSessionFinishedServerEvent extends QwenTtsRealtimeSe
     @JsonCreator
     public QwenTtsRealtimeSessionFinishedServerEvent(
 
-            @JsonProperty("id")
+            @JsonProperty("event_id")
             String id,
 
             @JsonProperty("type")

@@ -11,7 +11,7 @@ public class OmniRealtimeConversationItemInputAudioTranscriptionFailedServerEven
 
     @JsonCreator
     public OmniRealtimeConversationItemInputAudioTranscriptionFailedServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("itemId") String itemId,
             @JsonProperty("content_index") int contentIndex,

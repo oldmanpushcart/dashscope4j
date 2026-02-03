@@ -11,7 +11,7 @@ public class OmniRealtimeResponseContentPartDoneServerEvent extends OmniRealtime
     private final Part part;
 
     public OmniRealtimeResponseContentPartDoneServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("response_id") String responseId,
             @JsonProperty("item_id") String itemId,

@@ -81,6 +81,15 @@ public class JacksonJsonUtils {
         }
     }
 
+    public static <T> T toObject(Map<String,Object> variableMap, String json, Class<T> type) {
+        try {
+            return mapper.reader(new NullableInjectableValues(variableMap))
+                    .forType(type).readValue(json);
+        } catch (JsonProcessingException cause) {
+            throw new IllegalArgumentException("parse json to object failed!", cause);
+        }
+    }
+
     public static <T> T toObject(String json, Class<T> type) {
         return toObject(mapper, json, type);
     }

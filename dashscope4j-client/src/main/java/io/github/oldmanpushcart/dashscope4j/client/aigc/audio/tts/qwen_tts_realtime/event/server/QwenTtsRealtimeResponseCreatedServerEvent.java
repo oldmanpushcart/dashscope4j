@@ -10,7 +10,7 @@ public class QwenTtsRealtimeResponseCreatedServerEvent extends QwenTtsRealtimeSe
     @JsonCreator
     public QwenTtsRealtimeResponseCreatedServerEvent(
 
-            @JsonProperty("id")
+            @JsonProperty("event_id")
             String id,
 
             @JsonProperty("type")
@@ -22,6 +22,10 @@ public class QwenTtsRealtimeResponseCreatedServerEvent extends QwenTtsRealtimeSe
     ) {
         super(id, type);
         this.response = response;
+    }
+
+    public Response getResponse() {
+        return response;
     }
 
 }

@@ -11,7 +11,7 @@ public class OmniRealtimeConversationItemInputAudioTranscriptionCompletedServerE
 
     @JsonCreator
     public OmniRealtimeConversationItemInputAudioTranscriptionCompletedServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("item_id") String itemId,
             @JsonProperty("content_index") int contentIndex,

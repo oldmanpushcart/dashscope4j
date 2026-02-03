@@ -18,7 +18,7 @@ public class OmniRealtimeResponseAudioDeltaServerEvent extends OmniRealtimeServe
     @JsonCreator
     public OmniRealtimeResponseAudioDeltaServerEvent(
 
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("response_id") String responseId,
             @JsonProperty("item_id") String itemId,

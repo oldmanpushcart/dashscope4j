@@ -11,7 +11,7 @@ public class QwenTtsRealtimeSessionUpdatedServerEvent extends QwenTtsRealtimeSer
     @JsonCreator
     public QwenTtsRealtimeSessionUpdatedServerEvent(
 
-            @JsonProperty("id")
+            @JsonProperty("event_id")
             String id,
 
             @JsonProperty("type")

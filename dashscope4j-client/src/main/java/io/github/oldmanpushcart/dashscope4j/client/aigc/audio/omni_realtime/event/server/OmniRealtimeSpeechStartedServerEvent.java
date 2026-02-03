@@ -14,7 +14,7 @@ public class OmniRealtimeSpeechStartedServerEvent extends OmniRealtimeServerEven
 
     @JsonCreator
     public OmniRealtimeSpeechStartedServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("item_id") String itemId,
 

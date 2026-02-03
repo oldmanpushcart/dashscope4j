@@ -9,7 +9,7 @@ public class OmniRealtimeBufferCommittedServerEvent extends OmniRealtimeServerEv
 
     @JsonCreator
     public OmniRealtimeBufferCommittedServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("item_id") String itemId
     ) {

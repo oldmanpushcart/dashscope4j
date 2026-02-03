@@ -13,7 +13,7 @@ public class OmniRealtimeResponseTextDoneServerEvent extends OmniRealtimeServerE
 
     @JsonCreator
     public OmniRealtimeResponseTextDoneServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("response_id") String responseId,
             @JsonProperty("item_id") String itemId,

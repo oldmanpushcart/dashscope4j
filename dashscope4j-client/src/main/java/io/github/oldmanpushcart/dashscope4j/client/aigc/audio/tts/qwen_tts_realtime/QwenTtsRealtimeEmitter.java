@@ -20,9 +20,9 @@ public interface QwenTtsRealtimeEmitter extends Realtime.Emitter<QwenTtsRealtime
 
         interface InputOp {
 
-            CompletionStage<Void> text(String text);
+            CompletionStage<InputOp> text(String text);
 
-            CompletionStage<Void> clear();
+            CompletionStage<InputOp> clear();
 
             CompletionStage<ManualVad> commit();
 

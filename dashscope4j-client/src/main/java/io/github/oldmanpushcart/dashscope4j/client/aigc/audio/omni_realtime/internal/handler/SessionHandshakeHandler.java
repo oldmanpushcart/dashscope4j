@@ -88,7 +88,10 @@ public class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeCli
                 if (output instanceof OmniRealtimeSessionUpdatedServerEvent event) {
                     changeState(state, State.HANDSHAKE_COMPLETED);
                     final var session = event.session();
-                    final var omniRealtimeEmitter = new OmniRealtimeEmitterImpl(emitter, session);
+                    final var newSession = OmniRealtimeSession.newBuilder(session)
+                            .model(session.model())
+                            .build();
+                    final var omniRealtimeEmitter = new OmniRealtimeEmitterImpl(emitter, newSession);
                     delegate.onOpen(omniRealtimeEmitter);
                     yield CompletableFuture.completedStage(null);
                 } else {

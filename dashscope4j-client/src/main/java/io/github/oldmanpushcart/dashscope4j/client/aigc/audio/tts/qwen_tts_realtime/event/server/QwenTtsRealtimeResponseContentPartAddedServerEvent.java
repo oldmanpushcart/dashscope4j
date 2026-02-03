@@ -14,7 +14,7 @@ public class QwenTtsRealtimeResponseContentPartAddedServerEvent extends QwenTtsR
     @JsonCreator
     public QwenTtsRealtimeResponseContentPartAddedServerEvent(
 
-            @JsonProperty("id")
+            @JsonProperty("event_id")
             String id,
 
             @JsonProperty("type")

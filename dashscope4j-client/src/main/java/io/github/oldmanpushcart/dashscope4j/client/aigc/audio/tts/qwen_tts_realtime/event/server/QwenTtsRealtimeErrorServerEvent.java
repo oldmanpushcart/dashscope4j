@@ -10,7 +10,7 @@ public class QwenTtsRealtimeErrorServerEvent extends QwenTtsRealtimeServerEvent 
     @JsonCreator
     public QwenTtsRealtimeErrorServerEvent(
 
-            @JsonProperty("id")
+            @JsonProperty("event_id")
             String id,
 
             @JsonProperty("type")

@@ -1,12 +1,20 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.QwenTtsRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.internal.handler.ManualVadHandler;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.internal.handler.ServerVadHandler;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.internal.handler.SessionHandshakeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
+import java.util.HashMap;
 import java.util.function.Function;
 
 public record QwenTtsRealtimeSession(
@@ -14,8 +22,10 @@ public record QwenTtsRealtimeSession(
         @JsonProperty("id")
         String id,
 
-        @JsonGetter("model")
         QwenTtsRealtimeModel model,
+
+        @JsonProperty("mode")
+        Mode mode,
 
         @JsonProperty("voice")
         String voice,
@@ -47,6 +57,7 @@ public record QwenTtsRealtimeSession(
         this(
                 null,
                 builder.model,
+                builder.mode,
                 builder.voice,
                 builder.language,
                 builder.responseFormat,
@@ -60,7 +71,34 @@ public record QwenTtsRealtimeSession(
 
     @Override
     public Function<Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent>, Realtime.Handler<String, String>> provider() {
-        return null;
+        return handler ->
+                new CodecHandler<>(
+                        JacksonJsonUtils::toJson,
+                        s -> {
+                            final var variableMap = new HashMap<String,Object>();
+                            variableMap.put("dashscope/model", model);
+                            return JacksonJsonUtils.toObject(variableMap, s, QwenTtsRealtimeServerEvent.class);
+                        },
+                        new SessionHandshakeHandler(this, handlerFactory(handler))
+                );
+    }
+
+    private Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> handlerFactory(Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> handler) {
+        if (null == mode || mode == Mode.SERVER_COMMIT) {
+            return new ServerVadHandler(handler);
+        } else {
+            return new ManualVadHandler(handler);
+        }
+    }
+
+    public enum Mode {
+
+        @JsonProperty("commit")
+        COMMIT,
+
+        @JsonProperty("server_commit")
+        SERVER_COMMIT
+
     }
 
     public enum ResponseFormat {
@@ -79,9 +117,18 @@ public record QwenTtsRealtimeSession(
 
     }
 
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static Builder newBuilder(QwenTtsRealtimeSession session) {
+        return new Builder(session);
+    }
+
     public static class Builder implements Buildable<QwenTtsRealtimeSession, Builder> {
 
         private QwenTtsRealtimeModel model;
+        private Mode mode;
         private String voice;
         private String language;
         private ResponseFormat responseFormat;
@@ -97,6 +144,7 @@ public record QwenTtsRealtimeSession(
 
         public Builder(QwenTtsRealtimeSession session) {
             this.model = session.model;
+            this.mode = session.mode;
             this.voice = session.voice;
             this.language = session.language;
             this.responseFormat = session.responseFormat;
@@ -109,6 +157,11 @@ public record QwenTtsRealtimeSession(
 
         public Builder model(QwenTtsRealtimeModel model) {
             this.model = model;
+            return this;
+        }
+
+        public Builder mode(Mode mode) {
+            this.mode = mode;
             return this;
         }
 

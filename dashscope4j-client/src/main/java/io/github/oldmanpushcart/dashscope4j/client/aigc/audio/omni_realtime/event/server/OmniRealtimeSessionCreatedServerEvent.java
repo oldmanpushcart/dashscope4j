@@ -10,7 +10,7 @@ public class OmniRealtimeSessionCreatedServerEvent extends OmniRealtimeServerEve
 
     @JsonCreator
     public OmniRealtimeSessionCreatedServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("session") OmniRealtimeSession session
 

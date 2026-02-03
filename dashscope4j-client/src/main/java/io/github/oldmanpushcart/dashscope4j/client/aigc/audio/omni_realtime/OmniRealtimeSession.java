@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.OmniRealtimeClientEvent;
@@ -18,6 +17,7 @@ import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
@@ -29,8 +29,6 @@ public record OmniRealtimeSession(
         @JsonProperty("id")
         String id,
 
-        @JsonProperty("model")
-        @JsonGetter
         OmniRealtimeModel model,
 
         @JsonProperty("modalities")
@@ -100,10 +98,7 @@ public record OmniRealtimeSession(
                 new CodecHandler<>(
                         JacksonJsonUtils::toJson,
                         s -> JacksonJsonUtils.toObject(s, OmniRealtimeServerEvent.class),
-                        new SessionHandshakeHandler(
-                                this,
-                                handlerFactory(handler)
-                        )
+                        new SessionHandshakeHandler(this, handlerFactory(handler))
                 );
     }
 

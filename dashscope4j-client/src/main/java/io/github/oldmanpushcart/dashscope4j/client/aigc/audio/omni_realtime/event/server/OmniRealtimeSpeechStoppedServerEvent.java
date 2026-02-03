@@ -14,7 +14,7 @@ public class OmniRealtimeSpeechStoppedServerEvent extends OmniRealtimeServerEven
 
     @JsonCreator
     public OmniRealtimeSpeechStoppedServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("item_id") String itemId,
 

@@ -10,7 +10,7 @@ public class QwenTtsRealtimeBufferCommittedServerEvent extends QwenTtsRealtimeSe
     @JsonCreator
     public QwenTtsRealtimeBufferCommittedServerEvent(
 
-            @JsonProperty("id")
+            @JsonProperty("event_id")
             String id,
 
             @JsonProperty("type")

@@ -19,7 +19,7 @@ public class QwenTtsRealtimeResponseAudioDeltaServerEvent extends QwenTtsRealtim
     @JsonCreator
     public QwenTtsRealtimeResponseAudioDeltaServerEvent(
 
-            @JsonProperty("id")
+            @JsonProperty("event_id")
             String id,
 
             @JsonProperty("type")

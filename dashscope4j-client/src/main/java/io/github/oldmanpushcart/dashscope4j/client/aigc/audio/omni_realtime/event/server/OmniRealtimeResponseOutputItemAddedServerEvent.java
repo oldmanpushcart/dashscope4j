@@ -9,7 +9,7 @@ public class OmniRealtimeResponseOutputItemAddedServerEvent extends OmniRealtime
     private final Item item;
 
     public OmniRealtimeResponseOutputItemAddedServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("response_id") String responseId,
             @JsonProperty("output_index") int outputIndex,

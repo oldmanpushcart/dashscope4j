@@ -13,7 +13,7 @@ public class OmniRealtimeResponseAudioTranscriptDoneServerEvent extends OmniReal
 
     @JsonCreator
     public OmniRealtimeResponseAudioTranscriptDoneServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type,
             @JsonProperty("response_id") String responseId,
             @JsonProperty("item_id") String itemId,

@@ -12,7 +12,7 @@ public class QwenTtsRealtimeResponseOutputItemAddedServerEvent extends QwenTtsRe
     @JsonCreator
     public QwenTtsRealtimeResponseOutputItemAddedServerEvent(
 
-            @JsonProperty("id")
+            @JsonProperty("event_id")
             String id,
 
             @JsonProperty("type")

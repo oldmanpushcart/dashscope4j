@@ -7,13 +7,13 @@ public class QwenTtsRealtimeResponseAudioDoneServerEvent extends QwenTtsRealtime
 
     private final String responseId;
     private final String itemId;
-    private final String outputIndex;
-    private final String contentIndex;
+    private final int outputIndex;
+    private final int contentIndex;
 
     @JsonCreator
     public QwenTtsRealtimeResponseAudioDoneServerEvent(
 
-            @JsonProperty("id")
+            @JsonProperty("event_id")
             String id,
 
             @JsonProperty("type")
@@ -22,14 +22,14 @@ public class QwenTtsRealtimeResponseAudioDoneServerEvent extends QwenTtsRealtime
             @JsonProperty("response_id")
             String responseId,
 
-            @JsonProperty
+            @JsonProperty("item_id")
             String itemId,
 
             @JsonProperty("output_index")
-            String outputIndex,
+            int outputIndex,
 
             @JsonProperty("content_index")
-            String contentIndex
+            int contentIndex
 
     ) {
         super(id, type);
@@ -47,11 +47,11 @@ public class QwenTtsRealtimeResponseAudioDoneServerEvent extends QwenTtsRealtime
         return itemId;
     }
 
-    public String getOutputIndex() {
+    public int getOutputIndex() {
         return outputIndex;
     }
 
-    public String getContentIndex() {
+    public int getContentIndex() {
         return contentIndex;
     }
 

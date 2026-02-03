@@ -7,7 +7,7 @@ public class OmniRealtimeBufferClearedServerEvent extends OmniRealtimeServerEven
 
     @JsonCreator
     public OmniRealtimeBufferClearedServerEvent(
-            @JsonProperty("id") String id,
+            @JsonProperty("event_id") String id,
             @JsonProperty("type") String type
     ) {
         super(id, type);
