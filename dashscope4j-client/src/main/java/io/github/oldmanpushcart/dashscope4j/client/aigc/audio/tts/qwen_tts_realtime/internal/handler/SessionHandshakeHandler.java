@@ -67,11 +67,6 @@ public class SessionHandshakeHandler implements Realtime.Handler<QwenTtsRealtime
             return CompletableFuture.failedStage(cause);
         }
 
-        if (output instanceof QwenTtsRealtimeSessionFinishedServerEvent) {
-            emitter.close();
-            return CompletableFuture.completedStage(null);
-        }
-
         final var s = state.get();
         return switch (s) {
             case AWAITING_SESSION_CREATED -> {
@@ -183,7 +178,8 @@ public class SessionHandshakeHandler implements Realtime.Handler<QwenTtsRealtime
             final var event = new QwenTtsRealtimeSessionFinishClientEvent(genUUID22());
             return delegate.emit(event)
                     .thenCompose(unused -> finishF)
-                    .whenComplete((unused, ex) -> unregister(KEY_SESSION_FINISHED, ex));
+                    .whenComplete((unused, ex) -> unregister(KEY_SESSION_FINISHED, ex))
+                    .thenCompose(unused-> delegate.emitClose());
         }
 
         @Override
