@@ -1,16 +1,26 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.OmniRealtimeClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.internal.handler.ManualVadHandler;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.internal.handler.ServerVadHandler;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.internal.handler.SessionHandshakeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.DurationMsJsonDeserializer;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.DurationMsJsonSerializer;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
@@ -20,7 +30,8 @@ public record OmniRealtimeSession(
         String id,
 
         @JsonProperty("model")
-        String model,
+        @JsonGetter
+        OmniRealtimeModel model,
 
         @JsonProperty("modalities")
         Set<Modality> modalities,
@@ -61,12 +72,12 @@ public record OmniRealtimeSession(
         @JsonProperty("turn_detection")
         TurnDetection turnDetection
 
-) {
+) implements Realtime.Session<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
 
     private OmniRealtimeSession(Builder builder) {
         this(
                 null,
-                null,
+                builder.model,
                 builder.modalities,
                 builder.voice,
                 builder.inputAudioFormat,
@@ -81,6 +92,28 @@ public record OmniRealtimeSession(
                 builder.temperature,
                 builder.turnDetection
         );
+    }
+
+    @Override
+    public Function<Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent>, Realtime.Handler<String, String>> provider() {
+        return handler ->
+                new CodecHandler<>(
+                        JacksonJsonUtils::toJson,
+                        s -> JacksonJsonUtils.toObject(s, OmniRealtimeServerEvent.class),
+                        new SessionHandshakeHandler(
+                                this,
+                                handlerFactory(handler)
+                        )
+                );
+    }
+
+    private Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handlerFactory(Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handler) {
+        if (null == turnDetection
+                || OmniRealtimeSession.TurnDetection.Type.SERVER_VAD == turnDetection.type()) {
+            return new ServerVadHandler(handler);
+        } else {
+            return new ManualVadHandler(handler);
+        }
     }
 
     /**
@@ -150,6 +183,7 @@ public record OmniRealtimeSession(
     public static class Builder implements Buildable<OmniRealtimeSession, Builder> {
 
         private final Set<Modality> modalities = new HashSet<>(Set.of(Modality.TEXT, Modality.AUDIO));
+        private OmniRealtimeModel model;
         private String voice = "Cherry";
         private AudioFormat inputAudioFormat;
         private AudioFormat outputAudioFormat;
@@ -169,6 +203,7 @@ public record OmniRealtimeSession(
 
         public Builder(OmniRealtimeSession session) {
             modalities.addAll(session.modalities);
+            model = session.model;
             voice = session.voice;
             inputAudioFormat = session.inputAudioFormat;
             outputAudioFormat = session.outputAudioFormat;
@@ -181,6 +216,11 @@ public record OmniRealtimeSession(
             topP = session.topP;
             temperature = session.temperature;
             turnDetection = session.turnDetection;
+        }
+
+        public Builder model(OmniRealtimeModel model) {
+            this.model = model;
+            return this;
         }
 
         public Builder modalities(Modality... modalities) {

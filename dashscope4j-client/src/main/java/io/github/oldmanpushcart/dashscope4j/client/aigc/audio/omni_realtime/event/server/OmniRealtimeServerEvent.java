@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.github.oldmanpushcart.dashscope4j.client.api.Usage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.OmniRealtimeEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.Usage;
 
 import java.util.List;
 import java.util.Set;

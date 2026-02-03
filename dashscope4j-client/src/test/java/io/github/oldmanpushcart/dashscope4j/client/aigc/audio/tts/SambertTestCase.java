@@ -20,43 +20,42 @@ public class SambertTestCase implements LoadingEnv {
     @Test
     public void test$sambert() throws IOException, InterruptedException {
 
+        final var session = SambertSession.newBuilder()
+                .model(SambertModel.ZHINAN)
+                .text("床前明月光，疑似地上霜。举头望明月，低头思故乡。")
+                .addParameter(SambertParameterKeys.FORMAT, SambertParameterKeys.Format.PCM)
+                .addParameter(SambertParameterKeys.SAMPLE_RATE, 8000)
+                .build();
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
-            client.realtime(
-                            SambertModel.ZHINAN,
-                            SambertSession.newBuilder()
-                                    .text("床前明月光，疑似地上霜。举头望明月，低头思故乡。")
-                                    .addParameter(SambertParameterKeys.FORMAT, SambertParameterKeys.Format.PCM)
-                                    .addParameter(SambertParameterKeys.SAMPLE_RATE, 8000)
-                                    .build(),
-                            new Realtime.Handler<>() {
+            client.realtime(session, new Realtime.Handler<>() {
 
-                                @Override
-                                public void onOpen(Realtime.Emitter<SambertModel.In> emitter) {
+                        @Override
+                        public void onOpen(Realtime.Emitter<SambertModel.In> emitter) {
 
-                                }
+                        }
 
-                                @Override
-                                public CompletionStage<Void> onData(SambertModel.Out output) {
-                                    return CompletableFuture.completedStage(null);
-                                }
+                        @Override
+                        public CompletionStage<Void> onData(SambertModel.Out output) {
+                            return CompletableFuture.completedStage(null);
+                        }
 
-                                @Override
-                                public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                                    final var bytes = new byte[1024];
-                                    while (buffer.hasRemaining()) {
-                                        int len = Math.min(buffer.remaining(), bytes.length);
-                                        buffer.get(bytes, 0, len);
-                                        baos.write(bytes, 0, len);
-                                    }
-                                    return CompletableFuture.completedStage(null);
-                                }
+                        @Override
+                        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+                            final var bytes = new byte[1024];
+                            while (buffer.hasRemaining()) {
+                                int len = Math.min(buffer.remaining(), bytes.length);
+                                buffer.get(bytes, 0, len);
+                                baos.write(bytes, 0, len);
+                            }
+                            return CompletableFuture.completedStage(null);
+                        }
 
-                                @Override
-                                public void onClosed(Throwable ex) {
-                                }
+                        @Override
+                        public void onClosed(Throwable ex) {
+                        }
 
-                            })
+                    })
                     .thenCompose(Realtime.Connection::closeFuture)
                     .toCompletableFuture()
                     .join();

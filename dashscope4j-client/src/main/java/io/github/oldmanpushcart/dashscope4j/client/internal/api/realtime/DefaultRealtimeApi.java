@@ -1,8 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.realtime;
 
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeModel;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.slf4j.Logger;
@@ -30,10 +29,10 @@ public class DefaultRealtimeApi implements RealtimeApi {
     }
 
     @Override
-    public <S, I, O> CompletionStage<? extends Realtime.Connection> realtime(RealtimeModel<S, I, O> model, S session, Realtime.Handler<I, O> handler) {
+    public <I, O> CompletionStage<? extends Realtime.Connection> realtime(Realtime.Session<I,O> session, Realtime.Handler<I, O> handler) {
         final var id = UUIDUtils.genUUID22();
-        final var endpoint = EndpointUtils.wss(host, model.path());
-        final var stringHandler = model.provider().apply(session, handler);
+        final var endpoint = EndpointUtils.wss(host, session.model().path());
+        final var stringHandler = session.provider().apply(handler);
         final var listener = new ListenerImpl(id, endpoint, stringHandler);
         return http.newWebSocketBuilder()
                 .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)

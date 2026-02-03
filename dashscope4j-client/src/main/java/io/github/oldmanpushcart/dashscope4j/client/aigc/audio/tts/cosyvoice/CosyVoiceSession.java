@@ -2,11 +2,16 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandler;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.util.HashMap;
+import java.util.function.Function;
 
-public class CosyVoiceSession {
+public class CosyVoiceSession implements Realtime.Session<CosyVoiceModel.In, CosyVoiceModel.Out> {
 
     private final CosyVoiceModel model;
     private final Parameters parameters;
@@ -14,6 +19,27 @@ public class CosyVoiceSession {
     public CosyVoiceSession(Builder builder) {
         this.model = builder.model;
         this.parameters = builder.parameters.unmodifiable();
+    }
+
+    @Override
+    public Function<Realtime.Handler<CosyVoiceModel.In, CosyVoiceModel.Out>, Realtime.Handler<String, String>> provider() {
+        return  handler -> {
+            final var newSession = CosyVoiceSession.newBuilder(this)
+                    .parameters(new Parameters()
+                            .merge(model.parameters())
+                            .merge(parameters)
+                            .append("text_type", "PlainText"))
+                    .build();
+            return new CommandHandler(
+                    CommandHandler.Mode.DUPLEX,
+                    newSession,
+                    new CodecHandler<>(
+                            JacksonJsonUtils::toJson,
+                            s -> JacksonJsonUtils.toObject(s, CosyVoiceModel.Out.class),
+                            handler
+                    )
+            );
+        };
     }
 
     @JsonProperty("task_group")
@@ -37,7 +63,7 @@ public class CosyVoiceSession {
     }
 
     @JsonProperty("model")
-    CosyVoiceModel model() {
+    public CosyVoiceModel model() {
         return model;
     }
 
@@ -84,7 +110,7 @@ public class CosyVoiceSession {
             return this;
         }
 
-        Builder model(CosyVoiceModel model) {
+        public Builder model(CosyVoiceModel model) {
             this.model = model;
             return this;
         }

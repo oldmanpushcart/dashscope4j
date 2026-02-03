@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.Parameters.SimpleParameterKey;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.api.Parameters.SimpleParameterKey;
 
 public interface ChatParameterKeys {
 

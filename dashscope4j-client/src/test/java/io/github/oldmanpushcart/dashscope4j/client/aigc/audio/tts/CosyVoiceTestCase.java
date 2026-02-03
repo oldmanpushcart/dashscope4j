@@ -14,24 +14,20 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
 
 public class CosyVoiceTestCase implements LoadingEnv {
 
     @Test
     public void test$cosy_voice() throws IOException, InterruptedException {
-
+        final var session = CosyVoiceSession.newBuilder()
+                .model(CosyVoiceModel.COSYVOICE_V3_FLASH)
+                .addParameter(CosyVoiceParameterKeys.VOICE, "longanyang")
+                .addParameter(CosyVoiceParameterKeys.WORD_TIMESTAMP_ENABLED, true)
+                .addParameter(CosyVoiceParameterKeys.FORMAT, CosyVoiceParameterKeys.Format.PCM)
+                .addParameter(CosyVoiceParameterKeys.SAMPLE_RATE, 8000)
+                .build();
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-
-            client.realtime(
-                            CosyVoiceModel.COSYVOICE_V3_FLASH,
-                            CosyVoiceSession.newBuilder()
-                                    .addParameter(CosyVoiceParameterKeys.VOICE, "longanyang")
-                                    .addParameter(CosyVoiceParameterKeys.WORD_TIMESTAMP_ENABLED, true)
-                                    .addParameter(CosyVoiceParameterKeys.FORMAT, CosyVoiceParameterKeys.Format.PCM)
-                                    .addParameter(CosyVoiceParameterKeys.SAMPLE_RATE, 8000)
-                                    .build(),
-                            new Realtime.Handler<>() {
+            client.realtime(session, new Realtime.Handler<>() {
 
                                 @Override
                                 public void onOpen(Realtime.Emitter<CosyVoiceModel.In> emitter) {

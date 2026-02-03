@@ -2,9 +2,15 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandler;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
-public class SambertSession {
+import java.util.function.Function;
+
+public class SambertSession implements Realtime.Session<SambertModel.In, SambertModel.Out> {
 
     private final SambertModel model;
     private final Parameters parameters;
@@ -14,6 +20,27 @@ public class SambertSession {
         this.model = builder.model;
         this.parameters = builder.parameters.unmodifiable();
         this.text = builder.text;
+    }
+
+    @Override
+    public Function<Realtime.Handler<SambertModel.In, SambertModel.Out>, Realtime.Handler<String, String>> provider() {
+        return handler -> {
+            final var newSession = SambertSession.newBuilder(SambertSession.this)
+                    .parameters(new Parameters()
+                            .merge(model.parameters())
+                            .merge(parameters)
+                            .append("text_type", "PlainText"))
+                    .build();
+            return new CommandHandler(
+                    CommandHandler.Mode.OUT,
+                    newSession,
+                    new CodecHandler<>(
+                            JacksonJsonUtils::toJson,
+                            s -> JacksonJsonUtils.toObject(s, SambertModel.Out.class),
+                            handler
+                    )
+            );
+        };
     }
 
     @JsonProperty("task_group")
@@ -32,7 +59,7 @@ public class SambertSession {
     }
 
     @JsonProperty("model")
-    SambertModel model() {
+    public SambertModel model() {
         return model;
     }
 
@@ -102,7 +129,7 @@ public class SambertSession {
             return this;
         }
 
-        Builder model(SambertModel model) {
+        public Builder model(SambertModel model) {
             this.model = model;
             return this;
         }

@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v.interceptor;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2v.TextToVideoModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 
 import java.util.concurrent.CompletionStage;
 

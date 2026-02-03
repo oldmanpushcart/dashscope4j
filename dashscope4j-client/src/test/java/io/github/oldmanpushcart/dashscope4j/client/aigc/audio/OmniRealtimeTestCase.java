@@ -5,11 +5,11 @@ import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeEmitter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeSession;
-import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeConnector;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.OmniRealtimeClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.OmniRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.handler.SimpleOmniRealtimeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeConnector;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
@@ -17,7 +17,9 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.time.Duration;
@@ -33,6 +35,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
         final var audioFile = new File("./test-data/audio/tell-me-what-you-see.wav");
         final var completed = new CompletableFuture<String>();
         final var session = OmniRealtimeSession.newBuilder()
+                .model(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME)
                 .turnDetection(OmniRealtimeSession.TurnDetection.MANUAL_VAD)
                 .build();
 
@@ -41,7 +44,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
             RealtimeConnector.newBuilder()
                     .reconnectStrategy((attempt, ex) -> Duration.ofSeconds(1L))
                     .connectionFactory(() ->
-                            client.realtime(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME, session, new SimpleOmniRealtimeHandler() {
+                            client.realtime(session, new SimpleOmniRealtimeHandler() {
 
                                 private final byte[] bytes = new byte[1024];
                                 private final StringBuilder stringBuf = new StringBuilder();
@@ -127,71 +130,70 @@ public class OmniRealtimeTestCase implements LoadingEnv {
 
         final var image = ImageIO.read(new File("./test-data/image/red-cup.jpeg"));
         final var audio = new File("./test-data/audio/tell-me-what-you-see.pcm");
-        client.realtime(
-                        OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME,
-                        OmniRealtimeSession.newBuilder()
-                                .turnDetection(OmniRealtimeSession.TurnDetection.SERVER_VAD)
-                                .build(),
-                        new SimpleOmniRealtimeHandler() {
+        final var session = OmniRealtimeSession.newBuilder()
+                .model(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME)
+                .turnDetection(OmniRealtimeSession.TurnDetection.SERVER_VAD)
+                .build();
+        client.realtime(session, new SimpleOmniRealtimeHandler() {
 
-                            @Override
-                            public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> emitter) {
+                    @Override
+                    public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> emitter) {
 
-                                final var serverVad = (OmniRealtimeEmitter.ServerVad) emitter;
+                        final var serverVad = (OmniRealtimeEmitter.ServerVad) emitter;
 
-                                new Thread(() -> {
+                        new Thread(() -> {
 
-                                    final var format = new AudioFormat(16000, 16, 1, true, false);
-                                    final var bytes = new byte[10240];
+                            final var format = new AudioFormat(16000, 16, 1, true, false);
+                            final var bytes = new byte[10240];
 
-                                    TargetDataLine target = null;
-                                    try {
-                                        target = AudioSystem.getTargetDataLine(format);
-                                        target.open(format);
-                                        target.start();
+                            TargetDataLine target = null;
+                            try {
+                                target = AudioSystem.getTargetDataLine(format);
+                                target.open(format);
+                                target.start();
 
-                                        while (!Thread.currentThread().isInterrupted()) {
-                                            final var bytesRead = target.read(bytes, 0, bytes.length);
-                                            if (bytesRead > 0) {
-                                                serverVad.audio(bytes, 0, bytesRead);
-                                            }
-                                        }
-
-                                    } catch (LineUnavailableException ex) {
-                                        ex.printStackTrace();
-                                        emitter.emitClose(ex);
+                                while (!Thread.currentThread().isInterrupted()) {
+                                    final var bytesRead = target.read(bytes, 0, bytes.length);
+                                    if (bytesRead > 0) {
+                                        serverVad.audio(bytes, 0, bytesRead);
                                     }
+                                }
 
-                                }).start();
-
-
+                            } catch (LineUnavailableException ex) {
+                                ex.printStackTrace();
+                                emitter.emitClose(ex);
                             }
 
-                            @Override
-                            public void onClosed(Throwable ex) {
+                        }).start();
 
-                            }
 
-                            @Override
-                            public CompletionStage<Void> onResponseTextDelta(String responseId, String delta) {
-                                return CompletableFuture.completedStage(null);
-                            }
+                    }
 
-                            @Override
-                            public CompletionStage<Void> onResponseAudioDelta(String responseId, ByteBuffer delta) {
-                                return CompletableFuture.completedStage(null);
-                            }
+                    @Override
+                    public void onClosed(Throwable ex) {
 
-                            @Override
-                            public CompletionStage<Void> onResponseCreated(String responseId) {
-                                return CompletableFuture.completedStage(null);
-                            }
+                    }
 
-                            @Override
-                            public CompletionStage<Void> onResponseFinished(String responseId, OmniRealtimeServerEvent.Status status) {
-                                return CompletableFuture.completedStage(null);
-                            }
-                        })
+                    @Override
+                    public CompletionStage<Void> onResponseTextDelta(String responseId, String delta) {
+                        return CompletableFuture.completedStage(null);
+                    }
+
+                    @Override
+                    public CompletionStage<Void> onResponseAudioDelta(String responseId, ByteBuffer delta) {
+                        return CompletableFuture.completedStage(null);
+                    }
+
+                    @Override
+                    public CompletionStage<Void> onResponseCreated(String responseId) {
+                        return CompletableFuture.completedStage(null);
+                    }
+
+                    @Override
+                    public CompletionStage<Void> onResponseFinished(String responseId, OmniRealtimeServerEvent.Status status) {
+                        return CompletableFuture.completedStage(null);
+                    }
+                })
                 .thenCompose(Realtime.Connection::closeFuture)
                 .toCompletableFuture()
                 .join();

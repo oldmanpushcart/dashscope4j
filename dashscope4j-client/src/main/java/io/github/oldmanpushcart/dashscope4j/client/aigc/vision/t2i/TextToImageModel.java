@@ -2,8 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.vision.t2i;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.api.Ret;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.Ret;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.URI;

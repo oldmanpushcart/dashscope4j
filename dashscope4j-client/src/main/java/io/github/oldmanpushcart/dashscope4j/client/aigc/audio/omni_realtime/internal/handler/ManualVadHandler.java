@@ -5,8 +5,8 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.Omni
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.FutureSlot;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.FutureSlot;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.awt.image.BufferedImage;

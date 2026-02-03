@@ -2,9 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.api.AigcModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.AigcModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.internal.interceptor.InlineFilesInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.internal.interceptor.SettingInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.internal.interceptor.UploadFilesInterceptor;
@@ -14,6 +11,9 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.internal.intercepto
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcModelTags;
+import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 

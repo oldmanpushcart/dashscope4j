@@ -1,14 +1,17 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.realtime;
 
+import io.github.oldmanpushcart.dashscope4j.client.api.Model;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 public interface Realtime {
 
-    interface Connection extends AutoCloseable{
+    interface Connection extends AutoCloseable {
 
         String id();
+
         boolean isClosed();
 
         @Override
@@ -30,9 +33,9 @@ public interface Realtime {
 
     }
 
-    class MapEmitter<I,UI> implements Emitter<UI> {
+    class MapEmitter<I, UI> implements Emitter<UI> {
 
-        private final Function<UI,I> mapper;
+        private final Function<UI, I> mapper;
         private final Emitter<I> delegate;
 
         public MapEmitter(Function<UI, I> mapper, Emitter<I> delegate) {
@@ -92,6 +95,14 @@ public interface Realtime {
         CompletionStage<Void> onBinary(ByteBuffer buffer);
 
         void onClosed(Throwable ex);
+
+    }
+
+    interface Session<I, O> {
+
+        Model<I, O> model();
+
+        Function<Handler<I, O>, Handler<String, String>> provider();
 
     }
 

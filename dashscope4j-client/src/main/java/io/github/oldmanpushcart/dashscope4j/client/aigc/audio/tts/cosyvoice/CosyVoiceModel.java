@@ -2,20 +2,13 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.timespan.Sentence;
-import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
+import io.github.oldmanpushcart.dashscope4j.client.api.Model;
 import io.github.oldmanpushcart.dashscope4j.client.api.Usage;
-import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
-import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandler;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
-
-import java.util.function.BiFunction;
 
 public record CosyVoiceModel(
         String name,
         String path
-) implements RealtimeModel<CosyVoiceSession, CosyVoiceModel.In, CosyVoiceModel.Out> {
+) implements Model<CosyVoiceModel.In, CosyVoiceModel.Out> {
 
     private static final String PATH = "/api-ws/v1/inference/";
 
@@ -27,28 +20,6 @@ public record CosyVoiceModel(
     public CosyVoiceModel(String name) {
         this(name, PATH);
     }
-
-    @Override
-    public BiFunction<CosyVoiceSession, Realtime.Handler<In, Out>, Realtime.Handler<String, String>> provider() {
-        return (session, handler) -> {
-            final var newSession = CosyVoiceSession.newBuilder(session)
-                    .model(this)
-                    .parameters(new Parameters()
-                            .merge(session.parameters())
-                            .append("text_type", "PlainText"))
-                    .build();
-            return new CommandHandler(
-                    CommandHandler.Mode.DUPLEX,
-                    newSession,
-                    new CodecHandler<>(
-                            JacksonJsonUtils::toJson,
-                            s -> JacksonJsonUtils.toObject(s, Out.class),
-                            handler
-                    )
-            );
-        };
-    }
-
 
     /**
      * 模型输入

@@ -7,7 +7,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.List;
 import java.util.Set;
 
-public interface AigcModel<I, O> extends Model {
+public interface AigcModel<I, O> extends Model<I,O> {
 
     /**
      * 模型标签
