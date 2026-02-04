@@ -39,7 +39,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                 .turnDetection(OmniRealtimeSession.TurnDetection.MANUAL_VAD)
                 .build();
 
-        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+        try (final var baos = new ByteArrayOutputStream()) {
 
             RealtimeConnector.newBuilder()
                     .reconnectStrategy((attempt, ex) -> Duration.ofSeconds(1L))

@@ -26,7 +26,7 @@ public class SambertTestCase implements LoadingEnv {
                 .addParameter(SambertParameterKeys.FORMAT, SambertParameterKeys.Format.PCM)
                 .addParameter(SambertParameterKeys.SAMPLE_RATE, 8000)
                 .build();
-        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+        try (final var baos = new ByteArrayOutputStream()) {
 
             client.realtime(session, new Realtime.Handler<>() {
 

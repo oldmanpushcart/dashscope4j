@@ -26,7 +26,7 @@ public class CosyVoiceTestCase implements LoadingEnv {
                 .addParameter(CosyVoiceParameterKeys.FORMAT, CosyVoiceParameterKeys.Format.PCM)
                 .addParameter(CosyVoiceParameterKeys.SAMPLE_RATE, 8000)
                 .build();
-        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+        try (final var baos = new ByteArrayOutputStream()) {
             client.realtime(session, new Realtime.Handler<>() {
 
                                 @Override

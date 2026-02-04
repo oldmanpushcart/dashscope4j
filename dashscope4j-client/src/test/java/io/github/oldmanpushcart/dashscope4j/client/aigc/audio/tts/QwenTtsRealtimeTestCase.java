@@ -38,24 +38,33 @@ public class QwenTtsRealtimeTestCase implements LoadingEnv {
                 @Override
                 public void onOpen(Realtime.Emitter<QwenTtsRealtimeClientEvent> emitter) {
                     final var manualVad = (QwenTtsRealtimeEmitter.ManualVad) emitter;
-                    manualVad
-                            .newInput()
 
+                    CompletableFuture.completedStage(manualVad)
+
+                            .thenCompose(QwenTtsRealtimeEmitter.ManualVad::newInput)
                             .thenCompose(inputOp -> inputOp.text("请问今天星期几?"))
                             .thenCompose(QwenTtsRealtimeEmitter.ManualVad.InputOp::clear)
 
-                            .thenCompose(inputOp-> inputOp.text("床前明月光，"))
+                            .thenCompose(inputOp -> inputOp.text("床前明月光，"))
                             .thenCompose(inputOp -> inputOp.text("疑似地上霜。"))
                             .thenCompose(inputOp -> inputOp.text("举头望明月，"))
                             .thenCompose(inputOp -> inputOp.text("低头思故乡。"))
                             .thenCompose(QwenTtsRealtimeEmitter.ManualVad.InputOp::commit)
-                            .thenCompose(QwenTtsRealtimeEmitter::emitClose)
+
+                            .thenCompose(QwenTtsRealtimeEmitter.ManualVad::newInput)
+                            .thenCompose(inputOp -> inputOp.text("锄禾日当午，"))
+                            .thenCompose(inputOp -> inputOp.text("汗滴禾下土。"))
+                            .thenCompose(inputOp -> inputOp.text("谁知盘中餐，"))
+                            .thenCompose(inputOp -> inputOp.text("粒粒皆辛苦。"))
+                            .thenCompose(QwenTtsRealtimeEmitter.ManualVad.InputOp::commit)
+
+                            .thenCompose(Realtime.Emitter::emitClose)
                     ;
                 }
 
                 @Override
                 public CompletionStage<Void> onData(QwenTtsRealtimeServerEvent output) {
-                    if(output instanceof QwenTtsRealtimeResponseAudioDeltaServerEvent event) {
+                    if (output instanceof QwenTtsRealtimeResponseAudioDeltaServerEvent event) {
                         final var buffer = event.delta();
                         final var bytes = new byte[1024];
                         while (buffer.hasRemaining()) {
@@ -74,12 +83,13 @@ public class QwenTtsRealtimeTestCase implements LoadingEnv {
 
                 @Override
                 public void onClosed(Throwable ex) {
-                    if(null == ex) {
+                    if (null == ex) {
                         completeF.complete(null);
                     } else {
                         completeF.completeExceptionally(ex);
                     }
                 }
+
             });
 
             completeF.join();
@@ -87,7 +97,7 @@ public class QwenTtsRealtimeTestCase implements LoadingEnv {
             final var tempF = Files.createTempFile("test_audio_", ".pcm");
             Files.write(tempF, baos.toByteArray());
 
-            DashscopeAssertions.dashscopeAssertAudio(client, tempF.toUri(), "在朗读《静夜思》。");
+            DashscopeAssertions.dashscopeAssertAudio(client, tempF.toUri(), "在朗读《静夜思》和《悯农》。");
 
         }
 
