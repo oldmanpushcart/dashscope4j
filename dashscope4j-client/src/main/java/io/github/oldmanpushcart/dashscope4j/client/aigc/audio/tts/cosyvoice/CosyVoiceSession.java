@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
-import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandler;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandshakeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandshakeHandler.Mode;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
@@ -23,15 +24,15 @@ public class CosyVoiceSession implements Realtime.Session<CosyVoiceModel.In, Cos
 
     @Override
     public Function<Realtime.Handler<CosyVoiceModel.In, CosyVoiceModel.Out>, Realtime.Handler<String, String>> provider() {
-        return  handler -> {
+        return handler -> {
             final var newSession = CosyVoiceSession.newBuilder(this)
                     .parameters(new Parameters()
                             .merge(model.parameters())
                             .merge(parameters)
                             .append("text_type", "PlainText"))
                     .build();
-            return new CommandHandler(
-                    CommandHandler.Mode.DUPLEX,
+            return new CommandHandshakeHandler(
+                    Mode.DUPLEX,
                     newSession,
                     new CodecHandler<>(
                             JacksonJsonUtils::toJson,

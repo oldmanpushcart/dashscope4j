@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.Base64;
-import java.util.stream.Collectors;
 
 public class QwenTtsTestCase implements LoadingEnv {
 

@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
-import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandler;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandshakeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandshakeHandler.Mode;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
@@ -31,8 +32,8 @@ public class SambertSession implements Realtime.Session<SambertModel.In, Sambert
                             .merge(parameters)
                             .append("text_type", "PlainText"))
                     .build();
-            return new CommandHandler(
-                    CommandHandler.Mode.OUT,
+            return new CommandHandshakeHandler(
+                    Mode.OUT,
                     newSession,
                     new CodecHandler<>(
                             JacksonJsonUtils::toJson,

@@ -33,6 +33,55 @@ public interface Realtime {
 
     }
 
+    class DelegateEmitter<I> implements Emitter<I> {
+
+        private final Emitter<I> delegate;
+
+        public DelegateEmitter(Emitter<I> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public CompletionStage<Void> emit(I input) {
+            return delegate.emit(input);
+        }
+
+        @Override
+        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
+            return delegate.emitBinary(buffer);
+        }
+
+        @Override
+        public CompletionStage<Void> emitClose() {
+            return delegate.emitClose();
+        }
+
+        @Override
+        public CompletionStage<Void> emitClose(Throwable ex) {
+            return delegate.emitClose(ex);
+        }
+
+        @Override
+        public String id() {
+            return delegate.id();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return delegate.isClosed();
+        }
+
+        @Override
+        public void close() {
+            delegate.close();
+        }
+
+        @Override
+        public CompletionStage<Void> closeFuture() {
+            return delegate.closeFuture();
+        }
+    }
+
     interface Handler<I, O> {
 
         void onOpen(Emitter<I> emitter);
