@@ -129,8 +129,6 @@ public class OmniRealtimeTestCase implements LoadingEnv {
     @Test
     public void test$omni_realtime$server_vad() throws IOException {
 
-        final var image = ImageIO.read(new File("./test-data/image/red-cup.jpeg"));
-        final var audio = new File("./test-data/audio/tell-me-what-you-see.pcm");
         final var session = OmniRealtimeSession.newBuilder()
                 .model(OmniRealtimeModel.QWEN3_OMNI_FLASH_REALTIME)
                 .turnDetection(OmniRealtimeSession.TurnDetection.SERVER_VAD)

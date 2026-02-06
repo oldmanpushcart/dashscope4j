@@ -35,21 +35,11 @@ public class Constants {
     /**
      * 实时 API 路径
      */
-    public static final String DEFAULT_REALTIME_PATH = "/api-ws/v1/realtime";
+    public static final String REALTIME_PATH = "/api-ws/v1/realtime";
 
     /**
-     * API 路径
+     * 实时 API 路径：推理
      */
-    public static final String API_BASE_PATH = "/api/v1";
-
-    /**
-     * 兼容模式 API 路径
-     */
-    public static final String COMPATIBLE_API_BASE_PATH = "/compatible-mode/v1";
-
-    /**
-     * WebSocket API 路径
-     */
-    public static final String API_WS_BASE_PATH = "/api-ws/v1";
+    public static final String INFERENCE_PATH = "/api-ws/v1/inference";
 
 }

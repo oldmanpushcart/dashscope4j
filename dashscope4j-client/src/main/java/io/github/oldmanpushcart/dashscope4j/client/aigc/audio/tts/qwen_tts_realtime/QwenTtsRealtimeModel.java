@@ -4,7 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realt
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.Model;
 
-import static io.github.oldmanpushcart.dashscope4j.common.Constants.DEFAULT_REALTIME_PATH;
+import static io.github.oldmanpushcart.dashscope4j.common.Constants.REALTIME_PATH;
 
 public record QwenTtsRealtimeModel(
         String name,
@@ -15,7 +15,7 @@ public record QwenTtsRealtimeModel(
     public static final QwenTtsRealtimeModel QWEN3_TTS_REALTIME = new  QwenTtsRealtimeModel("qwen3-tts-realtime");
 
     public QwenTtsRealtimeModel(String name) {
-        this(name, String.format("%s?model=%s".formatted(DEFAULT_REALTIME_PATH, name)));
+        this(name, String.format("%s?model=%s".formatted(REALTIME_PATH, name)));
     }
 
 }

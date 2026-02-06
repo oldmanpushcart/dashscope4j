@@ -64,6 +64,7 @@ public class CosyVoiceSession implements Realtime.Session<CosyVoiceModel.In, Cos
     }
 
     @JsonProperty("model")
+    @Override
     public CosyVoiceModel model() {
         return model;
     }

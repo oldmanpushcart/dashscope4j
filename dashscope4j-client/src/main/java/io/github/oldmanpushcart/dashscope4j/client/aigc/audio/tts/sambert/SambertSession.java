@@ -60,6 +60,7 @@ public class SambertSession implements Realtime.Session<SambertModel.In, Sambert
     }
 
     @JsonProperty("model")
+    @Override
     public SambertModel model() {
         return model;
     }
