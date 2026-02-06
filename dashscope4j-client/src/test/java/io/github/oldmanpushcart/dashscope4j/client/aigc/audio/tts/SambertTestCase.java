@@ -6,12 +6,12 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert.Samber
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert.SambertParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert.SambertSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.DataURI;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -60,10 +60,8 @@ public class SambertTestCase implements LoadingEnv {
                     .toCompletableFuture()
                     .join();
 
-            final var tempF = Files.createTempFile("test_audio_", ".pcm");
-            Files.write(tempF, baos.toByteArray());
-
-            DashscopeAssertions.dashscopeAssertAudio(client, tempF.toUri(), "一个男声在朗读《静夜思》。");
+            final var audioURI = DataURI.from("audio/pcm", baos.toByteArray()).toURI();
+            DashscopeAssertions.dashscopeAssertAudio(client, audioURI, "一个男声在朗读《静夜思》。");
 
         }
 

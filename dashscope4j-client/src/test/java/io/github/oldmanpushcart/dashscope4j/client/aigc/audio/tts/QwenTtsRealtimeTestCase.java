@@ -9,12 +9,12 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realt
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeResponseAudioDeltaServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.DataURI;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -94,10 +94,8 @@ public class QwenTtsRealtimeTestCase implements LoadingEnv {
 
             completeF.join();
 
-            final var tempF = Files.createTempFile("test_audio_", ".pcm");
-            Files.write(tempF, baos.toByteArray());
-
-            DashscopeAssertions.dashscopeAssertAudio(client, tempF.toUri(), "在朗读《静夜思》和《悯农》。");
+            final var audioURI = DataURI.from("audio/pcm", baos.toByteArray()).toURI();
+            DashscopeAssertions.dashscopeAssertAudio(client, audioURI, "在朗读《静夜思》和《悯农》。");
 
         }
 

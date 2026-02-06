@@ -5,11 +5,9 @@ import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts.QwenTtsModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.DataURI;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-import java.util.Base64;
 
 public class QwenTtsTestCase implements LoadingEnv {
 
@@ -46,10 +44,8 @@ public class QwenTtsTestCase implements LoadingEnv {
                 .toCompletableFuture()
                 .join();
         final var buffer = response.output().audio().data();
-        final var bytes = new byte[buffer.remaining()];
-        buffer.get(bytes);
-        final var base64 = Base64.getEncoder().encodeToString(bytes);
-        final var audioURI = URI.create("data:audio/pcm;base64,%s".formatted(base64));
+
+        final var audioURI = DataURI.from("audio/pcm", buffer).toURI();
         DashscopeAssertions.dashscopeAssertAudio(client, audioURI, "在朗读《悯农》这首诗。");
 
     }

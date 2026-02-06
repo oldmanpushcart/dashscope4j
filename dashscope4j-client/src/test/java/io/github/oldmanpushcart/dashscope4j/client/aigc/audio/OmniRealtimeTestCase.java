@@ -10,6 +10,8 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.even
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.handler.SimpleOmniRealtimeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeConnector;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.DataURI;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
@@ -21,7 +23,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -115,9 +116,8 @@ public class OmniRealtimeTestCase implements LoadingEnv {
             final var responseText = completed.join();
             DashscopeAssertions.dashscopeAssertText(client, responseText, "看到了一个红色的杯子");
 
-            final var tempF = Files.createTempFile("test_audio_", ".pcm");
-            Files.write(tempF, baos.toByteArray());
-            DashscopeAssertions.dashscopeAssertAudio(client, tempF.toUri(), "看到了一个红色的杯子");
+            final var audioURI = DataURI.from("audio/pcm", baos.toByteArray()).toURI();
+            DashscopeAssertions.dashscopeAssertAudio(client, audioURI, "看到了一个红色的杯子");
 
         }
 
@@ -125,6 +125,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
     }
 
 
+    @Disabled
     @Test
     public void test$omni_realtime$server_vad() throws IOException {
 

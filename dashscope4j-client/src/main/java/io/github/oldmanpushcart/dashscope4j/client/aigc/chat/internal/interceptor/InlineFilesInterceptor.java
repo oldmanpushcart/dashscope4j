@@ -10,6 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Ima
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.VideoContent;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.DataURI;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.codec.AsyncFileBase64Encoder;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
@@ -56,8 +57,8 @@ public class InlineFilesInterceptor implements RewriteUserInputInterceptor {
                                     // 只处理本地文件
                                     if (isFileURI(resourceURI)) {
                                         final var path = Paths.get(resourceURI);
-                                        return AsyncFileBase64Encoder.encode(path)
-                                                .thenApply(base64Str -> URI.create("data:;base64," + base64Str));
+                                        return DataURI.from(path)
+                                                .asyncToURI();
                                     } else {
                                         return CompletableFuture.completedStage(resourceURI);
                                     }
