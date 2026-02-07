@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
@@ -89,6 +90,14 @@ public class CodecHandler<I, O, UI, UO> implements Realtime.Handler<I, O> {
             return delegate.closeFuture();
         }
 
+    }
+
+    public static <I,O> CodecHandler<String,String, I,O> json(Class<I> inType, Class<O> outType, Realtime.Handler<I,O> handler) {
+        return new CodecHandler<>(
+                JacksonJsonUtils::toJson,
+                s -> JacksonJsonUtils.toObject(s, outType),
+                handler
+        );
     }
 
 }

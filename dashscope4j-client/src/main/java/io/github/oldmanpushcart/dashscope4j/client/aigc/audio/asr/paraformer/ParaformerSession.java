@@ -1,11 +1,14 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.paraformer;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.paraformer.ParaformerModel.In;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.paraformer.ParaformerModel.Out;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.HandlerChain;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandshakeHandler;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandshakeHandler.Mode;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.util.ArrayList;
@@ -13,7 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 
-public class ParaformerSession implements Realtime.Session<ParaformerModel.In, ParaformerModel.Out> {
+public class ParaformerSession implements Realtime.Session<In, Out> {
 
     private final ParaformerModel model;
     private final Parameters parameters;
@@ -51,6 +54,15 @@ public class ParaformerSession implements Realtime.Session<ParaformerModel.In, P
         return model;
     }
 
+    @Override
+    public Function<Realtime.Handler<In, Out>, Realtime.Handler<String, String>> provider() {
+        return ioHandler -> HandlerChain.<String, String>identity()
+                .<String, String>then(h -> new CommandHandshakeHandler(Mode.DUPLEX, this, h))
+                .<In, Out>then(h -> CodecHandler.json(In.class, Out.class, h))
+                .filterOutput(o -> o.output().sentence() != null)
+                .build(ioHandler);
+    }
+
     @JsonProperty("parameters")
     public Parameters parameters() {
         return parameters;
@@ -59,20 +71,6 @@ public class ParaformerSession implements Realtime.Session<ParaformerModel.In, P
     @JsonProperty("resources")
     public List<Resource> resources() {
         return resources;
-    }
-
-    @Override
-    public Function<Realtime.Handler<ParaformerModel.In, ParaformerModel.Out>, Realtime.Handler<String, String>> provider() {
-        return handler ->
-                new CommandHandshakeHandler(
-                        CommandHandshakeHandler.Mode.DUPLEX,
-                        this,
-                        new CodecHandler<>(
-                                JacksonJsonUtils::toJson,
-                                s -> JacksonJsonUtils.toObject(s, ParaformerModel.Out.class),
-                                handler
-                        )
-                );
     }
 
     public record Resource(

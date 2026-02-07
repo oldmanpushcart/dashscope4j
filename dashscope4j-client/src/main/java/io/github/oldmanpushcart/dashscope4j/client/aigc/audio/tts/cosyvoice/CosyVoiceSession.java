@@ -1,18 +1,20 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceModel.In;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceModel.Out;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.HandlerChain;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandshakeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandshakeHandler.Mode;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.util.HashMap;
 import java.util.function.Function;
 
-public class CosyVoiceSession implements Realtime.Session<CosyVoiceModel.In, CosyVoiceModel.Out> {
+public class CosyVoiceSession implements Realtime.Session<In, Out> {
 
     private final CosyVoiceModel model;
     private final Parameters parameters;
@@ -23,23 +25,20 @@ public class CosyVoiceSession implements Realtime.Session<CosyVoiceModel.In, Cos
     }
 
     @Override
-    public Function<Realtime.Handler<CosyVoiceModel.In, CosyVoiceModel.Out>, Realtime.Handler<String, String>> provider() {
-        return handler -> {
+    public Function<Realtime.Handler<In, Out>, Realtime.Handler<String, String>> provider() {
+        return ioHandler -> {
             final var newSession = CosyVoiceSession.newBuilder(this)
                     .parameters(new Parameters()
                             .merge(model.parameters())
                             .merge(parameters)
                             .append("text_type", "PlainText"))
                     .build();
-            return new CommandHandshakeHandler(
-                    Mode.DUPLEX,
-                    newSession,
-                    new CodecHandler<>(
-                            JacksonJsonUtils::toJson,
-                            s -> JacksonJsonUtils.toObject(s, CosyVoiceModel.Out.class),
-                            handler
-                    )
-            );
+            return HandlerChain
+                    .<String, String>identity()
+                    .<String, String>then(h -> new CommandHandshakeHandler(Mode.DUPLEX, newSession, h))
+                    .<In, Out>then(h -> CodecHandler.json(In.class, Out.class, h))
+                    .filterOutput(o -> o.output().sentence() != null)
+                    .build(ioHandler);
         };
     }
 

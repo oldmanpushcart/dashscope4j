@@ -8,8 +8,8 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.even
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.internal.handler.ManualVadHandler;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.internal.handler.ServerVadHandler;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.internal.handler.SessionHandshakeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.HandlerChain;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.DurationMsJsonDeserializer;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.DurationMsJsonSerializer;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
@@ -18,6 +18,7 @@ import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -94,11 +95,16 @@ public record OmniRealtimeSession(
     @Override
     public Function<Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent>, Realtime.Handler<String, String>> provider() {
         return handler ->
-                new CodecHandler<>(
-                        JacksonJsonUtils::toJson,
-                        s -> JacksonJsonUtils.toObject(s, OmniRealtimeServerEvent.class),
-                        new SessionHandshakeHandler(this, handlerFactory(handler))
-                );
+                HandlerChain
+                        .<String, String>identity()
+                        .<OmniRealtimeClientEvent, OmniRealtimeServerEvent>map(JacksonJsonUtils::toJson, this::toServerEvent)
+                        .<OmniRealtimeClientEvent, OmniRealtimeServerEvent>then(h -> new SessionHandshakeHandler(this, handlerFactory(h)))
+                        .build(handler);
+    }
+
+    private OmniRealtimeServerEvent toServerEvent(String payload) {
+        final var variableMap = Map.<String, Object>of("dashscope/model", model);
+        return JacksonJsonUtils.toObject(variableMap, payload, OmniRealtimeServerEvent.class);
     }
 
     private Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handlerFactory(Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handler) {

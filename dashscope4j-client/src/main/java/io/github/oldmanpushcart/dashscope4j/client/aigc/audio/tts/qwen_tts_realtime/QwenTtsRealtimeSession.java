@@ -6,12 +6,14 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realt
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.internal.handler.ManualVadHandler;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.internal.handler.ServerVadHandler;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.internal.handler.SessionHandshakeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.HandlerChain;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 public record QwenTtsRealtimeSession(
@@ -69,15 +71,16 @@ public record QwenTtsRealtimeSession(
     @Override
     public Function<Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent>, Realtime.Handler<String, String>> provider() {
         return handler ->
-                new CodecHandler<>(
-                        JacksonJsonUtils::toJson,
-                        s -> {
-                            final var variableMap = new HashMap<String,Object>();
-                            variableMap.put("dashscope/model", model);
-                            return JacksonJsonUtils.toObject(variableMap, s, QwenTtsRealtimeServerEvent.class);
-                        },
-                        new SessionHandshakeHandler(this, handlerFactory(handler))
-                );
+                HandlerChain
+                        .<String, String>identity()
+                        .<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent>map(JacksonJsonUtils::toJson, this::toServerEvent)
+                        .<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent>then(h -> new SessionHandshakeHandler(this, handlerFactory(h)))
+                        .build(handler);
+    }
+
+    private QwenTtsRealtimeServerEvent toServerEvent(String s) {
+        final var variableMap = Map.<String, Object>of("dashscope/model", model);
+        return JacksonJsonUtils.toObject(variableMap, s, QwenTtsRealtimeServerEvent.class);
     }
 
     private Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> handlerFactory(Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> handler) {
