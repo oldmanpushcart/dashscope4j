@@ -2,24 +2,23 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.ParameterSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandshakeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandshakeHandler.Mode;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.util.function.Function;
 
-public class SambertSession implements Realtime.Session<SambertModel.In, SambertModel.Out> {
+public class SambertSession extends ParameterSession<SambertModel.In, SambertModel.Out> {
 
     private final SambertModel model;
-    private final Parameters parameters;
     private final String text;
 
     private SambertSession(Builder builder) {
+        super(builder);
         this.model = builder.model;
-        this.parameters = builder.parameters.unmodifiable();
         this.text = builder.text;
     }
 
@@ -29,7 +28,7 @@ public class SambertSession implements Realtime.Session<SambertModel.In, Sambert
             final var newSession = SambertSession.newBuilder(SambertSession.this)
                     .parameters(new Parameters()
                             .merge(model.parameters())
-                            .merge(parameters)
+                            .merge(parameters())
                             .append("text_type", "PlainText"))
                     .build();
             return new CommandHandshakeHandler(
@@ -74,11 +73,6 @@ public class SambertSession implements Realtime.Session<SambertModel.In, Sambert
         return text;
     }
 
-    @JsonProperty("parameters")
-    public Parameters parameters() {
-        return parameters;
-    }
-
     private record Input(
             @JsonProperty("text")
             String text
@@ -94,7 +88,7 @@ public class SambertSession implements Realtime.Session<SambertModel.In, Sambert
         return new Builder(session);
     }
 
-    public static class Builder implements Buildable<SambertSession, Builder> {
+    public static class Builder extends ParameterSession.Builder<SambertSession, Builder> {
 
         private final Parameters parameters = new Parameters();
         private String text;
@@ -105,25 +99,9 @@ public class SambertSession implements Realtime.Session<SambertModel.In, Sambert
         }
 
         public Builder(SambertSession session) {
-            this.parameters.merge(session.parameters);
+            super(session);
             this.text = session.text;
             this.model = session.model;
-        }
-
-        public Builder parameters(Parameters parameters) {
-            this.parameters.clear();
-            this.parameters.merge(parameters);
-            return this;
-        }
-
-        public Builder addParameter(String name, Object value) {
-            this.parameters.append(name, value);
-            return this;
-        }
-
-        public <T, R> Builder addParameter(Parameters.ParameterKey<T, R> parameterKey, T value) {
-            this.parameters.append(parameterKey, value);
-            return this;
         }
 
         public Builder text(String text) {

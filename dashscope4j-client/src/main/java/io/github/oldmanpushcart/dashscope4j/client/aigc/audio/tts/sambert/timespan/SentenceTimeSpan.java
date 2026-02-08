@@ -7,10 +7,10 @@ import java.util.List;
 public record SentenceTimeSpan(
 
         @JsonProperty("begin_time")
-        int begin,
+        int beginAt,
 
         @JsonProperty("end_time")
-        int end,
+        int endAt,
 
         @JsonProperty("words")
         List<WordTimeSpan> words

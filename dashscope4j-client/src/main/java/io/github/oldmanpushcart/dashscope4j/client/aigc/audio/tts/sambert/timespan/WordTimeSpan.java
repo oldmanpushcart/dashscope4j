@@ -10,10 +10,10 @@ import java.util.List;
 public record WordTimeSpan(
 
         @JsonProperty("begin_time")
-        int begin,
+        int beginAt,
 
         @JsonProperty("end_time")
-        int end,
+        int endAt,
 
         @JsonProperty("text")
         String text,

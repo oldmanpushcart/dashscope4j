@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.paraformer.timespan;
+package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.fun_asr.timespan;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

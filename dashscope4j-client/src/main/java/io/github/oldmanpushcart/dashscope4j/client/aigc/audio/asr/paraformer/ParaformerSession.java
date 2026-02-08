@@ -5,26 +5,25 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.paraformer.Par
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.paraformer.ParaformerModel.Out;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.HandlerChain;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.ParameterSession;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandshakeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CommandHandshakeHandler.Mode;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 
-public class ParaformerSession implements Realtime.Session<In, Out> {
+public class ParaformerSession extends ParameterSession<In, Out> {
 
     private final ParaformerModel model;
-    private final Parameters parameters;
     private final List<Resource> resources;
 
     private ParaformerSession(Builder builder) {
+        super(builder);
         this.model = builder.model;
-        this.parameters = builder.parameters.unmodifiable();
         this.resources = List.copyOf(builder.resources);
     }
 
@@ -56,16 +55,12 @@ public class ParaformerSession implements Realtime.Session<In, Out> {
 
     @Override
     public Function<Realtime.Handler<In, Out>, Realtime.Handler<String, String>> provider() {
-        return ioHandler -> HandlerChain.<String, String>identity()
+        return ioHandler -> HandlerChain
+                .<String, String>identity()
                 .<String, String>then(h -> new CommandHandshakeHandler(Mode.DUPLEX, this, h))
                 .<In, Out>then(h -> CodecHandler.json(In.class, Out.class, h))
                 .filterOutput(o -> o.output().sentence() != null)
                 .build(ioHandler);
-    }
-
-    @JsonProperty("parameters")
-    public Parameters parameters() {
-        return parameters;
     }
 
     @JsonProperty("resources")
@@ -95,7 +90,7 @@ public class ParaformerSession implements Realtime.Session<In, Out> {
         return new Builder(session);
     }
 
-    public static class Builder implements Buildable<ParaformerSession, Builder> {
+    public static class Builder extends ParameterSession.Builder<ParaformerSession, Builder> {
 
         private ParaformerModel model;
         private final Parameters parameters = new Parameters();
@@ -105,29 +100,13 @@ public class ParaformerSession implements Realtime.Session<In, Out> {
         }
 
         public Builder(ParaformerSession session) {
+            super(session);
             this.model = session.model;
-            this.parameters.merge(session.parameters);
             this.resources.addAll(session.resources);
         }
 
         public Builder model(ParaformerModel model) {
             this.model = model;
-            return this;
-        }
-
-        public Builder parameters(Parameters parameters) {
-            this.parameters.clear();
-            this.parameters.merge(parameters);
-            return this;
-        }
-
-        public <T, R> Builder addParameter(Parameters.ParameterKey<T, R> parameterKey, T value) {
-            this.parameters.append(parameterKey, value);
-            return this;
-        }
-
-        public <T> Builder addParameter(String name, T value) {
-            this.parameters.append(name, value);
             return this;
         }
 

@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-public class ChatOpTestCase implements LoadingEnv {
+public class ChatTestCase implements LoadingEnv {
 
     private static final Set<Function<AigcRequest<ChatModel.Input, ChatModel.Output>, CompletionStage<AigcResponse<ChatModel.Output>>>> ops = Set.of(
             new Function<>() {

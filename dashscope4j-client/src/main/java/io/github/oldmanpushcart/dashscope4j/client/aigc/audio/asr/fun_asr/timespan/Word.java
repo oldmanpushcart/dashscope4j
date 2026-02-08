@@ -1,11 +1,8 @@
-package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert.timespan;
+package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.fun_asr.timespan;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/**
- * 音素时间段
- */
-public record PhonemeTimeSpan(
+public record Word(
 
         @JsonProperty("begin_time")
         int beginAt,
@@ -16,8 +13,9 @@ public record PhonemeTimeSpan(
         @JsonProperty("text")
         String text,
 
-        @JsonProperty("tone")
-        int tone
+        @JsonProperty("punctuation")
+        String punctuation
 
 ) {
+
 }
