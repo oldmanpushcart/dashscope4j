@@ -1,18 +1,16 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.QwenTtsRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.ClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.internal.handler.ManualVadHandler;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.internal.handler.ServerVadHandler;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.internal.handler.SessionHandshakeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.HandlerChain;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.CodecHandler;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -50,7 +48,7 @@ public record QwenTtsRealtimeSession(
         @JsonProperty("bit_rate")
         Integer bitRate
 
-) implements Realtime.Session<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> {
+) implements Realtime.Session<ClientEvent, ServerEvent> {
 
     private QwenTtsRealtimeSession(Builder builder) {
         this(
@@ -69,21 +67,21 @@ public record QwenTtsRealtimeSession(
     }
 
     @Override
-    public Function<Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent>, Realtime.Handler<String, String>> provider() {
+    public Function<Realtime.Handler<ClientEvent, ServerEvent>, Realtime.Handler<String, String>> provider() {
         return handler ->
                 HandlerChain
                         .<String, String>identity()
-                        .<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent>map(JacksonJsonUtils::toJson, this::toServerEvent)
-                        .<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent>then(h -> new SessionHandshakeHandler(this, handlerFactory(h)))
+                        .<ClientEvent, ServerEvent>map(JacksonJsonUtils::toJson, this::toServerEvent)
+                        .<ClientEvent, ServerEvent>then(h -> new SessionHandshakeHandler(this, handlerFactory(h)))
                         .build(handler);
     }
 
-    private QwenTtsRealtimeServerEvent toServerEvent(String s) {
+    private ServerEvent toServerEvent(String s) {
         final var variableMap = Map.<String, Object>of("dashscope/model", model);
-        return JacksonJsonUtils.toObject(variableMap, s, QwenTtsRealtimeServerEvent.class);
+        return JacksonJsonUtils.toObject(variableMap, s, ServerEvent.class);
     }
 
-    private Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> handlerFactory(Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> handler) {
+    private Realtime.Handler<ClientEvent, ServerEvent> handlerFactory(Realtime.Handler<ClientEvent, ServerEvent> handler) {
         if (null == mode || mode == Mode.SERVER_COMMIT) {
             return new ServerVadHandler(handler);
         } else {

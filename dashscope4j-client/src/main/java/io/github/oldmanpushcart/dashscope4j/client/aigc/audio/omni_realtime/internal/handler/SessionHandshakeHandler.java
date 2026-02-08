@@ -3,12 +3,12 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.int
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeEmitter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeErrorException;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeSession;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.OmniRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.OmniRealtimeSessionUpdateClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.OmniRealtimeErrorServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.OmniRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.OmniRealtimeSessionCreatedServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.OmniRealtimeSessionUpdatedServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.ClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.SessionUpdateClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.ErrorServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.ServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.SessionCreatedServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.SessionUpdatedServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.nio.ByteBuffer;
@@ -18,21 +18,21 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-public class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
+public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, ServerEvent> {
 
     private final OmniRealtimeSession session;
-    private final Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
+    private final Realtime.Handler<ClientEvent, ServerEvent> delegate;
 
     private final AtomicReference<State> stateRef = new AtomicReference<>(State.AWAITING_SESSION_CREATED);
-    private volatile Realtime.Emitter<OmniRealtimeClientEvent> emitter;
+    private volatile Realtime.Emitter<ClientEvent> emitter;
 
-    public SessionHandshakeHandler(OmniRealtimeSession session, Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
+    public SessionHandshakeHandler(OmniRealtimeSession session, Realtime.Handler<ClientEvent, ServerEvent> delegate) {
         this.session = session;
         this.delegate = delegate;
     }
 
     @Override
-    public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> emitter) {
+    public void onOpen(Realtime.Emitter<ClientEvent> emitter) {
         this.emitter = emitter;
     }
 
@@ -45,16 +45,16 @@ public class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeCli
         }
     }
 
-    private boolean isResponseCancelError(OmniRealtimeErrorServerEvent.Error error) {
+    private boolean isResponseCancelError(ErrorServerEvent.Error error) {
         return null != error
                 && "invalid_request_error".equals(error.type())
                 && "Conversation has none active response".equals(error.message());
     }
 
     @Override
-    public CompletionStage<Void> onData(OmniRealtimeServerEvent output) {
+    public CompletionStage<Void> onData(ServerEvent output) {
 
-        if (output instanceof OmniRealtimeErrorServerEvent event) {
+        if (output instanceof ErrorServerEvent event) {
             final var error = event.error();
 
             /*
@@ -72,9 +72,9 @@ public class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeCli
         final var state = stateRef.get();
         return switch (state) {
             case AWAITING_SESSION_CREATED -> {
-                if (output instanceof OmniRealtimeSessionCreatedServerEvent) {
+                if (output instanceof SessionCreatedServerEvent) {
                     changeState(state, State.AWAITING_SESSION_CONFIRMED);
-                    final var event = new OmniRealtimeSessionUpdateClientEvent(genUUID22(), session);
+                    final var event = new SessionUpdateClientEvent(genUUID22(), session);
                     yield emitter.emit(event);
                 } else {
                     final var cause = new IllegalStateException("Expect %s event, but was: %s".formatted(
@@ -85,7 +85,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeCli
                 }
             }
             case AWAITING_SESSION_CONFIRMED -> {
-                if (output instanceof OmniRealtimeSessionUpdatedServerEvent event) {
+                if (output instanceof SessionUpdatedServerEvent event) {
                     changeState(state, State.HANDSHAKE_COMPLETED);
                     final var session = event.session();
                     final var newSession = OmniRealtimeSession.newBuilder(session)
@@ -138,7 +138,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeCli
 
     private static class OmniRealtimeEmitterImpl implements OmniRealtimeEmitter {
 
-        private final Realtime.Emitter<OmniRealtimeClientEvent> delegate;
+        private final Realtime.Emitter<ClientEvent> delegate;
         private final OmniRealtimeSession session;
 
         /**
@@ -147,7 +147,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeCli
          * @param delegate 被代理的原始数据交换对象，不可为 {@code null}
          * @throws NullPointerException 如果 {@code origin} 为 {@code null}
          */
-        protected OmniRealtimeEmitterImpl(Realtime.Emitter<OmniRealtimeClientEvent> delegate, OmniRealtimeSession session) {
+        protected OmniRealtimeEmitterImpl(Realtime.Emitter<ClientEvent> delegate, OmniRealtimeSession session) {
             this.delegate = delegate;
             this.session = session;
         }
@@ -158,7 +158,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<OmniRealtimeCli
         }
 
         @Override
-        public CompletionStage<Void> emit(OmniRealtimeClientEvent input) {
+        public CompletionStage<Void> emit(ClientEvent input) {
             return delegate.emit(input);
         }
 

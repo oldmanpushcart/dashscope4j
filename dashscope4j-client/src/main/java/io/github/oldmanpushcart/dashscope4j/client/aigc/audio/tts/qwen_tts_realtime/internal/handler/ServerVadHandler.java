@@ -2,9 +2,9 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_real
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.QwenTtsRealtimeEmitter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.QwenTtsRealtimeSession;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.QwenTtsRealtimeBufferAppendTextClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.QwenTtsRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.BufferAppendTextClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.ClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.nio.ByteBuffer;
@@ -12,22 +12,22 @@ import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-public class ServerVadHandler implements Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> {
+public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEvent> {
 
-    private final Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> delegate;
+    private final Realtime.Handler<ClientEvent, ServerEvent> delegate;
 
-    public ServerVadHandler(Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> delegate) {
+    public ServerVadHandler(Realtime.Handler<ClientEvent, ServerEvent> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public void onOpen(Realtime.Emitter<QwenTtsRealtimeClientEvent> emitter) {
+    public void onOpen(Realtime.Emitter<ClientEvent> emitter) {
         final var serverVad = new ServerVadImpl((QwenTtsRealtimeEmitter) emitter);
         delegate.onOpen(serverVad);
     }
 
     @Override
-    public CompletionStage<Void> onData(QwenTtsRealtimeServerEvent output) {
+    public CompletionStage<Void> onData(ServerEvent output) {
         return delegate.onData(output);
     }
 
@@ -45,12 +45,12 @@ public class ServerVadHandler implements Realtime.Handler<QwenTtsRealtimeClientE
 
         @Override
         public CompletionStage<Void> text(String text) {
-            final var event = new QwenTtsRealtimeBufferAppendTextClientEvent(genUUID22(), text);
+            final var event = new BufferAppendTextClientEvent(genUUID22(), text);
             return delegate.emit(event);
         }
 
         @Override
-        public CompletionStage<Void> emit(QwenTtsRealtimeClientEvent input) {
+        public CompletionStage<Void> emit(ClientEvent input) {
             return delegate.emit(input);
         }
 

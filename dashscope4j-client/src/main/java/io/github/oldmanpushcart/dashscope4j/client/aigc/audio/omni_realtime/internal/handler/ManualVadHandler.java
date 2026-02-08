@@ -4,7 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.Omni
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeEmitter.ManualVad;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.*;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-public class ManualVadHandler implements Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
+public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEvent> {
 
     private static final String KEY_BUFFER_CLEARED = "input_audio_buffer.cleared";
     private static final String KEY_BUFFER_COMMITTED = "input_audio_buffer.committed";
@@ -27,20 +27,20 @@ public class ManualVadHandler implements Realtime.Handler<OmniRealtimeClientEven
     private static final String KEY_RESPONSE_DONE = "response.done";
 
     private final Map<String, CompletableFuture<?>> futureMap = new ConcurrentHashMap<>();
-    private final Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
+    private final Realtime.Handler<ClientEvent, ServerEvent> delegate;
 
-    public ManualVadHandler(Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
+    public ManualVadHandler(Realtime.Handler<ClientEvent, ServerEvent> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> emitter) {
+    public void onOpen(Realtime.Emitter<ClientEvent> emitter) {
         final var manualVad = new ManualVadImpl((OmniRealtimeEmitter) emitter, futureMap);
         delegate.onOpen(manualVad);
     }
 
     @Override
-    public CompletionStage<Void> onData(OmniRealtimeServerEvent output) {
+    public CompletionStage<Void> onData(ServerEvent output) {
         final var type = output.type();
         final var future = futureMap.remove(type);
         if (null != future) {
@@ -123,7 +123,7 @@ public class ManualVadHandler implements Realtime.Handler<OmniRealtimeClientEven
         }
 
         @Override
-        public CompletionStage<Void> emit(OmniRealtimeClientEvent input) {
+        public CompletionStage<Void> emit(ClientEvent input) {
             return origin.emit(input);
         }
 
@@ -168,7 +168,7 @@ public class ManualVadHandler implements Realtime.Handler<OmniRealtimeClientEven
             public CompletionStage<InputOp> image(BufferedImage image) {
                 tryChangeState(State.INPUT_READY, State.INPUT);
                 requireInputState();
-                final var event = new OmniRealtimeBufferAppendImageClientEvent(genUUID22(), image);
+                final var event = new BufferAppendImageClientEvent(genUUID22(), image);
                 return origin.emit(event)
                         .thenApply(unused -> this);
             }
@@ -177,7 +177,7 @@ public class ManualVadHandler implements Realtime.Handler<OmniRealtimeClientEven
             public CompletionStage<InputOp> audio(ByteBuffer buffer) {
                 tryChangeState(State.INPUT_READY, State.INPUT);
                 requireInputState();
-                final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
+                final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
                 return origin.emit(event)
                         .thenApply(unused -> this);
             }
@@ -187,7 +187,7 @@ public class ManualVadHandler implements Realtime.Handler<OmniRealtimeClientEven
                 tryChangeState(State.INPUT_READY, State.INPUT);
                 requireInputState();
                 final var buffer = ByteBuffer.wrap(bytes, offset, length);
-                final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
+                final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
                 return origin.emit(event)
                         .thenApply(unused -> this);
             }
@@ -205,7 +205,7 @@ public class ManualVadHandler implements Realtime.Handler<OmniRealtimeClientEven
                 changeState(State.INPUT, State.INPUT_READY);
                 final var clearF = new CompletableFuture<Void>();
                 register(KEY_BUFFER_CLEARED, clearF);
-                final var event = new OmniRealtimeBufferClearClientEvent(genUUID22());
+                final var event = new BufferClearClientEvent(genUUID22());
                 return origin.emit(event)
                         .thenCompose(unused -> clearF)
                         .whenComplete((v, ex) -> unregister(KEY_BUFFER_CLEARED, ex))
@@ -217,7 +217,7 @@ public class ManualVadHandler implements Realtime.Handler<OmniRealtimeClientEven
                 changeState(State.INPUT, State.COMMIT);
                 final var commitF = new CompletableFuture<Void>();
                 register(KEY_BUFFER_COMMITTED, commitF);
-                final var event = new OmniRealtimeBufferCommitClientEvent(genUUID22());
+                final var event = new BufferCommitClientEvent(genUUID22());
                 return origin.emit(event)
                         .thenCompose(unused -> commitF)
                         .whenComplete((v, ex) -> unregister(KEY_BUFFER_COMMITTED, ex))
@@ -251,7 +251,7 @@ public class ManualVadHandler implements Realtime.Handler<OmniRealtimeClientEven
                 final var doneF = new CompletableFuture<Void>();
                 register(KEY_RESPONSE_CREATED, createF);
                 register(KEY_RESPONSE_DONE, doneF);
-                final var createE = new OmniRealtimeResponseCreateClientEvent(genUUID22());
+                final var createE = new ResponseCreateClientEvent(genUUID22());
                 return origin.emit(createE)
 
                         .thenCompose(unused -> createF)
@@ -265,7 +265,7 @@ public class ManualVadHandler implements Realtime.Handler<OmniRealtimeClientEven
                             if (!(cause instanceof CancellationException)) {
                                 return CompletableFuture.failedStage(cause);
                             }
-                            final var cancelE = new OmniRealtimeResponseCancelClientEvent(genUUID22());
+                            final var cancelE = new ResponseCancelClientEvent(genUUID22());
                             return origin.emit(cancelE)
                                     .thenCompose(unused -> doneF)
                                     .whenComplete((v, unusedEx) -> unregister(KEY_RESPONSE_DONE, unusedEx));

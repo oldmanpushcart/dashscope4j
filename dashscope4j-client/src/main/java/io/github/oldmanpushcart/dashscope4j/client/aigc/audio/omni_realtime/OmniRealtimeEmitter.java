@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime;
 
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.OmniRealtimeClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.ClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.awt.image.BufferedImage;
@@ -11,7 +11,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * OMNI-REALTIME 数据交换接口
  */
-public interface OmniRealtimeEmitter extends Realtime.Emitter<OmniRealtimeClientEvent> {
+public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
 
     /**
      * 获取会话

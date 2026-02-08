@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.OmniRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.ClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.internal.handler.ManualVadHandler;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.internal.handler.ServerVadHandler;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.internal.handler.SessionHandshakeHandler;
@@ -70,7 +70,7 @@ public record OmniRealtimeSession(
         @JsonProperty("turn_detection")
         TurnDetection turnDetection
 
-) implements Realtime.Session<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
+) implements Realtime.Session<ClientEvent, ServerEvent> {
 
     private OmniRealtimeSession(Builder builder) {
         this(
@@ -93,21 +93,21 @@ public record OmniRealtimeSession(
     }
 
     @Override
-    public Function<Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent>, Realtime.Handler<String, String>> provider() {
+    public Function<Realtime.Handler<ClientEvent, ServerEvent>, Realtime.Handler<String, String>> provider() {
         return handler ->
                 HandlerChain
                         .<String, String>identity()
-                        .<OmniRealtimeClientEvent, OmniRealtimeServerEvent>map(JacksonJsonUtils::toJson, this::toServerEvent)
-                        .<OmniRealtimeClientEvent, OmniRealtimeServerEvent>then(h -> new SessionHandshakeHandler(this, handlerFactory(h)))
+                        .<ClientEvent, ServerEvent>map(JacksonJsonUtils::toJson, this::toServerEvent)
+                        .<ClientEvent, ServerEvent>then(h -> new SessionHandshakeHandler(this, handlerFactory(h)))
                         .build(handler);
     }
 
-    private OmniRealtimeServerEvent toServerEvent(String payload) {
+    private ServerEvent toServerEvent(String payload) {
         final var variableMap = Map.<String, Object>of("dashscope/model", model);
-        return JacksonJsonUtils.toObject(variableMap, payload, OmniRealtimeServerEvent.class);
+        return JacksonJsonUtils.toObject(variableMap, payload, ServerEvent.class);
     }
 
-    private Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handlerFactory(Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> handler) {
+    private Realtime.Handler<ClientEvent, ServerEvent> handlerFactory(Realtime.Handler<ClientEvent, ServerEvent> handler) {
         if (null == turnDetection
                 || OmniRealtimeSession.TurnDetection.Type.SERVER_VAD == turnDetection.type()) {
             return new ServerVadHandler(handler);

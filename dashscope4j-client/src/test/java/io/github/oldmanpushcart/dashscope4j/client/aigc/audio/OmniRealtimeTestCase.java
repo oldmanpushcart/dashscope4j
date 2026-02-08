@@ -5,8 +5,8 @@ import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeEmitter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeSession;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.OmniRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.ClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.handler.SimpleOmniRealtimeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeConnector;
@@ -72,13 +72,13 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                                 }
 
                                 @Override
-                                public CompletionStage<Void> onResponseFinished(String responseId, OmniRealtimeServerEvent.Status status) {
+                                public CompletionStage<Void> onResponseFinished(String responseId, ServerEvent.Status status) {
                                     completed.complete(stringBuf.toString());
                                     return CompletableFuture.completedStage(null);
                                 }
 
                                 @Override
-                                public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> exchange) {
+                                public void onOpen(Realtime.Emitter<ClientEvent> exchange) {
 
                                     final var manualVad = (OmniRealtimeEmitter.ManualVad) exchange;
                                     manualVad
@@ -136,7 +136,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
         client.realtime(session, new SimpleOmniRealtimeHandler() {
 
                     @Override
-                    public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> emitter) {
+                    public void onOpen(Realtime.Emitter<ClientEvent> emitter) {
 
                         final var serverVad = (OmniRealtimeEmitter.ServerVad) emitter;
 
@@ -189,7 +189,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                     }
 
                     @Override
-                    public CompletionStage<Void> onResponseFinished(String responseId, OmniRealtimeServerEvent.Status status) {
+                    public CompletionStage<Void> onResponseFinished(String responseId, ServerEvent.Status status) {
                         return CompletableFuture.completedStage(null);
                     }
                 })

@@ -2,11 +2,11 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_real
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.QwenTtsRealtimeEmitter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.QwenTtsRealtimeSession;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.QwenTtsRealtimeBufferAppendTextClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.QwenTtsRealtimeBufferClearClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.QwenTtsRealtimeBufferCommitClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.QwenTtsRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.BufferAppendTextClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.BufferClearClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.BufferCommitClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.ClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.nio.ByteBuffer;
@@ -18,27 +18,27 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-public class ManualVadHandler implements Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> {
+public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEvent> {
 
     private static final String KEY_BUFFER_CLEARED = "input_text_buffer.cleared";
     private static final String KEY_BUFFER_COMMITTED = "input_text_buffer.committed";
     private static final String KEY_RESPONSE_DONE = "response.done";
 
-    private final Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> delegate;
+    private final Realtime.Handler<ClientEvent, ServerEvent> delegate;
     private final Map<String, CompletableFuture<?>> futureMap = new ConcurrentHashMap<>();
 
-    public ManualVadHandler(Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> delegate) {
+    public ManualVadHandler(Realtime.Handler<ClientEvent, ServerEvent> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public void onOpen(Realtime.Emitter<QwenTtsRealtimeClientEvent> emitter) {
+    public void onOpen(Realtime.Emitter<ClientEvent> emitter) {
         final var manualVad = new ManualVadImpl(futureMap, (QwenTtsRealtimeEmitter) emitter);
         delegate.onOpen(manualVad);
     }
 
     @Override
-    public CompletionStage<Void> onData(QwenTtsRealtimeServerEvent output) {
+    public CompletionStage<Void> onData(ServerEvent output) {
         final var type = output.type();
         final var future = futureMap.remove(type);
         if (null != future) {
@@ -110,7 +110,7 @@ public class ManualVadHandler implements Realtime.Handler<QwenTtsRealtimeClientE
         }
 
         @Override
-        public CompletionStage<Void> emit(QwenTtsRealtimeClientEvent input) {
+        public CompletionStage<Void> emit(ClientEvent input) {
             return delegate.emit(input);
         }
 
@@ -159,7 +159,7 @@ public class ManualVadHandler implements Realtime.Handler<QwenTtsRealtimeClientE
                     throw new IllegalStateException("Operation requires %s state!".formatted(state.get()));
                 }
 
-                final var event = new QwenTtsRealtimeBufferAppendTextClientEvent(genUUID22(), text);
+                final var event = new BufferAppendTextClientEvent(genUUID22(), text);
                 return emit(event)
                         .thenApply(unused -> this);
             }
@@ -174,7 +174,7 @@ public class ManualVadHandler implements Realtime.Handler<QwenTtsRealtimeClientE
                 changeState(State.INPUT, State.INPUT_READY);
                 final var clearF = new CompletableFuture<Void>();
                 register(KEY_BUFFER_CLEARED, clearF);
-                final var event = new QwenTtsRealtimeBufferClearClientEvent(genUUID22());
+                final var event = new BufferClearClientEvent(genUUID22());
                 return emit(event)
                         .thenCompose(unused -> clearF)
                         .whenComplete((unused, ex) -> unregister(KEY_BUFFER_CLEARED, ex))
@@ -194,7 +194,7 @@ public class ManualVadHandler implements Realtime.Handler<QwenTtsRealtimeClientE
                 final var doneF = new CompletableFuture<Void>();
                 register(KEY_BUFFER_COMMITTED, commitF);
                 register(KEY_RESPONSE_DONE, doneF);
-                final var event = new QwenTtsRealtimeBufferCommitClientEvent(genUUID22());
+                final var event = new BufferCommitClientEvent(genUUID22());
                 return emit(event)
                         .thenCompose(unused -> commitF)
                         .whenComplete((unused, ex) -> unregister(KEY_BUFFER_COMMITTED, ex))

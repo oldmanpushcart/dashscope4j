@@ -2,13 +2,13 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_real
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.QwenTtsRealtimeEmitter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.QwenTtsRealtimeSession;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.QwenTtsRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.QwenTtsRealtimeSessionFinishClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.QwenTtsRealtimeSessionUpdateClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeErrorServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeSessionCreatedServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeSessionUpdatedServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.ClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.SessionFinishClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.SessionUpdateClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.ErrorServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.ServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.SessionCreatedServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.SessionUpdatedServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.nio.ByteBuffer;
@@ -20,24 +20,24 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-public class SessionHandshakeHandler implements Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> {
+public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, ServerEvent> {
 
     private static final String KEY_SESSION_FINISHED = "session.finished";
 
     private final QwenTtsRealtimeSession session;
-    private final Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> delegate;
+    private final Realtime.Handler<ClientEvent, ServerEvent> delegate;
 
     private final Map<String, CompletableFuture<?>> futureMap = new ConcurrentHashMap<>();
     private final AtomicReference<State> state = new AtomicReference<>(State.AWAITING_SESSION_CREATED);
-    private volatile Realtime.Emitter<QwenTtsRealtimeClientEvent> emitter;
+    private volatile Realtime.Emitter<ClientEvent> emitter;
 
-    public SessionHandshakeHandler(QwenTtsRealtimeSession session, Realtime.Handler<QwenTtsRealtimeClientEvent, QwenTtsRealtimeServerEvent> delegate) {
+    public SessionHandshakeHandler(QwenTtsRealtimeSession session, Realtime.Handler<ClientEvent, ServerEvent> delegate) {
         this.session = session;
         this.delegate = delegate;
     }
 
     @Override
-    public void onOpen(Realtime.Emitter<QwenTtsRealtimeClientEvent> emitter) {
+    public void onOpen(Realtime.Emitter<ClientEvent> emitter) {
         this.emitter = emitter;
     }
 
@@ -51,7 +51,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<QwenTtsRealtime
     }
 
     @Override
-    public CompletionStage<Void> onData(QwenTtsRealtimeServerEvent output) {
+    public CompletionStage<Void> onData(ServerEvent output) {
 
         final var type = output.type();
         final var future = futureMap.remove(type);
@@ -59,7 +59,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<QwenTtsRealtime
             future.complete(null);
         }
 
-        if (output instanceof QwenTtsRealtimeErrorServerEvent event) {
+        if (output instanceof ErrorServerEvent event) {
             final var error = event.error();
             final var cause = new IllegalStateException("Server error! code=%s;desc=%s".formatted(
                     error.code(),
@@ -71,9 +71,9 @@ public class SessionHandshakeHandler implements Realtime.Handler<QwenTtsRealtime
         final var s = state.get();
         return switch (s) {
             case AWAITING_SESSION_CREATED -> {
-                if (output instanceof QwenTtsRealtimeSessionCreatedServerEvent) {
+                if (output instanceof SessionCreatedServerEvent) {
                     changeState(s, State.AWAITING_SESSION_CONFIRMED);
-                    final var event = new QwenTtsRealtimeSessionUpdateClientEvent(genUUID22(), session);
+                    final var event = new SessionUpdateClientEvent(genUUID22(), session);
                     yield emitter.emit(event);
                 } else {
                     final var cause = new IllegalStateException("Expect %s event, but was: %s".formatted(
@@ -84,7 +84,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<QwenTtsRealtime
                 }
             }
             case AWAITING_SESSION_CONFIRMED -> {
-                if (output instanceof QwenTtsRealtimeSessionUpdatedServerEvent event) {
+                if (output instanceof SessionUpdatedServerEvent event) {
                     changeState(s, State.HANDSHAKE_COMPLETED);
                     final var session = event.session();
                     final var newSession = QwenTtsRealtimeSession.newBuilder(session)
@@ -131,13 +131,13 @@ public class SessionHandshakeHandler implements Realtime.Handler<QwenTtsRealtime
     private static final class QwenTtsRealtimeEmitterImpl implements QwenTtsRealtimeEmitter {
 
         private final QwenTtsRealtimeSession session;
-        private final Realtime.Emitter<QwenTtsRealtimeClientEvent> delegate;
+        private final Realtime.Emitter<ClientEvent> delegate;
         private final Map<String, CompletableFuture<?>> futureMap;
 
 
         private QwenTtsRealtimeEmitterImpl(
                 QwenTtsRealtimeSession session,
-                Realtime.Emitter<QwenTtsRealtimeClientEvent> delegate,
+                Realtime.Emitter<ClientEvent> delegate,
                 Map<String, CompletableFuture<?>> futureMap
         ) {
             this.session = session;
@@ -163,7 +163,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<QwenTtsRealtime
         }
 
         @Override
-        public CompletionStage<Void> emit(QwenTtsRealtimeClientEvent input) {
+        public CompletionStage<Void> emit(ClientEvent input) {
             return delegate.emit(input);
         }
 
@@ -176,7 +176,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<QwenTtsRealtime
         public CompletionStage<Void> emitClose() {
             final var finishF = new CompletableFuture<Void>();
             register(KEY_SESSION_FINISHED, finishF);
-            final var event = new QwenTtsRealtimeSessionFinishClientEvent(genUUID22());
+            final var event = new SessionFinishClientEvent(genUUID22());
             return delegate.emit(event)
                     .thenCompose(unused -> finishF)
                     .whenComplete((unused, ex) -> unregister(KEY_SESSION_FINISHED, ex))
@@ -213,7 +213,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<QwenTtsRealtime
             return session;
         }
 
-        public Realtime.Emitter<QwenTtsRealtimeClientEvent> delegate() {
+        public Realtime.Emitter<ClientEvent> delegate() {
             return delegate;
         }
 

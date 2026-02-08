@@ -3,10 +3,10 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.int
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeEmitter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeEmitter.ServerVad;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeSession;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.OmniRealtimeBufferAppendAudioClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.OmniRealtimeBufferAppendImageClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.OmniRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.OmniRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.BufferAppendAudioClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.BufferAppendImageClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.ClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.awt.image.BufferedImage;
@@ -15,22 +15,22 @@ import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
-public class ServerVadHandler implements Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> {
+public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEvent> {
 
-    private final Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate;
+    private final Realtime.Handler<ClientEvent, ServerEvent> delegate;
 
-    public ServerVadHandler(Realtime.Handler<OmniRealtimeClientEvent, OmniRealtimeServerEvent> delegate) {
+    public ServerVadHandler(Realtime.Handler<ClientEvent, ServerEvent> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public void onOpen(Realtime.Emitter<OmniRealtimeClientEvent> emitter) {
+    public void onOpen(Realtime.Emitter<ClientEvent> emitter) {
         final var serverVad = new ServerVadImpl((OmniRealtimeEmitter) emitter);
         delegate.onOpen(serverVad);
     }
 
     @Override
-    public CompletionStage<Void> onData(OmniRealtimeServerEvent output) {
+    public CompletionStage<Void> onData(ServerEvent output) {
         return delegate.onData(output);
     }
 
@@ -54,20 +54,20 @@ public class ServerVadHandler implements Realtime.Handler<OmniRealtimeClientEven
 
         @Override
         public CompletionStage<Void> image(BufferedImage image) {
-            final var event = new OmniRealtimeBufferAppendImageClientEvent(genUUID22(), image);
+            final var event = new BufferAppendImageClientEvent(genUUID22(), image);
             return origin.emit(event);
         }
 
         @Override
         public CompletionStage<Void> audio(ByteBuffer buffer) {
-            final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
+            final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
             return origin.emit(event);
         }
 
         @Override
         public CompletionStage<Void> audio(byte[] bytes, int offset, int length) {
             final var buffer = ByteBuffer.wrap(bytes, offset, length);
-            final var event = new OmniRealtimeBufferAppendAudioClientEvent(genUUID22(), buffer);
+            final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
             return origin.emit(event);
         }
 
@@ -77,7 +77,7 @@ public class ServerVadHandler implements Realtime.Handler<OmniRealtimeClientEven
         }
 
         @Override
-        public CompletionStage<Void> emit(OmniRealtimeClientEvent input) {
+        public CompletionStage<Void> emit(ClientEvent input) {
             return origin.emit(input);
         }
 

@@ -5,9 +5,9 @@ import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.QwenTtsRealtimeEmitter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.QwenTtsRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.QwenTtsRealtimeSession;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.QwenTtsRealtimeClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeResponseAudioDeltaServerEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.QwenTtsRealtimeServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.ClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.ResponseAudioDeltaServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.DataURI;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ public class QwenTtsRealtimeTestCase implements LoadingEnv {
             client.realtime(session, new Realtime.Handler<>() {
 
                 @Override
-                public void onOpen(Realtime.Emitter<QwenTtsRealtimeClientEvent> emitter) {
+                public void onOpen(Realtime.Emitter<ClientEvent> emitter) {
                     final var manualVad = (QwenTtsRealtimeEmitter.ManualVad) emitter;
 
                     CompletableFuture.completedStage(manualVad)
@@ -63,8 +63,8 @@ public class QwenTtsRealtimeTestCase implements LoadingEnv {
                 }
 
                 @Override
-                public CompletionStage<Void> onData(QwenTtsRealtimeServerEvent output) {
-                    if (output instanceof QwenTtsRealtimeResponseAudioDeltaServerEvent event) {
+                public CompletionStage<Void> onData(ServerEvent output) {
+                    if (output instanceof ResponseAudioDeltaServerEvent event) {
                         final var buffer = event.delta();
                         final var bytes = new byte[1024];
                         while (buffer.hasRemaining()) {
