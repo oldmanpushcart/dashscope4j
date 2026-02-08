@@ -23,13 +23,13 @@ public interface Realtime {
 
     interface Emitter<I> extends Connection {
 
-        CompletionStage<Void> emit(I input);
+        CompletionStage<Void> data(I input);
 
-        CompletionStage<Void> emitBinary(ByteBuffer buffer);
+        CompletionStage<Void> binary(ByteBuffer buffer);
 
-        CompletionStage<Void> emitClose();
+        CompletionStage<Void> closing();
 
-        CompletionStage<Void> emitClose(Throwable ex);
+        CompletionStage<Void> closing(Throwable ex);
 
     }
 
@@ -42,23 +42,23 @@ public interface Realtime {
         }
 
         @Override
-        public CompletionStage<Void> emit(I input) {
-            return delegate.emit(input);
+        public CompletionStage<Void> data(I input) {
+            return delegate.data(input);
         }
 
         @Override
-        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
-            return delegate.emitBinary(buffer);
+        public CompletionStage<Void> binary(ByteBuffer buffer) {
+            return delegate.binary(buffer);
         }
 
         @Override
-        public CompletionStage<Void> emitClose() {
-            return delegate.emitClose();
+        public CompletionStage<Void> closing() {
+            return delegate.closing();
         }
 
         @Override
-        public CompletionStage<Void> emitClose(Throwable ex) {
-            return delegate.emitClose(ex);
+        public CompletionStage<Void> closing(Throwable ex) {
+            return delegate.closing(ex);
         }
 
         @Override

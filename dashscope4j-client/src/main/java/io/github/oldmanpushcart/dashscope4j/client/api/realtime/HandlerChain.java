@@ -46,7 +46,7 @@ public class HandlerChain<I, O, UI, UO> {
      * @param transformer 转换函数
      */
     public HandlerChain(Function<Realtime.Handler<UI, UO>, Realtime.Handler<I, O>> transformer) {
-        this.transformer = Objects.requireNonNull(transformer, "transformer");
+        this.transformer = Objects.requireNonNull(transformer, "transformer must not be null");
     }
 
     /**
@@ -58,7 +58,7 @@ public class HandlerChain<I, O, UI, UO> {
      * @return 新的 HandlerChain
      */
     public <NI, NO> HandlerChain<I, O, NI, NO> then(Function<Realtime.Handler<NI, NO>, Realtime.Handler<UI, UO>> transformer) {
-        Objects.requireNonNull(transformer, "transformer");
+        Objects.requireNonNull(transformer, "transformer must not be null");
         return new HandlerChain<>(ninoHandler -> {
             final var uiuoHandler = transformer.apply(ninoHandler);
             return this.transformer.apply(uiuoHandler);
@@ -72,7 +72,7 @@ public class HandlerChain<I, O, UI, UO> {
      * @return 当前 HandlerChain
      */
     public HandlerChain<I, O, UI, UO> filterOutput(Predicate<UO> filter) {
-        Objects.requireNonNull(filter, "filter");
+        Objects.requireNonNull(filter, "filter must not be null");
         return then(uiuoHandler -> new Realtime.Handler<>() {
 
             @Override
@@ -108,7 +108,7 @@ public class HandlerChain<I, O, UI, UO> {
      * @return 新的 HandlerChain
      */
     public <NO> HandlerChain<I, O, UI, NO> mapOutput(Function<UO, NO> mapper) {
-        Objects.requireNonNull(mapper, "mapper");
+        Objects.requireNonNull(mapper, "mapper must not be null");
         return then(uiuoHandler -> new Realtime.Handler<>() {
             @Override
             public void onOpen(Realtime.Emitter<UI> emitter) {
@@ -140,30 +140,30 @@ public class HandlerChain<I, O, UI, UO> {
      * @return 新的 HandlerChain
      */
     public <NI> HandlerChain<I, O, NI, UO> mapInput(Function<NI, UI> mapper) {
-        Objects.requireNonNull(mapper, "mapper");
+        Objects.requireNonNull(mapper, "mapper must not be null");
         return then(ninoHandler -> new Realtime.Handler<>() {
 
             @Override
             public void onOpen(Realtime.Emitter<UI> emitter) {
                 ninoHandler.onOpen(new Realtime.Emitter<>() {
                     @Override
-                    public CompletionStage<Void> emit(NI input) {
-                        return emitter.emit(mapper.apply(input));
+                    public CompletionStage<Void> data(NI input) {
+                        return emitter.data(mapper.apply(input));
                     }
 
                     @Override
-                    public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
-                        return emitter.emitBinary(buffer);
+                    public CompletionStage<Void> binary(ByteBuffer buffer) {
+                        return emitter.binary(buffer);
                     }
 
                     @Override
-                    public CompletionStage<Void> emitClose() {
-                        return emitter.emitClose();
+                    public CompletionStage<Void> closing() {
+                        return emitter.closing();
                     }
 
                     @Override
-                    public CompletionStage<Void> emitClose(Throwable ex) {
-                        return emitter.emitClose(ex);
+                    public CompletionStage<Void> closing(Throwable ex) {
+                        return emitter.closing(ex);
                     }
 
                     @Override
@@ -228,7 +228,7 @@ public class HandlerChain<I, O, UI, UO> {
      * @return 经过链式转换后的 Handler
      */
     public Realtime.Handler<I, O> build(Realtime.Handler<UI, UO> handler) {
-        Objects.requireNonNull(handler, "handler");
+        Objects.requireNonNull(handler, "handler must not be null");
         return transformer.apply(handler);
     }
 

@@ -51,23 +51,23 @@ public class CodecHandler<I, O, UI, UO> implements Realtime.Handler<I, O> {
 
 
         @Override
-        public CompletionStage<Void> emit(UI input) {
-            return delegate.emit(mapper.apply(input));
+        public CompletionStage<Void> data(UI input) {
+            return delegate.data(mapper.apply(input));
         }
 
         @Override
-        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
-            return delegate.emitBinary(buffer);
+        public CompletionStage<Void> binary(ByteBuffer buffer) {
+            return delegate.binary(buffer);
         }
 
         @Override
-        public CompletionStage<Void> emitClose() {
-            return delegate.emitClose();
+        public CompletionStage<Void> closing() {
+            return delegate.closing();
         }
 
         @Override
-        public CompletionStage<Void> emitClose(Throwable ex) {
-            return delegate.emitClose(ex);
+        public CompletionStage<Void> closing(Throwable ex) {
+            return delegate.closing(ex);
         }
 
         @Override

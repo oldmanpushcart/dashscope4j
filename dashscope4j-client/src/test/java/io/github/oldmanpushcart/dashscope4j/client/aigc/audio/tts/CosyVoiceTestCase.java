@@ -32,11 +32,11 @@ public class CosyVoiceTestCase implements LoadingEnv {
                                 @Override
                                 public void onOpen(Realtime.Emitter<CosyVoiceModel.In> emitter) {
                                     CompletableFuture.<Void>completedStage(null)
-                                            .thenCompose(v -> emitter.emit(CosyVoiceModel.In.of("床前明月光，")))
-                                            .thenCompose(v -> emitter.emit(CosyVoiceModel.In.of("疑似地上霜。")))
-                                            .thenCompose(v -> emitter.emit(CosyVoiceModel.In.of("举头望明月，")))
-                                            .thenCompose(v -> emitter.emit(CosyVoiceModel.In.of("低头思故乡。")))
-                                            .thenCompose(v -> emitter.emitClose());
+                                            .thenCompose(v -> emitter.data(CosyVoiceModel.In.of("床前明月光，")))
+                                            .thenCompose(v -> emitter.data(CosyVoiceModel.In.of("疑似地上霜。")))
+                                            .thenCompose(v -> emitter.data(CosyVoiceModel.In.of("举头望明月，")))
+                                            .thenCompose(v -> emitter.data(CosyVoiceModel.In.of("低头思故乡。")))
+                                            .thenCompose(v -> emitter.closing());
                                 }
 
                                 @Override

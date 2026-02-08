@@ -39,7 +39,7 @@ public class ParaformerTestCase implements LoadingEnv {
                 .join();
 
         final var session = ParaformerSession.newBuilder()
-                .model(ParaformerModel.PARAFORMER_REALTIME_8K_V2)
+                .model(ParaformerModel.PARAFORMER_REALTIME_V2)
                 .build();
 
         final var stringBuf = new StringBuilder();
@@ -51,11 +51,11 @@ public class ParaformerTestCase implements LoadingEnv {
 
                 new Thread(() -> {
                     for (var buffer : buffers) {
-                        emitter.emitBinary(buffer)
+                        emitter.binary(buffer)
                                 .toCompletableFuture()
                                 .join();
                     }
-                    emitter.emitClose();
+                    emitter.closing();
                 }).start();
 
             }

@@ -146,24 +146,25 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
         public CompletionStage<Void> start(Realtime.Session<?, ?> session) {
             final var sessionPayload = JacksonJsonUtils.toJson(session);
             final var command = Command.of(id(), mode, Command.Action.RUN, sessionPayload);
-            return super.emit(command.toJson());
+            return super.data(command.toJson());
         }
 
         public CompletionStage<Void> finish() {
             final var command = Command.of(id(), mode, Command.Action.FINISH, "{\"input\": {}}");
-            return super.emit(command.toJson());
+            return super.data(command.toJson());
         }
 
         @Override
-        public CompletionStage<Void> emit(String input) {
+        public CompletionStage<Void> data(String input) {
             final var command = Command.of(id(), mode, Command.Action.CONTINUE, input);
-            return super.emit(command.toJson());
+            return super.data(command.toJson());
         }
 
         @Override
-        public CompletionStage<Void> emitClose() {
+        public CompletionStage<Void> closing() {
             return finish();
         }
+
     }
 
     private enum State {

@@ -46,27 +46,27 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         @Override
         public CompletionStage<Void> text(String text) {
             final var event = new BufferAppendTextClientEvent(genUUID22(), text);
-            return delegate.emit(event);
+            return delegate.data(event);
         }
 
         @Override
-        public CompletionStage<Void> emit(ClientEvent input) {
-            return delegate.emit(input);
+        public CompletionStage<Void> data(ClientEvent input) {
+            return delegate.data(input);
         }
 
         @Override
-        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
-            return delegate.emitBinary(buffer);
+        public CompletionStage<Void> binary(ByteBuffer buffer) {
+            return delegate.binary(buffer);
         }
 
         @Override
-        public CompletionStage<Void> emitClose() {
-            return delegate.emitClose();
+        public CompletionStage<Void> closing() {
+            return delegate.closing();
         }
 
         @Override
-        public CompletionStage<Void> emitClose(Throwable ex) {
-            return delegate.emitClose(ex);
+        public CompletionStage<Void> closing(Throwable ex) {
+            return delegate.closing(ex);
         }
 
         @Override

@@ -123,23 +123,23 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         }
 
         @Override
-        public CompletionStage<Void> emit(ClientEvent input) {
-            return origin.emit(input);
+        public CompletionStage<Void> data(ClientEvent input) {
+            return origin.data(input);
         }
 
         @Override
-        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
-            return origin.emitBinary(buffer);
+        public CompletionStage<Void> binary(ByteBuffer buffer) {
+            return origin.binary(buffer);
         }
 
         @Override
-        public CompletionStage<Void> emitClose() {
-            return origin.emitClose();
+        public CompletionStage<Void> closing() {
+            return origin.closing();
         }
 
         @Override
-        public CompletionStage<Void> emitClose(Throwable ex) {
-            return origin.emitClose(ex);
+        public CompletionStage<Void> closing(Throwable ex) {
+            return origin.closing(ex);
         }
 
         @Override
@@ -169,7 +169,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                 tryChangeState(State.INPUT_READY, State.INPUT);
                 requireInputState();
                 final var event = new BufferAppendImageClientEvent(genUUID22(), image);
-                return origin.emit(event)
+                return origin.data(event)
                         .thenApply(unused -> this);
             }
 
@@ -178,7 +178,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                 tryChangeState(State.INPUT_READY, State.INPUT);
                 requireInputState();
                 final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-                return origin.emit(event)
+                return origin.data(event)
                         .thenApply(unused -> this);
             }
 
@@ -188,7 +188,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                 requireInputState();
                 final var buffer = ByteBuffer.wrap(bytes, offset, length);
                 final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-                return origin.emit(event)
+                return origin.data(event)
                         .thenApply(unused -> this);
             }
 
@@ -206,7 +206,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                 final var clearF = new CompletableFuture<Void>();
                 register(KEY_BUFFER_CLEARED, clearF);
                 final var event = new BufferClearClientEvent(genUUID22());
-                return origin.emit(event)
+                return origin.data(event)
                         .thenCompose(unused -> clearF)
                         .whenComplete((v, ex) -> unregister(KEY_BUFFER_CLEARED, ex))
                         .thenApply(unused -> this);
@@ -218,7 +218,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                 final var commitF = new CompletableFuture<Void>();
                 register(KEY_BUFFER_COMMITTED, commitF);
                 final var event = new BufferCommitClientEvent(genUUID22());
-                return origin.emit(event)
+                return origin.data(event)
                         .thenCompose(unused -> commitF)
                         .whenComplete((v, ex) -> unregister(KEY_BUFFER_COMMITTED, ex))
                         .thenApply(unused -> new ResponseOpImpl());
@@ -252,7 +252,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                 register(KEY_RESPONSE_CREATED, createF);
                 register(KEY_RESPONSE_DONE, doneF);
                 final var createE = new ResponseCreateClientEvent(genUUID22());
-                return origin.emit(createE)
+                return origin.data(createE)
 
                         .thenCompose(unused -> createF)
                         .whenComplete((v, ex) -> unregister(KEY_RESPONSE_CREATED, ex))
@@ -266,7 +266,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                                 return CompletableFuture.failedStage(cause);
                             }
                             final var cancelE = new ResponseCancelClientEvent(genUUID22());
-                            return origin.emit(cancelE)
+                            return origin.data(cancelE)
                                     .thenCompose(unused -> doneF)
                                     .whenComplete((v, unusedEx) -> unregister(KEY_RESPONSE_DONE, unusedEx));
                         })

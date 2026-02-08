@@ -17,7 +17,7 @@ public record CosyVoiceModel(
     public static final CosyVoiceModel COSYVOICE_V3_PLUS = new CosyVoiceModel("cosyvoice-v3-plus");
     public static final CosyVoiceModel COSYVOICE_V3_FLASH = new CosyVoiceModel("cosyvoice-v3-flash");
 
-    public CosyVoiceModel(String name) {
+    private CosyVoiceModel(String name) {
         this(name, PATH);
     }
 

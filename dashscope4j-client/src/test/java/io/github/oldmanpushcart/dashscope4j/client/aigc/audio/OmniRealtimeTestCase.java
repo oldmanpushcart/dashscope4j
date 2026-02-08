@@ -160,7 +160,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
 
                             } catch (LineUnavailableException ex) {
                                 ex.printStackTrace();
-                                emitter.emitClose(ex);
+                                emitter.closing(ex);
                             }
 
                         }).start();

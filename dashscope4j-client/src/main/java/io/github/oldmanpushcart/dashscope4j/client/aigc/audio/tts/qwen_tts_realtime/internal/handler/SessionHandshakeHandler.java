@@ -74,7 +74,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
                 if (output instanceof SessionCreatedServerEvent) {
                     changeState(s, State.AWAITING_SESSION_CONFIRMED);
                     final var event = new SessionUpdateClientEvent(genUUID22(), session);
-                    yield emitter.emit(event);
+                    yield emitter.data(event);
                 } else {
                     final var cause = new IllegalStateException("Expect %s event, but was: %s".formatted(
                             "session.created",
@@ -163,29 +163,29 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
         }
 
         @Override
-        public CompletionStage<Void> emit(ClientEvent input) {
-            return delegate.emit(input);
+        public CompletionStage<Void> data(ClientEvent input) {
+            return delegate.data(input);
         }
 
         @Override
-        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
-            return delegate.emitBinary(buffer);
+        public CompletionStage<Void> binary(ByteBuffer buffer) {
+            return delegate.binary(buffer);
         }
 
         @Override
-        public CompletionStage<Void> emitClose() {
+        public CompletionStage<Void> closing() {
             final var finishF = new CompletableFuture<Void>();
             register(KEY_SESSION_FINISHED, finishF);
             final var event = new SessionFinishClientEvent(genUUID22());
-            return delegate.emit(event)
+            return delegate.data(event)
                     .thenCompose(unused -> finishF)
                     .whenComplete((unused, ex) -> unregister(KEY_SESSION_FINISHED, ex))
-                    .thenCompose(unused-> delegate.emitClose());
+                    .thenCompose(unused-> delegate.closing());
         }
 
         @Override
-        public CompletionStage<Void> emitClose(Throwable ex) {
-            return delegate.emitClose(ex);
+        public CompletionStage<Void> closing(Throwable ex) {
+            return delegate.closing(ex);
         }
 
         @Override

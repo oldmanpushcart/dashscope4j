@@ -58,7 +58,7 @@ public class QwenTtsRealtimeTestCase implements LoadingEnv {
                             .thenCompose(inputOp -> inputOp.text("粒粒皆辛苦。"))
                             .thenCompose(QwenTtsRealtimeEmitter.ManualVad.InputOp::commit)
 
-                            .thenCompose(Realtime.Emitter::emitClose)
+                            .thenCompose(Realtime.Emitter::closing)
                     ;
                 }
 

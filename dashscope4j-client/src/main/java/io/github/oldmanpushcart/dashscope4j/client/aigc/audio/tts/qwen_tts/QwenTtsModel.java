@@ -16,11 +16,16 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static io.github.oldmanpushcart.dashscope4j.common.Constants.MULTIMODAL_GENERATION_PATH;
+
 public record QwenTtsModel(String name, String path) implements AigcModel<QwenTtsModel.Input, QwenTtsModel.Output> {
 
-    private static final String PATH_MULTIMODAL = "/api/v1/services/aigc/multimodal-generation/generation";
-    public static final QwenTtsModel QWEN3_TTS_FLASH = new QwenTtsModel("qwen3-tts-flash", PATH_MULTIMODAL);
+    public static final QwenTtsModel QWEN3_TTS_FLASH = new QwenTtsModel("qwen3-tts-flash");
+    public static final QwenTtsModel QWEN_TTS = new QwenTtsModel("qwen-tts");
 
+    private QwenTtsModel(String name) {
+        this(name, MULTIMODAL_GENERATION_PATH);
+    }
 
     private static final List<Interceptor> interceptors = List.of(
             new SettingInterceptor()

@@ -42,4 +42,9 @@ public class Constants {
      */
     public static final String INFERENCE_PATH = "/api-ws/v1/inference";
 
+    /**
+     * 多模态生成 API 路径
+     */
+    public static final String MULTIMODAL_GENERATION_PATH = "/api/v1/services/aigc/multimodal-generation/generation";
+
 }

@@ -6,13 +6,13 @@ import io.github.oldmanpushcart.dashscope4j.client.api.Model;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.Usage;
 
+import static io.github.oldmanpushcart.dashscope4j.common.Constants.INFERENCE_PATH;
+
 public record SambertModel(
         String name,
         String path,
         Parameters parameters
 ) implements Model<SambertModel.In, SambertModel.Out> {
-
-    public static final String PATH = "/api-ws/v1/inference/";
 
     public static final SambertModel ZHINAN = new SambertModel(
             "sambert-zhinan-v1",
@@ -21,7 +21,7 @@ public record SambertModel(
     );
 
     public SambertModel(String name, Parameters parameters) {
-        this(name, PATH, parameters);
+        this(name, INFERENCE_PATH, parameters);
     }
 
     public SambertModel(String name, String path, Parameters parameters) {
@@ -29,7 +29,6 @@ public record SambertModel(
         this.path = path;
         this.parameters = parameters.unmodifiable();
     }
-
 
 
     /**

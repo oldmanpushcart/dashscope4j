@@ -67,7 +67,7 @@ public class DefaultRealtimeApi implements RealtimeApi {
         }
 
         @Override
-        public CompletionStage<Void> emit(String input) {
+        public CompletionStage<Void> data(String input) {
             return ws.sendText(input, true)
                     .whenComplete((v, ex) -> {
                         if (null == ex) {
@@ -81,7 +81,7 @@ public class DefaultRealtimeApi implements RealtimeApi {
         }
 
         @Override
-        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
+        public CompletionStage<Void> binary(ByteBuffer buffer) {
             final var byteCnt = buffer.remaining();
             return ws.sendBinary(buffer, true)
                     .whenComplete((v, ex) -> {
@@ -96,12 +96,12 @@ public class DefaultRealtimeApi implements RealtimeApi {
         }
 
         @Override
-        public CompletionStage<Void> emitClose() {
+        public CompletionStage<Void> closing() {
             return requestClose(WebSocket.NORMAL_CLOSURE, "bye!");
         }
 
         @Override
-        public CompletionStage<Void> emitClose(Throwable ex) {
+        public CompletionStage<Void> closing(Throwable ex) {
             return requestClose(1008, "Inner Error!");
         }
 

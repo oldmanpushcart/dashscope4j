@@ -110,23 +110,23 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         }
 
         @Override
-        public CompletionStage<Void> emit(ClientEvent input) {
-            return delegate.emit(input);
+        public CompletionStage<Void> data(ClientEvent input) {
+            return delegate.data(input);
         }
 
         @Override
-        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
-            return delegate.emitBinary(buffer);
+        public CompletionStage<Void> binary(ByteBuffer buffer) {
+            return delegate.binary(buffer);
         }
 
         @Override
-        public CompletionStage<Void> emitClose() {
-            return delegate.emitClose();
+        public CompletionStage<Void> closing() {
+            return delegate.closing();
         }
 
         @Override
-        public CompletionStage<Void> emitClose(Throwable ex) {
-            return delegate.emitClose(ex);
+        public CompletionStage<Void> closing(Throwable ex) {
+            return delegate.closing(ex);
         }
 
         @Override
@@ -160,7 +160,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                 }
 
                 final var event = new BufferAppendTextClientEvent(genUUID22(), text);
-                return emit(event)
+                return data(event)
                         .thenApply(unused -> this);
             }
 
@@ -175,7 +175,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                 final var clearF = new CompletableFuture<Void>();
                 register(KEY_BUFFER_CLEARED, clearF);
                 final var event = new BufferClearClientEvent(genUUID22());
-                return emit(event)
+                return data(event)
                         .thenCompose(unused -> clearF)
                         .whenComplete((unused, ex) -> unregister(KEY_BUFFER_CLEARED, ex))
                         .thenApply(unused -> this);
@@ -195,7 +195,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                 register(KEY_BUFFER_COMMITTED, commitF);
                 register(KEY_RESPONSE_DONE, doneF);
                 final var event = new BufferCommitClientEvent(genUUID22());
-                return emit(event)
+                return data(event)
                         .thenCompose(unused -> commitF)
                         .whenComplete((unused, ex) -> unregister(KEY_BUFFER_COMMITTED, ex))
                         .thenCompose(unused -> doneF)

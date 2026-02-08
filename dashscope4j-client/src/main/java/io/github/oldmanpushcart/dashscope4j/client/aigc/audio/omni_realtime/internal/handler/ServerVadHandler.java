@@ -55,20 +55,20 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         @Override
         public CompletionStage<Void> image(BufferedImage image) {
             final var event = new BufferAppendImageClientEvent(genUUID22(), image);
-            return origin.emit(event);
+            return origin.data(event);
         }
 
         @Override
         public CompletionStage<Void> audio(ByteBuffer buffer) {
             final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-            return origin.emit(event);
+            return origin.data(event);
         }
 
         @Override
         public CompletionStage<Void> audio(byte[] bytes, int offset, int length) {
             final var buffer = ByteBuffer.wrap(bytes, offset, length);
             final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-            return origin.emit(event);
+            return origin.data(event);
         }
 
         @Override
@@ -77,23 +77,23 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         }
 
         @Override
-        public CompletionStage<Void> emit(ClientEvent input) {
-            return origin.emit(input);
+        public CompletionStage<Void> data(ClientEvent input) {
+            return origin.data(input);
         }
 
         @Override
-        public CompletionStage<Void> emitBinary(ByteBuffer buffer) {
-            return origin.emitBinary(buffer);
+        public CompletionStage<Void> binary(ByteBuffer buffer) {
+            return origin.binary(buffer);
         }
 
         @Override
-        public CompletionStage<Void> emitClose() {
-            return origin.emitClose();
+        public CompletionStage<Void> closing() {
+            return origin.closing();
         }
 
         @Override
-        public CompletionStage<Void> emitClose(Throwable ex) {
-            return origin.emitClose(ex);
+        public CompletionStage<Void> closing(Throwable ex) {
+            return origin.closing(ex);
         }
 
         @Override
