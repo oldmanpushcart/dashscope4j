@@ -136,9 +136,10 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
 
     }
 
-    private static class OmniRealtimeEmitterImpl implements OmniRealtimeEmitter {
+    private static class OmniRealtimeEmitterImpl
+            extends Realtime.DelegateEmitter<ClientEvent>
+            implements OmniRealtimeEmitter {
 
-        private final Realtime.Emitter<ClientEvent> delegate;
         private final OmniRealtimeSession session;
 
         /**
@@ -148,53 +149,13 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
          * @throws NullPointerException 如果 {@code origin} 为 {@code null}
          */
         protected OmniRealtimeEmitterImpl(Realtime.Emitter<ClientEvent> delegate, OmniRealtimeSession session) {
-            this.delegate = delegate;
+            super(delegate);
             this.session = session;
         }
 
         @Override
         public OmniRealtimeSession session() {
             return session;
-        }
-
-        @Override
-        public CompletionStage<Void> data(ClientEvent input) {
-            return delegate.data(input);
-        }
-
-        @Override
-        public CompletionStage<Void> binary(ByteBuffer buffer) {
-            return delegate.binary(buffer);
-        }
-
-        @Override
-        public CompletionStage<Void> closing() {
-            return delegate.closing();
-        }
-
-        @Override
-        public CompletionStage<Void> closing(Throwable ex) {
-            return delegate.closing(ex);
-        }
-
-        @Override
-        public String id() {
-            return delegate.id();
-        }
-
-        @Override
-        public boolean isClosed() {
-            return delegate.isClosed();
-        }
-
-        @Override
-        public void close() {
-            delegate.close();
-        }
-
-        @Override
-        public CompletionStage<Void> closeFuture() {
-            return delegate.closeFuture();
         }
 
     }

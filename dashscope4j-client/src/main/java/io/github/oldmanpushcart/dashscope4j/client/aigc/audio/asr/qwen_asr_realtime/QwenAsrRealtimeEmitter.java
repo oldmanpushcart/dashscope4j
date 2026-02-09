@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionStage;
 
 public interface QwenAsrRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
 
-    QwenAsrRealtimeModel model();
+    QwenAsrRealtimeSession session();
 
     interface ManualVad extends QwenAsrRealtimeEmitter {
 
