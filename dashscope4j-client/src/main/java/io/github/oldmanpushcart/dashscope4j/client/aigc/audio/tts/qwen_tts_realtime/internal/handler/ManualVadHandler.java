@@ -56,7 +56,11 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
     public void onClosed(Throwable ex) {
         futureMap.forEach((type, future) -> {
             if (null != future) {
-                future.completeExceptionally(ex);
+                if (null != ex) {
+                    future.completeExceptionally(ex);
+                } else {
+                    future.cancel(true);
+                }
             }
         });
         futureMap.clear();
@@ -64,13 +68,16 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
     }
 
 
-    private static class ManualVadImpl implements QwenTtsRealtimeEmitter.ManualVad {
+    private static class ManualVadImpl
+            extends Realtime.DelegateEmitter<ClientEvent>
+            implements QwenTtsRealtimeEmitter.ManualVad {
 
         private final Map<String, CompletableFuture<?>> futureMap;
         private final QwenTtsRealtimeEmitter delegate;
         private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
 
         private ManualVadImpl(Map<String, CompletableFuture<?>> futureMap, QwenTtsRealtimeEmitter delegate) {
+            super(delegate);
             this.futureMap = futureMap;
             this.delegate = delegate;
         }
@@ -107,46 +114,6 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         @Override
         public QwenTtsRealtimeSession session() {
             return delegate.session();
-        }
-
-        @Override
-        public CompletionStage<Void> data(ClientEvent input) {
-            return delegate.data(input);
-        }
-
-        @Override
-        public CompletionStage<Void> binary(ByteBuffer buffer) {
-            return delegate.binary(buffer);
-        }
-
-        @Override
-        public CompletionStage<Void> closing() {
-            return delegate.closing();
-        }
-
-        @Override
-        public CompletionStage<Void> closing(Throwable ex) {
-            return delegate.closing(ex);
-        }
-
-        @Override
-        public String id() {
-            return delegate.id();
-        }
-
-        @Override
-        public boolean isClosed() {
-            return delegate.isClosed();
-        }
-
-        @Override
-        public void close() {
-            delegate.close();
-        }
-
-        @Override
-        public CompletionStage<Void> closeFuture() {
-            return delegate.closeFuture();
         }
 
         private class InputOpImpl implements InputOp {

@@ -16,17 +16,17 @@ public interface QwenAsrRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
 
         interface InputOp {
 
-            CompletionStage<Void> audio(ByteBuffer buffer);
+            CompletionStage<InputOp> audio(ByteBuffer buffer);
 
-            default CompletionStage<Void> audio(byte[] bytes, int offset, int length) {
+            default CompletionStage<InputOp> audio(byte[] bytes, int offset, int length) {
                 return audio(ByteBuffer.wrap(bytes, offset, length));
             }
 
-            default CompletionStage<Void> audio(byte[] bytes) {
+            default CompletionStage<InputOp> audio(byte[] bytes) {
                 return audio(ByteBuffer.wrap(bytes));
             }
 
-            CompletionStage<Void> commit();
+            CompletionStage<ManualVad> commit();
 
         }
 

@@ -66,13 +66,16 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
     }
 
 
-    private static class ManualVadImpl implements ManualVad {
+    private static class ManualVadImpl
+            extends Realtime.DelegateEmitter<ClientEvent>
+            implements ManualVad {
 
         private final OmniRealtimeEmitter origin;
         private final Map<String, CompletableFuture<?>> futureMap;
         private final AtomicReference<State> stateRef = new AtomicReference<>(State.IDLE);
 
         private ManualVadImpl(OmniRealtimeEmitter origin, Map<String, CompletableFuture<?>> futureMap) {
+            super(origin);
             this.origin = origin;
             this.futureMap = futureMap;
         }
@@ -121,47 +124,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         public OmniRealtimeSession session() {
             return origin.session();
         }
-
-        @Override
-        public CompletionStage<Void> data(ClientEvent input) {
-            return origin.data(input);
-        }
-
-        @Override
-        public CompletionStage<Void> binary(ByteBuffer buffer) {
-            return origin.binary(buffer);
-        }
-
-        @Override
-        public CompletionStage<Void> closing() {
-            return origin.closing();
-        }
-
-        @Override
-        public CompletionStage<Void> closing(Throwable ex) {
-            return origin.closing(ex);
-        }
-
-        @Override
-        public String id() {
-            return origin.id();
-        }
-
-        @Override
-        public boolean isClosed() {
-            return origin.isClosed();
-        }
-
-        @Override
-        public void close() {
-            origin.close();
-        }
-
-        @Override
-        public CompletionStage<Void> closeFuture() {
-            return origin.closeFuture();
-        }
-
+        
         private class InputOpImpl implements InputOp {
 
             @Override

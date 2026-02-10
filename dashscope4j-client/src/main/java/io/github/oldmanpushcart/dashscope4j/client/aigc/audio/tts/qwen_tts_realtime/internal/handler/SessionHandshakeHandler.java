@@ -87,10 +87,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
                 if (output instanceof SessionUpdatedServerEvent event) {
                     changeState(s, State.HANDSHAKE_COMPLETED);
                     final var session = event.session();
-                    final var newSession = QwenTtsRealtimeSession.newBuilder(session)
-                            .model(session.model())
-                            .build();
-                    final var qwenTtsRealtimeEmitter = new QwenTtsRealtimeEmitterImpl(newSession, emitter, futureMap);
+                    final var qwenTtsRealtimeEmitter = new QwenTtsRealtimeEmitterImpl(session, emitter, futureMap);
                     delegate.onOpen(qwenTtsRealtimeEmitter);
                     yield CompletableFuture.completedStage(null);
                 } else {
@@ -180,7 +177,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
             return delegate.data(event)
                     .thenCompose(unused -> finishF)
                     .whenComplete((unused, ex) -> unregister(KEY_SESSION_FINISHED, ex))
-                    .thenCompose(unused-> delegate.closing());
+                    .thenCompose(unused -> delegate.closing());
         }
 
         @Override

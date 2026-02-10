@@ -1,10 +1,10 @@
-package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.internal.handler;
+package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.internal.handler;
 
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.QwenTtsRealtimeEmitter;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.QwenTtsRealtimeSession;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.BufferAppendTextClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.ClientEvent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.ServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.QwenAsrRealtimeEmitter;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.QwenAsrRealtimeSession;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.client.BufferAppendAudioClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.client.ClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.nio.ByteBuffer;
@@ -22,8 +22,7 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
 
     @Override
     public void onOpen(Realtime.Emitter<ClientEvent> emitter) {
-        final var serverVad = new ServerVadImpl((QwenTtsRealtimeEmitter) emitter);
-        delegate.onOpen(serverVad);
+        delegate.onOpen(new ServerVadImpl((QwenAsrRealtimeEmitter) emitter));
     }
 
     @Override
@@ -43,25 +42,26 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
 
     private static class ServerVadImpl
             extends Realtime.DelegateEmitter<ClientEvent>
-            implements QwenTtsRealtimeEmitter.ServerVad {
+            implements QwenAsrRealtimeEmitter.ServerVad {
 
-        private final QwenTtsRealtimeEmitter delegate;
+        private final QwenAsrRealtimeEmitter delegate;
 
-        private ServerVadImpl(QwenTtsRealtimeEmitter delegate) {
+        private ServerVadImpl(QwenAsrRealtimeEmitter delegate) {
             super(delegate);
             this.delegate = delegate;
         }
 
         @Override
-        public CompletionStage<Void> text(String text) {
-            final var event = new BufferAppendTextClientEvent(genUUID22(), text);
+        public CompletionStage<Void> audio(ByteBuffer buffer) {
+            final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
             return data(event);
         }
 
         @Override
-        public QwenTtsRealtimeSession session() {
+        public QwenAsrRealtimeSession session() {
             return delegate.session();
         }
+
 
     }
 

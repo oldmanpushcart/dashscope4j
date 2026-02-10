@@ -1,16 +1,23 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.client.ClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.server.ServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.internal.handler.ManualVadHandler;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.internal.handler.ServerVadHandler;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.internal.handler.SessionHandshakeHandler;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.HandlerChain;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.DurationMsJsonDeserializer;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.DurationMsJsonSerializer;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.function.Function;
 
 public record QwenAsrRealtimeSession(
@@ -18,6 +25,7 @@ public record QwenAsrRealtimeSession(
         @JsonProperty("id")
         String id,
 
+        @JacksonInject("dashscope/session/model")
         QwenAsrRealtimeModel model,
 
         @JsonProperty("sample_rate")
@@ -52,7 +60,24 @@ public record QwenAsrRealtimeSession(
 
     @Override
     public Function<Realtime.Handler<ClientEvent, ServerEvent>, Realtime.Handler<String, String>> provider() {
-        return null;
+        return ioHandler -> HandlerChain
+                .<String, String>identity()
+                .<ClientEvent, ServerEvent>map(JacksonJsonUtils::toJson, this::toServerEvent)
+                .<ClientEvent, ServerEvent>then(h -> new SessionHandshakeHandler(this, h))
+                .build(ioHandler);
+    }
+
+    private ServerEvent toServerEvent(String payload) {
+        final var variableMap = Map.<String, Object>of("dashscope/session/model", model);
+        return JacksonJsonUtils.toObject(variableMap, payload, ServerEvent.class);
+    }
+
+    private Realtime.Handler<ClientEvent, ServerEvent> newHandler(Realtime.Handler<ClientEvent, ServerEvent> handler) {
+        if (turnDetection == null) {
+            return new ManualVadHandler(handler);
+        } else {
+            return new ServerVadHandler(handler);
+        }
     }
 
     public enum InputAudioFormat {
