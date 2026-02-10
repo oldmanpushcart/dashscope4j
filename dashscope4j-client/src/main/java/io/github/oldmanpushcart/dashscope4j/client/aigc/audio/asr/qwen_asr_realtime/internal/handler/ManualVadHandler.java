@@ -99,6 +99,9 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
 
             @Override
             public CompletionStage<InputOp> audio(ByteBuffer buffer) {
+                if (!buffer.hasRemaining()) {
+                    return CompletableFuture.completedStage(this);
+                }
                 final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
                 return data(event)
                         .thenApply(unused -> this);

@@ -3,27 +3,32 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_real
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.QwenAsrRealtimeEmitter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.QwenAsrRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.client.ClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.client.SessionFinishClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.client.SessionUpdateClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.server.ErrorServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.server.SessionCreatedServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.server.SessionUpdatedServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
 public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, ServerEvent> {
 
+    private static final String KEY_SESSION_FINISHED = "session.finished";
+
     private final QwenAsrRealtimeSession session;
     private final Realtime.Handler<ClientEvent, ServerEvent> delegate;
 
     private volatile Realtime.Emitter<ClientEvent> emitter;
+    private final Map<String, CompletableFuture<?>> futureMap = new ConcurrentHashMap<>();
     private final AtomicReference<State> state = new AtomicReference<>(State.AWAITING_SESSION_CREATED);
 
     public SessionHandshakeHandler(QwenAsrRealtimeSession session, Realtime.Handler<ClientEvent, ServerEvent> delegate) {
@@ -38,6 +43,12 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
 
     @Override
     public CompletionStage<Void> onData(ServerEvent output) {
+
+        final var type = output.type();
+        final var future = futureMap.remove(type);
+        if (null != future) {
+            future.complete(null);
+        }
 
         if (output instanceof ErrorServerEvent event) {
             final var error = event.error();
@@ -71,7 +82,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
                 final var newSession = QwenAsrRealtimeSession.newBuilder(session)
                         .model(session.model())
                         .build();
-                final var qwenAsrRealtimeEmitter = new QwenAsrRealtimeEmitterImpl(emitter, newSession);
+                final var qwenAsrRealtimeEmitter = new QwenAsrRealtimeEmitterImpl(emitter, newSession, futureMap);
                 delegate.onOpen(qwenAsrRealtimeEmitter);
                 yield CompletableFuture.completedFuture(null);
             }
@@ -86,6 +97,16 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
 
     @Override
     public void onClosed(Throwable ex) {
+        futureMap.forEach((type, future) -> {
+            if (null != future) {
+                if (null != ex) {
+                    future.completeExceptionally(ex);
+                } else {
+                    future.cancel(true);
+                }
+            }
+        });
+        futureMap.clear();
         delegate.onClosed(ex);
     }
 
@@ -113,10 +134,12 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
             implements QwenAsrRealtimeEmitter {
 
         private final QwenAsrRealtimeSession session;
+        private final Map<String, CompletableFuture<?>> futureMap;
 
-        public QwenAsrRealtimeEmitterImpl(Realtime.Emitter<ClientEvent> delegate, QwenAsrRealtimeSession session) {
+        public QwenAsrRealtimeEmitterImpl(Realtime.Emitter<ClientEvent> delegate, QwenAsrRealtimeSession session, Map<String, CompletableFuture<?>> futureMap) {
             super(delegate);
             this.session = session;
+            this.futureMap = futureMap;
         }
 
         @Override
@@ -124,6 +147,20 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
             return session;
         }
 
+        @Override
+        public CompletionStage<Void> closing() {
+
+            final var finishF = new CompletableFuture<>();
+            if (futureMap.putIfAbsent(KEY_SESSION_FINISHED, finishF) != null) {
+                throw new IllegalStateException("Exists finish running.");
+            }
+
+            final var event = new SessionFinishClientEvent(genUUID22());
+            return data(event)
+                    .thenCompose(unused -> finishF)
+                    .whenComplete((unused, ex) -> futureMap.remove(KEY_SESSION_FINISHED))
+                    .thenCompose(unused -> super.closing());
+        }
     }
 
 }

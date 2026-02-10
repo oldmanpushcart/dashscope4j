@@ -206,6 +206,33 @@ public class HandlerChain<I, O, UI, UO> {
         });
     }
 
+
+    public <NI> HandlerChain<I, O, NI, UO> mapEmitter(Function<Realtime.Emitter<UI>, Realtime.Emitter<NI>> mapper) {
+        Objects.requireNonNull(mapper, "mapper must not be null");
+        return then(uiuoHandler -> new Realtime.Handler<>() {
+            @Override
+            public void onOpen(Realtime.Emitter<UI> emitter) {
+                final var newEmitter = mapper.apply(emitter);
+                uiuoHandler.onOpen(newEmitter);
+            }
+
+            @Override
+            public CompletionStage<Void> onData(UO output) {
+                return uiuoHandler.onData(output);
+            }
+
+            @Override
+            public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+                return uiuoHandler.onBinary(buffer);
+            }
+
+            @Override
+            public void onClosed(Throwable ex) {
+                uiuoHandler.onClosed(ex);
+            }
+        });
+    }
+
     /**
      * 同时映射输入和输出
      *

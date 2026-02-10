@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceEmitter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceSession;
@@ -30,12 +31,13 @@ public class CosyVoiceTestCase implements LoadingEnv {
             client.realtime(session, new Realtime.Handler<>() {
 
                                 @Override
-                                public void onOpen(Realtime.Emitter<CosyVoiceModel.In> emitter) {
+                                public void onOpen(Realtime.Emitter<CosyVoiceModel.In> e) {
+                                    final CosyVoiceEmitter emitter = (CosyVoiceEmitter) e;
                                     CompletableFuture.<Void>completedStage(null)
-                                            .thenCompose(v -> emitter.data(CosyVoiceModel.In.of("床前明月光，")))
-                                            .thenCompose(v -> emitter.data(CosyVoiceModel.In.of("疑似地上霜。")))
-                                            .thenCompose(v -> emitter.data(CosyVoiceModel.In.of("举头望明月，")))
-                                            .thenCompose(v -> emitter.data(CosyVoiceModel.In.of("低头思故乡。")))
+                                            .thenCompose(v -> emitter.text("床前明月光，"))
+                                            .thenCompose(v -> emitter.text("疑似地上霜。"))
+                                            .thenCompose(v -> emitter.text("举头望明月，"))
+                                            .thenCompose(v -> emitter.text("低头思故乡。"))
                                             .thenCompose(v -> emitter.closing());
                                 }
 

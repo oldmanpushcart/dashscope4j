@@ -87,7 +87,10 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
                 if (output instanceof SessionUpdatedServerEvent event) {
                     changeState(s, State.HANDSHAKE_COMPLETED);
                     final var session = event.session();
-                    final var qwenTtsRealtimeEmitter = new QwenTtsRealtimeEmitterImpl(session, emitter, futureMap);
+                    final var newSession = QwenTtsRealtimeSession.newBuilder(session)
+                            .model(session.model())
+                            .build();
+                    final var qwenTtsRealtimeEmitter = new QwenTtsRealtimeEmitterImpl(newSession, emitter, futureMap);
                     delegate.onOpen(qwenTtsRealtimeEmitter);
                     yield CompletableFuture.completedStage(null);
                 } else {
@@ -112,7 +115,11 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
     public void onClosed(Throwable ex) {
         futureMap.forEach((type, future) -> {
             if (null != future) {
-                future.completeExceptionally(ex);
+                if (null != ex) {
+                    future.completeExceptionally(ex);
+                } else {
+                    future.cancel(true);
+                }
             }
         });
         futureMap.clear();
@@ -125,10 +132,11 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
         HANDSHAKE_COMPLETED;
     }
 
-    private static final class QwenTtsRealtimeEmitterImpl implements QwenTtsRealtimeEmitter {
+    private static final class QwenTtsRealtimeEmitterImpl
+            extends Realtime.DelegateEmitter<ClientEvent>
+            implements QwenTtsRealtimeEmitter {
 
         private final QwenTtsRealtimeSession session;
-        private final Realtime.Emitter<ClientEvent> delegate;
         private final Map<String, CompletableFuture<?>> futureMap;
 
 
@@ -137,81 +145,27 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
                 Realtime.Emitter<ClientEvent> delegate,
                 Map<String, CompletableFuture<?>> futureMap
         ) {
+            super(delegate);
             this.session = session;
-            this.delegate = delegate;
             this.futureMap = futureMap;
-        }
-
-        private void register(String key, CompletableFuture<?> future) {
-            if (futureMap.putIfAbsent(key, future) != null) {
-                throw new IllegalStateException("Key: %s already registered!".formatted(key));
-            }
-        }
-
-        private void unregister(String key, Throwable ex) {
-            final var future = futureMap.remove(key);
-            if (null != future) {
-                if (null != ex) {
-                    future.completeExceptionally(ex);
-                } else {
-                    future.complete(null);
-                }
-            }
-        }
-
-        @Override
-        public CompletionStage<Void> data(ClientEvent input) {
-            return delegate.data(input);
-        }
-
-        @Override
-        public CompletionStage<Void> binary(ByteBuffer buffer) {
-            return delegate.binary(buffer);
         }
 
         @Override
         public CompletionStage<Void> closing() {
             final var finishF = new CompletableFuture<Void>();
-            register(KEY_SESSION_FINISHED, finishF);
+            if (futureMap.putIfAbsent(KEY_SESSION_FINISHED, finishF) != null) {
+                throw new IllegalStateException("Exists finish running.");
+            }
             final var event = new SessionFinishClientEvent(genUUID22());
-            return delegate.data(event)
+            return data(event)
                     .thenCompose(unused -> finishF)
-                    .whenComplete((unused, ex) -> unregister(KEY_SESSION_FINISHED, ex))
-                    .thenCompose(unused -> delegate.closing());
-        }
-
-        @Override
-        public CompletionStage<Void> closing(Throwable ex) {
-            return delegate.closing(ex);
-        }
-
-        @Override
-        public String id() {
-            return delegate.id();
-        }
-
-        @Override
-        public boolean isClosed() {
-            return delegate.isClosed();
-        }
-
-        @Override
-        public void close() {
-            delegate.close();
-        }
-
-        @Override
-        public CompletionStage<Void> closeFuture() {
-            return delegate.closeFuture();
+                    .whenComplete((unused, ex) -> futureMap.remove(KEY_SESSION_FINISHED))
+                    .thenCompose(unused -> super.closing());
         }
 
         @Override
         public QwenTtsRealtimeSession session() {
             return session;
-        }
-
-        public Realtime.Emitter<ClientEvent> delegate() {
-            return delegate;
         }
 
     }

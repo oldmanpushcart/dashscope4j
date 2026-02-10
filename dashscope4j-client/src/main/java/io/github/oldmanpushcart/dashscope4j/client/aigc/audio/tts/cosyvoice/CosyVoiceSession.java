@@ -37,6 +37,7 @@ public class CosyVoiceSession extends ParameterSession<In, Out> {
                     .<String, String>then(h -> new CommandHandshakeHandler(Mode.DUPLEX, newSession, h))
                     .<In, Out>then(h -> CodecHandler.json(In.class, Out.class, h))
                     .filterOutput(o -> o.output().sentence() != null)
+                    .mapEmitter(CosyVoiceEmitter::new)
                     .build(ioHandler);
         };
     }
@@ -77,7 +78,6 @@ public class CosyVoiceSession extends ParameterSession<In, Out> {
 
     public static class Builder extends ParameterSession.Builder<CosyVoiceSession, Builder> {
 
-        private final Parameters parameters = new Parameters();
         private CosyVoiceModel model;
 
         public Builder() {

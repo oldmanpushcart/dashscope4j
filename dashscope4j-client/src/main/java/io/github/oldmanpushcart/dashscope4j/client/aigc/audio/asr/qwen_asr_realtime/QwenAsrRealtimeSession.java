@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -17,7 +16,6 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.Jackson
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.time.Duration;
-import java.util.Map;
 import java.util.function.Function;
 
 public record QwenAsrRealtimeSession(
@@ -25,7 +23,6 @@ public record QwenAsrRealtimeSession(
         @JsonProperty("id")
         String id,
 
-        @JacksonInject("dashscope/session/model")
         QwenAsrRealtimeModel model,
 
         @JsonProperty("sample_rate")
@@ -55,7 +52,7 @@ public record QwenAsrRealtimeSession(
 
     @Override
     public QwenAsrRealtimeModel model() {
-        return null;
+        return model;
     }
 
     @Override
@@ -63,20 +60,19 @@ public record QwenAsrRealtimeSession(
         return ioHandler -> HandlerChain
                 .<String, String>identity()
                 .<ClientEvent, ServerEvent>map(JacksonJsonUtils::toJson, this::toServerEvent)
-                .<ClientEvent, ServerEvent>then(h -> new SessionHandshakeHandler(this, h))
+                .<ClientEvent, ServerEvent>then(h -> new SessionHandshakeHandler(this, newHandler(h)))
                 .build(ioHandler);
     }
 
     private ServerEvent toServerEvent(String payload) {
-        final var variableMap = Map.<String, Object>of("dashscope/session/model", model);
-        return JacksonJsonUtils.toObject(variableMap, payload, ServerEvent.class);
+        return JacksonJsonUtils.toObject(payload, ServerEvent.class);
     }
 
     private Realtime.Handler<ClientEvent, ServerEvent> newHandler(Realtime.Handler<ClientEvent, ServerEvent> handler) {
-        if (turnDetection == null) {
-            return new ManualVadHandler(handler);
-        } else {
+        if (turnDetection == null || turnDetection.type() == TurnDetection.Type.SERVER_VAD) {
             return new ServerVadHandler(handler);
+        } else {
+            return new ManualVadHandler(handler);
         }
     }
 
@@ -120,7 +116,11 @@ public record QwenAsrRealtimeSession(
                 null
         );
 
-        public static final TurnDetection MANUAL_VAD = null;
+        public static final TurnDetection MANUAL_VAD = new TurnDetection(
+                TurnDetection.Type.MANUAL_VAD,
+                null,
+                null
+        );;
 
         /**
          * 检测方式

@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_real
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ConversationItemInputAudioTranscriptionCompletedServerClient extends ServerEvent {
+public class ConversationItemInputAudioTranscriptionCompletedServerEvent extends ServerEvent {
 
     private final String itemId;
     private final int contentIndex;
@@ -12,7 +12,7 @@ public class ConversationItemInputAudioTranscriptionCompletedServerClient extend
     private final String transcript;
 
     @JsonCreator
-    public ConversationItemInputAudioTranscriptionCompletedServerClient(
+    public ConversationItemInputAudioTranscriptionCompletedServerEvent(
 
             @JsonProperty("event_id")
             String id,

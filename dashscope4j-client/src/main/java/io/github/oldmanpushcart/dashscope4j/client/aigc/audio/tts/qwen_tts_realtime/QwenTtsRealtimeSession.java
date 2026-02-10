@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client.ClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server.ServerEvent;
@@ -12,7 +11,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
-import java.util.Map;
 import java.util.function.Function;
 
 public record QwenTtsRealtimeSession(
@@ -20,7 +18,6 @@ public record QwenTtsRealtimeSession(
         @JsonProperty("id")
         String id,
 
-        @JacksonInject("dashscope/session/model")
         QwenTtsRealtimeModel model,
 
         @JsonProperty("mode")
@@ -79,8 +76,7 @@ public record QwenTtsRealtimeSession(
     }
 
     private ServerEvent toServerEvent(String s) {
-        final var variableMap = Map.<String, Object>of("dashscope/session/model", model);
-        return JacksonJsonUtils.toObject(variableMap, s, ServerEvent.class);
+        return JacksonJsonUtils.toObject(s, ServerEvent.class);
     }
 
     private Realtime.Handler<ClientEvent, ServerEvent> handlerFactory(Realtime.Handler<ClientEvent, ServerEvent> handler) {
