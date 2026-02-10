@@ -3,13 +3,22 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_real
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.client.ClientEvent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.server.ServerEvent;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.DurationMsJsonDeserializer;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.DurationMsJsonSerializer;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.time.Duration;
+import java.util.function.Function;
 
 public record QwenAsrRealtimeSession(
+
+        @JsonProperty("id")
+        String id,
+
+        QwenAsrRealtimeModel model,
 
         @JsonProperty("sample_rate")
         Integer sampleRate,
@@ -23,15 +32,27 @@ public record QwenAsrRealtimeSession(
         @JsonProperty("turn_detection")
         TurnDetection turnDetection
 
-) {
+) implements Realtime.Session<ClientEvent, ServerEvent> {
 
     private QwenAsrRealtimeSession(Builder builder) {
         this(
+                null,
+                builder.model,
                 builder.sampleRate,
                 builder.inputAudioFormat,
                 builder.inputAudioTranscription,
                 builder.turnDetection
         );
+    }
+
+    @Override
+    public QwenAsrRealtimeModel model() {
+        return null;
+    }
+
+    @Override
+    public Function<Realtime.Handler<ClientEvent, ServerEvent>, Realtime.Handler<String, String>> provider() {
+        return null;
     }
 
     public enum InputAudioFormat {
@@ -74,11 +95,7 @@ public record QwenAsrRealtimeSession(
                 null
         );
 
-        public static final TurnDetection MANUAL_VAD = new TurnDetection(
-                TurnDetection.Type.MANUAL_VAD,
-                null,
-                null
-        );
+        public static final TurnDetection MANUAL_VAD = null;
 
         /**
          * 检测方式
@@ -105,6 +122,7 @@ public record QwenAsrRealtimeSession(
 
     public static class Builder implements Buildable<QwenAsrRealtimeSession, Builder> {
 
+        private QwenAsrRealtimeModel model;
         private Integer sampleRate;
         private InputAudioFormat inputAudioFormat;
         private InputAudioTranscription inputAudioTranscription;
@@ -115,10 +133,16 @@ public record QwenAsrRealtimeSession(
         }
 
         public Builder(QwenAsrRealtimeSession session) {
+            this.model = session.model;
             this.sampleRate = session.sampleRate;
             this.inputAudioFormat = session.inputAudioFormat;
             this.inputAudioTranscription = session.inputAudioTranscription;
             this.turnDetection = session.turnDetection;
+        }
+
+        public Builder model(QwenAsrRealtimeModel model) {
+            this.model = model;
+            return this;
         }
 
         public Builder sampleRate(Integer sampleRate) {
