@@ -20,6 +20,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.Interceptio
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.TaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.GeneralAigcInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
@@ -44,7 +45,8 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     private static final List<Interceptor> globalInterceptors = List.of(
             new BridgeInterceptor(),
-            new IncrementalOutputOnlyInterceptor()
+            new IncrementalOutputOnlyInterceptor(),
+            new GeneralAigcInterceptor()
     );
 
     private DashscopeClientImpl(Builder builder) {
