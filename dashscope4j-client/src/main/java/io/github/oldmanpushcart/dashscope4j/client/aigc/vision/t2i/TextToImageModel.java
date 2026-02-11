@@ -32,7 +32,7 @@ public record TextToImageModel(
             @JsonProperty("prompt")
             String prompt,
 
-            @JsonProperty("negative")
+            @JsonProperty("negative_prompt")
             String negative
 
     ) {
