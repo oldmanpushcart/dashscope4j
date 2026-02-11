@@ -4,10 +4,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.GenericReflectUtils;
 
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
 
-public interface AigcModel<I, O> extends Model<I,O> {
+public interface AigcModel<I, O> extends Model<I, O> {
 
     /**
      * 模型标签
@@ -30,19 +31,17 @@ public interface AigcModel<I, O> extends Model<I,O> {
     /**
      * @return 模型输入参数类型
      */
-    default Class<I> inputType() {
+    default Type inputType() {
         final ParameterizedType parameterizedType = GenericReflectUtils.findFirst(getClass(), AigcModel.class);
-        //noinspection unchecked
-        return parameterizedType == null ? null : (Class<I>) parameterizedType.getActualTypeArguments()[0];
+        return parameterizedType == null ? null : parameterizedType.getActualTypeArguments()[0];
     }
 
     /**
      * @return 模型输出参数类型
      */
-    default Class<O> outputType() {
+    default Type outputType() {
         final ParameterizedType parameterizedType = GenericReflectUtils.findFirst(getClass(), AigcModel.class);
-        //noinspection unchecked
-        return parameterizedType == null ? null : (Class<O>) parameterizedType.getActualTypeArguments()[1];
+        return parameterizedType == null ? null : parameterizedType.getActualTypeArguments()[1];
     }
 
 }

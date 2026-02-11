@@ -60,9 +60,14 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
      * @return 应答类型
      */
     private static Type newResponseType(AigcModel<?, ?> model) {
-        return JacksonJsonUtils.newMapper()
+
+        final var mapper = JacksonJsonUtils.newMapper();
+        final var outputJavaType = mapper.constructType(model.outputType());
+
+        return mapper
                 .getTypeFactory()
-                .constructParametricType(AigcResponse.class, model.outputType());
+                .constructParametricType(AigcResponse.class, outputJavaType)
+                ;
     }
 
     /**

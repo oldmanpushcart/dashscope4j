@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static io.github.oldmanpushcart.dashscope4j.common.Constants.*;
 import static java.util.Collections.unmodifiableList;
 
 public record ChatModel(
@@ -32,37 +33,33 @@ public record ChatModel(
         Set<String> tags
 ) implements AigcModel<ChatModel.Input, ChatModel.Output> {
 
-    private static final String PATH_TEXT = "/api/v1/services/aigc/text-generation/generation";
-    private static final String PATH_MULTIMODAL = "/api/v1/services/aigc/multimodal-generation/generation";
-    private static final String PATH_COMPAT_OPENAI = "/compatible-mode/v1/chat/completions";
-
-    public static final ChatModel QWEN_FLASH = new ChatModel("qwen-flash", PATH_TEXT);
-    public static final ChatModel QWEN_PLUS = new ChatModel("qwen-plus", PATH_TEXT);
-    public static final ChatModel QWEN_MAX = new ChatModel("qwen-max", PATH_TEXT);
-    public static final ChatModel QWEN_LONG = new ChatModel("qwen-long", PATH_TEXT, Set.of(
+    public static final ChatModel QWEN_FLASH = new ChatModel("qwen-flash", TEXT_GENERATION_PATH);
+    public static final ChatModel QWEN_PLUS = new ChatModel("qwen-plus", TEXT_GENERATION_PATH);
+    public static final ChatModel QWEN_MAX = new ChatModel("qwen-max", TEXT_GENERATION_PATH);
+    public static final ChatModel QWEN_LONG = new ChatModel("qwen-long", TEXT_GENERATION_PATH, Set.of(
             ChatModelTags.COMPAT_PLAINTEXT
     ));
 
-    public static final ChatModel QWEN_VL_PLUS = new ChatModel("qwen-vl-plus", PATH_MULTIMODAL);
-    public static final ChatModel QWEN_VL_MAX = new ChatModel("qwen-vl-max", PATH_MULTIMODAL);
+    public static final ChatModel QWEN_VL_PLUS = new ChatModel("qwen-vl-plus", MULTIMODAL_GENERATION_PATH);
+    public static final ChatModel QWEN_VL_MAX = new ChatModel("qwen-vl-max", MULTIMODAL_GENERATION_PATH);
 
-    public static final ChatModel QWQ_PLUS = new ChatModel("qwq-plus", PATH_TEXT, Set.of(
+    public static final ChatModel QWQ_PLUS = new ChatModel("qwq-plus", TEXT_GENERATION_PATH, Set.of(
             AigcModelTags.RESPONSE_MODE_FLOW,
             AigcModelTags.INCREMENTAL_OUTPUT_ONLY
     ));
-    public static final ChatModel QVQ_MAX = new ChatModel("qvq-max", PATH_MULTIMODAL, Set.of(
+    public static final ChatModel QVQ_MAX = new ChatModel("qvq-max", MULTIMODAL_GENERATION_PATH, Set.of(
             AigcModelTags.RESPONSE_MODE_FLOW,
             AigcModelTags.INCREMENTAL_OUTPUT_ONLY
     ));
-    public static final ChatModel QWEN3_OMNI_FLASH = new ChatModel("qwen3-omni-flash", PATH_COMPAT_OPENAI, Set.of(
+    public static final ChatModel QWEN3_OMNI_FLASH = new ChatModel("qwen3-omni-flash", COMPAT_OPENAI_PATH, Set.of(
             ChatModelTags.COMPAT_OPENAI,
             AigcModelTags.RESPONSE_MODE_FLOW,
             AigcModelTags.INCREMENTAL_OUTPUT_ONLY
     ));
 
-    public static final ChatModel QWEN_IMAGE_MAX = new ChatModel("qwen-image-max", PATH_MULTIMODAL);
+    public static final ChatModel QWEN_IMAGE_MAX = new ChatModel("qwen-image-max", MULTIMODAL_GENERATION_PATH);
 
-    public static final ChatModel WAN_T2I = new ChatModel("wan2.6-t2i", PATH_MULTIMODAL, Set.of(
+    public static final ChatModel WAN_T2I = new ChatModel("wan2.6-t2i", MULTIMODAL_GENERATION_PATH, Set.of(
             AigcModelTags.RESPONSE_MODE_ASYNC,
             AigcModelTags.RESPONSE_MODE_TASK
     ));

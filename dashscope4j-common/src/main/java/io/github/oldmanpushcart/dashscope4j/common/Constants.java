@@ -43,8 +43,18 @@ public class Constants {
     public static final String INFERENCE_PATH = "/api-ws/v1/inference";
 
     /**
+     * 文本生成 API 路径
+     */
+    public static final String TEXT_GENERATION_PATH = "/api/v1/services/aigc/text-generation/generation";
+
+    /**
      * 多模态生成 API 路径
      */
     public static final String MULTIMODAL_GENERATION_PATH = "/api/v1/services/aigc/multimodal-generation/generation";
+
+    /**
+     * 兼容 OpenAI API 路径
+     */
+    public static final String COMPAT_OPENAI_PATH = "/compatible-mode/v1/chat/completions";
 
 }
