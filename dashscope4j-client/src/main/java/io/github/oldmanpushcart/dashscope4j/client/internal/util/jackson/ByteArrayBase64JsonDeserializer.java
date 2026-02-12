@@ -14,7 +14,7 @@ public class ByteArrayBase64JsonDeserializer extends JsonDeserializer<byte[]> {
     private static final byte[] EMPTY = new byte[0];
 
     @Override
-    public byte[] deserialize(JsonParser parser, DeserializationContext context) throws IOException, JacksonException {
+    public byte[] deserialize(JsonParser parser, DeserializationContext context) throws IOException {
 
         final var token = parser.currentToken();
         if (token == JsonToken.VALUE_NULL) {

@@ -18,7 +18,7 @@ import java.util.List;
 class ContentListJsonDeserializer extends JsonDeserializer<List<Content>> {
 
     @Override
-    public List<Content> deserialize(JsonParser parser, DeserializationContext context) throws IOException, JacksonException {
+    public List<Content> deserialize(JsonParser parser, DeserializationContext context) throws IOException {
         final var mapper = parser.getCodec();
         final var node = mapper.<JsonNode>readTree(parser);
 

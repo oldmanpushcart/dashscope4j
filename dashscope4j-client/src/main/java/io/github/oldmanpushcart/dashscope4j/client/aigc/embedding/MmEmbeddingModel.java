@@ -15,7 +15,7 @@ public record MmEmbeddingModel(
 ) implements AigcModel<MmEmbeddingModel.Input, MmEmbeddingModel.Output> {
 
     private static final String PATH = "/api/v1/services/embeddings/multimodal-embedding/multimodal-embedding";
-    private static List<Interceptor> interceptors = List.of(
+    private static final List<Interceptor> interceptors = List.of(
             new UploadMmContentInterceptor()
     );
 

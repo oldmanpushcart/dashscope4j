@@ -129,7 +129,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
     private enum State {
         AWAITING_SESSION_CREATED,
         AWAITING_SESSION_CONFIRMED,
-        HANDSHAKE_COMPLETED;
+        HANDSHAKE_COMPLETED
     }
 
     private static final class QwenTtsRealtimeEmitterImpl

@@ -190,7 +190,7 @@ public final class VideoContent implements Content {
     private static class URIListJsonDeserializer extends JsonDeserializer<List<URI>> {
 
         @Override
-        public List<URI> deserialize(JsonParser parser, DeserializationContext context) throws IOException, JacksonException {
+        public List<URI> deserialize(JsonParser parser, DeserializationContext context) throws IOException {
 
             final var mapper = parser.getCodec();
             final var node = mapper.<JsonNode>readTree(parser);

@@ -52,7 +52,7 @@ class TaskGetResponse extends ApiResponse {
     static class TaskGetResponseJsonDeserializer extends JsonDeserializer<TaskGetResponse> {
 
         @Override
-        public TaskGetResponse deserialize(JsonParser parser, DeserializationContext context) throws IOException, JacksonException {
+        public TaskGetResponse deserialize(JsonParser parser, DeserializationContext context) throws IOException {
             final var node = (JsonNode) parser.getCodec().readTree(parser);
             final var data = context.readTreeAsValue(node, Data.class);
             return new TaskGetResponse(

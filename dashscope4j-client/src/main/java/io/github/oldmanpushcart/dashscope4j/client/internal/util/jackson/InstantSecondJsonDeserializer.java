@@ -11,7 +11,7 @@ import java.time.Instant;
 public class InstantSecondJsonDeserializer extends JsonDeserializer<Instant> {
 
     @Override
-    public Instant deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JacksonException {
+    public Instant deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
         return Instant.ofEpochSecond(jsonParser.getLongValue());
     }
 

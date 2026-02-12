@@ -84,7 +84,7 @@
 
 #### 简单示例
 ```java
-public static void main(String... args) {
+static void main(String... args) {
 
     // 初始化客户端
     final DashScopeClient client = DashScopeClient.newBuilder()
@@ -103,9 +103,7 @@ public static void main(String... args) {
     System.out.println(response.output().best().message().text());
 
     // 销毁客户端
-    client.shutdown();
-
-}
+    client.shutdow
 ```
 
 运行这段代码后,我可以得到如下的输出日志
@@ -132,7 +130,7 @@ public static void main(String... args) {
 
 #### 简单示例
 ```java
-public static void main(String... args) {
+static void main(String... args) {
 
   // 初始化客户端
   final DashScopeClient client = DashScopeClient.newBuilder()
@@ -156,8 +154,7 @@ public static void main(String... args) {
           .toCompletableFuture()
           .join();
 
-  System.out.println(response.output().best().message().text());
-}
+  System.out.println(response.output().best().message().tex
 ```
 
 运行这段代码后,我可以得到如下的输出日志

@@ -138,34 +138,27 @@ public class DefaultFlowApi implements FlowApi {
     }
 
     /**
-     * {@code SSE -> ApiResponse}流转换器
-     */
-    private static class ServerSentEventToApiResponseTransformer<R extends ApiResponse>
-            implements Function<Flow.Publisher<ServerSentEvent>, Flow.Publisher<R>> {
-
-        private final ApiRequest<R> request;
-        private final HttpResponse<?> httpResponse;
-
-        private ServerSentEventToApiResponseTransformer(ApiRequest<R> request, HttpResponse<?> httpResponse) {
-            this.request = request;
-            this.httpResponse = httpResponse;
-        }
+         * {@code SSE -> ApiResponse}流转换器
+         */
+        private record ServerSentEventToApiResponseTransformer<R extends ApiResponse>(ApiRequest<R> request,
+                                                                                      HttpResponse<?> httpResponse)
+                implements Function<Flow.Publisher<ServerSentEvent>, Flow.Publisher<R>> {
 
         @Override
-        public Flow.Publisher<R> apply(Flow.Publisher<ServerSentEvent> publisher) {
-            return FlowX
-                    .fromPublisher(publisher)
-                    .filter(event -> !"[DONE]".equalsIgnoreCase(event.payload()))
-                    .flatMap(event -> {
-                        final var response = request.responseDecoder().apply(httpResponse, event.payload());
-                        if (!response.isSuccess()) {
-                            throw new ApiException(response);
-                        }
-                        return List.of(response);
-                    });
-        }
+            public Flow.Publisher<R> apply(Flow.Publisher<ServerSentEvent> publisher) {
+                return FlowX
+                        .fromPublisher(publisher)
+                        .filter(event -> !"[DONE]".equalsIgnoreCase(event.payload()))
+                        .flatMap(event -> {
+                            final var response = request.responseDecoder().apply(httpResponse, event.payload());
+                            if (!response.isSuccess()) {
+                                throw new ApiException(response);
+                            }
+                            return List.of(response);
+                        });
+            }
 
-    }
+        }
 
 
     /**

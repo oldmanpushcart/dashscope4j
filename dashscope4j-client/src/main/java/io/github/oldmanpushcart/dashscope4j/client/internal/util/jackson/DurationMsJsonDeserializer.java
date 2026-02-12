@@ -11,7 +11,7 @@ import java.time.Duration;
 public class DurationMsJsonDeserializer extends JsonDeserializer<Duration> {
 
     @Override
-    public Duration deserialize(JsonParser parser, DeserializationContext context) throws IOException, JacksonException {
+    public Duration deserialize(JsonParser parser, DeserializationContext context) throws IOException {
         return Duration.ofMillis(parser.getValueAsLong());
     }
 

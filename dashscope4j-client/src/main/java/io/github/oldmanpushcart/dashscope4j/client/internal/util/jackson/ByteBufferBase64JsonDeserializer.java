@@ -15,7 +15,7 @@ public class ByteBufferBase64JsonDeserializer extends JsonDeserializer<ByteBuffe
     private static final ByteBuffer EMPTY = ByteBuffer.allocate(0);
 
     @Override
-    public ByteBuffer deserialize(JsonParser parser, DeserializationContext context) throws IOException, JacksonException {
+    public ByteBuffer deserialize(JsonParser parser, DeserializationContext context) throws IOException {
 
         final var token = parser.currentToken();
 

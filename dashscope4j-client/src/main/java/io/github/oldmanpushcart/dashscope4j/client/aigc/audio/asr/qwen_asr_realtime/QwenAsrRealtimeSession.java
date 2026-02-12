@@ -120,7 +120,7 @@ public record QwenAsrRealtimeSession(
                 TurnDetection.Type.MANUAL_VAD,
                 null,
                 null
-        );;
+        );
 
         /**
          * 检测方式

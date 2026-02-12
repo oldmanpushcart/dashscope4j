@@ -44,77 +44,71 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         delegate.onClosed(ex);
     }
 
-    private static class ServerVadImpl implements ServerVad {
-
-        private final OmniRealtimeEmitter origin;
-
-        private ServerVadImpl(OmniRealtimeEmitter origin) {
-            this.origin = origin;
-        }
+    private record ServerVadImpl(OmniRealtimeEmitter origin) implements ServerVad {
 
         @Override
-        public CompletionStage<Void> image(BufferedImage image) {
-            final var event = new BufferAppendImageClientEvent(genUUID22(), image);
-            return origin.data(event);
-        }
+            public CompletionStage<Void> image(BufferedImage image) {
+                final var event = new BufferAppendImageClientEvent(genUUID22(), image);
+                return origin.data(event);
+            }
 
-        @Override
-        public CompletionStage<Void> audio(ByteBuffer buffer) {
-            final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-            return origin.data(event);
-        }
+            @Override
+            public CompletionStage<Void> audio(ByteBuffer buffer) {
+                final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
+                return origin.data(event);
+            }
 
-        @Override
-        public CompletionStage<Void> audio(byte[] bytes, int offset, int length) {
-            final var buffer = ByteBuffer.wrap(bytes, offset, length);
-            final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-            return origin.data(event);
-        }
+            @Override
+            public CompletionStage<Void> audio(byte[] bytes, int offset, int length) {
+                final var buffer = ByteBuffer.wrap(bytes, offset, length);
+                final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
+                return origin.data(event);
+            }
 
-        @Override
-        public OmniRealtimeSession session() {
-            return origin.session();
-        }
+            @Override
+            public OmniRealtimeSession session() {
+                return origin.session();
+            }
 
-        @Override
-        public CompletionStage<Void> data(ClientEvent input) {
-            return origin.data(input);
-        }
+            @Override
+            public CompletionStage<Void> data(ClientEvent input) {
+                return origin.data(input);
+            }
 
-        @Override
-        public CompletionStage<Void> binary(ByteBuffer buffer) {
-            return origin.binary(buffer);
-        }
+            @Override
+            public CompletionStage<Void> binary(ByteBuffer buffer) {
+                return origin.binary(buffer);
+            }
 
-        @Override
-        public CompletionStage<Void> closing() {
-            return origin.closing();
-        }
+            @Override
+            public CompletionStage<Void> closing() {
+                return origin.closing();
+            }
 
-        @Override
-        public CompletionStage<Void> closing(Throwable ex) {
-            return origin.closing(ex);
-        }
+            @Override
+            public CompletionStage<Void> closing(Throwable ex) {
+                return origin.closing(ex);
+            }
 
-        @Override
-        public String id() {
-            return origin.id();
-        }
+            @Override
+            public String id() {
+                return origin.id();
+            }
 
-        @Override
-        public boolean isClosed() {
-            return origin.isClosed();
-        }
+            @Override
+            public boolean isClosed() {
+                return origin.isClosed();
+            }
 
-        @Override
-        public void close() {
-            origin.close();
-        }
+            @Override
+            public void close() {
+                origin.close();
+            }
 
-        @Override
-        public CompletionStage<Void> closeFuture() {
-            return origin.closeFuture();
+            @Override
+            public CompletionStage<Void> closeFuture() {
+                return origin.closeFuture();
+            }
         }
-    }
 
 }

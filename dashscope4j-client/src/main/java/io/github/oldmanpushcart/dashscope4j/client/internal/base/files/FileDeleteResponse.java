@@ -28,7 +28,6 @@ public class FileDeleteResponse extends OpenAiResponse {
     ) {
         super(request, uuid, error);
         this.deleted = Boolean.TRUE.equals(deleted);
-        ;
     }
 
     public Boolean deleted() {
