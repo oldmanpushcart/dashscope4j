@@ -36,23 +36,16 @@ public class QwenAsrRealtimeTestCase implements LoadingEnv {
             @Override
             public void onOpen(Realtime.Emitter<ClientEvent> emitter) {
                 final var manualVad = (QwenAsrRealtimeEmitter.ManualVad) emitter;
-                new Thread(() -> {
-                    manualVad.newInput()
-                            .thenComposeAsync(inputOp -> {
 
-                                var stage = CompletableFuture.<InputOp>completedStage(null);
-                                for (var buffer : buffers) {
-                                    stage = stage.thenCompose(unused -> inputOp.audio(buffer));
-                                }
-                                return stage.thenCompose(unused -> inputOp.commit())
-                                        .whenComplete((v, ex) -> {
-                                            if (null != ex) {
-                                                completeF.completeExceptionally(ex);
-                                            }
-                                        });
-                            })
-                            .thenComposeAsync(Realtime.Emitter::closing);
-                }).start();
+                manualVad.newInput()
+                        .thenCompose(inputOp -> inputOp.audio(buffers))
+                        .thenCompose(InputOp::commit)
+                        .thenCompose(Realtime.Emitter::closing)
+                        .whenComplete((v, ex) -> {
+                            if (null != ex) {
+                                completeF.completeExceptionally(ex);
+                            }
+                        });
             }
 
             @Override

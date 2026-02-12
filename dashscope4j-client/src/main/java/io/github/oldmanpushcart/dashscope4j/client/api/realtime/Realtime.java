@@ -1,8 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.realtime;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.Model;
+import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -23,9 +26,23 @@ public interface Realtime {
 
     interface Emitter<I> extends Connection {
 
-        CompletionStage<Void> data(I input);
+        CompletionStage<Void> data(I in);
+
+        default CompletionStage<Void> data(List<I> ins) {
+            return CompletableFutureUtils
+                    .sequentialMap(ins, this::data)
+                    .thenAccept(unused -> {
+                    });
+        }
 
         CompletionStage<Void> binary(ByteBuffer buffer);
+
+        default CompletionStage<Void> binary(Collection<ByteBuffer> buffers) {
+            return CompletableFutureUtils
+                    .sequentialMap(buffers, this::binary)
+                    .thenAccept(unused -> {
+                    });
+        }
 
         CompletionStage<Void> closing();
 

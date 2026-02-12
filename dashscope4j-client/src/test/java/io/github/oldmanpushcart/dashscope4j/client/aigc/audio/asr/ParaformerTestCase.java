@@ -22,7 +22,8 @@ public class ParaformerTestCase implements LoadingEnv {
     @Test
     public void test$paraformer() {
 
-        final var buffers = AudioHelper.generatePcmByteBuffers(client, 16000, "锄禾日当午，汗滴禾下土。谁知盘中餐，粒粒皆辛苦。");;
+        final var buffers = AudioHelper.generatePcmByteBuffers(client, 16000, "锄禾日当午，汗滴禾下土。谁知盘中餐，粒粒皆辛苦。");
+        ;
 
         final var session = ParaformerSession.newBuilder()
                 .model(ParaformerModel.PARAFORMER_REALTIME_V2)
@@ -34,22 +35,13 @@ public class ParaformerTestCase implements LoadingEnv {
 
             @Override
             public void onOpen(Realtime.Emitter<ParaformerModel.In> emitter) {
-
-                new Thread(() -> {
-                    var stage = CompletableFuture.<Void>completedStage(null);
-                    for (var buffer : buffers) {
-                        stage = stage.thenCompose(unused -> emitter.binary(buffer));
-                    }
-                    stage.thenCompose(unused -> emitter.closing())
-                            .whenComplete((v, ex) -> {
-                                if (null != ex) {
-                                    completeF.completeExceptionally(ex);
-                                }
-                            })
-                            .toCompletableFuture()
-                            .join();
-                }).start();
-
+                emitter.binary(buffers)
+                        .thenCompose(unused -> emitter.closing())
+                        .whenComplete((v, ex) -> {
+                            if (null != ex) {
+                                completeF.completeExceptionally(ex);
+                            }
+                        });
             }
 
             @Override

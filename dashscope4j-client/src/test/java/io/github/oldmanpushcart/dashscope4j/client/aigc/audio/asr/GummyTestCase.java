@@ -33,21 +33,13 @@ public class GummyTestCase implements LoadingEnv {
 
             @Override
             public void onOpen(Realtime.Emitter<GummyModel.In> emitter) {
-                new Thread(() -> {
-                    var stage = CompletableFuture.<Void>completedStage(null);
-                    for (var buffer : buffers) {
-                        stage = stage.thenCompose(unused -> emitter.binary(buffer));
-                    }
-                    stage.thenCompose(unused -> emitter.closing())
-                            .whenComplete((v, ex) -> {
-                                if (null != ex) {
-                                    completeF.completeExceptionally(ex);
-                                }
-                            })
-                            .toCompletableFuture()
-                            .join();
-                }).start();
-
+                emitter.binary(buffers)
+                        .thenCompose(unused -> emitter.closing())
+                        .whenComplete((v, ex) -> {
+                            if (null != ex) {
+                                completeF.completeExceptionally(ex);
+                            }
+                        });
             }
 
             @Override
