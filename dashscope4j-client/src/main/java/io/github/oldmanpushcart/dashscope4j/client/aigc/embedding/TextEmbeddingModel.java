@@ -25,6 +25,14 @@ public record TextEmbeddingModel(String name, String path) implements AigcModel<
             );
         }
 
+        public static Builder newBuilder() {
+            return new Builder();
+        }
+
+        public static Builder newBuilder(Input input) {
+            return new Builder(input);
+        }
+
         public static class Builder implements Buildable<Input, Builder> {
 
             private final List<String> texts = new ArrayList<>();
