@@ -5,17 +5,12 @@ import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.AudioHelper;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.paraformer.ParaformerModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.paraformer.ParaformerSession;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts.QwenTtsModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 
 public class ParaformerTestCase implements LoadingEnv {
 
@@ -23,7 +18,6 @@ public class ParaformerTestCase implements LoadingEnv {
     public void test$paraformer() {
 
         final var buffers = AudioHelper.generatePcmByteBuffers(client, 16000, "锄禾日当午，汗滴禾下土。谁知盘中餐，粒粒皆辛苦。");
-        ;
 
         final var session = ParaformerSession.newBuilder()
                 .model(ParaformerModel.PARAFORMER_REALTIME_V2)

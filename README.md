@@ -84,7 +84,7 @@
 
 #### 简单示例
 ```java
-static void main(String... args) {
+void main(String... args) {
 
     // 初始化客户端
     final DashScopeClient client = DashScopeClient.newBuilder()
@@ -130,7 +130,7 @@ static void main(String... args) {
 
 #### 简单示例
 ```java
-static void main(String... args) {
+void main(String... args) {
 
   // 初始化客户端
   final DashScopeClient client = DashScopeClient.newBuilder()

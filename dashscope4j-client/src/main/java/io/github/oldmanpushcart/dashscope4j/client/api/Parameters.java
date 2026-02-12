@@ -11,7 +11,6 @@ import java.util.function.Function;
 /**
  * 参数集
  */
-@SuppressWarnings("ClassCanBeRecord")
 public class Parameters {
 
     @JsonValue

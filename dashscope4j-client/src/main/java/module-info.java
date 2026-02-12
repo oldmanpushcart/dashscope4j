@@ -39,18 +39,23 @@ open module dashscope4j.client {
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.paraformer.timespan;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.client;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.server;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.handler;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.timespan;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert.timespan;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.embedding;
-
 
 
 }

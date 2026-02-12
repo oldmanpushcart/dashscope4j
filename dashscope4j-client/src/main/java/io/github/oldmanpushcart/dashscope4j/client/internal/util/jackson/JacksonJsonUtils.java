@@ -102,19 +102,6 @@ public class JacksonJsonUtils {
         }
     }
 
-//    public static <T extends ApiResponse> T toApiResponse(String json, JavaType type, ApiRequest<?> request, HttpResponse<?> httpResponse) {
-//        final Map<String, Object> variableMap = new HashMap<>();
-//        httpResponse.headers().map()
-//                .forEach((name, values) -> variableMap.put("http/header/%s".formatted(name), String.join("", values)));
-//        variableMap.put("dashscope/request", request);
-//        try {
-//            return mapper.reader(new NullableInjectableValues(variableMap))
-//                    .forType(type).readValue(json);
-//        } catch (JsonProcessingException cause) {
-//            throw new IllegalArgumentException("parse json to object failed!", cause);
-//        }
-//    }
-
     public static <T extends ApiResponse> T toApiResponse(String json, Type type, ApiRequest<?> request, HttpResponse<?> httpResponse) {
         final Map<String, Object> variableMap = new HashMap<>();
         if(null != httpResponse) {

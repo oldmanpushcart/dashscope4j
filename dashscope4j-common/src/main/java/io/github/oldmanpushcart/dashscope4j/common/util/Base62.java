@@ -89,9 +89,8 @@ public class Base62 {
             value = value.multiply(BigInteger.valueOf(BASE)).add(BigInteger.valueOf(digit));
         }
 
-        // 转回 16 字节数组（补前导零到 16 字节）
-        byte[] bytes = value.toByteArray();
-        return bytes;
+        // 转回 16 字节数组（补充前导零到 16 字节）
+        return value.toByteArray();
     }
 
     private static int getBase62Index(char c) {
