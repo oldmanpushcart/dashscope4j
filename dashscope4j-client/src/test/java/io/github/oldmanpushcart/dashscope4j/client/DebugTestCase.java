@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 public class DebugTestCase implements LoadingEnv {
@@ -30,6 +31,34 @@ public class DebugTestCase implements LoadingEnv {
 
         final var response = client.task(request)
                 .thenCompose(task-> task.waitingFor(Task.WaitStrategies.always(Duration.ofSeconds(1))))
+                .toCompletableFuture()
+                .join();
+
+        System.out.println(response.output());
+
+    }
+
+    @Test
+    public void debug2() {
+
+        final var model = GeneralAigcModel.newBuilder()
+                .name("qwen3-vl-embedding")
+                .path("/api/v1/services/embeddings/multimodal-embedding/multimodal-embedding")
+                .inlineEnabled(true)
+                .build();
+
+        final var request = AigcRequest.newBuilder(model)
+                .input(Map.of(
+                        "contents", List.of(
+                                Map.of(
+                                        "text", "我是一个杯子",
+                                        "image", new File("./test-data/image/red-cup.jpeg")
+                                )
+                        )
+                ))
+                .build();
+
+        final var response = client.async(request)
                 .toCompletableFuture()
                 .join();
 

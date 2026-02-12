@@ -13,10 +13,7 @@ import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -58,22 +55,20 @@ public class GeneralAigcInterceptor implements Interceptor {
         }
         return CompletableFuture.completedStage(request.input())
                 .thenCompose(inputMap ->
-                        processInputMap(inputMap, entry -> {
-                            final var key = entry.getKey();
-                            final var value = entry.getValue();
+                        processMap(inputMap, value -> {
                             if (value instanceof File file) {
                                 return chain.client().base().store().upload(file.toURI(), model)
-                                        .thenApply(v -> new AbstractMap.SimpleEntry<>(key, v));
+                                        .thenApply(v->v);
                             }
                             if (value instanceof Path path) {
                                 return chain.client().base().store().upload(path.toUri(), model)
-                                        .thenApply(v -> new AbstractMap.SimpleEntry<>(key, v));
+                                        .thenApply(v->v);
                             }
                             if (value instanceof URI uri && IOUtils.isFileURI(uri)) {
                                 return chain.client().base().store().upload(uri, model)
-                                        .thenApply(v -> new AbstractMap.SimpleEntry<>(key, v));
+                                        .thenApply(v->v);
                             }
-                            return CompletableFuture.completedStage(entry);
+                            return CompletableFuture.completedStage(value);
                         }))
                 .thenApply(newInputMap -> {
                     //noinspection unchecked
@@ -92,25 +87,23 @@ public class GeneralAigcInterceptor implements Interceptor {
         }
         return CompletableFuture.completedStage(request.input())
                 .thenCompose(inputMap ->
-                        processInputMap(inputMap, entry -> {
-                            final var key = entry.getKey();
-                            final var value = entry.getValue();
+                        processMap(inputMap, value -> {
                             if (value instanceof File file) {
                                 return DataURI.from(file)
                                         .asyncToURI()
-                                        .thenApply(v -> new AbstractMap.SimpleEntry<>(key, v));
+                                        .thenApply(v -> v);
                             }
                             if (value instanceof Path path) {
                                 return DataURI.from(path)
                                         .asyncToURI()
-                                        .thenApply(v -> new AbstractMap.SimpleEntry<>(key, v));
+                                        .thenApply(v -> v);
                             }
                             if (value instanceof URI uri && IOUtils.isFileURI(uri)) {
                                 return DataURI.from(Paths.get(uri))
                                         .asyncToURI()
-                                        .thenApply(v -> new AbstractMap.SimpleEntry<>(key, v));
+                                        .thenApply(v -> v);
                             }
-                            return CompletableFuture.completedStage(entry);
+                            return CompletableFuture.completedStage(value);
                         }))
                 .thenApply(newInputMap -> {
                     //noinspection unchecked
@@ -122,21 +115,67 @@ public class GeneralAigcInterceptor implements Interceptor {
                                 .build());
     }
 
-    private CompletionStage<Map<?, ?>> processInputMap(Map<?, ?> map, Function<Map.Entry<?, ?>, CompletionStage<Map.Entry<?, ?>>> operator) {
-        final Set<Map.Entry<?, ?>> entries = Set.copyOf(map.entrySet());
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private CompletionStage<Map> processMap(Map map, Function<Object, CompletionStage<Object>> operator) {
+        final Set<Map.Entry> entries = map.entrySet();
         return CompletableFutureUtils
                 .sequentialMap(entries, entry -> {
-                    if (entry.getValue() instanceof Map<?, ?> subMap) {
-                        return processInputMap(subMap, operator)
+
+                    final var value = entry.getValue();
+
+                    if (value instanceof Map subMap) {
+                        return processMap(subMap, operator)
                                 .thenApply(v -> new AbstractMap.SimpleEntry<>(entry.getKey(), v));
                     }
-                    return operator.apply(entry);
+
+                    if (value instanceof Collection subList) {
+                        return processList(subList, operator)
+                                .thenApply(v -> new AbstractMap.SimpleEntry<>(entry.getKey(), v));
+                    }
+
+                    if (value.getClass().isArray()) {
+                        return processList(Arrays.asList((Object[]) value), operator)
+                                .thenApply(v -> new AbstractMap.SimpleEntry<>(entry.getKey(), v));
+                    }
+
+                    return operator.apply(value)
+                            .thenApply(v -> new AbstractMap.SimpleEntry<>(entry.getKey(), v));
+
                 })
                 .thenApply(newEntries -> newEntries.stream()
                         .collect(Collectors.toMap(
                                 Map.Entry::getKey,
                                 Map.Entry::getValue
                         )));
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private CompletionStage<List> processList(Collection list, Function<Object, CompletionStage<Object>> operator) {
+        return CompletableFutureUtils
+                .sequentialMap(list, item -> {
+
+                    if (item == null) {
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                    if (item instanceof Map subMap) {
+                        return processMap(subMap, operator)
+                                .thenApply(v -> v);
+                    }
+
+                    if (item instanceof Collection subList) {
+                        return processList(subList, operator)
+                                .thenApply(v -> v);
+                    }
+
+                    if (item.getClass().isArray()) {
+                        return processList(Arrays.asList((Object[]) item), operator)
+                                .thenApply(v -> v);
+                    }
+
+                    return operator.apply(item);
+
+                });
     }
 
     private Task.Half<AigcResponse<Map<String, Object>>> cleanupTaskResponse(Task.Half<AigcResponse<Map<String, Object>>> half) {
