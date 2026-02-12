@@ -2,43 +2,22 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.AudioHelper;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.fun_asr.FunAsrModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.fun_asr.FunAsrSession;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts.QwenTtsModel;
-import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 
 public class FunAsrTestCase implements LoadingEnv {
-
-    private CompletionStage<List<ByteBuffer>> generatePcmByteBuffers() {
-        final var request = AigcRequest.newBuilder(QwenTtsModel.QWEN3_TTS_FLASH)
-                .input(QwenTtsModel.Input.newBuilder()
-                        .text("锄禾日当午，汗滴禾下土。谁知盘中餐，粒粒皆辛苦。")
-                        .voice("Cherry")
-                        .build())
-                .build();
-
-        return FlowX.fromPublisher(client.flow(request))
-                .map(response -> response.output().audio().data())
-                .collect(Collectors.toList());
-    }
 
     @Test
     public void test$fun_asr() {
 
-
-        final var buffers = generatePcmByteBuffers()
-                .toCompletableFuture()
-                .join();
-
+        final var buffers = AudioHelper.generatePcmByteBuffers(client, 16000, "锄禾日当午，汗滴禾下土。谁知盘中餐，粒粒皆辛苦。");
         final var session = FunAsrSession.newBuilder()
                 .model(FunAsrModel.FUN_ASR_REALTIME)
                 .build();
@@ -51,12 +30,19 @@ public class FunAsrTestCase implements LoadingEnv {
             public void onOpen(Realtime.Emitter<FunAsrModel.In> emitter) {
 
                 new Thread(() -> {
+                    var stage = CompletableFuture.<Void>completedStage(null);
                     for (var buffer : buffers) {
-                        emitter.binary(buffer)
-                                .toCompletableFuture()
-                                .join();
+                        stage = stage.thenCompose(unused -> emitter.binary(buffer));
                     }
-                    emitter.closing();
+                    stage.thenCompose(unused -> emitter.closing())
+                            .whenComplete((v, ex) -> {
+                                if (null != ex) {
+                                    completeF.completeExceptionally(ex);
+                                }
+                            })
+                            .toCompletableFuture()
+                            .join();
+
                 }).start();
 
             }

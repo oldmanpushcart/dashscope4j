@@ -2,11 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.util;
 
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.codec.AsyncFileBase64Encoder;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -74,22 +71,6 @@ public class DataURI {
                 }
                 final var base64 = Base64.getEncoder().encodeToString(baos.toByteArray());
                 return CompletableFuture.completedFuture(new Content(mime, base64));
-            } catch (Throwable ex) {
-                return CompletableFuture.failedFuture(ex);
-            }
-        });
-    }
-
-    public static DataURI from(BufferedImage image) {
-        return new DataURI(() -> {
-            try (final var baos = new ByteArrayOutputStream()) {
-                if (!ImageIO.write(image, "png", baos)) {
-                    throw new IOException("Process image failed!");
-                }
-                return CompletableFuture.completedFuture(new Content(
-                        "image/png",
-                        Base64.getEncoder().encodeToString(baos.toByteArray())
-                ));
             } catch (Throwable ex) {
                 return CompletableFuture.failedFuture(ex);
             }

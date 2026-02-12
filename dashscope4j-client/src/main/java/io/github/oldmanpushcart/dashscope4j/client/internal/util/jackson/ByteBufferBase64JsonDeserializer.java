@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson;
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;

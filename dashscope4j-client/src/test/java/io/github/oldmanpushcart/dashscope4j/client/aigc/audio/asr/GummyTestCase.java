@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.AudioHelper;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.gummy.GummyModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.gummy.GummySession;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts.QwenTtsModel;
@@ -18,26 +19,10 @@ import java.util.stream.Collectors;
 
 public class GummyTestCase implements LoadingEnv {
 
-    private CompletionStage<List<ByteBuffer>> generatePcmByteBuffers() {
-        final var request = AigcRequest.newBuilder(QwenTtsModel.QWEN3_TTS_FLASH)
-                .input(QwenTtsModel.Input.newBuilder()
-                        .text("锄禾日当午，汗滴禾下土。谁知盘中餐，粒粒皆辛苦。")
-                        .voice("Cherry")
-                        .build())
-                .build();
-
-        return FlowX.fromPublisher(client.flow(request))
-                .map(response -> response.output().audio().data())
-                .collect(Collectors.toList());
-    }
-
     @Test
     public void test$gummy() {
 
-        final var buffers = generatePcmByteBuffers()
-                .toCompletableFuture()
-                .join();
-
+        final var buffers = AudioHelper.generatePcmByteBuffers(client, 16000, "锄禾日当午，汗滴禾下土。谁知盘中餐，粒粒皆辛苦。");
         final var session = GummySession.newBuilder()
                 .model(GummyModel.GUMMY_CHAT_V1)
                 .build();
@@ -48,14 +33,19 @@ public class GummyTestCase implements LoadingEnv {
 
             @Override
             public void onOpen(Realtime.Emitter<GummyModel.In> emitter) {
-
                 new Thread(() -> {
+                    var stage = CompletableFuture.<Void>completedStage(null);
                     for (var buffer : buffers) {
-                        emitter.binary(buffer)
-                                .toCompletableFuture()
-                                .join();
+                        stage = stage.thenCompose(unused -> emitter.binary(buffer));
                     }
-                    emitter.closing();
+                    stage.thenCompose(unused -> emitter.closing())
+                            .whenComplete((v, ex) -> {
+                                if (null != ex) {
+                                    completeF.completeExceptionally(ex);
+                                }
+                            })
+                            .toCompletableFuture()
+                            .join();
                 }).start();
 
             }

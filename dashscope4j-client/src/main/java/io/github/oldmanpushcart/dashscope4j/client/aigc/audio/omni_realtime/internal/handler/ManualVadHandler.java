@@ -8,7 +8,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.even
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
-import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
@@ -124,11 +123,11 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         public OmniRealtimeSession session() {
             return origin.session();
         }
-        
+
         private class InputOpImpl implements InputOp {
 
             @Override
-            public CompletionStage<InputOp> image(BufferedImage image) {
+            public CompletionStage<InputOp> image(ByteBuffer image) {
                 tryChangeState(State.INPUT_READY, State.INPUT);
                 requireInputState();
                 final var event = new BufferAppendImageClientEvent(genUUID22(), image);
@@ -140,16 +139,6 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             public CompletionStage<InputOp> audio(ByteBuffer buffer) {
                 tryChangeState(State.INPUT_READY, State.INPUT);
                 requireInputState();
-                final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-                return origin.data(event)
-                        .thenApply(unused -> this);
-            }
-
-            @Override
-            public CompletionStage<InputOp> audio(byte[] bytes, int offset, int length) {
-                tryChangeState(State.INPUT_READY, State.INPUT);
-                requireInputState();
-                final var buffer = ByteBuffer.wrap(bytes, offset, length);
                 final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
                 return origin.data(event)
                         .thenApply(unused -> this);

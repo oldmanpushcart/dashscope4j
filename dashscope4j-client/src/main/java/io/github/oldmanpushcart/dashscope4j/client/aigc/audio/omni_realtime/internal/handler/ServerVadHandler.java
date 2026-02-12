@@ -9,7 +9,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.even
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
-import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletionStage;
 
@@ -47,68 +46,61 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
     private record ServerVadImpl(OmniRealtimeEmitter origin) implements ServerVad {
 
         @Override
-            public CompletionStage<Void> image(BufferedImage image) {
-                final var event = new BufferAppendImageClientEvent(genUUID22(), image);
-                return origin.data(event);
-            }
-
-            @Override
-            public CompletionStage<Void> audio(ByteBuffer buffer) {
-                final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-                return origin.data(event);
-            }
-
-            @Override
-            public CompletionStage<Void> audio(byte[] bytes, int offset, int length) {
-                final var buffer = ByteBuffer.wrap(bytes, offset, length);
-                final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-                return origin.data(event);
-            }
-
-            @Override
-            public OmniRealtimeSession session() {
-                return origin.session();
-            }
-
-            @Override
-            public CompletionStage<Void> data(ClientEvent input) {
-                return origin.data(input);
-            }
-
-            @Override
-            public CompletionStage<Void> binary(ByteBuffer buffer) {
-                return origin.binary(buffer);
-            }
-
-            @Override
-            public CompletionStage<Void> closing() {
-                return origin.closing();
-            }
-
-            @Override
-            public CompletionStage<Void> closing(Throwable ex) {
-                return origin.closing(ex);
-            }
-
-            @Override
-            public String id() {
-                return origin.id();
-            }
-
-            @Override
-            public boolean isClosed() {
-                return origin.isClosed();
-            }
-
-            @Override
-            public void close() {
-                origin.close();
-            }
-
-            @Override
-            public CompletionStage<Void> closeFuture() {
-                return origin.closeFuture();
-            }
+        public CompletionStage<Void> image(ByteBuffer image) {
+            final var event = new BufferAppendImageClientEvent(genUUID22(), image);
+            return origin.data(event);
         }
+
+        @Override
+        public CompletionStage<Void> audio(ByteBuffer buffer) {
+            final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
+            return origin.data(event);
+        }
+
+        @Override
+        public OmniRealtimeSession session() {
+            return origin.session();
+        }
+
+        @Override
+        public CompletionStage<Void> data(ClientEvent input) {
+            return origin.data(input);
+        }
+
+        @Override
+        public CompletionStage<Void> binary(ByteBuffer buffer) {
+            return origin.binary(buffer);
+        }
+
+        @Override
+        public CompletionStage<Void> closing() {
+            return origin.closing();
+        }
+
+        @Override
+        public CompletionStage<Void> closing(Throwable ex) {
+            return origin.closing(ex);
+        }
+
+        @Override
+        public String id() {
+            return origin.id();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return origin.isClosed();
+        }
+
+        @Override
+        public void close() {
+            origin.close();
+        }
+
+        @Override
+        public CompletionStage<Void> closeFuture() {
+            return origin.closeFuture();
+        }
+    }
 
 }

@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.ClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
-import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -46,7 +45,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              * @param image 图片
              * @return 提交操作
              */
-            CompletionStage<InputOp> image(BufferedImage image);
+            CompletionStage<InputOp> image(ByteBuffer image);
 
             /**
              * 提交音频
@@ -55,16 +54,6 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              * @return 提交操作
              */
             CompletionStage<InputOp> audio(ByteBuffer buffer);
-
-            /**
-             * 提交音频
-             *
-             * @param bytes  音频数据
-             * @param offset 偏移量
-             * @param length 长度
-             * @return 提交操作
-             */
-            CompletionStage<InputOp> audio(byte[] bytes, int offset, int length);
 
             /**
              * 清空提交
@@ -122,7 +111,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
          * @param image 图片
          * @return 输入结果
          */
-        CompletionStage<Void> image(BufferedImage image);
+        CompletionStage<Void> image(ByteBuffer image);
 
         /**
          * 输入音频
@@ -131,16 +120,6 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
          * @return 输入结果
          */
         CompletionStage<Void> audio(ByteBuffer buffer);
-
-        /**
-         * 输入音频
-         *
-         * @param bytes  音频数据
-         * @param offset 偏移量
-         * @param length 长度
-         * @return 输入结果
-         */
-        CompletionStage<Void> audio(byte[] bytes, int offset, int length);
 
     }
 
