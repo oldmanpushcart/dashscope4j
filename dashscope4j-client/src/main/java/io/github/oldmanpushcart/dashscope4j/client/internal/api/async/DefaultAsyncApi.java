@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.async;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.internal.Config;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 
@@ -17,13 +18,11 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtil
 
 public class DefaultAsyncApi implements AsyncApi {
 
-    private final String host;
-    private final String ak;
+    private final Config config;
     private final HttpClient http;
 
-    public DefaultAsyncApi(String host, String ak, HttpClient http) {
-        this.host = host;
-        this.ak = ak;
+    public DefaultAsyncApi(Config config, HttpClient http) {
+        this.config = config;
         this.http = http;
     }
 
@@ -32,13 +31,18 @@ public class DefaultAsyncApi implements AsyncApi {
 
         try {
 
-            final var httpRequest = HttpRequest.newBuilder(request.toHttpRequest(host), (n, v) -> true)
+            final var builder = HttpRequest.newBuilder(request.toHttpRequest(config.host()), (n, v) -> true)
                     .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
-                    .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
+                    .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(config.ak()))
                     .header(HTTP_HEADER_X_DASHSCOPE_SSE, DISABLE)
                     .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
-                    .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
-                    .build();
+                    .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE);
+
+            if (config.httpTimeout() != null) {
+                builder.timeout(config.httpTimeout());
+            }
+
+            final var httpRequest = builder.build();
             traceLogHttpRequest(httpRequest);
 
             return http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())

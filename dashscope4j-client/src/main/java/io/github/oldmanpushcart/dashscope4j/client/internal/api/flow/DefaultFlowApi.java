@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.flow;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.internal.Config;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetection;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
@@ -30,13 +31,11 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtil
 
 public class DefaultFlowApi implements FlowApi {
 
-    private final String host;
-    private final String ak;
+    private final Config config;
     private final HttpClient http;
 
-    public DefaultFlowApi(String host, String ak, HttpClient http) {
-        this.host = host;
-        this.ak = ak;
+    public DefaultFlowApi(Config config, HttpClient http) {
+        this.config = config;
         this.http = http;
     }
 
@@ -49,13 +48,18 @@ public class DefaultFlowApi implements FlowApi {
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> execute(T request) {
         return FlowX.defer(() -> {
 
-            final var httpRequest = HttpRequest.newBuilder(request.toHttpRequest(host), (n, v) -> true)
+            final var builder = HttpRequest.newBuilder(request.toHttpRequest(config.host()), (n, v) -> true)
                     .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
-                    .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
+                    .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(config.ak()))
                     .header(HTTP_HEADER_X_DASHSCOPE_SSE, ENABLE)
                     .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
-                    .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
-                    .build();
+                    .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE);
+
+            if (config.httpTimeout() != null) {
+                builder.timeout(config.httpTimeout());
+            }
+
+            final var httpRequest = builder.build();
             traceLogHttpRequest(httpRequest);
 
             final CompletionStage<Flow.Publisher<R>> stage = http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofPublisher())
@@ -138,27 +142,27 @@ public class DefaultFlowApi implements FlowApi {
     }
 
     /**
-         * {@code SSE -> ApiResponse}流转换器
-         */
-        private record ServerSentEventToApiResponseTransformer<R extends ApiResponse>(ApiRequest<R> request,
-                                                                                      HttpResponse<?> httpResponse)
-                implements Function<Flow.Publisher<ServerSentEvent>, Flow.Publisher<R>> {
+     * {@code SSE -> ApiResponse}流转换器
+     */
+    private record ServerSentEventToApiResponseTransformer<R extends ApiResponse>(ApiRequest<R> request,
+                                                                                  HttpResponse<?> httpResponse)
+            implements Function<Flow.Publisher<ServerSentEvent>, Flow.Publisher<R>> {
 
         @Override
-            public Flow.Publisher<R> apply(Flow.Publisher<ServerSentEvent> publisher) {
-                return FlowX
-                        .fromPublisher(publisher)
-                        .filter(event -> !"[DONE]".equalsIgnoreCase(event.payload()))
-                        .flatMap(event -> {
-                            final var response = request.responseDecoder().apply(httpResponse, event.payload());
-                            if (!response.isSuccess()) {
-                                throw new ApiException(response);
-                            }
-                            return List.of(response);
-                        });
-            }
-
+        public Flow.Publisher<R> apply(Flow.Publisher<ServerSentEvent> publisher) {
+            return FlowX
+                    .fromPublisher(publisher)
+                    .filter(event -> !"[DONE]".equalsIgnoreCase(event.payload()))
+                    .flatMap(event -> {
+                        final var response = request.responseDecoder().apply(httpResponse, event.payload());
+                        if (!response.isSuccess()) {
+                            throw new ApiException(response);
+                        }
+                        return List.of(response);
+                    });
         }
+
+    }
 
 
     /**

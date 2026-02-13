@@ -9,6 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.DashscopeClientImpl;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
@@ -17,13 +18,6 @@ import java.util.concurrent.Flow;
  * 提供异步、流式、任务和实时通信等多种调用方式。
  */
 public interface DashscopeClient {
-
-    /**
-     * 获取客户端配置的主机地址。
-     *
-     * @return 主机地址
-     */
-    String host();
 
     /**
      * 异步执行 API 请求。
@@ -110,6 +104,22 @@ public interface DashscopeClient {
          * @return 构建器实例
          */
         Builder http(HttpClient http);
+
+        /**
+         * 设置 HTTP 连接超时时间。
+         *
+         * @param httpConnectTimeout 连接超时时间
+         * @return 构建器实例
+         */
+        Builder httpConnectTimeout(Duration httpConnectTimeout);
+
+        /**
+         * 设置 HTTP 请求超时时间。
+         *
+         * @param httpTimeout 请求超时时间
+         * @return 构建器实例
+         */
+        Builder httpTimeout(Duration httpTimeout);
 
     }
 

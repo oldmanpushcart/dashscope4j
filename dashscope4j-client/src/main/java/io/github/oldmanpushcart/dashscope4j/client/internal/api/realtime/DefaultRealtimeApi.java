@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.realtime;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.internal.Config;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
@@ -18,28 +19,32 @@ import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalConte
 
 public class DefaultRealtimeApi implements RealtimeApi {
 
-    private final String host;
-    private final String ak;
+    private final Config config;
     private final HttpClient http;
 
-    public DefaultRealtimeApi(String host, String ak, HttpClient http) {
-        this.host = host;
-        this.ak = ak;
+    public DefaultRealtimeApi(Config config, HttpClient http) {
+        this.config = config;
         this.http = http;
     }
 
     @Override
-    public <I, O> CompletionStage<? extends Realtime.Connection> realtime(Realtime.Session<I,O> session, Realtime.Handler<I, O> handler) {
+    public <I, O> CompletionStage<? extends Realtime.Connection> realtime(Realtime.Session<I, O> session, Realtime.Handler<I, O> handler) {
         final var id = UUIDUtils.genUUID22();
-        final var endpoint = EndpointUtils.wss(host, session.model().path());
+        final var endpoint = EndpointUtils.wss(config.host(), session.model().path());
         final var stringHandler = session.provider().apply(handler);
         final var listener = new ListenerImpl(id, endpoint, stringHandler);
-        return http.newWebSocketBuilder()
+        final var builder = http.newWebSocketBuilder()
                 .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
-                .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
+                .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(config.ak()))
                 .header(HTTP_HEADER_X_DASHSCOPE_SSE, DISABLE)
                 .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
-                .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
+                .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE);
+
+        if (config.httpConnectTimeout() != null) {
+            builder.connectTimeout(config.httpConnectTimeout());
+        }
+
+        return builder
                 .buildAsync(endpoint, listener)
                 .thenCompose(ws -> listener.getFuture());
     }
@@ -126,7 +131,7 @@ public class DefaultRealtimeApi implements RealtimeApi {
 
         @Override
         public boolean isClosed() {
-            return false;
+            return closeF.isDone();
         }
 
         @Override

@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
 import io.github.oldmanpushcart.dashscope4j.client.api.task.TaskException;
+import io.github.oldmanpushcart.dashscope4j.client.internal.Config;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
@@ -26,14 +27,12 @@ import static java.util.concurrent.CompletableFuture.failedStage;
 public class DefaultTaskApi implements TaskApi {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final String host;
-    private final String ak;
+    private final Config config;
     private final HttpClient http;
     private final AsyncApi asyncApi;
 
-    public DefaultTaskApi(String host, String ak, HttpClient http, AsyncApi asyncApi) {
-        this.host = host;
-        this.ak = ak;
+    public DefaultTaskApi(Config config, HttpClient http, AsyncApi asyncApi) {
+        this.config = config;
         this.http = http;
         this.asyncApi = asyncApi;
     }
@@ -42,13 +41,18 @@ public class DefaultTaskApi implements TaskApi {
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> execute(T request) {
         try {
 
-            final var httpRequest = HttpRequest.newBuilder(request.toHttpRequest(host), (n, v) -> true)
+            final var builder = HttpRequest.newBuilder(request.toHttpRequest(config.host()), (n, v) -> true)
                     .header(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
-                    .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
+                    .header(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(config.ak()))
                     .header(HTTP_HEADER_X_DASHSCOPE_SSE, DISABLE)
                     .header(HTTP_HEADER_X_DASHSCOPE_ASYNC, ENABLE)
-                    .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
-                    .build();
+                    .header(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE);
+
+            if (config.httpTimeout() != null) {
+                builder.timeout(config.httpTimeout());
+            }
+
+            final var httpRequest = builder.build();
             traceLogHttpRequest(httpRequest);
 
             return http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())

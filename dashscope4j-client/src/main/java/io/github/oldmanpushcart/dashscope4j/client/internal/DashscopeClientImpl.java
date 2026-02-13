@@ -26,6 +26,7 @@ import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
 import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
@@ -35,8 +36,7 @@ import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requir
 import static java.util.Objects.requireNonNull;
 
 public class DashscopeClientImpl implements DashscopeClient {
-
-    private final String host;
+    
     private final BaseOp baseOp;
     private final AsyncApi asyncApi;
     private final FlowApi flowApi;
@@ -54,23 +54,24 @@ public class DashscopeClientImpl implements DashscopeClient {
         final var ak = CheckUtils.requireNonBlankString(builder.ak, "ak must not be blank!");
         final var http = requireNonNull(builder.http, "http must not be null!");
 
-        final var asyncApi = new DefaultAsyncApi(host, ak, http);
-        final var flowApi = new DefaultFlowApi(host, ak, http);
-        final var taskApi = new DefaultTaskApi(host, ak, http, asyncApi);
-        final var realtimeApi = new DefaultRealtimeApi(host, ak, http);
+        final var config = Config.newBuilder()
+                .host(host)
+                .ak(ak)
+                .httpConnectTimeout(builder.httpConnectTimeout)
+                .httpTimeout(builder.httpTimeout)
+                .build();
 
-        this.host = host;
+        final var asyncApi = new DefaultAsyncApi(config, http);
+        final var flowApi = new DefaultFlowApi(config, http);
+        final var taskApi = new DefaultTaskApi(config, http, asyncApi);
+        final var realtimeApi = new DefaultRealtimeApi(config, http);
+
         this.asyncApi = asyncApi;
         this.flowApi = flowApi;
         this.taskApi = taskApi;
         this.realtimeApi = realtimeApi;
         this.baseOp = new BaseOpImpl(this);
 
-    }
-
-    @Override
-    public String host() {
-        return host;
     }
 
     private static List<Interceptor> mergeInterceptors(List<Interceptor> requestInterceptors) {
@@ -107,7 +108,7 @@ public class DashscopeClientImpl implements DashscopeClient {
     }
 
     @Override
-    public <I, O> CompletionStage<? extends Realtime.Connection> realtime(Realtime.Session<I,O> session, Realtime.Handler<I, O> handler) {
+    public <I, O> CompletionStage<? extends Realtime.Connection> realtime(Realtime.Session<I, O> session, Realtime.Handler<I, O> handler) {
         return realtimeApi.realtime(session, handler);
     }
 
@@ -123,6 +124,8 @@ public class DashscopeClientImpl implements DashscopeClient {
         private String host = Constants.DEFAULT_HOST;
         private String ak;
         private HttpClient http;
+        private Duration httpConnectTimeout;
+        private Duration httpTimeout;
 
         @Override
         public Builder host(String host) {
@@ -139,6 +142,18 @@ public class DashscopeClientImpl implements DashscopeClient {
         @Override
         public Builder http(HttpClient http) {
             this.http = requireNonNull(http, "http must not be null!");
+            return this;
+        }
+
+        @Override
+        public DashscopeClient.Builder httpConnectTimeout(Duration httpConnectTimeout) {
+            this.httpConnectTimeout = requireNonNull(httpConnectTimeout, "httpConnectTimeout must not be null!");
+            return this;
+        }
+
+        @Override
+        public DashscopeClient.Builder httpTimeout(Duration httpTimeout) {
+            this.httpTimeout = requireNonNull(httpTimeout, "httpTimeout must not be null!");
             return this;
         }
 
