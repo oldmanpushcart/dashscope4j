@@ -33,26 +33,6 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
     private final Parameters parameters;
 
     /**
-     * 构造函数
-     * <p>
-     * 留给后续继承扩展使用
-     * </p>
-     *
-     * @param model      模型
-     * @param input      模型输入
-     * @param parameters 请求参数
-     */
-    protected AigcRequest(AigcModel<I, O> model, I input, Parameters parameters) {
-        super(newResponseType(model));
-        requireNonNull(model, "model must not be null!");
-        requireNonNull(input, "input must not be null!");
-        requireNonNull(parameters, "parameters must not be null!");
-        this.model = model;
-        this.input = input;
-        this.parameters = parameters;
-    }
-
-    /**
      * 构建应答类型{@code AigcResponse<O>}
      * <p>用户反序列化</p>
      *
@@ -77,11 +57,10 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
      * @param builder 构造器
      */
     private AigcRequest(Builder<I, O> builder) {
-        this(
-                builder.model,
-                builder.input,
-                builder.parameters
-        );
+        super(newResponseType(builder.model), builder);
+        this.model = requireNonNull(builder.model, "model must not be null!");
+        this.input = requireNonNull(builder.input, "input must not be null!");
+        this.parameters = requireNonNull(builder.parameters, "parameters must not be null!");
     }
 
     /**

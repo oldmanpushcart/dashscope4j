@@ -32,7 +32,7 @@ public abstract class ApiRequest<R extends ApiResponse> {
      * @param responseType 响应类型
      * @param builder      构建者
      */
-    protected ApiRequest(Class<R> responseType, Builder<?, ?> builder) {
+    protected ApiRequest(Type responseType, Builder<?, ?> builder) {
         requireNonNull(responseType, "responseType is null!");
         this.responseType = responseType;
         this.interceptors = Collections.unmodifiableList(builder.interceptors);

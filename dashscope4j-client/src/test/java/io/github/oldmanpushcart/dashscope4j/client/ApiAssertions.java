@@ -3,6 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.client;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 
+import java.net.http.HttpClient;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ApiAssertions {
