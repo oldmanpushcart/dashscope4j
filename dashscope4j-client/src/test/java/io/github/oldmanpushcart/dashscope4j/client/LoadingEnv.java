@@ -8,7 +8,8 @@ public interface LoadingEnv {
 
     DashscopeClient client = DashscopeClient.newBuilder()
             .ak(AK)
-            .http(HttpClient.newHttpClient())
+            .http(HttpClient.newBuilder()
+                    .build())
             .build();
 
 }

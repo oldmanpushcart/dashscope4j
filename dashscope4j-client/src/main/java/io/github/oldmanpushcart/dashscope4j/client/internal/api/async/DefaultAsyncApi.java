@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.Config;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 
 import java.net.http.HttpClient;
@@ -29,6 +30,7 @@ public class DefaultAsyncApi implements AsyncApi {
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> execute(T request) {
 
+
         try {
 
             final var builder = HttpRequest.newBuilder(request.toHttpRequest(config.host()), (n, v) -> true)
@@ -45,7 +47,9 @@ public class DefaultAsyncApi implements AsyncApi {
             final var httpRequest = builder.build();
             traceLogHttpRequest(httpRequest);
 
+            final var span = Tracer.enter("http");
             return http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
+                    .whenComplete((r, ex) -> Tracer.exit(span))
                     .whenComplete(HttpUtils::traceLogHttpResponse)
                     .thenApply(httpResponse -> {
                         final var responseBody = httpResponse.body();

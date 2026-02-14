@@ -22,6 +22,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.GeneralAigcInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.util.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
@@ -82,11 +83,13 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> async(T request) {
+        final var span = Tracer.enter("async");
         final var interceptors = mergeInterceptors(request.interceptors());
         final var asyncApi = interceptors.isEmpty()
                 ? this.asyncApi
                 : InterceptionAsyncApi.group(this, this.asyncApi, interceptors);
-        return asyncApi.execute(request);
+        return asyncApi.execute(request)
+                .whenComplete((r,ex)-> Tracer.exit(span));
     }
 
     @Override
