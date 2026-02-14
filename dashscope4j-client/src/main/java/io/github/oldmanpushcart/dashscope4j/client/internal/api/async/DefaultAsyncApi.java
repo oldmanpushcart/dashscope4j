@@ -30,7 +30,6 @@ public class DefaultAsyncApi implements AsyncApi {
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> execute(T request) {
 
-
         try {
 
             final var builder = HttpRequest.newBuilder(request.toHttpRequest(config.host()), (n, v) -> true)
@@ -47,9 +46,26 @@ public class DefaultAsyncApi implements AsyncApi {
             final var httpRequest = builder.build();
             traceLogHttpRequest(httpRequest);
 
-            final var span = Tracer.enter("http");
+            //noinspection resource
+            final var scope = Tracer.enter("http");
+            scope.span()
+                    .property("method", httpRequest.method())
+                    .property("uri", httpRequest.uri().toString());
             return http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
-                    .whenComplete((r, ex) -> Tracer.exit(span))
+                    .whenComplete((r, ex) -> {
+                        if (null == ex) {
+                            scope.span()
+                                    .success()
+                                    .property("http-status", String.valueOf(r.statusCode()))
+                                    .property("http-version", String.valueOf(r.version()))
+                                    .property("http-content-type", r.headers().firstValue(HTTP_HEADER_CONTENT_TYPE).orElse(null));
+                        } else {
+                            scope.span()
+                                    .failure()
+                                    .property("exception", ex.getMessage());
+                        }
+                        scope.restore().close();
+                    })
                     .whenComplete(HttpUtils::traceLogHttpResponse)
                     .thenApply(httpResponse -> {
                         final var responseBody = httpResponse.body();

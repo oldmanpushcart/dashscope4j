@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.task.TaskException;
 import io.github.oldmanpushcart.dashscope4j.client.internal.Config;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,26 @@ public class DefaultTaskApi implements TaskApi {
             final var httpRequest = builder.build();
             traceLogHttpRequest(httpRequest);
 
+            //noinspection resource
+            final var scope = Tracer.enter("http");
+            scope.span()
+                    .property("method", httpRequest.method())
+                    .property("uri", httpRequest.uri().toString());
             return http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
+                    .whenComplete((r, ex) -> {
+                        if (null == ex) {
+                            scope.span()
+                                    .success()
+                                    .property("http-status", String.valueOf(r.statusCode()))
+                                    .property("http-version", String.valueOf(r.version()))
+                                    .property("http-content-type", r.headers().firstValue(HTTP_HEADER_CONTENT_TYPE).orElse(null));
+                        } else {
+                            scope.span()
+                                    .failure()
+                                    .property("exception", ex.getMessage());
+                        }
+                        scope.restore().close();
+                    })
                     .thenApply(httpResponse -> {
                         final var halfResponseBody = httpResponse.body();
                         logger.debug("dashscope4j-client://task/half <<< {}", halfResponseBody);

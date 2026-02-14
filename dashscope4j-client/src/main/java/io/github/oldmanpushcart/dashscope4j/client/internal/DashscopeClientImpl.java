@@ -22,6 +22,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.GeneralAigcInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import io.github.oldmanpushcart.dashscope4j.client.util.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
@@ -37,7 +38,7 @@ import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requir
 import static java.util.Objects.requireNonNull;
 
 public class DashscopeClientImpl implements DashscopeClient {
-    
+
     private final BaseOp baseOp;
     private final AsyncApi asyncApi;
     private final FlowApi flowApi;
@@ -83,36 +84,94 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> async(T request) {
-        final var span = Tracer.enter("async");
+
         final var interceptors = mergeInterceptors(request.interceptors());
         final var asyncApi = interceptors.isEmpty()
                 ? this.asyncApi
                 : InterceptionAsyncApi.group(this, this.asyncApi, interceptors);
+
+        //noinspection resource
+        final var scope = Tracer.enter("async");
         return asyncApi.execute(request)
-                .whenComplete((r,ex)-> Tracer.exit(span));
+                .whenComplete((r, ex) -> {
+                    if (null == ex) {
+                        scope.span().success();
+                    } else {
+                        scope.span()
+                                .failure()
+                                .property("exception", ex.getMessage());
+                    }
+                    scope.restore().close();
+                });
     }
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> flow(T request) {
+
         final var interceptors = mergeInterceptors(request.interceptors());
         final var flowApi = interceptors.isEmpty()
                 ? this.flowApi
                 : InterceptionFlowApi.group(this, this.flowApi, interceptors);
-        return flowApi.execute(request);
+
+        //noinspection resource
+        final var scope = Tracer.enter("flow");
+        return FlowX.fromPublisher(flowApi.execute(request))
+                .doOnComplete(() -> {
+                    scope.span().success();
+                    scope.restore().close();
+                })
+                .doOnError(ex -> {
+                    scope.span()
+                            .failure()
+                            .property("exception", ex.getMessage());
+                    scope.restore().close();
+                });
     }
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> task(T request) {
+
         final var interceptors = mergeInterceptors(request.interceptors());
         final var taskApi = interceptors.isEmpty()
                 ? this.taskApi
                 : InterceptionTaskApi.group(this, this.taskApi, interceptors);
-        return taskApi.execute(request);
+
+        //noinspection resource
+        final var scope = Tracer.enter("task");
+        return taskApi.execute(request)
+                .whenComplete((r, ex) -> {
+                    scope.restore();
+                    if (null != ex) {
+                        scope.span()
+                                .failure()
+                                .property("exception", ex.getMessage());
+                        scope.close();
+                    }
+                })
+                .thenApply(half -> (Task.Half<R>) strategy -> half.waitingFor(strategy)
+                        .whenComplete((r, ex) -> {
+                            if (null != ex) {
+                                scope.span()
+                                        .failure()
+                                        .property("exception", ex.getMessage());
+                            } else {
+                                scope.span().success();
+                            }
+                            scope.restore().close();
+                        }));
     }
 
     @Override
     public <I, O> CompletionStage<? extends Realtime.Connection> realtime(Realtime.Session<I, O> session, Realtime.Handler<I, O> handler) {
-        return realtimeApi.realtime(session, handler);
+        //noinspection resource
+        final var scope = Tracer.enter("realtime");
+        scope.span()
+                .property("type", "realtime")
+                .property("model", String.valueOf(session.model()));
+        return realtimeApi.realtime(session, handler)
+                .whenComplete((r, ex) -> {
+
+                });
     }
 
 

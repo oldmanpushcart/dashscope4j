@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.internal.Config;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils;
 import org.slf4j.Logger;
@@ -44,8 +45,24 @@ public class DefaultRealtimeApi implements RealtimeApi {
             builder.connectTimeout(config.httpConnectTimeout());
         }
 
+        //noinspection resource
+        final var scope = Tracer.enter("websocket");
+        scope.span()
+                .property("uri", String.valueOf(endpoint));
         return builder
                 .buildAsync(endpoint, listener)
+                .whenComplete((r, ex) -> {
+                    if (null == ex) {
+                        scope.span()
+                                .success()
+                                .property("sub-protocol", r.getSubprotocol());
+                    } else {
+                        scope.span()
+                                .failure()
+                                .property("exception", ex.getMessage());
+                    }
+                    scope.restore().close();
+                })
                 .thenCompose(ws -> listener.getFuture());
     }
 

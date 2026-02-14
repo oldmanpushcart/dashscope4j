@@ -10,6 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.http.HttpHeader;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 
@@ -62,7 +63,26 @@ public class DefaultFlowApi implements FlowApi {
             final var httpRequest = builder.build();
             traceLogHttpRequest(httpRequest);
 
+            //noinspection resource
+            final var scope = Tracer.enter("http");
+            scope.span()
+                    .property("method", httpRequest.method())
+                    .property("uri", httpRequest.uri().toString());
             final CompletionStage<Flow.Publisher<R>> stage = http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofPublisher())
+                    .whenComplete((r, ex) -> {
+                        if (null == ex) {
+                            scope.span()
+                                    .success()
+                                    .property("http-status", String.valueOf(r.statusCode()))
+                                    .property("http-version", String.valueOf(r.version()))
+                                    .property("http-content-type", r.headers().firstValue(HTTP_HEADER_CONTENT_TYPE).orElse(null));
+                        } else {
+                            scope.span()
+                                    .failure()
+                                    .property("exception", ex.getMessage());
+                        }
+                        scope.restore().close();
+                    })
                     .whenComplete(HttpUtils::traceLogHttpResponse)
                     .thenApply(httpResponse -> {
 

@@ -1,56 +1,129 @@
 package io.github.oldmanpushcart.dashscope4j.client.util;
 
-import java.time.Duration;
-import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Tracer {
 
     private static final ThreadLocal<Span> CONTEXT = new ThreadLocal<>();
 
-    private static String genId() {
-        return UUID.randomUUID().toString().replace("-", "");
-    }
+    public static class Span {
 
-    public record Span(String name, String traceId, String spanId, Span parent, Instant beginAt) {
+        private static final int INITIAL_INDEX = 1000;
+
+        private static String genId() {
+            return UUID.randomUUID().toString().replace("-", "");
+        }
+
+        private final String name;
+        private final String tid;
+        private final Span parent;
+        private final int sid;
+
+
+        private final AtomicInteger indexer = new AtomicInteger(INITIAL_INDEX);
+        private final Map<String, String> properties = new ConcurrentHashMap<>();
+        private final AtomicReference<State> state = new AtomicReference<>(State.PENDING);
+
+        private Span(String name, String tid, Span parent, int sid) {
+            this.name = name;
+            this.tid = tid;
+            this.parent = parent;
+            this.sid = sid;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public String tid() {
+            return tid;
+        }
+
+        public int pid() {
+            return isRoot() ? INITIAL_INDEX : parent.sid();
+        }
+
+        public int sid() {
+            return sid;
+        }
+
+        public Map<String, String> properties() {
+            return properties;
+        }
+
+        public Span property(String name, String value) {
+            properties.put(name, value);
+            return this;
+        }
 
         public boolean isRoot() {
             return parent == null;
         }
 
-        public Duration cost() {
-            return Duration.between(beginAt, Instant.now());
+        public Span success() {
+            state.compareAndSet(State.PENDING, State.SUCCESS);
+            return this;
         }
 
-        public static Span ofRoot(String name) {
-            return new Span(name, genId(), genId(), null, Instant.now());
+        public Span failure() {
+            state.compareAndSet(State.PENDING, State.FAILURE);
+            return this;
         }
 
-        public static Span ofChild(String name, Span parent) {
-            return new Span(name, parent.traceId(), genId(), parent, Instant.now());
+        Span newChild(String name) {
+            return new Span(name, tid, this, indexer.getAndIncrement());
+        }
+
+        static Span ofRoot(String name) {
+            return new Span(name, genId(), null, INITIAL_INDEX);
         }
 
     }
 
-    public static Span current() {
-        return CONTEXT.get();
+    public enum State {
+        PENDING,
+        SUCCESS,
+        FAILURE
     }
 
-    public static Span enter(String name) {
+    public record Scope(Span span) implements AutoCloseable {
+
+        @Override
+        public void close() {
+            final var current = CONTEXT.get();
+            if (span != current) {
+                throw new IllegalStateException("Span is not the current span");
+            }
+
+            if (span.isRoot()) {
+                CONTEXT.remove();
+            } else {
+                CONTEXT.set(span.parent);
+            }
+        }
+
+        public Scope restore() {
+            final var current = CONTEXT.get();
+            if (current != null && span != current) {
+                throw new IllegalStateException("Conflict span!");
+            }
+            CONTEXT.set(span);
+            return this;
+        }
+
+    }
+
+    public static Scope enter(String name) {
         final var current = CONTEXT.get();
         final var span = current == null
                 ? Span.ofRoot(name)
-                : Span.ofChild(name, current);
+                : current.newChild(name);
         CONTEXT.set(span);
-        return span;
-    }
-
-    public static void exit(Span span) {
-        if (span.isRoot()) {
-            CONTEXT.remove();
-        } else {
-            CONTEXT.set(span.parent());
-        }
+        return new Scope(span);
     }
 
 }
