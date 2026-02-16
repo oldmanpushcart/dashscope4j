@@ -1,19 +1,19 @@
 package io.github.oldmanpushcart.dashscope4j.client.util.tracer;
 
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 class StdTracer implements Tracer {
 
+    public static StdTracer INSTANCE = new StdTracer();
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ThreadLocal<Tracer.Span> context = new ThreadLocal<>();
-
-    public static StdTracer INSTANCE = new StdTracer();
+    private final Set<Listener> listeners = ConcurrentHashMap.newKeySet();
 
     private class ScopeImpl implements Tracer.Scope {
 
@@ -36,7 +36,7 @@ class StdTracer implements Tracer {
 
         @Override
         public void close() {
-            log(span);
+            fireListener(span);
             if (span.isRoot()) {
                 context.remove();
             } else {
@@ -46,28 +46,14 @@ class StdTracer implements Tracer {
 
     }
 
-    private void log(Tracer.Span span) {
-
-        final var pid = span.isRoot()
-                ? 0
-                : span.parent().spanId();
-
-        final var timeOffset = span.isRoot()
-                ? Duration.between(span.timestamp(), Instant.now()).toMillis()
-                : Duration.between(span.root().timestamp(), Instant.now()).toMillis();
-
-        final var propertiesJson = JacksonJsonUtils.toJson(span.properties());
-
-        // TID|PID|SID|STATUS|TIME-OFFSET|NAME:{...}
-        logger.info("{}|{}|{}|{}|{}|{}:{}",
-                span.traceId(),
-                pid,
-                span.spanId(),
-                span.status(),
-                timeOffset,
-                span.name(),
-                propertiesJson
-        );
+    private void fireListener(Tracer.Span span) {
+        listeners.forEach(listener -> {
+            try {
+                listener.onSpan(span);
+            } catch (Throwable ex) {
+                logger.warn("dashscope4j-client://tracer fire listener occur error!", ex);
+            }
+        });
     }
 
     @Override
@@ -77,9 +63,10 @@ class StdTracer implements Tracer {
                 .map(c -> c.newChild(name))
                 .orElseGet(() -> Tracer.Span.ofRoot(name));
 
-        log(span);
         final var scope = new ScopeImpl(span);
         scope.restore();
+
+        fireListener(span);
         return scope;
     }
 
@@ -91,6 +78,16 @@ class StdTracer implements Tracer {
             return Optional.empty();
         }
         return Optional.of(current);
+    }
+
+    @Override
+    public void registerListener(Listener listener) {
+        listeners.add(listener);
+    }
+
+    @Override
+    public void unregisterListener(Listener listener) {
+        listeners.remove(listener);
     }
 
 }

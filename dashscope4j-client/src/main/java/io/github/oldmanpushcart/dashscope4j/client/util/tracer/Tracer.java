@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.util.tracer;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -102,6 +103,34 @@ public interface Tracer {
          * @return 如果已终止则返回true，否则返回false
          */
         boolean isTerminated();
+
+        /**
+         * 判断是否已结束
+         *
+         * @return 如果已结束则返回true，否则返回false
+         */
+        boolean isEnd();
+
+        /**
+         * 获取跨度开始时间
+         *
+         * @return 跨度开始时间
+         */
+        Instant beginAt();
+
+        /**
+         * 获取跨度结束时间
+         *
+         * @return 跨度结束时间
+         */
+        Instant endAt();
+
+        /**
+         * 获取跨度持续时间
+         *
+         * @return 跨度持续时间
+         */
+        Duration duration();
 
         /**
          * 获取自身跨度引用
@@ -222,6 +251,34 @@ public interface Tracer {
          */
         @Override
         void close();
+
+    }
+
+    /**
+     * 注册追踪监听器
+     *
+     * @param listener 监听器
+     */
+    void registerListener(Listener listener);
+
+    /**
+     * 注销追踪监听器
+     *
+     * @param listener 监听器
+     */
+    void unregisterListener(Listener listener);
+
+    /**
+     * 追踪监听器接口，用于监听跨度事件
+     */
+    interface Listener {
+
+        /**
+         * 监听跨度事件
+         *
+         * @param span 跨度
+         */
+        void onSpan(Span span);
 
     }
 
