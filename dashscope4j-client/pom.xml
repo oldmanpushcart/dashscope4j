@@ -9,18 +9,6 @@
     <artifactId>dashscope4j-client</artifactId>
     <name>${project.artifactId}</name>
 
-    <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>false</filtering>
-                <includes>
-                    <include>qwen/qwen.tiktoken</include>
-                </includes>
-            </resource>
-        </resources>
-    </build>
-
     <dependencies>
         <dependency>
             <groupId>io.github.oldmanpushcart</groupId>
