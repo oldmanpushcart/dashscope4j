@@ -13,6 +13,8 @@ class StdTracer implements Tracer {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ThreadLocal<Tracer.Span> context = new ThreadLocal<>();
 
+    public static StdTracer INSTANCE = new StdTracer();
+
     private class ScopeImpl implements Tracer.Scope {
 
         private final Tracer.Span span;
@@ -83,7 +85,12 @@ class StdTracer implements Tracer {
 
     @Override
     public Optional<Tracer.Span> current() {
-        return Optional.ofNullable(context.get());
+        final var current = context.get();
+        if (null == current || current.isTerminated()) {
+            context.remove();
+            return Optional.empty();
+        }
+        return Optional.of(current);
     }
 
 }

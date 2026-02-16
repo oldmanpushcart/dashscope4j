@@ -11,6 +11,8 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.hand
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeConnector;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.DataURI;
+import io.github.oldmanpushcart.dashscope4j.client.util.tracer.Tracer;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -47,17 +49,21 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                     .connectionFactory(() ->
                             client.realtime(session, new SimpleOmniRealtimeHandler() {
 
+
                                 private final byte[] bytes = new byte[1024];
                                 private final StringBuilder stringBuf = new StringBuilder();
+                                private volatile String traceId;
 
                                 @Override
                                 public CompletionStage<Void> onResponseTextDelta(String responseId, String delta) {
+                                    Assertions.assertEquals(traceId, Tracer.instance.current().orElseThrow().traceId());
                                     stringBuf.append(delta);
                                     return CompletableFuture.completedStage(null);
                                 }
 
                                 @Override
                                 public CompletionStage<Void> onResponseAudioDelta(String responseId, ByteBuffer delta) {
+                                    Assertions.assertEquals(traceId, Tracer.instance.current().orElseThrow().traceId());
                                     while (delta.hasRemaining()) {
                                         int len = Math.min(delta.remaining(), bytes.length);
                                         delta.get(bytes, 0, len);
@@ -68,17 +74,21 @@ public class OmniRealtimeTestCase implements LoadingEnv {
 
                                 @Override
                                 public CompletionStage<Void> onResponseCreated(String responseId) {
+                                    Assertions.assertEquals(traceId, Tracer.instance.current().orElseThrow().traceId());
                                     return CompletableFuture.completedStage(null);
                                 }
 
                                 @Override
                                 public CompletionStage<Void> onResponseFinished(String responseId, ServerEvent.Status status) {
+                                    Assertions.assertEquals(traceId, Tracer.instance.current().orElseThrow().traceId());
                                     completed.complete(stringBuf.toString());
                                     return CompletableFuture.completedStage(null);
                                 }
 
                                 @Override
                                 public void onOpen(Realtime.Emitter<ClientEvent> exchange) {
+
+                                    this.traceId = Tracer.instance.current().orElseThrow().traceId();
 
                                     final var manualVad = (OmniRealtimeEmitter.ManualVad) exchange;
                                     manualVad
@@ -106,6 +116,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
 
                                 @Override
                                 public void onClosed(Throwable ex) {
+                                    Assertions.assertEquals(traceId, Tracer.instance.current().orElseThrow().traceId());
                                     if (ex != null) {
                                         completed.completeExceptionally(ex);
                                     } else {
