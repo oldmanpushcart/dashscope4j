@@ -10,7 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.http.HttpHeader;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.Tracer;
+import io.github.oldmanpushcart.dashscope4j.client.util.tracer.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 
@@ -64,7 +64,7 @@ public class DefaultFlowApi implements FlowApi {
             traceLogHttpRequest(httpRequest);
 
             //noinspection resource
-            final var scope = Tracer.enter("http");
+            final var scope = Tracer.instance.enter("http");
             scope.span()
                     .property("method", httpRequest.method())
                     .property("uri", httpRequest.uri().toString());

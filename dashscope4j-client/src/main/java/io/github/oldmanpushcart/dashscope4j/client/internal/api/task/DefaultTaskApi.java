@@ -8,7 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.task.TaskException;
 import io.github.oldmanpushcart.dashscope4j.client.internal.Config;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.Tracer;
+import io.github.oldmanpushcart.dashscope4j.client.util.tracer.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,7 @@ public class DefaultTaskApi implements TaskApi {
             traceLogHttpRequest(httpRequest);
 
             //noinspection resource
-            final var scope = Tracer.enter("http");
+            final var scope = Tracer.instance.enter("http");
             scope.span()
                     .property("method", httpRequest.method())
                     .property("uri", httpRequest.uri().toString());

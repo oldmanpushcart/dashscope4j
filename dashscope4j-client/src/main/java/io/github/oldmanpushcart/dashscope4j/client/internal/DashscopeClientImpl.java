@@ -22,8 +22,9 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.GeneralAigcInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.TraceInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
-import io.github.oldmanpushcart.dashscope4j.client.util.Tracer;
+import io.github.oldmanpushcart.dashscope4j.client.util.tracer.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
@@ -49,7 +50,8 @@ public class DashscopeClientImpl implements DashscopeClient {
     private static final List<Interceptor> globalInterceptors = List.of(
             new BridgeInterceptor(),
             new IncrementalOutputOnlyInterceptor(),
-            new GeneralAigcInterceptor()
+            new GeneralAigcInterceptor(),
+            new TraceInterceptor()
     );
 
     private DashscopeClientImpl(Builder builder) {
@@ -92,7 +94,7 @@ public class DashscopeClientImpl implements DashscopeClient {
                 : InterceptionAsyncApi.group(this, this.asyncApi, interceptors);
 
         //noinspection resource
-        final var scope = Tracer.enter("async");
+        final var scope = Tracer.instance.enter("async");
         return asyncApi.execute(request)
                 .whenComplete((r, ex) -> {
                     final var span = scope.restore();
@@ -114,7 +116,7 @@ public class DashscopeClientImpl implements DashscopeClient {
                 : InterceptionFlowApi.group(this, this.flowApi, interceptors);
 
         //noinspection resource
-        final var scope = Tracer.enter("flow");
+        final var scope = Tracer.instance.enter("flow");
         return FlowX.fromPublisher(flowApi.execute(request))
                 .doOnComplete(() -> {
                     scope.restore().success();
@@ -135,7 +137,7 @@ public class DashscopeClientImpl implements DashscopeClient {
                 : InterceptionTaskApi.group(this, this.taskApi, interceptors);
 
         //noinspection resource
-        final var scope = Tracer.enter("task");
+        final var scope = Tracer.instance.enter("task");
         return taskApi.execute(request)
                 .whenComplete((r, ex) -> {
                     scope.restore();
@@ -161,7 +163,7 @@ public class DashscopeClientImpl implements DashscopeClient {
     @Override
     public <I, O> CompletionStage<? extends Realtime.Connection> realtime(Realtime.Session<I, O> session, Realtime.Handler<I, O> handler) {
         //noinspection resource
-        final var scope = Tracer.enter("realtime");
+        final var scope = Tracer.instance.enter("realtime");
         scope.span()
                 .property("type", "realtime")
                 .property("model", String.valueOf(session.model()));

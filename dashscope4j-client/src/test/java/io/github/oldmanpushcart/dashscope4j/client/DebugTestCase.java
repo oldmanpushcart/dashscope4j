@@ -7,16 +7,13 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.GeneralAigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
-import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
-import io.github.oldmanpushcart.dashscope4j.client.util.Tracer;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 public class DebugTestCase implements LoadingEnv {
 

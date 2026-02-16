@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.util;
+package io.github.oldmanpushcart.dashscope4j.client.util.tracer;
 
 import java.time.Instant;
 import java.util.Map;
@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class StdSpan implements Tracer.Span {
+class StdSpan implements Tracer.Span {
 
     private final Tracer.Span root;
     private final Tracer.Span parent;
@@ -74,6 +74,11 @@ public class StdSpan implements Tracer.Span {
         return isRoot()
                 ? status() != Status.PENDING
                 : root().status() != Status.PENDING;
+    }
+
+    @Override
+    public Tracer.Span self() {
+        return this;
     }
 
     @Override

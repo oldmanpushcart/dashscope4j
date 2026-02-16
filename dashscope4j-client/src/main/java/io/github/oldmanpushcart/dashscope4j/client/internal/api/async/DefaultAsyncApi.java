@@ -5,7 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.Config;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.Tracer;
+import io.github.oldmanpushcart.dashscope4j.client.util.tracer.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 
 import java.net.http.HttpClient;
@@ -47,7 +47,7 @@ public class DefaultAsyncApi implements AsyncApi {
             traceLogHttpRequest(httpRequest);
 
             //noinspection resource
-            final var scope = Tracer.enter("http");
+            final var scope = Tracer.instance.enter("http");
             scope.span()
                     .property("method", httpRequest.method())
                     .property("uri", httpRequest.uri().toString());
