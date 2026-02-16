@@ -91,17 +91,6 @@ public class DebugTestCase implements LoadingEnv {
 
                         }.toTool()
                 })
-                .addInterceptor(chain -> {
-                    return chain.proceed()
-                            .whenComplete((r,ex)-> {
-                                final var span = Tracer.current();
-                                System.out.printf("===TID:%s;NAME:%s;COST=%sms%n",
-                                        span.traceId(),
-                                        span.name(),
-                                        span.cost().toMillis()
-                                );
-                            });
-                })
                 .build();
 
         final var response = client.async(request)

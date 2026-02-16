@@ -28,6 +28,7 @@ import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
 import java.net.http.HttpClient;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -94,14 +95,13 @@ public class DashscopeClientImpl implements DashscopeClient {
         final var scope = Tracer.enter("async");
         return asyncApi.execute(request)
                 .whenComplete((r, ex) -> {
+                    final var span = scope.restore();
                     if (null == ex) {
-                        scope.span().success();
+                        span.success();
                     } else {
-                        scope.span()
-                                .failure()
-                                .property("exception", ex.getMessage());
+                        span.failure(ex);
                     }
-                    scope.restore().close();
+                    scope.close();
                 });
     }
 
@@ -117,14 +117,12 @@ public class DashscopeClientImpl implements DashscopeClient {
         final var scope = Tracer.enter("flow");
         return FlowX.fromPublisher(flowApi.execute(request))
                 .doOnComplete(() -> {
-                    scope.span().success();
-                    scope.restore().close();
+                    scope.restore().success();
+                    scope.close();
                 })
                 .doOnError(ex -> {
-                    scope.span()
-                            .failure()
-                            .property("exception", ex.getMessage());
-                    scope.restore().close();
+                    scope.restore().failure(ex);
+                    scope.close();
                 });
     }
 
@@ -150,14 +148,13 @@ public class DashscopeClientImpl implements DashscopeClient {
                 })
                 .thenApply(half -> (Task.Half<R>) strategy -> half.waitingFor(strategy)
                         .whenComplete((r, ex) -> {
-                            if (null != ex) {
-                                scope.span()
-                                        .failure()
-                                        .property("exception", ex.getMessage());
+                            final var span = scope.restore();
+                            if (null == ex) {
+                                span.success();
                             } else {
-                                scope.span().success();
+                                span.failure(ex);
                             }
-                            scope.restore().close();
+                            scope.close();
                         }));
     }
 
@@ -168,9 +165,46 @@ public class DashscopeClientImpl implements DashscopeClient {
         scope.span()
                 .property("type", "realtime")
                 .property("model", String.valueOf(session.model()));
-        return realtimeApi.realtime(session, handler)
-                .whenComplete((r, ex) -> {
+        return realtimeApi.realtime(session, new Realtime.Handler<>() {
+                    @Override
+                    public void onOpen(Realtime.Emitter<I> emitter) {
+                        scope.restore();
+                        handler.onOpen(emitter);
+                    }
 
+                    @Override
+                    public CompletionStage<Void> onData(O output) {
+                        scope.restore();
+                        return handler.onData(output);
+                    }
+
+                    @Override
+                    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+                        scope.restore();
+                        return handler.onBinary(buffer);
+                    }
+
+                    @Override
+                    public void onClosed(Throwable ex) {
+                        scope.restore();
+                        if (null != ex) {
+                            scope.span()
+                                    .failure()
+                                    .property("exception", ex.getMessage());
+                        } else {
+                            scope.span().success();
+                        }
+                        scope.close();
+                        handler.onClosed(ex);
+                    }
+                })
+                .whenComplete((r, ex) -> {
+                    scope.restore();
+                    if (null != ex) {
+                        scope.span()
+                                .failure()
+                                .property("exception", ex.getMessage());
+                    }
                 });
     }
 

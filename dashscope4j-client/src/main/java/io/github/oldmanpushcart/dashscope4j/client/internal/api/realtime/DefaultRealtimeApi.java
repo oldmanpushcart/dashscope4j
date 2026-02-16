@@ -52,16 +52,14 @@ public class DefaultRealtimeApi implements RealtimeApi {
         return builder
                 .buildAsync(endpoint, listener)
                 .whenComplete((r, ex) -> {
+                    final var span = scope.restore();
                     if (null == ex) {
-                        scope.span()
-                                .success()
+                        span.success()
                                 .property("sub-protocol", r.getSubprotocol());
                     } else {
-                        scope.span()
-                                .failure()
-                                .property("exception", ex.getMessage());
+                        span.failure(ex);
                     }
-                    scope.restore().close();
+                    scope.close();
                 })
                 .thenCompose(ws -> listener.getFuture());
     }

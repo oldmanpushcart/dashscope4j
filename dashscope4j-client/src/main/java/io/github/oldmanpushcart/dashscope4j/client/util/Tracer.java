@@ -1,129 +1,127 @@
 package io.github.oldmanpushcart.dashscope4j.client.util;
 
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class Tracer {
 
+    private static final Logger logger = LoggerFactory.getLogger(Tracer.class);
     private static final ThreadLocal<Span> CONTEXT = new ThreadLocal<>();
 
-    public static class Span {
+    public interface Span {
 
-        private static final int INITIAL_INDEX = 1000;
+        Span root();
 
-        private static String genId() {
-            return UUID.randomUUID().toString().replace("-", "");
-        }
+        Span parent();
 
-        private final String name;
-        private final String tid;
-        private final Span parent;
-        private final int sid;
+        String traceId();
 
+        int spanId();
 
-        private final AtomicInteger indexer = new AtomicInteger(INITIAL_INDEX);
-        private final Map<String, String> properties = new ConcurrentHashMap<>();
-        private final AtomicReference<State> state = new AtomicReference<>(State.PENDING);
+        String name();
 
-        private Span(String name, String tid, Span parent, int sid) {
-            this.name = name;
-            this.tid = tid;
-            this.parent = parent;
-            this.sid = sid;
-        }
+        Map<String, String> properties();
 
-        public String name() {
-            return name;
-        }
+        Instant timestamp();
 
-        public String tid() {
-            return tid;
-        }
+        boolean isRoot();
 
-        public int pid() {
-            return isRoot() ? INITIAL_INDEX : parent.sid();
-        }
+        boolean isTerminated();
 
-        public int sid() {
-            return sid;
-        }
+        Span property(String key, String value);
 
-        public Map<String, String> properties() {
-            return properties;
-        }
+        Span status(Status status);
 
-        public Span property(String name, String value) {
-            properties.put(name, value);
-            return this;
-        }
+        Span success();
 
-        public boolean isRoot() {
-            return parent == null;
-        }
+        Span failure();
 
-        public Span success() {
-            state.compareAndSet(State.PENDING, State.SUCCESS);
-            return this;
-        }
+        Span failure(Throwable t);
 
-        public Span failure() {
-            state.compareAndSet(State.PENDING, State.FAILURE);
-            return this;
-        }
+        Status status();
 
-        Span newChild(String name) {
-            return new Span(name, tid, this, indexer.getAndIncrement());
+        Span newChild(String name);
+
+        enum Status {
+            PENDING,
+            SUCCESS,
+            FAILURE
         }
 
         static Span ofRoot(String name) {
-            return new Span(name, genId(), null, INITIAL_INDEX);
+            final var traceId = UUID.randomUUID().toString().replace("-", "");
+            final var indexer = new AtomicInteger();
+            final var spanId = indexer.getAndIncrement();
+            return new StdSpan(null, null, traceId, spanId, name, indexer);
         }
 
-    }
-
-    public enum State {
-        PENDING,
-        SUCCESS,
-        FAILURE
     }
 
     public record Scope(Span span) implements AutoCloseable {
 
+        public Span restore() {
+            CONTEXT.set(span);
+            return span;
+        }
+
         @Override
         public void close() {
-            final var current = CONTEXT.get();
-            if (span != current) {
-                throw new IllegalStateException("Span is not the current span");
-            }
-
+            log(span);
             if (span.isRoot()) {
                 CONTEXT.remove();
             } else {
-                CONTEXT.set(span.parent);
+                CONTEXT.set(span.parent());
             }
-        }
-
-        public Scope restore() {
-            final var current = CONTEXT.get();
-            if (current != null && span != current) {
-                throw new IllegalStateException("Conflict span!");
-            }
-            CONTEXT.set(span);
-            return this;
         }
 
     }
 
+    private static void log(Span span) {
+
+        final var pid = span.isRoot()
+                ? 0
+                : span.parent().spanId();
+
+        final var timeOffset = span.isRoot()
+                ? Duration.between(span.timestamp(), Instant.now()).toMillis()
+                : Duration.between(span.root().timestamp(), Instant.now()).toMillis();
+
+        final var propertiesJson = JacksonJsonUtils.toJson(span.properties());
+
+        // TID|PID|SID|STATUS|TIME-OFFSET|NAME:{...}
+        logger.info("{}|{}|{}|{}|{}|{}:{}",
+                span.traceId(),
+                pid,
+                span.spanId(),
+                span.status(),
+                timeOffset,
+                span.name(),
+                propertiesJson
+        );
+    }
+
     public static Scope enter(String name) {
-        final var current = CONTEXT.get();
-        final var span = current == null
-                ? Span.ofRoot(name)
-                : current.newChild(name);
-        CONTEXT.set(span);
-        return new Scope(span);
+        final var span = current()
+                .filter(c -> !c.isTerminated())
+                .map(c -> c.newChild(name))
+                .orElseGet(() -> Span.ofRoot(name));
+
+        log(span);
+        final var scope = new Scope(span);
+        scope.restore();
+        return scope;
+    }
+
+    public static Optional<Span> current() {
+        return Optional.ofNullable(CONTEXT.get());
     }
 
 }

@@ -70,18 +70,16 @@ public class DefaultFlowApi implements FlowApi {
                     .property("uri", httpRequest.uri().toString());
             final CompletionStage<Flow.Publisher<R>> stage = http.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofPublisher())
                     .whenComplete((r, ex) -> {
+                        final var span = scope.restore();
                         if (null == ex) {
-                            scope.span()
-                                    .success()
+                            span.success()
                                     .property("http-status", String.valueOf(r.statusCode()))
                                     .property("http-version", String.valueOf(r.version()))
-                                    .property("http-content-type", r.headers().firstValue(HTTP_HEADER_CONTENT_TYPE).orElse(null));
+                                    .property("http-content-type", r.headers().firstValue(HTTP_HEADER_CONTENT_TYPE).orElse(""));
                         } else {
-                            scope.span()
-                                    .failure()
-                                    .property("exception", ex.getMessage());
+                            span.failure(ex);
                         }
-                        scope.restore().close();
+                        scope.close();
                     })
                     .whenComplete(HttpUtils::traceLogHttpResponse)
                     .thenApply(httpResponse -> {

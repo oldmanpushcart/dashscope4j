@@ -12,6 +12,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.AigcParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
+import io.github.oldmanpushcart.dashscope4j.client.util.Tracer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -202,7 +203,8 @@ public class ChatTestCase implements LoadingEnv {
                                 Content.text("这个音频文件提到了什么?"),
                                 Content.audio(new File("./test-data/audio/beach-woman-dog.wav").toURI())
                         )))
-                        .inlineEnabled(true)
+                        //.inlineEnabled(true)
+                        .uploadEnabled(true)
                         .build())
                 .build();
         final var response = data.op().apply(request)
