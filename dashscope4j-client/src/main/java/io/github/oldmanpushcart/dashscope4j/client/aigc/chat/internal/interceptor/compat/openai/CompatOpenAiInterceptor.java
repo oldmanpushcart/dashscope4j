@@ -6,7 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
+import io.github.oldmanpushcart.dashscope4j.common.util.flow.FlowX;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

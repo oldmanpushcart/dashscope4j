@@ -6,7 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts.QwenT
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.DataURI;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
+import io.github.oldmanpushcart.dashscope4j.common.util.flow.FlowX;
 import org.junit.jupiter.api.Test;
 
 public class QwenTtsTestCase implements LoadingEnv {

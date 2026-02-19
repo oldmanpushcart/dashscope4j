@@ -121,7 +121,7 @@ public record MmEmbeddingModel(
                 int index,
 
                 @JsonProperty("embedding")
-                List<Float> embedding
+                float[] vector
 
         ) {
 

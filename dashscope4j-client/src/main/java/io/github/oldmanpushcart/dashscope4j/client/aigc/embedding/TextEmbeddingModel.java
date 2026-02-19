@@ -83,7 +83,7 @@ public record TextEmbeddingModel(String name, String path) implements AigcModel<
                 int index,
 
                 @JsonProperty("embedding")
-                List<Float> embedding
+                float[] vector
 
         ) {
 

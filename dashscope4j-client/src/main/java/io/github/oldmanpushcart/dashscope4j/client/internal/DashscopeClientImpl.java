@@ -23,7 +23,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeIn
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.GeneralAigcInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.TraceInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
+import io.github.oldmanpushcart.dashscope4j.common.util.flow.FlowX;
 import io.github.oldmanpushcart.dashscope4j.client.util.tracer.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
@@ -79,19 +79,19 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     }
 
-    private static List<Interceptor> mergeInterceptors(List<Interceptor> requestInterceptors) {
-        return Stream.of(globalInterceptors, requestInterceptors)
+    private static List<Interceptor> mergeInterceptors(List<Interceptor> interceptors, List<Interceptor> requestInterceptors) {
+        return Stream.of(globalInterceptors, interceptors, requestInterceptors)
                 .flatMap(List::stream)
                 .toList();
     }
 
     @Override
-    public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> async(T request) {
+    public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> async(T request, List<Interceptor> interceptors) {
 
-        final var interceptors = mergeInterceptors(request.interceptors());
-        final var asyncApi = interceptors.isEmpty()
+        final var merged = mergeInterceptors(interceptors, request.interceptors());
+        final var asyncApi = merged.isEmpty()
                 ? this.asyncApi
-                : InterceptionAsyncApi.group(this, this.asyncApi, interceptors);
+                : InterceptionAsyncApi.group(this, this.asyncApi, merged);
 
         //noinspection resource
         final var scope = Tracer.instance.enter("async");
@@ -108,12 +108,12 @@ public class DashscopeClientImpl implements DashscopeClient {
     }
 
     @Override
-    public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> flow(T request) {
+    public <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> flow(T request, List<Interceptor> interceptors) {
 
-        final var interceptors = mergeInterceptors(request.interceptors());
-        final var flowApi = interceptors.isEmpty()
+        final var merged = mergeInterceptors(interceptors, request.interceptors());
+        final var flowApi = merged.isEmpty()
                 ? this.flowApi
-                : InterceptionFlowApi.group(this, this.flowApi, interceptors);
+                : InterceptionFlowApi.group(this, this.flowApi, merged);
 
         //noinspection resource
         final var scope = Tracer.instance.enter("flow");
@@ -129,12 +129,12 @@ public class DashscopeClientImpl implements DashscopeClient {
     }
 
     @Override
-    public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> task(T request) {
+    public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> task(T request, List<Interceptor> interceptors) {
 
-        final var interceptors = mergeInterceptors(request.interceptors());
-        final var taskApi = interceptors.isEmpty()
+        final var merged = mergeInterceptors(interceptors, request.interceptors());
+        final var taskApi = merged.isEmpty()
                 ? this.taskApi
-                : InterceptionTaskApi.group(this, this.taskApi, interceptors);
+                : InterceptionTaskApi.group(this, this.taskApi, merged);
 
         //noinspection resource
         final var scope = Tracer.instance.enter("task");

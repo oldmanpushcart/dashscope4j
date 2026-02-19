@@ -7,7 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.Config;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.FeatureDetection;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.flow.FlowX;
+import io.github.oldmanpushcart.dashscope4j.common.util.flow.FlowX;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.http.HttpHeader;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.tracer.Tracer;

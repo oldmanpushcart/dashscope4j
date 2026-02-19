@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.util.flow;
+package io.github.oldmanpushcart.dashscope4j.common.util.flow;
 
 import java.util.List;
 import java.util.Objects;

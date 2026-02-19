@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
 import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
@@ -10,6 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
@@ -27,7 +29,21 @@ public interface DashscopeClient {
      * @param request API 请求对象
      * @return 包含响应的 CompletionStage
      */
-    <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> async(T request);
+    default <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> async(T request) {
+        return async(request, List.of());
+    }
+
+
+    /**
+     * 异步执行 API 请求。
+     *
+     * @param <T>          请求类型，必须是 ApiRequest 的子类
+     * @param <R>          响应类型，必须是 ApiResponse 的子类
+     * @param request      API 请求对象
+     * @param interceptors 拦截器列表
+     * @return 包含响应的 CompletionStage
+     */
+    <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> async(T request, List<Interceptor> interceptors);
 
     /**
      * 执行流式 API 请求。
@@ -37,7 +53,20 @@ public interface DashscopeClient {
      * @param request API 请求对象
      * @return 响应对象的发布者
      */
-    <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> flow(T request);
+    default <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> flow(T request) {
+        return flow(request, List.of());
+    }
+
+    /**
+     * 执行流式 API 请求。
+     *
+     * @param <T>          请求类型，必须是 ApiRequest 的子类
+     * @param <R>          响应类型，必须是 ApiResponse 的子类
+     * @param request      API 请求对象
+     * @param interceptors 拦截器列表
+     * @return 响应对象的发布者
+     */
+    <T extends ApiRequest<R>, R extends ApiResponse> Flow.Publisher<R> flow(T request, List<Interceptor> interceptors);
 
     /**
      * 执行异步任务 API 请求。
@@ -47,7 +76,20 @@ public interface DashscopeClient {
      * @param request API 请求对象
      * @return 包含任务结果的 CompletionStage
      */
-    <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> task(T request);
+    default <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> task(T request) {
+        return task(request, List.of());
+    }
+
+    /**
+     * 执行异步任务 API 请求。
+     *
+     * @param <T>          请求类型，必须是 ApiRequest 的子类
+     * @param <R>          响应类型，必须是 ApiResponse 的子类
+     * @param request      API 请求对象
+     * @param interceptors 拦截器列表
+     * @return 包含任务结果的 CompletionStage
+     */
+    <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> task(T request, List<Interceptor> interceptors);
 
     /**
      * 建立实时连接。
