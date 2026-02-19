@@ -24,6 +24,7 @@ open module dashscope4j.client {
     exports io.github.oldmanpushcart.dashscope4j.client.base;
     exports io.github.oldmanpushcart.dashscope4j.client.base.files;
     exports io.github.oldmanpushcart.dashscope4j.client.base.store;
+    exports io.github.oldmanpushcart.dashscope4j.client.base.tokenizer;
 
     exports io.github.oldmanpushcart.dashscope4j.client.util;
     exports io.github.oldmanpushcart.dashscope4j.client.util.tracer;
@@ -57,7 +58,6 @@ open module dashscope4j.client {
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert.timespan;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.embedding;
-
 
 
 }
