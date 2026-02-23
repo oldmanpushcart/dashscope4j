@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import java.lang.reflect.Type;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.joinStrings;
 
@@ -139,6 +140,10 @@ public interface FunctionTool extends Tool {
         Builder name(String name);
 
         Builder description(String description);
+
+        Builder supplier(Supplier<?> supplier);
+
+        Builder supplier(Function<Tool.Caller, ?> supplier);
 
         <T> Builder function(BiFunction<Tool.Caller, T, ?> function);
 

@@ -10,8 +10,11 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.ToolMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolException;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.flow.FlowX;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,6 +106,11 @@ class FunctionToolCaller implements Tool.Caller {
         return request;
     }
 
+    @Override
+    public DashscopeClient client() {
+        return client;
+    }
+
     // 并行调用函数
     private Map<String, CompletableFuture<String>> parallelCallFunction() {
         final var futureMap = new HashMap<String, CompletableFuture<String>>();
@@ -128,22 +136,32 @@ class FunctionToolCaller implements Tool.Caller {
             logger.debug("{}/{} >>> {}", this, call.stub().name(), call.stub().arguments());
         }
 
-        try {
-            return tool.call(this, call.stub().arguments())
-                    .whenComplete((result, ex) -> {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("{}/{} <<< {}", this, call.stub().name(), result, ex);
-                        }
-                    });
-        } catch (Throwable cause) {
-            throw new RuntimeException(
-                    "Function call error! fn=%s;argument=%s".formatted(
-                            call.stub().name(),
-                            call.stub().arguments()
-                    ),
-                    cause
-            );
-        }
+        return tool.call(this, call.stub().arguments())
+                .whenComplete((result, ex) -> {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("{}/{} <<< {}", this, call.stub().name(), result, ex);
+                    }
+                })
+
+                /*
+                 * 对函数调用失败进行处理
+                 */
+                .handle((r, ex) -> {
+
+                    if (null == ex) {
+                        return CompletableFuture.completedFuture(r);
+                    }
+
+                    final var cause = CompletableFutureUtils.unwrapEx(ex);
+                    if (cause instanceof ToolException toolEx && !request.input().failOnToolError()) {
+                        final var errorJson = JacksonJsonUtils.toJson(toolEx.toResult());
+                        return CompletableFuture.completedStage(errorJson);
+                    } else {
+                        return CompletableFuture.<String>failedStage(ex);
+                    }
+
+                })
+                .thenCompose(v -> v);
     }
 
     // 找到函数工具
@@ -157,7 +175,7 @@ class FunctionToolCaller implements Tool.Caller {
                 .map(FunctionTool.class::cast)
                 .filter(tool -> Objects.equals(tool.meta().name(), functionCall.stub().name()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Function tool not found: " + functionCall.stub().name()));
+                .orElseThrow(() -> ToolException.notFound(functionCall.stub().name()));
     }
 
 }

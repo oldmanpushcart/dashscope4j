@@ -105,11 +105,13 @@ public record ChatModel(
         private final List<Message> messages;
         private final boolean uploadEnabled;
         private final boolean inlineEnabled;
+        private final boolean failOnToolError;
 
         private Input(Builder builder) {
             this.messages = unmodifiableList(builder.messages);
             this.uploadEnabled = builder.uploadEnabled;
             this.inlineEnabled = builder.inlineEnabled;
+            this.failOnToolError = builder.failOnToolError;
         }
 
         /**
@@ -134,6 +136,14 @@ public record ChatModel(
         @JsonIgnore
         public boolean inlineEnabled() {
             return inlineEnabled;
+        }
+
+        /**
+         * @return 是否在工具调用出错时失败
+         */
+        @JsonIgnore
+        public boolean failOnToolError() {
+            return failOnToolError;
         }
 
         /**
@@ -199,6 +209,7 @@ public record ChatModel(
             private final List<Message> messages = new ArrayList<>();
             private boolean uploadEnabled;
             private boolean inlineEnabled;
+            private boolean failOnToolError;
 
             public Builder() {
 
@@ -208,6 +219,7 @@ public record ChatModel(
                 this.messages.addAll(input.messages);
                 this.uploadEnabled = input.uploadEnabled;
                 this.inlineEnabled = input.inlineEnabled;
+                this.failOnToolError = input.failOnToolError;
             }
 
             public Builder messages(List<Message> messages) {
@@ -233,6 +245,11 @@ public record ChatModel(
 
             public Builder inlineEnabled(boolean inlineEnabled) {
                 this.inlineEnabled = inlineEnabled;
+                return this;
+            }
+
+            public Builder failOnToolError(boolean failOnToolError) {
+                this.failOnToolError = failOnToolError;
                 return this;
             }
 

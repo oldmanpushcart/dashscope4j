@@ -5,6 +5,7 @@ import com.github.victools.jsonschema.generator.*;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationModule;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
 
 import java.lang.reflect.Type;
 
@@ -21,7 +22,12 @@ public class SchemaUtils {
                             /*
                              * 启用识别 @JsonProperty 的 required 属性
                              */
-                            JacksonOption.RESPECT_JSONPROPERTY_REQUIRED
+                            JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
+
+                            /*
+                             * 启用识别枚举上的 @JsonProperty
+                             */
+                            JacksonOption.FLATTENED_ENUMS_FROM_JSONPROPERTY
 
                     ))
 

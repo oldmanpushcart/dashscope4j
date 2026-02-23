@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 
@@ -46,6 +47,11 @@ public interface Tool {
          * @return 触发对话请求
          */
         AigcRequest<?, ?> request();
+
+        /**
+         * @return Dashscope 客户端
+         */
+        DashscopeClient client();
 
     }
 

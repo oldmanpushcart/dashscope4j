@@ -10,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils.toObject;
 import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
@@ -46,18 +47,52 @@ class DefaultFunctionTool implements FunctionTool {
         return meta;
     }
 
+    private <T> T toArgument(String argumentJson) {
+        try {
+            return JacksonJsonUtils.toObject(argumentJson, parameterType);
+        } catch (Throwable cause) {
+            throw ToolException.unmarshalFailed(meta.name(), cause);
+        }
+    }
+
+    private String toResultJson(Object result) {
+        try {
+            return JacksonJsonUtils.toJson(result);
+        } catch (Throwable cause) {
+            throw ToolException.marshalFailed(meta.name(), cause);
+        }
+    }
+
     @Override
     public CompletionStage<String> call(Caller caller, String argumentJson) {
         try {
-            final var result = function.apply(caller, toObject(argumentJson, parameterType));
-            if(result instanceof CompletionStage<?> stage) {
-                return stage.thenApply(JacksonJsonUtils::toJson);
-            } else {
-                final var resultJson = JacksonJsonUtils.toJson(result);
+            final var result = function.apply(caller, toArgument(argumentJson));
+
+            // 处理异步返回
+            if (result instanceof CompletionStage<?> stage) {
+                return stage
+                        .thenApply(this::toResultJson)
+                        .handle((r, ex) -> {
+                            if (null == ex) {
+                                return CompletableFuture.completedStage(r);
+                            } else {
+                                final var toolEx = ToolException.callFailed(meta.name(), ex);
+                                return CompletableFuture.<String>failedStage(toolEx);
+                            }
+                        })
+                        .thenCompose(v -> v);
+            }
+
+            // 处理同步返回
+            else {
+                final var resultJson = toResultJson(result);
                 return CompletableFuture.completedFuture(resultJson);
             }
+        } catch (ToolException toolEx) {
+            return CompletableFuture.failedStage(toolEx);
         } catch (Throwable ex) {
-            return CompletableFuture.failedStage(ex);
+            final var toolEx = ToolException.callFailed(meta.name(), ex);
+            return CompletableFuture.failedStage(toolEx);
         }
     }
 
@@ -81,6 +116,20 @@ class DefaultFunctionTool implements FunctionTool {
             requireNonBlankString(description, "description must not be blank!");
             this.description = description;
             return this;
+        }
+
+        @Override
+        public FunctionTool.Builder supplier(Supplier<?> supplier) {
+            requireNonNull(supplier, "supplier must not be null!");
+            this.function = (BiFunction<Caller, Object, Object>) (caller, arg) -> supplier.get();
+            return parameterType(Object.class);
+        }
+
+        @Override
+        public FunctionTool.Builder supplier(Function<Caller, ?> supplier) {
+            requireNonNull(supplier, "supplier must not be null!");
+            this.function = (BiFunction<Caller, Object, Object>) (caller, arg) -> supplier.apply(caller);
+            return parameterType(Object.class);
         }
 
         @Override

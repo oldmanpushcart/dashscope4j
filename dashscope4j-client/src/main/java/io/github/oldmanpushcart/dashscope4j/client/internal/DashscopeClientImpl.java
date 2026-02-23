@@ -80,7 +80,8 @@ public class DashscopeClientImpl implements DashscopeClient {
     }
 
     private static List<Interceptor> mergeInterceptors(List<Interceptor> interceptors, List<Interceptor> requestInterceptors) {
-        return Stream.of(globalInterceptors, interceptors, requestInterceptors)
+        final var fixInterceptors = interceptors == null ? requestInterceptors : interceptors;
+        return Stream.of(globalInterceptors, fixInterceptors, requestInterceptors)
                 .flatMap(List::stream)
                 .toList();
     }
