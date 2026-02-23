@@ -24,10 +24,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -93,6 +90,98 @@ public class DashscopeTools {
                             .<Content>flatMap(identity())
                             .toList();
                     return Message.user(contents);
+                }
+
+            }
+
+        };
+    }
+
+    public static Supplier<Tool> imageEditTool() {
+        return new Supplier<>() {
+
+            @Override
+            public Tool get() {
+                return FunctionTool.newBuilder()
+                        .name("dashscope$image_edit")
+                        .description("对图片进行编辑")
+                        .parameterType(Spec.class)
+                        .<Spec>function((caller, spec) -> {
+
+                            final var model = new ChatModel("qwen-image-edit-max", "/api/v1/services/aigc/multimodal-generation/generation");
+                            final var request = AigcRequest.newBuilder(model)
+                                    .input(ChatModel.Input.newBuilder()
+                                            .building(builder -> {
+
+                                                final var contents = new ArrayList<Content>();
+                                                contents.add(Content.text(spec.prompt()));
+                                                if (spec.images() != null) {
+                                                    spec.images().stream()
+                                                            .map(Content::image)
+                                                            .forEach(contents::add);
+                                                }
+                                                builder.addMessage(Message.user(contents));
+
+                                            })
+                                            .build())
+                                    .addParameter("prompt_extend", true)
+                                    .building(builder -> {
+
+                                        if (spec.number() != null) {
+                                            builder.addParameter("n", spec.number());
+                                        }
+                                        if (spec.size() != null) {
+                                            builder.addParameter("size", String.format("%d*%d", spec.size().width, spec.size().height));
+                                        }
+                                        if (spec.negative() != null) {
+                                            builder.addParameter("negative_prompt", spec.negative());
+                                        }
+
+                                    })
+                                    .build();
+
+                            return caller.client().async(request)
+                                    .thenApply(response -> response.output().best().message().contents());
+                        })
+                        .build();
+            }
+
+            record Spec(
+
+                    @JsonPropertyDescription("提示词")
+                    @JsonProperty(value = "prompt", required = true)
+                    String prompt,
+
+                    @JsonPropertyDescription("图片URI列表")
+                    @JsonProperty("images")
+                    List<URI> images,
+
+                    @JsonPropertyDescription("负面提示词")
+                    @JsonProperty("negative")
+                    String negative,
+
+                    @JsonPropertyDescription("图片大小")
+                    @JsonProperty("size")
+                    Size size,
+
+                    @JsonPropertyDescription("生成图片数量")
+                    @JsonProperty("number")
+                    Integer number
+
+            ) {
+
+                record Size(
+
+                        @JsonPropertyDescription("图片高度（像素），取值范围：[512,2048]")
+                        @JsonProperty("height")
+                        int height,
+
+                        @JsonPropertyDescription("图片宽度（像素），取值范围：[512,2048]")
+                        @JsonProperty("width")
+                        int width
+
+                ) {
+
                 }
 
             }
@@ -370,6 +459,7 @@ public class DashscopeTools {
         return List.of(
                 visionTool().get(),
                 textToImageTool().get(),
+                imageEditTool().get(),
                 textToVideoTool().get(),
                 textToSpeechTool().get()
         );

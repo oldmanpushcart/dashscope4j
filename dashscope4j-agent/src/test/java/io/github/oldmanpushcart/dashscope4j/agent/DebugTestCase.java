@@ -38,8 +38,10 @@ public class DebugTestCase implements LoadingEnv {
         final var outbound = agent
                 .async(List.of(Message.user(List.of(
                         Content.text("""
-                                请给我生成一个描述《悯农》的视频，并且有人朗读。
-                                每一句诗弄一个分镜，用不同的场景。
+                                生成图片：修改亚瑟王的图，让他穿着钟离图中的衣服、摆出钟离图中的POSE。
+
+                                - 钟离：https://www.u78g.com/uploads/allimg/2411/ysimg/juese30.jpg
+                                - 亚瑟王：https://pics6.baidu.com/feed/d043ad4bd11373f08ae97abb4ab293f4faed0408.jpeg
                                 """)
                 ))))
                 .toCompletableFuture()
