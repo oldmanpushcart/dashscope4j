@@ -4,8 +4,9 @@ import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatParameterKeys;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
@@ -31,28 +32,58 @@ public abstract class BaseChatAgent extends BaseAgent implements ChatAgent {
         this.interceptors = builder.interceptors;
     }
 
+    protected String introduction() {
+        return introduction;
+    }
+
+    protected ChatModel model() {
+        return model;
+    }
+
+    protected Parameters parameters() {
+        return parameters;
+    }
+
+    protected List<Interceptor> interceptors() {
+        return interceptors;
+    }
+
     @Override
-    public CompletionStage<Message> async(List<Message> messages) {
-        final var request = newRequest(messages);
-        return client().async(request, interceptors)
+    public CompletionStage<AssistantMessage> async(UserMessage message) {
+        final var request = newRequest(message);
+        return client().async(request, interceptors())
                 .thenApply(response -> response.output().best().message());
     }
 
     @Override
-    public Flow.Publisher<Message> flow(List<Message> messages) {
-        final var request = newRequest(messages);
-        return FlowX.fromPublisher(client().flow(request, interceptors))
+    public Flow.Publisher<AssistantMessage> flow(UserMessage message) {
+        final var request = newRequest(message);
+        return FlowX.fromPublisher(client().flow(request, interceptors()))
                 .map(response -> response.output().best().message());
     }
 
-    private AigcRequest<Input, Output> newRequest(List<Message> messages) {
-        return AigcRequest.newBuilder(model)
+    private AigcRequest<Input, Output> newRequest(UserMessage message) {
+        return AigcRequest.newBuilder(model())
                 .input(Input.newBuilder()
-                        .addMessage(Message.system(introduction))
-                        .addMessages(messages)
+                        .building(builder -> {
+
+                            final var introduction = introduction();
+                            if (null != introduction && !introduction.isBlank()) {
+                                builder.addMessage(Message.system(introduction));
+                            }
+
+                        })
+                        .addMessage(message)
                         .failOnToolError(false)
                         .build())
-                .parameters(parameters)
+                .building(builder -> {
+
+                    final var parameters = parameters();
+                    if (null != parameters && !parameters.isEmpty()) {
+                        builder.parameters(parameters);
+                    }
+
+                })
                 .addParameter("parallel_tool_calls", false)
                 .build();
     }

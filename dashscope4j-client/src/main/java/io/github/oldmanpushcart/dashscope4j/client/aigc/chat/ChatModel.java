@@ -233,7 +233,7 @@ public record ChatModel(
                 return this;
             }
 
-            public Builder addMessages(List<Message> messages) {
+            public Builder addMessages(List<? extends Message> messages) {
                 this.messages.addAll(messages);
                 return this;
             }

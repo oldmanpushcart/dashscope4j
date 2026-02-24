@@ -29,21 +29,16 @@ public class DebugTestCase implements LoadingEnv {
                 .name("debug-agent")
                 .description("just a test")
                 .introduction("你是一个工具助手")
-                .model(ChatModel.QWEN_MAX)
+                .model(ChatModel.QWQ_PLUS)
                 .parameters(new Parameters()
                         .append(ChatParameterKeys.TOOLS, tools.toArray(new Tool[0])))
                 .build();
 
         final var image = new File("./test-data/image/IMG_0942.JPG").toURI();
         final var outbound = agent
-                .async(List.of(Message.user(List.of(
-                        Content.text("""
-                                生成图片：修改亚瑟王的图，让他穿着钟离图中的衣服、摆出钟离图中的POSE。
-
-                                - 钟离：https://www.u78g.com/uploads/allimg/2411/ysimg/juese30.jpg
-                                - 亚瑟王：https://pics6.baidu.com/feed/d043ad4bd11373f08ae97abb4ab293f4faed0408.jpeg
-                                """)
-                ))))
+                .async(Message.user("""
+                        帮我看看当前本地局域网IP是多少？
+                        """))
                 .toCompletableFuture()
                 .join();
 

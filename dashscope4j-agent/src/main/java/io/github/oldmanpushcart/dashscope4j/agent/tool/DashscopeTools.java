@@ -24,26 +24,73 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import static java.util.function.Function.identity;
 
 public class DashscopeTools {
 
     /**
+     * @return 文档理解工具
+     */
+    public static Tool document() {
+        return new Supplier<Tool>() {
+
+            @Override
+            public Tool get() {
+                return FunctionTool.newBuilder()
+                        .name("dashscope$document")
+                        .description("文档理解")
+                        .parameterType(Spec.class)
+                        .<Spec>function((caller, spec) -> {
+
+                            final var systemMessages = spec.fileIds().stream()
+                                    .map(fileId -> Message.system("fileid://" + fileId))
+                                    .toList();
+
+                            final var request = AigcRequest.newBuilder(ChatModel.QWEN_LONG)
+                                    .input(ChatModel.Input.newBuilder()
+                                            .addMessages(systemMessages)
+                                            .addMessage(Message.user(spec.prompt()))
+                                            .build())
+                                    .build();
+
+                            return caller.client().async(request)
+                                    .thenApply(response -> response.output().best().message().text());
+                        })
+                        .build();
+            }
+
+            record Spec(
+
+                    @JsonPropertyDescription("提示词")
+                    @JsonProperty(value = "prompt", required = true)
+                    String prompt,
+
+                    @JsonPropertyDescription("文件ID列表")
+                    @JsonProperty(value = "file_ids", required = true)
+                    List<String> fileIds
+
+            ) {
+
+            }
+
+        }.get();
+    }
+
+    /**
      * @return 理解图片和视频工具
      */
-    public static Supplier<Tool> visionTool() {
+    public static Tool vision() {
         return new Supplier<>() {
 
             @Override
             public Tool get() {
                 return FunctionTool.newBuilder()
-                        .name("dashscope$understand_vision")
-                        .description("理解图片和视频")
+                        .name("dashscope$vision")
+                        .description("图片和视频理解")
                         .parameterType(Spec.class)
                         .<Spec>function((caller, spec) -> {
                             final var client = caller.client();
@@ -67,44 +114,46 @@ public class DashscopeTools {
 
                     @JsonPropertyDescription("图片URI列表")
                     @JsonProperty("images")
-                    URI[] images,
+                    List<URI> images,
 
                     @JsonPropertyDescription("视频URI列表")
                     @JsonProperty("videos")
-                    URI[] videos
+                    List<URI> videos
 
             ) {
 
                 Message toUserMessage() {
-                    final var contents = Stream.of(
-                                    Stream.of(Content.text(prompt())),
-                                    Optional.ofNullable(images())
-                                            .stream()
-                                            .flatMap(Arrays::stream)
-                                            .map(Content::image),
-                                    Optional.ofNullable(videos())
-                                            .stream()
-                                            .flatMap(Arrays::stream)
-                                            .map(Content::video)
-                            )
-                            .<Content>flatMap(identity())
-                            .toList();
+                    final var contents = new ArrayList<Content>();
+                    if (images != null) {
+                        images.stream()
+                                .map(Content::image)
+                                .forEach(contents::add);
+                    }
+                    if (videos != null) {
+                        videos.stream()
+                                .map(Content::video)
+                                .forEach(contents::add);
+                    }
+                    contents.add(Content.text(prompt));
                     return Message.user(contents);
                 }
 
             }
 
-        };
+        }.get();
     }
 
-    public static Supplier<Tool> imageEditTool() {
+    /**
+     * @return 图像编辑工具
+     */
+    public static Tool imageEdit() {
         return new Supplier<>() {
 
             @Override
             public Tool get() {
                 return FunctionTool.newBuilder()
                         .name("dashscope$image_edit")
-                        .description("对图片进行编辑")
+                        .description("图片编辑")
                         .parameterType(Spec.class)
                         .<Spec>function((caller, spec) -> {
 
@@ -152,15 +201,15 @@ public class DashscopeTools {
                     @JsonProperty(value = "prompt", required = true)
                     String prompt,
 
-                    @JsonPropertyDescription("图片URI列表")
-                    @JsonProperty("images")
-                    List<URI> images,
-
                     @JsonPropertyDescription("负面提示词")
                     @JsonProperty("negative")
                     String negative,
 
-                    @JsonPropertyDescription("图片大小")
+                    @JsonPropertyDescription("图片URI列表")
+                    @JsonProperty("images")
+                    List<URI> images,
+
+                    @JsonPropertyDescription("生成图片大小")
                     @JsonProperty("size")
                     Size size,
 
@@ -186,20 +235,20 @@ public class DashscopeTools {
 
             }
 
-        };
+        }.get();
     }
 
     /**
      * @return 文生图工具
      */
-    public static Supplier<Tool> textToImageTool() {
+    public static Tool t2i() {
         return new Supplier<>() {
 
             @Override
             public Tool get() {
                 return FunctionTool.newBuilder()
                         .name("dashscope$text_to_image")
-                        .description("将文本转换为图片")
+                        .description("文生图")
                         .parameterType(Spec.class)
                         .<Spec>function((caller, spec) -> {
                             final var client = caller.client();
@@ -243,20 +292,20 @@ public class DashscopeTools {
 
             }
 
-        };
+        }.get();
     }
 
     /**
      * @return 文生视频工具
      */
-    public static Supplier<Tool> textToVideoTool() {
+    public static Tool t2v() {
         return new Supplier<>() {
 
             @Override
             public Tool get() {
                 return FunctionTool.newBuilder()
                         .name("dashscope$text_to_video")
-                        .description("将文本转换为视频")
+                        .description("文生视频")
                         .parameterType(Spec.class)
                         .<Spec>function((caller, spec) -> {
 
@@ -369,23 +418,31 @@ public class DashscopeTools {
 
             }
 
-        };
+        }.get();
     }
 
-    public static Supplier<Tool> textToSpeechTool() {
+    /**
+     * @return 文本转语音工具
+     */
+    public static Tool tts() {
         return new Supplier<>() {
 
             @Override
             public Tool get() {
                 return FunctionTool.newBuilder()
                         .name("dashscope$text_to_speech")
-                        .description("将文本转换为语音")
+                        .description("文本转音频")
                         .parameterType(Spec.class)
                         .<Spec>function((caller, spec) -> {
                             final var session = CosyVoiceSession.newBuilder()
                                     .model(CosyVoiceModel.COSYVOICE_V3_PLUS)
-                                    .addParameter(CosyVoiceParameterKeys.VOICE, "longanyang")
                                     .building(builder -> {
+
+                                        if (spec.voice() != null) {
+                                            builder.addParameter("voice", spec.voice());
+                                        } else {
+                                            builder.addParameter("voice", "longanyang");
+                                        }
 
                                         if (spec.format() != null) {
                                             builder.addParameter(CosyVoiceParameterKeys.FORMAT, switch (spec.format()) {
@@ -431,6 +488,10 @@ public class DashscopeTools {
                     @JsonProperty(value = "text", required = true)
                     String text,
 
+                    @JsonPropertyDescription("音色")
+                    @JsonProperty("voice")
+                    Voice voice,
+
                     @JsonPropertyDescription("音频格式")
                     @JsonProperty("format")
                     AudioFormat format
@@ -450,18 +511,35 @@ public class DashscopeTools {
 
                 }
 
+                enum Voice {
+
+                    @JsonPropertyDescription("男声")
+                    @JsonProperty("longanyang")
+                    LONGANYANG,
+
+                    @JsonPropertyDescription("女声")
+                    @JsonProperty("longanhuan")
+                    LONGANHUAN,
+
+                    @JsonPropertyDescription("童声")
+                    @JsonProperty("longhuhu_v3")
+                    LONGHUHU
+
+                }
+
             }
 
-        };
+        }.get();
     }
 
     public static List<Tool> tools() {
         return List.of(
-                visionTool().get(),
-                textToImageTool().get(),
-                imageEditTool().get(),
-                textToVideoTool().get(),
-                textToSpeechTool().get()
+                document(),
+                vision(),
+                imageEdit(),
+                t2i(),
+                t2v(),
+                tts()
         );
     }
 

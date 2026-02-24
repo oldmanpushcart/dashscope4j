@@ -32,6 +32,7 @@ import java.net.http.HttpClient;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 import java.util.stream.Stream;
@@ -80,8 +81,8 @@ public class DashscopeClientImpl implements DashscopeClient {
     }
 
     private static List<Interceptor> mergeInterceptors(List<Interceptor> interceptors, List<Interceptor> requestInterceptors) {
-        final var fixInterceptors = interceptors == null ? requestInterceptors : interceptors;
-        return Stream.of(globalInterceptors, fixInterceptors, requestInterceptors)
+        return Stream.of(globalInterceptors, interceptors, requestInterceptors)
+                .map(v -> Optional.ofNullable(v).orElseGet(List::of))
                 .flatMap(List::stream)
                 .toList();
     }
