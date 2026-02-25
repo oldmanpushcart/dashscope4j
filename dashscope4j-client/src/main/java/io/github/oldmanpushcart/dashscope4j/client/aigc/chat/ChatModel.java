@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import static io.github.oldmanpushcart.dashscope4j.common.Constants.*;
@@ -328,6 +329,22 @@ public record ChatModel(
         }
 
         /**
+         * 修改候选结果
+         *
+         * @param operator 修改函数
+         * @return 修改后的输出
+         */
+        public Output changeChoice(UnaryOperator<Choice> operator) {
+            final var newChoices = choices.stream()
+                    .map(operator)
+                    .toList();
+            return new Output(
+                    search,
+                    newChoices
+            );
+        }
+
+        /**
          * 候选结果
          *
          * @param finish  结束类型
@@ -356,6 +373,17 @@ public record ChatModel(
                 }
                 final var newMessage = message.accumulate(next.message);
                 return new Choice(next.finish(), newMessage);
+            }
+
+            /**
+             * 修改候选结果中的消息
+             *
+             * @param operator 修改函数
+             * @return 修改后的候选结果
+             */
+            public Choice changeMessage(UnaryOperator<AssistantMessage> operator) {
+                final var newMessage = operator.apply(message);
+                return new Choice(finish, newMessage);
             }
 
             /**

@@ -6,12 +6,15 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatParameterKeys;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolException;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.flow.FlowX;
@@ -53,7 +56,8 @@ public class ReActInterceptor implements Interceptor {
                         //noinspection unchecked
                         final var response = (AigcResponse<Output>) r;
                         return processAsyncResponse(chain, tools, response);
-                    });
+                    })
+                    .thenApply(this::unpackingAsyncResponse);
         }
 
         // flow
@@ -64,7 +68,9 @@ public class ReActInterceptor implements Interceptor {
                     .thenApply(f -> {
                         //noinspection unchecked
                         final var flow = (Flow.Publisher<AigcResponse<Output>>) f;
-                        return processFlowResponse(chain, tools, flow);
+                        return FlowX.fromPublisher(flow)
+                                .transform(_f -> processFlowResponse(chain, tools, _f))
+                                .transform(_f -> unpackingFlowResponse(_f));
                     });
         }
 
@@ -131,13 +137,25 @@ public class ReActInterceptor implements Interceptor {
                         .addMessages(request.input().messages())
                         .build())
 
-                /*
-                 * 清理请求中的 TOOLS
-                 * ReAct 模式下不支持 LLM 自主调用工具
-                 */
-                .addParameter(ChatParameterKeys.TOOLS, new Tool[]{})
+                .building(builder -> {
 
-                .addParameter(ChatParameterKeys.STOP_WORDS, new String[]{ReAct.KEY_OBSERVATION})
+                    final var newParameters = new Parameters()
+                            .merge(request.parameters())
+
+                            /*
+                             * 清理请求中的 TOOLS
+                             * ReAct 模式下不支持 LLM 自主调用工具
+                             */
+                            .remove(ChatParameterKeys.TOOLS)
+                            .remove(ChatParameterKeys.PARALLEL_TOOL_CALLS)
+
+                            /*
+                             * 设置 ReAct 的停止词，标准动作了
+                             */
+                            .append(ChatParameterKeys.STOP_WORDS, new String[]{ReAct.KEY_OBSERVATION});
+
+                    builder.parameters(newParameters);
+                })
 
                 .build();
     }
@@ -193,6 +211,14 @@ public class ReActInterceptor implements Interceptor {
 
     }
 
+    /**
+     * 处理异步响应
+     *
+     * @param chain    链
+     * @param tools    工具列表
+     * @param response 响应
+     * @return 处理结果
+     */
     private CompletionStage<AigcResponse<Output>> processAsyncResponse(Chain chain, List<FunctionTool> tools, AigcResponse<Output> response) {
 
         final var client = chain.client();
@@ -241,6 +267,14 @@ public class ReActInterceptor implements Interceptor {
 
     }
 
+    /**
+     * 处理流式响应
+     *
+     * @param chain 链
+     * @param tools 工具列表
+     * @param flow  响应
+     * @return 处理结果
+     */
     private Flow.Publisher<AigcResponse<Output>> processFlowResponse(Chain chain, List<FunctionTool> tools, Flow.Publisher<AigcResponse<Output>> flow) {
         final var responseRef = new AtomicReference<AigcResponse<Output>>();
         return FlowX.fromPublisher(flow)
@@ -266,9 +300,11 @@ public class ReActInterceptor implements Interceptor {
                     final var request = (AigcRequest<Input, Output>) response.request();
                     final var caller = newFunctionCaller(client, request);
 
+                    /*
+                     * 递归执行 Tool -> ReAct.Observation -> ReAct.Thought -> ReAct.Action -> Tool ...
+                     */
                     final String functionName = reAct.action();
                     final String argumentJson = reAct.actionInput();
-
                     final var stage = CompletableFuture.completedStage(null)
                             .thenCompose(unused -> calling(request, tools, functionName, caller, argumentJson))
                             .thenApply(resultJson -> {
@@ -284,6 +320,76 @@ public class ReActInterceptor implements Interceptor {
 
                     return FlowX.fromCompletionStage(stage);
                 }));
+    }
+
+    /**
+     * 解包异步响应
+     * <p>
+     * ReAct 在结束的时候都会输出 {@code Final Answer: }，这些 ReAct 的框架信息对用户没有帮助，
+     * 所以这里会将这些信息进行解包，只返回最终答案。
+     * </p>
+     *
+     * @param response 响应
+     * @return 解包后的响应
+     */
+    private AigcResponse<Output> unpackingAsyncResponse(AigcResponse<Output> response) {
+        final var newOutput = response.output()
+                .changeChoice(choice ->
+                        choice.changeMessage(message -> {
+                            final var reAct = ReAct.of(message.text());
+
+                            final var thought = reAct.hasThought()
+                                    ? reAct.thought()
+                                    : message.reasoningContent();
+
+                            final var answer = reAct.hasFinalAnswer()
+                                    ? reAct.finalAnswer()
+                                    : message.text();
+
+                            return AssistantMessage.newBuilder()
+                                    .contents(List.of(Content.text(answer)))
+                                    .reasoningContent(thought)
+                                    .build();
+                        }));
+        return new AigcResponse<>(
+                response.request(),
+                response.uuid(),
+                response.code(),
+                response.desc(),
+                response.usage(),
+                newOutput
+        );
+    }
+
+    private Flow.Publisher<AigcResponse<Output>> unpackingFlowResponse(Flow.Publisher<AigcResponse<Output>> flow) {
+        final var detector = new StringDetector("%s: ".formatted(ReAct.KEY_FINAL_ANSWER));
+        return FlowX.fromPublisher(flow)
+                .map(response -> {
+                    final var newOutput = response.output()
+                            .changeChoice(choice ->
+                                    choice.changeMessage(message -> {
+
+                                        final var text = message.text();
+                                        final var position = detector.detect(text);
+
+                                        final String content = position != -1
+                                                ? text.substring(position)
+                                                : "";
+
+                                        return AssistantMessage.newBuilder()
+                                                .contents(List.of(Content.text(content)))
+                                                .reasoningContent(text)
+                                                .build();
+                                    }));
+                    return new AigcResponse<>(
+                            response.request(),
+                            response.uuid(),
+                            response.code(),
+                            response.desc(),
+                            response.usage(),
+                            newOutput
+                    );
+                });
     }
 
 }

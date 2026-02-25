@@ -47,6 +47,10 @@ record ReAct(
         return action != null && !action.isEmpty();
     }
 
+    public boolean hasThought() {
+        return thought != null && !thought.isEmpty();
+    }
+
     public static ReAct of(String text) {
         final var pojoMap = new HashMap<String, String>();
         final var matcher = pattern.matcher(text);

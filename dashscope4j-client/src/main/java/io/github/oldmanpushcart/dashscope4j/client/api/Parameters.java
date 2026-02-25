@@ -83,6 +83,26 @@ public class Parameters {
         return map.containsKey(name) && map.get(name).equals(value);
     }
 
+    public Parameters remove(ParameterKey<?, ?> parameterKey) {
+        map.remove(parameterKey.name());
+        return this;
+    }
+
+    public Parameters remove(String name) {
+        map.remove(name);
+        return this;
+    }
+
+    public <T, R> Parameters remove(ParameterKey<T, R> parameterKey, T value) {
+        map.remove(parameterKey.name(), parameterKey.convert(value));
+        return this;
+    }
+
+    public Parameters remove(String name, Object value) {
+        map.remove(name, value);
+        return this;
+    }
+
     /**
      * @return 是否为空
      */
@@ -103,7 +123,7 @@ public class Parameters {
         map.forEach(consumer);
     }
 
-    public Map<String,Object> dump() {
+    public Map<String, Object> dump() {
         return new HashMap<>(map);
     }
 
@@ -116,12 +136,12 @@ public class Parameters {
 
     @SuppressWarnings("unchecked")
     public <R> R get(ParameterKey<?, R> key) {
-        return (R)map.get(key.name());
+        return (R) map.get(key.name());
     }
 
     @SuppressWarnings("unchecked")
     public <R> R get(String name) {
-        return (R)map.get(name);
+        return (R) map.get(name);
     }
 
     /**

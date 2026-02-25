@@ -9,6 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMe
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
@@ -67,7 +68,15 @@ public abstract class BaseChatAgent extends BaseAgent implements ChatAgent {
     @Override
     public Flow.Publisher<AssistantMessage> flow(UserMessage message) {
         final var request = newRequest(message);
-        return FlowX.fromPublisher(client().flow(request, interceptors()))
+
+        /*
+         * flow 中统一用增量输出
+         */
+        final var flowRequest = AigcRequest.newBuilder(request)
+                .addParameter(AigcParameterKeys.INCREMENTAL_OUTPUT, true)
+                .build();
+
+        return FlowX.fromPublisher(client().flow(flowRequest, interceptors()))
                 .map(response -> response.output().best().message());
     }
 

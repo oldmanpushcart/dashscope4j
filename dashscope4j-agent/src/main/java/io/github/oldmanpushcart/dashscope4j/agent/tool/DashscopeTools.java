@@ -13,6 +13,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Ima
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.GeneralAigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
@@ -46,19 +47,39 @@ public class DashscopeTools {
                         .parameterType(Spec.class)
                         .<Spec>function((caller, spec) -> {
 
-                            final var systemMessages = spec.fileIds().stream()
-                                    .map(fileId -> Message.system("fileid://" + fileId))
-                                    .toList();
+                            final var model = GeneralAigcModel.newBuilder()
+                                    .name("qwen-doc-turbo")
+                                    .path("/api/v1/services/aigc/text-generation/generation")
+                                    .uploadEnabled(true)
+                                    .build();
 
-                            final var request = AigcRequest.newBuilder(ChatModel.QWEN_LONG)
-                                    .input(ChatModel.Input.newBuilder()
-                                            .addMessages(systemMessages)
-                                            .addMessage(Message.user(spec.prompt()))
-                                            .build())
+                            final var input = new HashMap<String,Object>(){{
+                                put("messages", new ArrayList<>(){{
+                                    add(new HashMap<>(){{
+                                        put("role", "user");
+                                        put("content", new ArrayList<>(){{
+                                            add(new HashMap<>(){{
+                                                put("type", "text");
+                                                put("text", spec.prompt());
+                                            }});
+                                            add(new HashMap<>(){{
+                                                put("type", "doc_url");
+                                                put("file_parsing_strategy","auto");
+                                                put("doc_url", new ArrayList<>(){{
+                                                    addAll(spec.files());
+                                                }});
+                                            }});
+                                        }});
+                                    }});
+                                }});
+                            }};
+
+                            final var request = AigcRequest.newBuilder(model)
+                                    .input(input)
                                     .build();
 
                             return caller.client().async(request)
-                                    .thenApply(response -> response.output().best().message().text());
+                                    .thenApply(AigcResponse::output);
                         })
                         .build();
             }
@@ -69,9 +90,9 @@ public class DashscopeTools {
                     @JsonProperty(value = "prompt", required = true)
                     String prompt,
 
-                    @JsonPropertyDescription("文件ID列表")
-                    @JsonProperty(value = "file_ids", required = true)
-                    List<String> fileIds
+                    @JsonPropertyDescription("文件URI列表")
+                    @JsonProperty(value = "files", required = true)
+                    List<URI> files
 
             ) {
 

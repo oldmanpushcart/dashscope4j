@@ -19,6 +19,11 @@ public interface ChatParameterKeys {
     SimpleParameterKey<Tool[]> TOOLS = new SimpleParameterKey<>("tools", Tool[].class);
 
     /**
+     * 是否并行调用工具
+     */
+    SimpleParameterKey<Boolean> PARALLEL_TOOL_CALLS = new SimpleParameterKey<>("parallel_tool_calls", Boolean.class);
+
+    /**
      * 停止生成的关键词列表
      */
     SimpleParameterKey<String[]> STOP_WORDS = new SimpleParameterKey<>("stop", String[].class);
