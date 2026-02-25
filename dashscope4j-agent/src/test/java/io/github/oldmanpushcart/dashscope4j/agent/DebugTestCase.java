@@ -32,7 +32,7 @@ public class DebugTestCase implements LoadingEnv {
         final var image = new File("./test-data/image/IMG_0942.JPG").toURI();
         final var outbound = agent
                 .async(Message.user("""
-                        给我列出桌面的所有PDF文件，用表格整理给我，至少要包含文件的大小和日期
+                        整理桌面的PDF文件到文档目录中。
                         """))
                 .toCompletableFuture()
                 .join();
