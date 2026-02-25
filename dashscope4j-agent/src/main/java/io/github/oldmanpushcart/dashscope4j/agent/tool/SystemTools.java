@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -59,6 +61,7 @@ public class SystemTools {
                         .<Spec>function(new BiFunction<>() {
 
                             private static final Pattern ACTIVE_CODE_PAGE_PATTERN = Pattern.compile(".*?(\\d+).*?");
+                            private final Logger logger = LoggerFactory.getLogger(SystemTools.class);
 
                             @Override
                             public Object apply(Tool.Caller caller, Spec spec) {
@@ -71,7 +74,9 @@ public class SystemTools {
                                     if (ex instanceof InterruptedException) {
                                         Thread.currentThread().interrupt();
                                     }
-                                    return CompletableFuture.failedStage(ex);
+                                    logger.warn("dashscope4j-agent://tool/{} execute occur error!", "system$cmd", ex);
+                                    final var result = new Result(ex.getMessage(), -1);
+                                    return CompletableFuture.completedStage(result);
                                 }
 
                             }
@@ -89,6 +94,21 @@ public class SystemTools {
                                 @JsonProperty("is_success")
                                 public boolean isSuccess() {
                                     return code == 0;
+                                }
+
+                                @JsonProperty("prompt")
+                                public String prompt() {
+
+                                    if (isSuccess()) {
+                                        return "执行成功";
+                                    }
+
+                                    return """
+                                            执行失败，你需要考虑以下情况解决。
+                                            1. 命令是否匹配操作系统
+                                            2. 命令是否匹配SHELL，重点要区分CMD、PowerShell、Bash、Zsh等
+                                            3. 检查命令是否存在，如果不存在需要更换对等的其他命令。
+                                            """;
                                 }
 
                             }

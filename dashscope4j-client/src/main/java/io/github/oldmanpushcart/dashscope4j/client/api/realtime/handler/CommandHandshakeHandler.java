@@ -6,8 +6,8 @@ import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.client.api.Ret;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.ToStringDeserializer;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.ToStringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

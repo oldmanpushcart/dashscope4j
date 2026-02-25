@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.http.MultipartBodyPublisherBuilder;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonXmlUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonXmlUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

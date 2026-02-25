@@ -81,7 +81,7 @@ public class DashscopeClientImpl implements DashscopeClient {
     }
 
     private static List<Interceptor> mergeInterceptors(List<Interceptor> interceptors, List<Interceptor> requestInterceptors) {
-        return Stream.of(globalInterceptors, interceptors, requestInterceptors)
+        return Stream.of(interceptors, requestInterceptors, globalInterceptors)
                 .map(v -> Optional.ofNullable(v).orElseGet(List::of))
                 .flatMap(List::stream)
                 .toList();

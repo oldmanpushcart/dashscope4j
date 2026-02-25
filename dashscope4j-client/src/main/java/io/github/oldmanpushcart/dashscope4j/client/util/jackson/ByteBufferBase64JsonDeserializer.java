@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson;
+package io.github.oldmanpushcart.dashscope4j.client.util.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -6,26 +6,27 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Base64;
 
-public class ByteArrayBase64JsonDeserializer extends JsonDeserializer<byte[]> {
+public class ByteBufferBase64JsonDeserializer extends JsonDeserializer<ByteBuffer> {
 
-    private static final byte[] EMPTY = new byte[0];
+    private static final ByteBuffer EMPTY = ByteBuffer.allocate(0);
 
     @Override
-    public byte[] deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+    public ByteBuffer deserialize(JsonParser parser, DeserializationContext context) throws IOException {
 
         final var token = parser.currentToken();
+
         if (token == JsonToken.VALUE_NULL) {
             return EMPTY;
         }
 
-        // 必须是字符串
         if (token != JsonToken.VALUE_STRING) {
             context.reportWrongTokenException(
-                    byte[].class,
+                    ByteBuffer.class,
                     JsonToken.VALUE_STRING,
-                    "Expected as Base64-encoded string!"
+                    "Expected a Base64-encoded string for ByteBuffer"
             );
         }
 
@@ -34,8 +35,8 @@ public class ByteArrayBase64JsonDeserializer extends JsonDeserializer<byte[]> {
             return EMPTY;
         }
 
-        return Base64.getDecoder().decode(string);
-
+        final var decoded = Base64.getDecoder().decode(string);
+        return ByteBuffer.wrap(decoded).asReadOnlyBuffer();
     }
 
 }

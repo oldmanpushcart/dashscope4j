@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts.internal.interceptor.SettingInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.ByteBufferBase64JsonDeserializer;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.InstantSecondJsonDeserializer;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.ByteBufferBase64JsonDeserializer;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.InstantSecondJsonDeserializer;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 

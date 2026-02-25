@@ -9,7 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.HttpUtils;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.flow.FlowX;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.http.HttpHeader;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.tracer.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
@@ -299,7 +299,9 @@ public class DefaultFlowApi implements FlowApi {
                     switch (field) {
                         case "id" -> id = value;
                         case "event" -> type = value;
-                        case "data" -> payloadBuf.append(value).append("\n");
+                        case "data" -> payloadBuf.append(value)
+                                //.append("\n")
+                        ;
                     }
 
 

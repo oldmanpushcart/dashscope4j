@@ -10,7 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.Usage;
 import io.github.oldmanpushcart.dashscope4j.client.internal.OpenAiError;
 import io.github.oldmanpushcart.dashscope4j.client.internal.OpenAiResponse;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.DurationMsJsonSerializer;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.DurationMsJsonSerializer;
 
 import java.time.Duration;
 import java.util.List;

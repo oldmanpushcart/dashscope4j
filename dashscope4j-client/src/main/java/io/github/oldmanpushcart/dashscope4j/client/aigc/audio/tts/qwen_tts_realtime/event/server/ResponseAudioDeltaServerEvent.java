@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_real
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.ByteBufferBase64JsonDeserializer;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.ByteBufferBase64JsonDeserializer;
 
 import java.nio.ByteBuffer;
 

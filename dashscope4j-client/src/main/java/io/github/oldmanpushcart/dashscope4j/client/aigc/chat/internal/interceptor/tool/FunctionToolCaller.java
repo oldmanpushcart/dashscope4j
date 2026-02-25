@@ -13,7 +13,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolException;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.flow.FlowX;
 import org.slf4j.Logger;
@@ -138,9 +138,13 @@ class FunctionToolCaller implements Tool.Caller {
 
         return tool.call(this, call.stub().arguments())
                 .whenComplete((result, ex) -> {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("{}/{} <<< {}", this, call.stub().name(), result, ex);
+
+                    if(ex == null) {
+                        logger.debug("{}/{} <<< {}", this, call.stub().name(), result);
+                    } else {
+                        logger.debug("{}/{} <<< ERROR", this, call.stub().name(), ex);
                     }
+
                 })
 
                 /*

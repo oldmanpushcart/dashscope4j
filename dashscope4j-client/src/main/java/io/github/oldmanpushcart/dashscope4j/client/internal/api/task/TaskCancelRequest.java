@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.api.task;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

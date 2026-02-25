@@ -35,7 +35,7 @@ public class DebugTestCase implements LoadingEnv {
         final var image = new File("./test-data/image/IMG_0942.JPG").toURI();
         final var outbound = agent
                 .async(Message.user("""
-                        本机局域网IP地址是多少？
+                        分析桌面的images文件夹的所有图片，并总结内容，表格呈现
                         """
                 ))
                 .toCompletableFuture()
@@ -57,14 +57,14 @@ public class DebugTestCase implements LoadingEnv {
                 .name("debug-agent")
                 .description("just a test")
                 .introduction("你是一个工具助手")
-                .model(ChatModel.QWEN_FLASH)
+                .model(ChatModel.QWEN_MAX)
                 .tools(tools)
                 .build();
 
         final var image = new File("./test-data/image/IMG_0942.JPG").toURI();
         final var responseFlow = agent
                 .flow(Message.user("""
-                        本机局域网IP地址是多少？
+                        分析桌面的images文件夹的所有图片，并总结内容，表格呈现
                         """
                 ));
 
@@ -73,8 +73,6 @@ public class DebugTestCase implements LoadingEnv {
                 .toCompletableFuture()
                 .join();
 
-        System.out.println(outbound.reasoningContent());
-        System.out.println("------------");
         System.out.println(outbound.text());
 
     }

@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson;
+package io.github.oldmanpushcart.dashscope4j.client.util.jackson;
 
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -11,10 +11,6 @@ import java.util.Map;
  * 允许注入 null 的 InjectableValues
  */
 class NullableInjectableValues extends InjectableValues.Std {
-
-    public NullableInjectableValues() {
-        super();
-    }
 
     public NullableInjectableValues(Map<String, Object> values) {
         super(values);

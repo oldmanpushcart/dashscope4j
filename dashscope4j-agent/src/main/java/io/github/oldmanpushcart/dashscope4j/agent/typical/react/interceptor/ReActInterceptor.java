@@ -8,7 +8,9 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.SystemMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.TextContent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolException;
@@ -16,8 +18,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 import io.github.oldmanpushcart.dashscope4j.common.util.flow.FlowX;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +33,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class ReActInterceptor implements Interceptor {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
     public CompletionStage<?> intercept(Chain chain) {
@@ -70,7 +77,7 @@ public class ReActInterceptor implements Interceptor {
                         final var flow = (Flow.Publisher<AigcResponse<Output>>) f;
                         return FlowX.fromPublisher(flow)
                                 .transform(_f -> processFlowResponse(chain, tools, _f))
-                                .transform(_f -> unpackingFlowResponse(_f));
+                                .transform(this::unpackingFlowResponse);
                     });
         }
 
@@ -95,29 +102,17 @@ public class ReActInterceptor implements Interceptor {
      */
     private AigcRequest<Input, Output> rewriteRequest(List<FunctionTool> tools, AigcRequest<Input, Output> request) {
 
+        final var metas = tools.stream()
+                .map(FunctionTool::meta)
+                .toList();
+
         final var systemMessage = PromptTemplate.newBuilder()
                 .template(PromptTemplate.class.getResourceAsStream("/prompt/REACT_PROMPT.md"))
 
                 /*
                  * 工具定义列表
                  */
-                .variable("tool_definitions", tools.stream()
-                        .map(FunctionTool::meta)
-                        .map(meta -> """
-                                ## 工具名称
-                                %s
-                                
-                                ### 功能描述
-                                %s
-                                
-                                ### 参数格式
-                                %s
-                                """.formatted(
-                                meta.name(),
-                                meta.description(),
-                                meta.parameterSchema().toString()
-                        ))
-                        .collect(Collectors.joining("\n")))
+                .variable("tool_definitions", JacksonJsonUtils.toJson(metas))
 
                 /*
                  * 工具名称列表
@@ -127,9 +122,13 @@ public class ReActInterceptor implements Interceptor {
                         .map(FunctionTool.Meta::name)
                         .toList())
                 .build()
-                .renderTo(Message::system);
-
-        // 重新构建适合 ReAct 的请求
+                .renderTo(text -> SystemMessage.newBuilder()
+                        .addContent(TextContent.newBuilder()
+                                .text(text)
+                                .cacheControl(Content.CacheControl.EPHEMERAL)
+                                .build())
+                        .build());
+        // 重(TextContent).newBuilder()
         return AigcRequest.newBuilder(request)
                 .input(ChatModel.Input.newBuilder()
                         .messages(List.of())
@@ -184,7 +183,7 @@ public class ReActInterceptor implements Interceptor {
     }
 
     private CompletionStage<String> calling(AigcRequest<Input, Output> request, List<FunctionTool> tools, String functionName, Tool.Caller caller, String argumentJson) {
-
+        logger.debug("dashscope4j-agent://agent/react/function/{} >>> {}", functionName, argumentJson);
         return CompletableFuture.completedStage(null)
                 .thenCompose(unused -> {
                     final var functionTool = requireFunctionTool(tools, functionName);
@@ -195,13 +194,17 @@ public class ReActInterceptor implements Interceptor {
                  */
                 .handle((r, ex) -> {
 
+
                     if (null == ex) {
+                        logger.debug("dashscope4j-agent://agent/react/function/{} <<< {}", functionName, r);
                         return CompletableFuture.completedFuture(r);
                     }
 
                     final var cause = CompletableFutureUtils.unwrapEx(ex);
+                    logger.warn("dashscope4j-agent://agent/react/function/{} <<< ERROR", functionName, cause);
                     if (cause instanceof ToolException toolEx && !request.input().failOnToolError()) {
-                        return CompletableFuture.completedStage(toolEx.getMessage());
+                        final var errorJson = JacksonJsonUtils.toJson(toolEx.toResult());
+                        return CompletableFuture.completedStage(errorJson);
                     } else {
                         return CompletableFuture.<String>failedStage(ex);
                     }

@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;

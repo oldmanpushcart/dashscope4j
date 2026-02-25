@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_real
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.ByteBufferBase64JsonSerializer;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.ByteBufferBase64JsonSerializer;
 
 import java.nio.ByteBuffer;
 

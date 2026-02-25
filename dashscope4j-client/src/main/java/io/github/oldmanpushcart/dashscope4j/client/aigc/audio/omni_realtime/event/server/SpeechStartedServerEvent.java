@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.eve
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.jackson.DurationMsJsonDeserializer;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.DurationMsJsonDeserializer;
 
 import java.time.Duration;
 

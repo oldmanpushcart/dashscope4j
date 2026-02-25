@@ -28,6 +28,7 @@ open module dashscope4j.client {
 
     exports io.github.oldmanpushcart.dashscope4j.client.util;
     exports io.github.oldmanpushcart.dashscope4j.client.util.tracer;
+    exports io.github.oldmanpushcart.dashscope4j.client.util.jackson;
 
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.chat;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message;
