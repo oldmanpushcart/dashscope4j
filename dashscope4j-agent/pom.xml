@@ -15,7 +15,7 @@
                 <directory>src/main/resources</directory>
                 <filtering>false</filtering>
                 <includes>
-                    <include>logback.xml</include>
+                    <include>**/*.md</include>
                 </includes>
             </resource>
         </resources>

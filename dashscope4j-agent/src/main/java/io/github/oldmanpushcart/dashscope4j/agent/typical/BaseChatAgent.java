@@ -4,9 +4,11 @@ import io.github.oldmanpushcart.dashscope4j.agent.ChatAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatParameterKeys;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.Parameters;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
@@ -23,6 +25,7 @@ public abstract class BaseChatAgent extends BaseAgent implements ChatAgent {
     private final ChatModel model;
     private final Parameters parameters;
     private final List<Interceptor> interceptors;
+    private final List<Tool> tools;
 
     protected BaseChatAgent(Builder<?, ?> builder) {
         super(builder);
@@ -30,6 +33,8 @@ public abstract class BaseChatAgent extends BaseAgent implements ChatAgent {
         this.model = builder.model;
         this.parameters = builder.parameters;
         this.interceptors = builder.interceptors;
+        this.tools = builder.tools;
+
     }
 
     protected String introduction() {
@@ -46,6 +51,10 @@ public abstract class BaseChatAgent extends BaseAgent implements ChatAgent {
 
     protected List<Interceptor> interceptors() {
         return interceptors;
+    }
+
+    protected List<Tool> tools() {
+        return tools;
     }
 
     @Override
@@ -83,6 +92,11 @@ public abstract class BaseChatAgent extends BaseAgent implements ChatAgent {
                         builder.parameters(parameters);
                     }
 
+                    final var tools = tools();
+                    if (null != tools && !tools.isEmpty()) {
+                        builder.addParameter("tools", tools.toArray(new Tool[0]));
+                    }
+
                 })
                 .addParameter("parallel_tool_calls", false)
                 .build();
@@ -96,6 +110,7 @@ public abstract class BaseChatAgent extends BaseAgent implements ChatAgent {
         private ChatModel model;
         private Parameters parameters;
         private List<Interceptor> interceptors;
+        private List<Tool> tools;
 
         public B introduction(String introduction) {
             this.introduction = introduction;
@@ -114,6 +129,11 @@ public abstract class BaseChatAgent extends BaseAgent implements ChatAgent {
 
         public B interceptors(List<Interceptor> interceptors) {
             this.interceptors = interceptors;
+            return self();
+        }
+
+        public B tools(List<Tool> tools) {
+            this.tools = tools;
             return self();
         }
 

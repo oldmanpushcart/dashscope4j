@@ -2,13 +2,18 @@ package io.github.oldmanpushcart.dashscope4j.agent.util;
 
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
+import java.io.InputStream;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
 
@@ -133,6 +138,24 @@ public class PromptTemplate {
         public Builder template(String template) {
             this.template = template;
             return this;
+        }
+
+        /**
+         * 设置模板
+         *
+         * @param input 模板输入流
+         * @return this
+         */
+        public Builder template(InputStream input) {
+            final var stringBuf = new StringBuilder();
+            try (final var scanner = new Scanner(input, UTF_8)) {
+                while (scanner.hasNextLine()) {
+                    stringBuf
+                            .append(scanner.nextLine())
+                            .append(System.lineSeparator());
+                }
+            }
+            return template(stringBuf.toString());
         }
 
         /**
