@@ -1,5 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api;
 
+import java.util.Objects;
+
 /**
  * API 应答
  */
@@ -18,6 +20,8 @@ public class ApiResponse extends Ret {
      */
     protected ApiResponse(ApiRequest<?> request, String uuid, String code, String desc) {
         super(code, desc);
+        Objects.requireNonNull(request, "request cannot be null");
+        Objects.requireNonNull(uuid, "uuid cannot be null");
         this.request = request;
         this.uuid = uuid;
     }

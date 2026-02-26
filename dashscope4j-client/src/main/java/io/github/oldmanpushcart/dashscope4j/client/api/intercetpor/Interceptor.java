@@ -53,7 +53,7 @@ public interface Interceptor {
     }
 
     /**
-     * 拦截链类型
+     * 拦截类型
      */
     enum Type {
 

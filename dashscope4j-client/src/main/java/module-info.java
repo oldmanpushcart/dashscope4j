@@ -10,6 +10,7 @@ open module dashscope4j.client {
     requires com.github.victools.jsonschema.generator;
     requires com.github.victools.jsonschema.module.jackson;
     requires com.github.victools.jsonschema.module.jakarta.validation;
-    requires java.net.http;
+    requires okhttp3;
+    requires org.reactivestreams;
 
 }
