@@ -6,7 +6,6 @@ import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiFunction;
 
 import static java.util.Objects.requireNonNull;

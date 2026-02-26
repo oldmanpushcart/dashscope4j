@@ -8,7 +8,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import okhttp3.Response;
 
 import java.lang.reflect.Type;
-import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
