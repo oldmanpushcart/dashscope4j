@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool;
 
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 public class ToolException extends RuntimeException {
 
@@ -37,11 +39,16 @@ public class ToolException extends RuntimeException {
     }
 
     public Object toResult() {
+
+        final var stacks = Stream.iterate(this, Objects::nonNull, Throwable::getCause)
+                .map(Throwable::getMessage)
+                .toList();
+
         return Map.of(
                 "code", code,
                 "desc", desc,
-                "detail", getLocalizedMessage(),
-                "suggestion", switch (code){
+                "stacks", stacks,
+                "suggestion", switch (code) {
                     case TOOL_NOT_FOUND -> "Please check the tool name.";
                     case TOOL_MARSHAL_FAILED -> "Please check the tool definition.";
                     case TOOL_UNMARSHAL_FAILED -> "Please check the tool response.";

@@ -57,7 +57,7 @@ public class DebugTestCase implements LoadingEnv {
                 .name("debug-agent")
                 .description("just a test")
                 .introduction("你是一个工具助手")
-                .model(ChatModel.QWEN_MAX)
+                .model(ChatModel.QWEN_FLASH)
                 .tools(tools)
                 .build();
 
