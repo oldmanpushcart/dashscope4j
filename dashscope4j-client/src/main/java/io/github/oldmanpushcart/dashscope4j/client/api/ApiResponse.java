@@ -1,18 +1,18 @@
 package io.github.oldmanpushcart.dashscope4j.client.api;
 
 /**
- * 应答
+ * API 应答
  */
-public abstract class ApiResponse extends Ret {
+public class ApiResponse extends Ret {
 
     private final ApiRequest<?> request;
     private final String uuid;
 
     /**
-     * 构造应答
+     * 构造 API 应答
      *
-     * @param request 请求
-     * @param uuid    请求唯一标识
+     * @param request 原始请求
+     * @param uuid    唯一标识
      * @param code    应答编码
      * @param desc    应答描述
      */
@@ -23,14 +23,14 @@ public abstract class ApiResponse extends Ret {
     }
 
     /**
-     * @return 请求
+     * @return 原始请求
      */
     public ApiRequest<?> request() {
         return request;
     }
 
     /**
-     * @return 请求唯一标识
+     * @return 唯一标识
      */
     public String uuid() {
         return uuid;

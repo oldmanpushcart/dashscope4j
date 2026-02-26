@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.api;
 
-
 /**
  * 应答结果
  */
@@ -21,7 +20,7 @@ public class Ret {
 
     protected Ret(String code, String desc) {
         this.code = null != code ? code : CODE_SUCCESS;
-        this.desc = null != desc ? desc : this.code;
+        this.desc = null != desc ? desc : "";
     }
 
     /**
@@ -44,5 +43,6 @@ public class Ret {
     public boolean isSuccess() {
         return CODE_SUCCESS.equals(code);
     }
+
 
 }
