@@ -3,18 +3,24 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_real
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.QwenAsrRealtimeSession;
 
-public class SessionUpdateClientEvent extends ClientEvent {
+public record SessionUpdateClientEvent(
 
-    @JsonProperty("session")
-    private final QwenAsrRealtimeSession session;
+        @JsonProperty("event_id")
+        String id,
 
-    public SessionUpdateClientEvent(String id, QwenAsrRealtimeSession session) {
-        super(id, "session.update");
-        this.session = session;
-    }
+        @JsonProperty("session")
+        QwenAsrRealtimeSession session
+
+) implements ClientEvent {
 
     public QwenAsrRealtimeSession session() {
         return session;
+    }
+
+    @JsonProperty("type")
+    @Override
+    public String type() {
+        return "session.update";
     }
 
 }

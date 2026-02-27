@@ -1,9 +1,18 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client;
 
-public class ResponseCancelClientEvent extends ClientEvent {
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-    public ResponseCancelClientEvent(String id) {
-        super(id, "response.cancel");
+public record ResponseCancelClientEvent(
+
+        @JsonProperty("event_id")
+        String id
+
+) implements ClientEvent {
+
+    @JsonProperty("type")
+    @Override
+    public String type() {
+        return "response.cancel";
     }
 
 }

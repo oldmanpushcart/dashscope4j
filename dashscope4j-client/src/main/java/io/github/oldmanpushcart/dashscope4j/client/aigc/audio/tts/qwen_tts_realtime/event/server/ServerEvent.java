@@ -38,13 +38,9 @@ import java.util.List;
         @JsonSubTypes.Type(name = "response.audio.done", value = ResponseAudioDoneServerEvent.class)
 
 })
-public class ServerEvent extends Event {
+public interface ServerEvent extends Event {
 
-    public ServerEvent(String id, String type) {
-        super(id, type);
-    }
-
-    public enum Status {
+    enum Status {
         @JsonProperty("in_progress") IN_PROGRESS,
         @JsonProperty("failed") FAILED,
         @JsonProperty("completed") COMPLETED,
@@ -52,7 +48,7 @@ public class ServerEvent extends Event {
         @JsonProperty("cancelled") CANCELLED
     }
 
-    public record Item(
+    record Item(
 
             @JsonProperty("id")
             String id,
@@ -73,7 +69,7 @@ public class ServerEvent extends Event {
 
     }
 
-    public record Part(
+    record Part(
 
             @JsonProperty("type")
             String type,
@@ -85,7 +81,7 @@ public class ServerEvent extends Event {
 
     }
 
-    public record Response(
+    record Response(
 
             @JsonProperty("id")
             String id,
@@ -106,7 +102,7 @@ public class ServerEvent extends Event {
 
     }
 
-    public record Output(
+    record Output(
 
             @JsonProperty("id")
             String id,

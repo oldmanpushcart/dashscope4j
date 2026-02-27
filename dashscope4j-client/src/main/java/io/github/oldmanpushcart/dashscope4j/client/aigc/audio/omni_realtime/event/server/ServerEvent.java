@@ -51,13 +51,9 @@ import java.util.Set;
         @JsonSubTypes.Type(name = "response.content_part.done", value = ResponseContentPartDoneServerEvent.class),
 
 })
-public class ServerEvent extends Event {
+public interface ServerEvent extends Event {
 
-    public ServerEvent(String id, String type) {
-        super(id, type);
-    }
-
-    public enum Status {
+    enum Status {
         @JsonProperty("in_progress") IN_PROGRESS,
         @JsonProperty("failed") FAILED,
         @JsonProperty("completed") COMPLETED,
@@ -65,7 +61,7 @@ public class ServerEvent extends Event {
         @JsonProperty("cancelled") CANCELLED
     }
 
-    public static class Part {
+    class Part {
 
         private final Type type;
         private final String text;
@@ -95,7 +91,7 @@ public class ServerEvent extends Event {
 
     }
 
-    public static class Content extends Part {
+    class Content extends Part {
 
         private final String transcript;
 
@@ -115,7 +111,7 @@ public class ServerEvent extends Event {
 
     }
 
-    public record Item(
+    record Item(
             @JsonProperty("id") String id,
             @JsonProperty("object") String object,
             @JsonProperty("type") Type type,
@@ -134,7 +130,7 @@ public class ServerEvent extends Event {
 
     }
 
-    public record Response(
+    record Response(
             @JsonProperty("id") String id,
             @JsonProperty("object") String object,
             @JsonProperty("conversation_id") String conversationId,

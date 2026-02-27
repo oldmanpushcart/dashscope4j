@@ -1,38 +1,34 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ErrorServerEvent extends ServerEvent {
+public record ErrorServerEvent(
 
-    private final Error error;
+        @JsonProperty("event_id")
+        String id,
 
-    @JsonCreator
-    public ErrorServerEvent(
+        @JsonProperty("type")
+        String type,
 
-            @JsonProperty("event_id")
-            String id,
+        @JsonProperty("error")
+        Error error
+
+) implements ServerEvent {
+
+    public record Error(
 
             @JsonProperty("type")
             String type,
 
-            @JsonProperty("error")
-            Error error
+            @JsonProperty("code")
+            String code,
 
-    ) {
-        super(id, type);
-        this.error = error;
-    }
+            @JsonProperty("message")
+            String message,
 
-    public Error error() {
-        return error;
-    }
-
-    public record Error(
-            @JsonProperty("type") String type,
-            @JsonProperty("code") String code,
-            @JsonProperty("message") String message,
-            @JsonProperty("param") String param
+            @JsonProperty("param")
+            String param
+            
     ) {
 
     }

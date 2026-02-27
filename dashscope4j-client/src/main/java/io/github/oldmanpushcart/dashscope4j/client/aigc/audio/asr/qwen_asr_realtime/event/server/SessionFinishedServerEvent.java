@@ -2,18 +2,14 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_real
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class SessionFinishedServerEvent extends ServerEvent{
+public record SessionFinishedServerEvent(
 
-    public SessionFinishedServerEvent(
+        @JsonProperty("event_id")
+        String id,
 
-            @JsonProperty("event_id")
-            String id,
+        @JsonProperty("type")
+        String type
 
-            @JsonProperty("type")
-            String type
-
-    ) {
-        super(id, type);
-    }
+) implements ServerEvent {
 
 }

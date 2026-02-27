@@ -1,44 +1,37 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.server;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ConversationItemInputAudioTranscriptionFailedServerEvent extends ServerEvent {
+public record ConversationItemInputAudioTranscriptionFailedServerEvent(
 
-    private final String itemId;
-    private final int contentIndex;
-    private final Error error;
+        @JsonProperty("event_id")
+        String id,
 
-    @JsonCreator
-    public ConversationItemInputAudioTranscriptionFailedServerEvent(
-            @JsonProperty("event_id") String id,
-            @JsonProperty("type") String type,
-            @JsonProperty("itemId") String itemId,
-            @JsonProperty("content_index") int contentIndex,
-            @JsonProperty("error") Error error
-    ) {
-        super(id, type);
-        this.itemId = itemId;
-        this.contentIndex = contentIndex;
-        this.error = error;
-    }
+        @JsonProperty("type")
+        String type,
 
-    public String itemId() {
-        return itemId;
-    }
+        @JsonProperty("itemId")
+        String itemId,
 
-    public int contentIndex() {
-        return contentIndex;
-    }
+        @JsonProperty("content_index")
+        int contentIndex,
 
-    public Error error() {
-        return error;
-    }
+        @JsonProperty("error")
+        Error error
+
+) implements ServerEvent {
 
     public record Error(
-            @JsonProperty("code") String code,
-            @JsonProperty("message") String message,
-            @JsonProperty("param") String param
+
+            @JsonProperty("code")
+            String code,
+
+            @JsonProperty("message")
+            String message,
+
+            @JsonProperty("param")
+            String param
+            
     ) {
 
     }

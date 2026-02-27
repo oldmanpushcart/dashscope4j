@@ -1,24 +1,18 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ConversationItemCreatedServerEvent extends ServerEvent {
+public record ConversationItemCreatedServerEvent(
 
-    private final Item item;
+        @JsonProperty("event_id")
+        String id,
 
-    @JsonCreator
-    public ConversationItemCreatedServerEvent(
-            @JsonProperty("event_id") String id,
-            @JsonProperty("type") String type,
-            @JsonProperty("item") Item item
-    ) {
-        super(id, type);
-        this.item = item;
-    }
+        @JsonProperty("type")
+        String type,
 
-    public Item item() {
-        return item;
-    }
+        @JsonProperty("item")
+        Item item
+
+) implements ServerEvent {
 
 }

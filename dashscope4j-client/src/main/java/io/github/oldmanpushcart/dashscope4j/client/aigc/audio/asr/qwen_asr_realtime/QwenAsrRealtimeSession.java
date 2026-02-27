@@ -16,6 +16,7 @@ import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.function.Function;
 
 public record QwenAsrRealtimeSession(

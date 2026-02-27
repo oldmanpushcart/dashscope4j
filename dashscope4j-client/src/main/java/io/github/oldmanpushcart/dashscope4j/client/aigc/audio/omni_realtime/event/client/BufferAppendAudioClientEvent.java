@@ -6,19 +6,21 @@ import io.github.oldmanpushcart.dashscope4j.client.util.jackson.ByteBufferBase64
 
 import java.nio.ByteBuffer;
 
-public class BufferAppendAudioClientEvent extends ClientEvent {
+public record BufferAppendAudioClientEvent(
 
-    @JsonProperty("audio")
-    @JsonSerialize(using = ByteBufferBase64JsonSerializer.class)
-    private final ByteBuffer buffer;
+        @JsonProperty("event_id")
+        String id,
 
-    public BufferAppendAudioClientEvent(String id, ByteBuffer buffer) {
-        super(id, "input_audio_buffer.append");
-        this.buffer = buffer;
-    }
+        @JsonProperty("audio")
+        @JsonSerialize(using = ByteBufferBase64JsonSerializer.class)
+        ByteBuffer buffer
 
-    public ByteBuffer buffer() {
-        return buffer;
+) implements ClientEvent {
+
+    @JsonProperty("type")
+    @Override
+    public String type() {
+        return "input_audio_buffer.append";
     }
 
 }

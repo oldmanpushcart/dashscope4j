@@ -6,19 +6,21 @@ import io.github.oldmanpushcart.dashscope4j.client.util.jackson.ByteBufferBase64
 
 import java.nio.ByteBuffer;
 
-public class BufferAppendImageClientEvent extends ClientEvent {
+public record BufferAppendImageClientEvent(
 
-    @JsonProperty("image")
-    @JsonSerialize(using = ByteBufferBase64JsonSerializer.class)
-    private final ByteBuffer image;
+        @JsonProperty("event_id")
+        String id,
 
-    public BufferAppendImageClientEvent(String id, ByteBuffer image) {
-        super(id, "input_image_buffer.append");
-        this.image = image;
-    }
+        @JsonProperty("image")
+        @JsonSerialize(using = ByteBufferBase64JsonSerializer.class)
+        ByteBuffer image
 
-    public ByteBuffer image() {
-        return image;
+) implements ClientEvent {
+
+    @JsonProperty("type")
+    @Override
+    public String type() {
+        return "input_image_buffer.append";
     }
 
 }

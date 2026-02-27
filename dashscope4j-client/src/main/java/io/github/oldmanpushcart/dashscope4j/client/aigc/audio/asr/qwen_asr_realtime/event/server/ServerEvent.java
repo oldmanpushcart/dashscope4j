@@ -23,10 +23,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realt
         @JsonSubTypes.Type(name = "conversation.item.input_audio_transcription.completed", value = ConversationItemInputAudioTranscriptionCompletedServerEvent.class),
         @JsonSubTypes.Type(name = "conversation.item.input_audio_transcription.failed", value = ConversationItemInputAudioTranscriptionFailedServerEvent.class),
 })
-public class ServerEvent extends Event {
-
-    public ServerEvent(String id, String type) {
-        super(id, type);
-    }
+public interface ServerEvent extends Event {
 
 }

@@ -18,7 +18,6 @@ import io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils;
 
 import java.time.Duration;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -103,8 +102,7 @@ public record OmniRealtimeSession(
     }
 
     private ServerEvent toServerEvent(String payload) {
-        final var variableMap = Map.<String, Object>of("dashscope/model", model);
-        return JacksonJsonUtils.toObject(variableMap, payload, ServerEvent.class);
+        return JacksonJsonUtils.toObject(payload, ServerEvent.class);
     }
 
     private Realtime.Handler<ClientEvent, ServerEvent> handlerFactory(Realtime.Handler<ClientEvent, ServerEvent> handler) {
@@ -184,7 +182,7 @@ public record OmniRealtimeSession(
 
         private final Set<Modality> modalities = new HashSet<>(Set.of(Modality.TEXT, Modality.AUDIO));
         private OmniRealtimeModel model;
-        private String voice = "Cherry";
+        private String voice;
         private AudioFormat inputAudioFormat;
         private AudioFormat outputAudioFormat;
         private Boolean smooth;
@@ -202,20 +200,20 @@ public record OmniRealtimeSession(
         }
 
         public Builder(OmniRealtimeSession session) {
-            modalities.addAll(session.modalities);
-            model = session.model;
-            voice = session.voice;
-            inputAudioFormat = session.inputAudioFormat;
-            outputAudioFormat = session.outputAudioFormat;
-            smooth = session.smooth;
-            instructions = session.instructions;
-            seed = session.seed;
-            maxTokens = session.maxTokens;
-            repetitionPenalty = session.repetitionPenalty;
-            topK = session.topK;
-            topP = session.topP;
-            temperature = session.temperature;
-            turnDetection = session.turnDetection;
+            this.modalities.addAll(session.modalities);
+            this.model = session.model;
+            this.voice = session.voice;
+            this.inputAudioFormat = session.inputAudioFormat;
+            this.outputAudioFormat = session.outputAudioFormat;
+            this.smooth = session.smooth;
+            this.instructions = session.instructions;
+            this.seed = session.seed;
+            this.maxTokens = session.maxTokens;
+            this.repetitionPenalty = session.repetitionPenalty;
+            this.topK = session.topK;
+            this.topP = session.topP;
+            this.temperature = session.temperature;
+            this.turnDetection = session.turnDetection;
         }
 
         public Builder model(OmniRealtimeModel model) {

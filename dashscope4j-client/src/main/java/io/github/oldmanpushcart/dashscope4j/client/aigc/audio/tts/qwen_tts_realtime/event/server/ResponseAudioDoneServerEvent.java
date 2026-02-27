@@ -1,58 +1,27 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ResponseAudioDoneServerEvent extends ServerEvent {
+public record ResponseAudioDoneServerEvent(
 
-    private final String responseId;
-    private final String itemId;
-    private final int outputIndex;
-    private final int contentIndex;
+        @JsonProperty("event_id")
+        String id,
 
-    @JsonCreator
-    public ResponseAudioDoneServerEvent(
+        @JsonProperty("type")
+        String type,
 
-            @JsonProperty("event_id")
-            String id,
+        @JsonProperty("response_id")
+        String responseId,
 
-            @JsonProperty("type")
-            String type,
+        @JsonProperty("item_id")
+        String itemId,
 
-            @JsonProperty("response_id")
-            String responseId,
+        @JsonProperty("output_index")
+        int outputIndex,
 
-            @JsonProperty("item_id")
-            String itemId,
+        @JsonProperty("content_index")
+        int contentIndex
 
-            @JsonProperty("output_index")
-            int outputIndex,
-
-            @JsonProperty("content_index")
-            int contentIndex
-
-    ) {
-        super(id, type);
-        this.responseId = responseId;
-        this.itemId = itemId;
-        this.outputIndex = outputIndex;
-        this.contentIndex = contentIndex;
-    }
-
-    public String getResponseId() {
-        return responseId;
-    }
-
-    public String getItemId() {
-        return itemId;
-    }
-
-    public int getOutputIndex() {
-        return outputIndex;
-    }
-
-    public int getContentIndex() {
-        return contentIndex;
-    }
-
+) implements ServerEvent {
+    
 }

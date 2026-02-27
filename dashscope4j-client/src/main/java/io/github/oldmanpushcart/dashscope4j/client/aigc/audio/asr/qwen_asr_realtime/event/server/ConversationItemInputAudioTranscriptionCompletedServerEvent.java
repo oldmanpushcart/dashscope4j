@@ -1,67 +1,30 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.server;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ConversationItemInputAudioTranscriptionCompletedServerEvent extends ServerEvent {
+public record ConversationItemInputAudioTranscriptionCompletedServerEvent(
 
-    private final String itemId;
-    private final int contentIndex;
-    private final String language;
-    private final String emotion;
-    private final String transcript;
+        @JsonProperty("event_id")
+        String id,
 
-    @JsonCreator
-    public ConversationItemInputAudioTranscriptionCompletedServerEvent(
+        @JsonProperty("type")
+        String type,
 
-            @JsonProperty("event_id")
-            String id,
+        @JsonProperty("item_id")
+        String itemId,
 
-            @JsonProperty("type")
-            String type,
+        @JsonProperty("content_index")
+        int contentIndex,
 
-            @JsonProperty("item_id")
-            String itemId,
+        @JsonProperty("language")
+        String language,
 
-            @JsonProperty("content_index")
-            int contentIndex,
+        @JsonProperty("emotion")
+        String emotion,
 
-            @JsonProperty("language")
-            String language,
-
-            @JsonProperty("emotion")
-            String emotion,
-
-            @JsonProperty("transcript")
-            String transcript
-
-    ) {
-        super(id, type);
-        this.itemId = itemId;
-        this.contentIndex = contentIndex;
-        this.language = language;
-        this.emotion = emotion;
-        this.transcript = transcript;
-    }
-
-    public String itemId() {
-        return itemId;
-    }
-
-    public int contentIndex() {
-        return contentIndex;
-    }
-
-    public String language() {
-        return language;
-    }
-
-    public String emotion() {
-        return emotion;
-    }
-
-    public String transcript() {
-        return transcript;
-    }
+        @JsonProperty("transcript")
+        String transcript
+        
+) implements ServerEvent {
 
 }

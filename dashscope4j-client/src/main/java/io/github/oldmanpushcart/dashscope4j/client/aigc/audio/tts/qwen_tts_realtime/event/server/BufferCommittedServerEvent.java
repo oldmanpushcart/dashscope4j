@@ -1,31 +1,18 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class BufferCommittedServerEvent extends ServerEvent {
+public record BufferCommittedServerEvent(
 
-    private final String itemId;
+        @JsonProperty("event_id")
+        String id,
 
-    @JsonCreator
-    public BufferCommittedServerEvent(
+        @JsonProperty("type")
+        String type,
 
-            @JsonProperty("event_id")
-            String id,
+        @JsonProperty("itemId")
+        String itemId
 
-            @JsonProperty("type")
-            String type,
-
-            @JsonProperty("itemId")
-            String itemId
-
-    ) {
-        super(id, type);
-        this.itemId = itemId;
-    }
-
-    public String itemId() {
-        return itemId;
-    }
-
+) implements ServerEvent {
+    
 }

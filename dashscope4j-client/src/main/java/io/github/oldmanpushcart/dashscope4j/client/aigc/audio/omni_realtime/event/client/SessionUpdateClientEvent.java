@@ -3,18 +3,20 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.eve
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.OmniRealtimeSession;
 
-public class SessionUpdateClientEvent extends ClientEvent {
+public record SessionUpdateClientEvent(
 
-    @JsonProperty("session")
-    private final OmniRealtimeSession session;
+        @JsonProperty("event_id")
+        String id,
 
-    public SessionUpdateClientEvent(String id, OmniRealtimeSession session) {
-        super(id, "session.update");
-        this.session = session;
-    }
+        @JsonProperty("session")
+        OmniRealtimeSession session
+        
+) implements ClientEvent {
 
-    public OmniRealtimeSession session() {
-        return session;
+    @JsonProperty("type")
+    @Override
+    public String type() {
+        return "session.update";
     }
 
 }

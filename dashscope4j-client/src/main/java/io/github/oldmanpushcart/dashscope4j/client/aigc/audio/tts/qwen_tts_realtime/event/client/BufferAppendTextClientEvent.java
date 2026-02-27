@@ -2,18 +2,20 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_real
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class BufferAppendTextClientEvent extends ClientEvent {
+public record BufferAppendTextClientEvent(
 
-    @JsonProperty("text")
-    private final String text;
+        @JsonProperty("event_id")
+        String id,
 
-    public BufferAppendTextClientEvent(String id, String text) {
-        super(id, "input_text_buffer.append");
-        this.text = text;
-    }
+        @JsonProperty("text")
+        String text
 
-    public String text() {
-        return text;
+) implements ClientEvent {
+
+    @JsonProperty("type")
+    @Override
+    public String type() {
+        return "input_text_buffer.append";
     }
 
 }

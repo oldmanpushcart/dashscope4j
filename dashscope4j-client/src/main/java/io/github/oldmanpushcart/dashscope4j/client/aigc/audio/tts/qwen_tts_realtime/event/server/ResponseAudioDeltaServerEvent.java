@@ -1,81 +1,38 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.ByteBufferBase64JsonDeserializer;
 
 import java.nio.ByteBuffer;
 
-public class ResponseAudioDeltaServerEvent extends ServerEvent {
+public record ResponseAudioDeltaServerEvent(
 
-    private final String responseId;
-    private final String itemId;
-    private final int outputIndex;
-    private final int partIndex;
-    private final int contentIndex;
-    private final ByteBuffer delta;
+        @JsonProperty("event_id")
+        String id,
 
-    @JsonCreator
-    public ResponseAudioDeltaServerEvent(
+        @JsonProperty("type")
+        String type,
 
-            @JsonProperty("event_id")
-            String id,
+        @JsonProperty("response_id")
+        String responseId,
 
-            @JsonProperty("type")
-            String type,
+        @JsonProperty("item_id")
+        String itemId,
 
-            @JsonProperty("response_id")
-            String responseId,
+        @JsonProperty("output_index")
+        int outputIndex,
 
-            @JsonProperty("item_id")
-            String itemId,
+        @JsonProperty("part_index")
+        int partIndex,
 
-            @JsonProperty("output_index")
-            int outputIndex,
+        @JsonProperty("content_index")
+        int contentIndex,
 
-            @JsonProperty("part_index")
-            int partIndex,
+        @JsonProperty("delta")
+        @JsonDeserialize(using = ByteBufferBase64JsonDeserializer.class)
+        ByteBuffer delta
 
-            @JsonProperty("content_index")
-            int contentIndex,
-
-            @JsonProperty("delta")
-            @JsonDeserialize(using = ByteBufferBase64JsonDeserializer.class)
-            ByteBuffer delta
-
-    ) {
-        super(id, type);
-        this.responseId = responseId;
-        this.itemId = itemId;
-        this.outputIndex = outputIndex;
-        this.partIndex = partIndex;
-        this.contentIndex = contentIndex;
-        this.delta = delta;
-    }
-
-    public String responseId() {
-        return responseId;
-    }
-
-    public String itemId() {
-        return itemId;
-    }
-
-    public int outputIndex() {
-        return outputIndex;
-    }
-
-    public int partIndex() {
-        return partIndex;
-    }
-
-    public int contentIndex() {
-        return contentIndex;
-    }
-
-    public ByteBuffer delta() {
-        return delta;
-    }
+) implements ServerEvent {
 
 }

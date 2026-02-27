@@ -1,67 +1,30 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ResponseContentPartDoneServerEvent extends ServerEvent {
+public record ResponseContentPartDoneServerEvent(
 
-    private final String responseId;
-    private final String itemId;
-    private final int partIndex;
-    private final int contentIndex;
-    private final Part part;
+        @JsonProperty("event_id")
+        String id,
 
-    @JsonCreator
-    public ResponseContentPartDoneServerEvent(
+        @JsonProperty("type")
+        String type,
 
-            @JsonProperty("event_id")
-            String id,
+        @JsonProperty("response_id")
+        String responseId,
 
-            @JsonProperty("type")
-            String type,
+        @JsonProperty("item_id")
+        String itemId,
 
-            @JsonProperty("response_id")
-            String responseId,
+        @JsonProperty("part_index")
+        int partIndex,
 
-            @JsonProperty("item_id")
-            String itemId,
+        @JsonProperty("content_index")
+        int contentIndex,
 
-            @JsonProperty("part_index")
-            int partIndex,
+        @JsonProperty("part")
+        Part part
 
-            @JsonProperty("content_index")
-            int contentIndex,
-
-            @JsonProperty("part")
-            Part part
-
-    ) {
-        super(id, type);
-        this.responseId = responseId;
-        this.itemId = itemId;
-        this.partIndex = partIndex;
-        this.contentIndex = contentIndex;
-        this.part = part;
-    }
-
-    public String responseId() {
-        return responseId;
-    }
-
-    public String itemId() {
-        return itemId;
-    }
-
-    public int partIndex() {
-        return partIndex;
-    }
-
-    public int contentIndex() {
-        return contentIndex;
-    }
-
-    public Part part() {
-        return part;
-    }
+) implements ServerEvent {
 
 }

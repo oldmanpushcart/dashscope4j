@@ -2,10 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_real
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.Event;
 
-public class ClientEvent extends Event {
-
-    public ClientEvent(String id, String type) {
-        super(id, type);
-    }
+public interface ClientEvent extends Event {
 
 }
