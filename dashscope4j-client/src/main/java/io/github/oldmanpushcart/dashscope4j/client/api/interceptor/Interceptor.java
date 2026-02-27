@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.client.api.intercetpor;
+package io.github.oldmanpushcart.dashscope4j.client.api.interceptor;
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
@@ -32,6 +32,11 @@ public interface Interceptor {
          * @return Dashscope4j 客户端
          */
         DashscopeClient client();
+
+        /**
+         * @return 拦截类型
+         */
+        Type type();
 
         /**
          * 处理

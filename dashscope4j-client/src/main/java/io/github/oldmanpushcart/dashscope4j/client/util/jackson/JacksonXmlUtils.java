@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
+import okhttp3.Response;
 
-import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
@@ -43,10 +43,12 @@ public class JacksonXmlUtils {
      * @param <T>          对象类型
      * @return 目标对象
      */
-    public static <T> T toApiResponse(String xml, Class<T> type, ApiRequest<?> request, HttpResponse<?> httpResponse) {
+    public static <T> T toApiResponse(String xml, Class<T> type, ApiRequest<?> request, Response httpResponse) {
         final Map<String, Object> variableMap = new HashMap<>();
-        httpResponse.headers().map()
-                .forEach((name, values) -> variableMap.put("http/header/%s".formatted(name), values));
+        httpResponse.headers().forEach(header -> variableMap.put(
+                "http/header/%s".formatted(header.getFirst()),
+                header.getSecond()
+        ));
         variableMap.put("dashscope/request", request);
         try {
             return mapper.reader(new NullableInjectableValues(variableMap)).forType(type).readValue(xml);

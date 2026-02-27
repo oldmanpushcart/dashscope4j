@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api;
 
-import io.github.oldmanpushcart.dashscope4j.client.api.intercetpor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 
 import java.util.List;
 import java.util.Set;

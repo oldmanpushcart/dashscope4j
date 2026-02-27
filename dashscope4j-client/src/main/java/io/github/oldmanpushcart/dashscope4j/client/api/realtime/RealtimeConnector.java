@@ -11,11 +11,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
 
 /**
  * 实时连接器
+ * <p>
+ * 实时交互是通过长连接维持双工通讯，这里构建一个连接工具，方便实现短线重连等长连接维持策略
+ * </p>
  */
 public class RealtimeConnector {
 
@@ -30,12 +32,11 @@ public class RealtimeConnector {
     private volatile boolean shutdown = false;
 
     private RealtimeConnector(Builder builder) {
-        requireNonBlankString(builder.name, "name must not be blank!");
         requireNonNull(builder.connectionFactory, "connectionFactory must not be null!");
         requireNonNull(builder.reconnectStrategy, "reconnectStrategy must not be null!");
         this.connectionFactory = builder.connectionFactory;
         this.reconnectStrategy = builder.reconnectStrategy;
-        this._toString = "dashscope4j-client://exchange/connector/%s@%s".formatted(builder.name, System.identityHashCode(this));
+        this._toString = "dashscope4j-client://exchange/connector/%s".formatted(System.identityHashCode(this));
     }
 
     @Override
@@ -59,7 +60,7 @@ public class RealtimeConnector {
     }
 
     /**
-     * 启动连接（从第 1 次尝试开始）。
+     * 启动连接（从第 1 次尝试开始）
      */
     public CompletionStage<Void> connect() {
         if (isShutdown()) {
@@ -69,7 +70,7 @@ public class RealtimeConnector {
     }
 
     /**
-     * 执行第 {@code attempt} 次连接尝试。
+     * 执行第 {@code attempt} 次连接尝试
      */
     private CompletionStage<Void> reconnect(int attempt, ReconnectStrategy strategy) {
 
@@ -105,7 +106,7 @@ public class RealtimeConnector {
     }
 
     /**
-     * 根据策略决定是否重试，并执行相应动作。
+     * 根据策略决定是否重试，并执行相应动作
      */
     private CompletionStage<Void> scheduleRetry(int attempt, Throwable cause, ReconnectStrategy strategy) {
 
@@ -166,7 +167,7 @@ public class RealtimeConnector {
     // —————————————— 公共接口 ——————————————
 
     /**
-     * 表示重连被策略拒绝或策略执行失败。
+     * 表示重连被策略拒绝或策略执行失败
      */
     public static class RejectedReconnectException extends RuntimeException {
 
@@ -177,53 +178,53 @@ public class RealtimeConnector {
     }
 
     /**
-     * 重连策略：根据尝试次数和异常决定延迟时间。
+     * 重连策略：根据尝试次数和异常决定延迟时间
      */
     @FunctionalInterface
     public interface ReconnectStrategy {
 
         /**
-         * 根据尝试次数和异常决定延迟时间。
+         * 根据尝试次数和异常决定延迟时间
          *
          * @param attempt 尝试次数
          * @param ex      异常
          * @return <p>
          * - {@code null}：停止重连；
          * - {@code Duration <= 0}：立即重连；
-         * - {@code Duration > 0}：延迟重连。
+         * - {@code Duration > 0}：延迟重连
          */
         Duration decide(int attempt, Throwable ex);
 
     }
 
     /**
-     * 重连策略工厂。
+     * 重连策略工厂
      */
     public interface ReconnectStrategies {
 
         /**
-         * 永不重连。
+         * 永不重连
          */
         static ReconnectStrategy never() {
             return (attempt, ex) -> null;
         }
 
         /**
-         * 立即重连，并持续重连。
+         * 立即重连，并持续重连
          */
         static ReconnectStrategy immediateForever() {
             return (attempt, ex) -> Duration.ZERO;
         }
 
         /**
-         * 固定延迟重连。
+         * 固定延迟重连
          */
         static ReconnectStrategy fixedDelay(Duration delay) {
             return (attempt, ex) -> delay;
         }
 
         /**
-         * 指数退避重连。
+         * 指数退避重连
          */
         static ReconnectStrategy exponentialBackoff(Duration initialDelay, Duration maxDelay) {
             return (attempt, ex) -> {
@@ -245,20 +246,8 @@ public class RealtimeConnector {
      */
     public static class Builder implements Buildable<RealtimeConnector, Builder> {
 
-        private String name = "normal";
         private Supplier<CompletionStage<? extends Realtime.Connection>> connectionFactory;
         private ReconnectStrategy reconnectStrategy;
-
-        /**
-         * 设置名称
-         *
-         * @param name 名称
-         * @return this
-         */
-        public Builder name(String name) {
-            this.name = name;
-            return this;
-        }
 
         /**
          * 设置连接工厂

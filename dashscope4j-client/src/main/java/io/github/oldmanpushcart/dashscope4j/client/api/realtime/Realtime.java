@@ -220,7 +220,7 @@ public interface Realtime {
         /**
          * @return 处理器提供者
          */
-        Function<Handler<I, O>, Handler<I, O>> provider();
+        Function<Handler<I, O>, Handler<String, String>> provider();
 
     }
 

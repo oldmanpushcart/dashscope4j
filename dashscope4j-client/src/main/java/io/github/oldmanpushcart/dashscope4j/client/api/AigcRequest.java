@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.client.api.intercetpor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import okhttp3.Request;
@@ -129,6 +129,19 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
         return Stream.of(super.interceptors(), model.interceptors())
                 .flatMap(List::stream)
                 .toList();
+    }
+
+    /**
+     * 转换为指定模型的请求
+     *
+     * @param ignoredModel 模型
+     * @param <UI>         模型输入类型
+     * @param <UO>         模型输出类型
+     * @return 转换后的模型请求
+     */
+    public <UI, UO> AigcRequest<UI, UO> as(AigcModel<UI, UO> ignoredModel) {
+        //noinspection unchecked
+        return (AigcRequest<UI, UO>) this;
     }
 
     /**

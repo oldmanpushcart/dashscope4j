@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
-import io.github.oldmanpushcart.dashscope4j.client.api.intercetpor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;

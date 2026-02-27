@@ -73,31 +73,36 @@ public class HandlerChain<I, O, UI, UO> {
      */
     public HandlerChain<I, O, UI, UO> filterOutput(Predicate<UO> filter) {
         Objects.requireNonNull(filter, "filter must not be null");
-        return then(uiuoHandler -> new Realtime.Handler<>() {
+        return then(uiuoHandler -> new FilterHandler<>(filter, uiuoHandler));
+    }
 
-            @Override
-            public void onOpen(Realtime.Emitter<UI> emitter) {
-                uiuoHandler.onOpen(emitter);
-            }
+    private record FilterHandler<UI, UO>(
+            Predicate<UO> filter,
+            Realtime.Handler<UI, UO> handler
+    ) implements Realtime.Handler<UI, UO> {
 
-            @Override
-            public CompletionStage<Void> onData(UO output) {
-                return filter.test(output)
-                        ? uiuoHandler.onData(output)
-                        : CompletableFuture.completedFuture(null);
-            }
+        @Override
+        public void onOpen(Realtime.Emitter<UI> emitter) {
+            handler.onOpen(emitter);
+        }
 
-            @Override
-            public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                return uiuoHandler.onBinary(buffer);
-            }
+        @Override
+        public CompletionStage<Void> onData(UO output) {
+            return filter.test(output)
+                    ? handler.onData(output)
+                    : CompletableFuture.completedFuture(null);
+        }
 
-            @Override
-            public void onClosed(Throwable ex) {
-                uiuoHandler.onClosed(ex);
-            }
+        @Override
+        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+            return handler.onBinary(buffer);
+        }
 
-        });
+        @Override
+        public void onClosed(Throwable ex) {
+            handler.onClosed(ex);
+        }
+
     }
 
     /**
@@ -109,27 +114,34 @@ public class HandlerChain<I, O, UI, UO> {
      */
     public <NO> HandlerChain<I, O, UI, NO> mapOutput(Function<UO, NO> mapper) {
         Objects.requireNonNull(mapper, "mapper must not be null");
-        return then(uiuoHandler -> new Realtime.Handler<>() {
-            @Override
-            public void onOpen(Realtime.Emitter<UI> emitter) {
-                uiuoHandler.onOpen(emitter);
-            }
+        return then(uiuoHandler -> new MapOutputHandler<>(mapper, uiuoHandler));
+    }
 
-            @Override
-            public CompletionStage<Void> onData(UO output) {
-                return uiuoHandler.onData(mapper.apply(output));
-            }
+    private record MapOutputHandler<UI, UO, NO>(
+            Function<UO, NO> mapper,
+            Realtime.Handler<UI, NO> handler
+    ) implements Realtime.Handler<UI, UO> {
 
-            @Override
-            public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                return uiuoHandler.onBinary(buffer);
-            }
+        @Override
+        public void onOpen(Realtime.Emitter<UI> emitter) {
+            handler.onOpen(emitter);
+        }
 
-            @Override
-            public void onClosed(Throwable ex) {
-                uiuoHandler.onClosed(ex);
-            }
-        });
+        @Override
+        public CompletionStage<Void> onData(UO output) {
+            return handler.onData(mapper.apply(output));
+        }
+
+        @Override
+        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+            return handler.onBinary(buffer);
+        }
+
+        @Override
+        public void onClosed(Throwable ex) {
+            handler.onClosed(ex);
+        }
+
     }
 
     /**
@@ -141,96 +153,108 @@ public class HandlerChain<I, O, UI, UO> {
      */
     public <NI> HandlerChain<I, O, NI, UO> mapInput(Function<NI, UI> mapper) {
         Objects.requireNonNull(mapper, "mapper must not be null");
-        return then(ninoHandler -> new Realtime.Handler<>() {
+        return then(ninoHandler -> new MapInputHandler<>(mapper, ninoHandler));
+    }
 
-            @Override
-            public void onOpen(Realtime.Emitter<UI> emitter) {
-                ninoHandler.onOpen(new Realtime.Emitter<>() {
-                    @Override
-                    public CompletionStage<Void> data(NI input) {
-                        return emitter.data(mapper.apply(input));
-                    }
+    private record MapInputHandler<UI, UO, NI>(
+            Function<NI, UI> mapper,
+            Realtime.Handler<NI, UO> handler
+    ) implements Realtime.Handler<UI, UO> {
 
-                    @Override
-                    public CompletionStage<Void> binary(ByteBuffer buffer) {
-                        return emitter.binary(buffer);
-                    }
+        @Override
+        public void onOpen(Realtime.Emitter<UI> emitter) {
+            handler.onOpen(new Realtime.Emitter<>() {
+                @Override
+                public CompletionStage<Void> data(NI input) {
+                    return emitter.data(mapper.apply(input));
+                }
 
-                    @Override
-                    public CompletionStage<Void> closing() {
-                        return emitter.closing();
-                    }
+                @Override
+                public CompletionStage<Void> binary(ByteBuffer buffer) {
+                    return emitter.binary(buffer);
+                }
 
-                    @Override
-                    public CompletionStage<Void> closing(Throwable ex) {
-                        return emitter.closing(ex);
-                    }
+                @Override
+                public CompletionStage<Void> closing() {
+                    return emitter.closing();
+                }
 
-                    @Override
-                    public String id() {
-                        return emitter.id();
-                    }
+                @Override
+                public CompletionStage<Void> closing(Throwable ex) {
+                    return emitter.closing(ex);
+                }
 
-                    @Override
-                    public boolean isClosed() {
-                        return emitter.isClosed();
-                    }
+                @Override
+                public String id() {
+                    return emitter.id();
+                }
 
-                    @Override
-                    public void close() {
-                        emitter.close();
-                    }
+                @Override
+                public boolean isClosed() {
+                    return emitter.isClosed();
+                }
 
-                    @Override
-                    public CompletionStage<Void> closeFuture() {
-                        return emitter.closeFuture();
-                    }
-                });
-            }
+                @Override
+                public void close() {
+                    emitter.close();
+                }
 
-            @Override
-            public CompletionStage<Void> onData(UO output) {
-                return ninoHandler.onData(output);
-            }
+                @Override
+                public CompletionStage<Void> closeFuture() {
+                    return emitter.closeFuture();
+                }
+            });
+        }
 
-            @Override
-            public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                return ninoHandler.onBinary(buffer);
-            }
+        @Override
+        public CompletionStage<Void> onData(UO output) {
+            return handler.onData(output);
+        }
 
-            @Override
-            public void onClosed(Throwable ex) {
-                ninoHandler.onClosed(ex);
-            }
+        @Override
+        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+            return handler.onBinary(buffer);
+        }
 
-        });
+        @Override
+        public void onClosed(Throwable ex) {
+            handler.onClosed(ex);
+        }
+
     }
 
 
     public <NI> HandlerChain<I, O, NI, UO> mapEmitter(Function<Realtime.Emitter<UI>, Realtime.Emitter<NI>> mapper) {
         Objects.requireNonNull(mapper, "mapper must not be null");
-        return then(uiuoHandler -> new Realtime.Handler<>() {
-            @Override
-            public void onOpen(Realtime.Emitter<UI> emitter) {
-                final var newEmitter = mapper.apply(emitter);
-                uiuoHandler.onOpen(newEmitter);
-            }
+        return then(uiuoHandler -> new MapEmitterHandler<>(mapper, uiuoHandler));
+    }
 
-            @Override
-            public CompletionStage<Void> onData(UO output) {
-                return uiuoHandler.onData(output);
-            }
+    private record MapEmitterHandler<UI, UO, NI>(
+            Function<Realtime.Emitter<UI>, Realtime.Emitter<NI>> mapper,
+            Realtime.Handler<NI, UO> handler
+    ) implements Realtime.Handler<UI, UO> {
 
-            @Override
-            public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-                return uiuoHandler.onBinary(buffer);
-            }
+        @Override
+        public void onOpen(Realtime.Emitter<UI> emitter) {
+            final var newEmitter = mapper.apply(emitter);
+            handler.onOpen(newEmitter);
+        }
 
-            @Override
-            public void onClosed(Throwable ex) {
-                uiuoHandler.onClosed(ex);
-            }
-        });
+        @Override
+        public CompletionStage<Void> onData(UO output) {
+            return handler.onData(output);
+        }
+
+        @Override
+        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+            return handler.onBinary(buffer);
+        }
+
+        @Override
+        public void onClosed(Throwable ex) {
+            handler.onClosed(ex);
+        }
+
     }
 
     /**
