@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 /**
  * 拦截器
@@ -20,40 +21,34 @@ public interface Interceptor {
 
     /**
      * 拦截链
+     *
+     * @param type     拦截类型
+     * @param client   Dashscope4j 客户端
+     * @param request  请求
+     * @param operator 操作
      */
-    interface Chain {
-
-        /**
-         * @return 请求
-         */
-        ApiRequest<?> request();
-
-        /**
-         * @return Dashscope4j 客户端
-         */
-        DashscopeClient client();
-
-        /**
-         * @return 拦截类型
-         */
-        Type type();
+    record Chain(Type type, DashscopeClient client, ApiRequest<?> request,
+                 Function<ApiRequest<?>, CompletionStage<?>> operator) {
 
         /**
          * 处理
          *
          * @param request 请求
-         * @return 处理结果
+         * @return 处理回调
          */
-        CompletionStage<?> proceed(ApiRequest<?> request);
+        public CompletionStage<?> proceed(ApiRequest<?> request) {
+            return operator.apply(request);
+        }
 
         /**
          * 处理
          *
-         * @return 处理结果
+         * @return 处理回调
          */
-        default CompletionStage<?> proceed() {
-            return proceed(request());
+        public CompletionStage<?> proceed() {
+            return operator.apply(request());
         }
+
 
     }
 

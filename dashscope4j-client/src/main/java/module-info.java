@@ -12,5 +12,8 @@ open module dashscope4j.client {
     requires com.github.victools.jsonschema.module.jakarta.validation;
     requires okhttp3;
     requires org.reactivestreams;
+    requires org.jspecify;
+    requires reactor.core;
+    requires okhttp3.sse;
 
 }
