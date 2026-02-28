@@ -21,7 +21,21 @@ public abstract class ApiRequest<R extends ApiResponse> {
     private final List<Interceptor> interceptors;
 
     /**
-     * 构造函数
+     * 构造 API 请求
+     * <p>
+     * 省略繁琐的构造器
+     * </p>
+     *
+     * @param responseType 应答类型
+     */
+    protected ApiRequest(Type responseType) {
+        requireNonNull(responseType, "responseType must not be null");
+        this.responseType = responseType;
+        this.interceptors = List.of();
+    }
+
+    /**
+     * 构造 API 请求
      *
      * @param responseType 应答类型
      * @param builder      构建器

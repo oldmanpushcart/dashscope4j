@@ -4,7 +4,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents;
-import io.github.oldmanpushcart.dashscope4j.client.util.tracer.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import okhttp3.*;
 import org.jspecify.annotations.NonNull;
@@ -36,12 +35,6 @@ public class DefaultAsyncApi implements AsyncApi, InternalContents {
                 .addHeader(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
                 .build();
 
-        //noinspection resource
-        final var scope = Tracer.getDefault().enter("http");
-        scope.span()
-                .property("method", httpRequest.method())
-                .property("url", httpRequest.url().toString());
-
         return CompletableFuture.completedStage(null)
 
                 // 执行 HTTP 请求
@@ -61,19 +54,6 @@ public class DefaultAsyncApi implements AsyncApi, InternalContents {
 
                     });
                     return completeF;
-                })
-
-                // 恢复 Tracer
-                .whenComplete((r, ex) -> {
-                    final var span = scope.restore();
-                    if (null == ex) {
-                        span.success()
-                                .property("http-status", String.valueOf(r.code()))
-                                .property("http-version", String.valueOf(r.protocol()));
-                    } else {
-                        span.failure(ex);
-                    }
-                    scope.close();
                 })
 
                 // 解码 HTTP-RESPONSE

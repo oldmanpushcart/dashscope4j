@@ -4,7 +4,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents;
-import io.github.oldmanpushcart.dashscope4j.client.util.tracer.Tracer;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -17,8 +16,6 @@ import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-
-import java.io.IOException;
 
 public class DefaultFlowApi implements FlowApi, InternalContents {
 
@@ -45,12 +42,6 @@ public class DefaultFlowApi implements FlowApi, InternalContents {
                     .addHeader(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
                     .build();
 
-            //noinspection resource
-            final var scope = Tracer.getDefault().enter("http-sse");
-            scope.span()
-                    .property("method", httpRequest.method())
-                    .property("url", httpRequest.url().toString());
-
             final var listener = new EventSourceListener() {
 
                 private volatile Response httpResponse;
@@ -64,6 +55,7 @@ public class DefaultFlowApi implements FlowApi, InternalContents {
                     }
                     sink.onCancel(source::cancel);
                     this.httpResponse = httpResponse;
+
                 }
 
                 @Override
@@ -86,24 +78,30 @@ public class DefaultFlowApi implements FlowApi, InternalContents {
 
                 @Override
                 public void onClosed(@NonNull EventSource source) {
+
                     if (!sink.isCancelled()) {
                         sink.complete();
                     }
+
                 }
 
                 @Override
                 public void onFailure(@NonNull EventSource source, @Nullable Throwable t, @Nullable Response httpResponse) {
 
+                    // 上游已取消就没必要继续了
                     if (sink.isCancelled()) {
                         return;
                     }
 
+                    /*
+                     * 整个 SSE 的失败分为3种情况
+                     * 1. 流处理过程中出现了异常，这种情况直接使用异常作为上游失败的通知即可
+                     * 2. 服务端返回了非 2xx 状态码，这种情况使用响应体作为上游失败的通知
+                     * 3. 其他情况，使用 IllegalStateException 作为上游失败的通知
+                     */
                     if (null != t) {
                         sink.error(t);
-                        return;
-                    }
-
-                    if (null != httpResponse
+                    } else if (null != httpResponse
                             && !httpResponse.isSuccessful()
                             && "application/json".equals(httpResponse.header(HTTP_HEADER_CONTENT_TYPE))) {
 
@@ -117,9 +115,9 @@ public class DefaultFlowApi implements FlowApi, InternalContents {
                             sink.error(ex);
                         }
 
+                    } else {
+                        sink.error(new IllegalStateException("SSE failed!"));
                     }
-
-                    sink.error(new IllegalStateException("SSE failed!"));
 
                 }
 
@@ -128,8 +126,7 @@ public class DefaultFlowApi implements FlowApi, InternalContents {
             EventSources.createFactory(http)
                     .newEventSource(httpRequest, listener);
 
-        }, FluxSink.OverflowStrategy.BUFFER);
-
+        }, FluxSink.OverflowStrategy.ERROR);
 
 
     }
