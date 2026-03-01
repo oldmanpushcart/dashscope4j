@@ -22,6 +22,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.GeneralAigcInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
+import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import okhttp3.OkHttpClient;
 import org.reactivestreams.Publisher;
 
@@ -138,7 +139,7 @@ public class DashscopeClientImpl implements DashscopeClient {
 
     public static class Builder implements DashscopeClient.Builder {
 
-        private String host;
+        private String host = Constants.DEFAULT_HOST;
         private String ak;
         private OkHttpClient http;
 

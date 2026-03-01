@@ -11,10 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -227,7 +224,10 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
         }
 
         public Builder<I, O> parameters(UnaryOperator<Map<String, Object>> operator) {
-            return parameters(operator.apply(this.parameters));
+            return parameters(operator.apply(Optional
+                    .ofNullable(this.parameters)
+                    .map(HashMap::new)
+                    .orElseGet(HashMap::new)));
         }
 
         @Override

@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.even
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -53,6 +54,11 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              * @return 提交操作
              */
             InputOp audio(ByteBuffer buffer);
+
+            default InputOp audio(List<ByteBuffer> buffers) {
+                buffers.forEach(this::audio);
+                return this;
+            }
 
             /**
              * 清空提交

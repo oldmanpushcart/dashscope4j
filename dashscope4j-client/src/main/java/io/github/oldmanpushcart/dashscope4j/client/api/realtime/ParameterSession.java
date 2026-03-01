@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 /**
  * 带参数的会话
@@ -66,6 +67,10 @@ public abstract class ParameterSession<I, O> implements Realtime.Session<I, O> {
         public B parameters(Map<String, Object> parameters) {
             this.parameters = parameters;
             return self();
+        }
+
+        public B parameters(UnaryOperator<Map<String, Object>> operator) {
+            return parameters(operator.apply(this.parameters));
         }
 
     }

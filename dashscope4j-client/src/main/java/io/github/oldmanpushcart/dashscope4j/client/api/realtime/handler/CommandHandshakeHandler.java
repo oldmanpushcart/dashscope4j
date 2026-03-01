@@ -56,13 +56,15 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
     @Override
     public void onOpen(Realtime.Emitter<String> emitter) {
 
+
+        this.emitter = new SessionEmitter(mode, emitter, futureMap);
+
         /*
          * STEP1 - 发起握手
          */
-        this.emitter = new SessionEmitter(mode, emitter, futureMap);
         final var sessionPayload = JacksonJsonUtils.toJson(session);
         final var command = Command.of(emitter.id(), mode, Command.Action.RUN, sessionPayload);
-        this.emitter.data(command.toJson());
+        emitter.data(command.toJson());
         logger.debug("{}/{} started.", this, emitter.id());
 
     }
@@ -161,11 +163,6 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
             super(delegate);
             this.mode = mode;
             this.futureMap = futureMap;
-        }
-
-        public void finish() {
-            final var command = Command.of(id(), mode, Command.Action.FINISH, "{\"input\": {}}");
-            super.data(command.toJson());
         }
 
         @Override
