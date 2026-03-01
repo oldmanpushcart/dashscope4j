@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.client.api.realtime;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -87,15 +86,15 @@ public class HandlerChain<I, O, UI, UO> {
         }
 
         @Override
-        public CompletionStage<Void> onData(UO output) {
-            return filter.test(output)
-                    ? handler.onData(output)
-                    : CompletableFuture.completedFuture(null);
+        public void onData(UO output) {
+            if (filter.test(output)) {
+                handler.onData(output);
+            }
         }
 
         @Override
-        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-            return handler.onBinary(buffer);
+        public void onBinary(ByteBuffer buffer) {
+            handler.onBinary(buffer);
         }
 
         @Override
@@ -128,13 +127,13 @@ public class HandlerChain<I, O, UI, UO> {
         }
 
         @Override
-        public CompletionStage<Void> onData(UO output) {
-            return handler.onData(mapper.apply(output));
+        public void onData(UO output) {
+            handler.onData(mapper.apply(output));
         }
 
         @Override
-        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-            return handler.onBinary(buffer);
+        public void onBinary(ByteBuffer buffer) {
+            handler.onBinary(buffer);
         }
 
         @Override
@@ -165,23 +164,23 @@ public class HandlerChain<I, O, UI, UO> {
         public void onOpen(Realtime.Emitter<UI> emitter) {
             handler.onOpen(new Realtime.Emitter<>() {
                 @Override
-                public CompletionStage<Void> data(NI input) {
-                    return emitter.data(mapper.apply(input));
+                public void data(NI input) {
+                    emitter.data(mapper.apply(input));
                 }
 
                 @Override
-                public CompletionStage<Void> binary(ByteBuffer buffer) {
-                    return emitter.binary(buffer);
+                public void binary(ByteBuffer buffer) {
+                    emitter.binary(buffer);
                 }
 
                 @Override
-                public CompletionStage<Void> closing() {
-                    return emitter.closing();
+                public void closing() {
+                    emitter.closing();
                 }
 
                 @Override
-                public CompletionStage<Void> closing(Throwable ex) {
-                    return emitter.closing(ex);
+                public void closing(Throwable ex) {
+                    emitter.closing(ex);
                 }
 
                 @Override
@@ -207,13 +206,13 @@ public class HandlerChain<I, O, UI, UO> {
         }
 
         @Override
-        public CompletionStage<Void> onData(UO output) {
-            return handler.onData(output);
+        public void onData(UO output) {
+            handler.onData(output);
         }
 
         @Override
-        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-            return handler.onBinary(buffer);
+        public void onBinary(ByteBuffer buffer) {
+            handler.onBinary(buffer);
         }
 
         @Override
@@ -241,13 +240,13 @@ public class HandlerChain<I, O, UI, UO> {
         }
 
         @Override
-        public CompletionStage<Void> onData(UO output) {
-            return handler.onData(output);
+        public void onData(UO output) {
+            handler.onData(output);
         }
 
         @Override
-        public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-            return handler.onBinary(buffer);
+        public void onBinary(ByteBuffer buffer) {
+            handler.onBinary(buffer);
         }
 
         @Override

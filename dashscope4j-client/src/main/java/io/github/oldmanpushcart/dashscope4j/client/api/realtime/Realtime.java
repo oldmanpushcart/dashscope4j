@@ -30,10 +30,17 @@ public interface Realtime {
         boolean isClosed();
 
         /**
-         * 关闭连接
+         * 正常关闭连接
          */
         @Override
         void close();
+
+        /**
+         * 异常关闭连接
+         *
+         * @param ex 异常
+         */
+        void close(Throwable ex);
 
         /**
          * @return 连接关闭回调
@@ -53,59 +60,33 @@ public interface Realtime {
          * 发送数据
          *
          * @param in 数据
-         * @return 发送回调
          */
-        CompletionStage<Void> data(I in);
+        void data(I in);
 
         /**
          * 发送数据集
          *
          * @param ins 数据集
-         * @return 发送回调
          */
-        default CompletionStage<Void> data(List<I> ins) {
-            return CompletableFutureUtils
-                    .sequentialMap(ins, this::data)
-                    .thenAccept(unused -> {
-                    });
+        default void data(List<I> ins) {
+            ins.forEach(this::data);
         }
 
         /**
          * 发送二进制数据
          *
          * @param buffer 二进制数据
-         * @return 发送回调
          */
-        CompletionStage<Void> binary(ByteBuffer buffer);
+        void binary(ByteBuffer buffer);
 
         /**
          * 发送二进制数据集
          *
          * @param buffers 二进制数据集
-         * @return 发送回调
          */
-        default CompletionStage<Void> binary(Collection<ByteBuffer> buffers) {
-            return CompletableFutureUtils
-                    .sequentialMap(buffers, this::binary)
-                    .thenAccept(unused -> {
-                    });
+        default void binary(Collection<ByteBuffer> buffers) {
+            buffers.forEach(this::binary);
         }
-
-        /**
-         * 发送关闭连接（正常关闭）
-         *
-         * @return 发送回调
-         */
-        CompletionStage<Void> closing();
-
-        /**
-         * 发送关闭连接（异常关闭）
-         *
-         * @param ex 异常
-         * @return 发送回调
-         */
-        CompletionStage<Void> closing(Throwable ex);
-
     }
 
     /**
@@ -122,23 +103,23 @@ public interface Realtime {
         }
 
         @Override
-        public CompletionStage<Void> data(I input) {
-            return delegate.data(input);
+        public void data(I input) {
+            delegate.data(input);
         }
 
         @Override
-        public CompletionStage<Void> binary(ByteBuffer buffer) {
-            return delegate.binary(buffer);
+        public void binary(ByteBuffer buffer) {
+            delegate.binary(buffer);
         }
 
         @Override
-        public CompletionStage<Void> closing() {
-            return delegate.closing();
+        public void close() {
+            delegate.closing();
         }
 
         @Override
-        public CompletionStage<Void> closing(Throwable ex) {
-            return delegate.closing(ex);
+        public void close(Throwable ex) {
+            delegate.closing(ex);
         }
 
         @Override
@@ -149,11 +130,6 @@ public interface Realtime {
         @Override
         public boolean isClosed() {
             return delegate.isClosed();
-        }
-
-        @Override
-        public void close() {
-            delegate.close();
         }
 
         @Override
@@ -182,17 +158,15 @@ public interface Realtime {
          * 接收到数据时触发
          *
          * @param output 输出数据
-         * @return 处理回调
          */
-        CompletionStage<Void> onData(O output);
+        void onData(O output);
 
         /**
          * 接收到二进制数据时触发
          *
          * @param buffer 二进制数据
-         * @return 处理回调
          */
-        CompletionStage<Void> onBinary(ByteBuffer buffer);
+        void onBinary(ByteBuffer buffer);
 
         /**
          * 连接关闭时触发

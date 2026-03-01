@@ -12,8 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -52,24 +50,23 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
 
     @Override
     public void onOpen(Realtime.Emitter<String> emitter) {
-        this.emitter = new SessionEmitter(mode, emitter);
-
         /*
          * STEP1 - 发起握手
          */
-        this.emitter.start(session)
-                .whenComplete((u, ex) -> {
-                    if (null != ex) {
-                        logger.warn("{}/{} start failed!", this, emitter.id(), ex);
-                        emitter.close();
-                    } else {
-                        logger.debug("{}/{} started.", this, emitter.id());
-                    }
-                });
+        try {
+            final var sessionEmitter = new SessionEmitter(mode, emitter);
+            sessionEmitter.start(session);
+            this.emitter = sessionEmitter;
+            logger.debug("{}/{} started.", this, emitter.id());
+        } catch (Throwable ex) {
+            logger.warn("{}/{} start failed!", this, emitter.id(), ex);
+            emitter.close();
+        }
+        this.emitter = new SessionEmitter(mode, emitter);
     }
 
     @Override
-    public CompletionStage<Void> onData(String output) {
+    public void onData(String output) {
         final var event = JacksonJsonUtils.toObject(output, Event.class);
         final var header = event.header();
 
@@ -80,14 +77,14 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
                     header.code(),
                     header.desc()
             );
-            return CompletableFuture.failedStage(new IllegalStateException("Command handshake failed! code=%s;desc=%s".formatted(
+            throw new IllegalStateException("Command handshake failed! code=%s;desc=%s".formatted(
                     header.code(),
                     header.desc()
-            )));
+            ));
         }
 
         final var s = state.get();
-        return switch (s) {
+        switch (s) {
 
             /*
              * STEP2 - 等待握手结果
@@ -107,7 +104,6 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
                 }
                 handler.onOpen(emitter);
                 logger.debug("{}/{} handshake completed.", this, emitter.id());
-                yield CompletableFuture.completedStage(null);
             }
 
             /*
@@ -118,13 +114,13 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
                 // 会话结束
                 if (header.type() == Event.Type.FINISHED) {
                     logger.debug("{}/{} session finished.", this, emitter.id());
-                    yield handler.onData(event.payload())
-                            .thenAccept(u -> emitter.close());
+                    handler.onData(event.payload());
+                    emitter.close();
                 }
 
                 // 会话通讯
                 else if (header.type() == Event.Type.GENERATED) {
-                    yield handler.onData(event.payload());
+                    handler.onData(event.payload());
                 }
 
                 // 其他类型的数据帧不应该被支持
@@ -133,13 +129,14 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
                 }
 
             }
-        };
+        }
+        ;
 
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        return handler.onBinary(buffer);
+    public void onBinary(ByteBuffer buffer) {
+        handler.onBinary(buffer);
     }
 
     @Override
@@ -156,26 +153,26 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
             this.mode = mode;
         }
 
-        public CompletionStage<Void> start(Realtime.Session<?, ?> session) {
+        public void start(Realtime.Session<?, ?> session) {
             final var sessionPayload = JacksonJsonUtils.toJson(session);
             final var command = Command.of(id(), mode, Command.Action.RUN, sessionPayload);
-            return super.data(command.toJson());
+            super.data(command.toJson());
         }
 
-        public CompletionStage<Void> finish() {
+        public void finish() {
             final var command = Command.of(id(), mode, Command.Action.FINISH, "{\"input\": {}}");
-            return super.data(command.toJson());
+            super.data(command.toJson());
         }
 
         @Override
-        public CompletionStage<Void> data(String input) {
+        public void data(String input) {
             final var command = Command.of(id(), mode, Command.Action.CONTINUE, input);
-            return super.data(command.toJson());
+            super.data(command.toJson());
         }
 
         @Override
-        public CompletionStage<Void> closing() {
-            return finish();
+        public void closing() {
+            finish();
         }
 
     }

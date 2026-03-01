@@ -4,7 +4,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -41,17 +40,13 @@ public class CodecHandler<I, O, UI, UO> implements Realtime.Handler<I, O> {
     }
 
     @Override
-    public CompletionStage<Void> onData(O output) {
-        try {
-            return next.onData(decoder.apply(output));
-        } catch (Exception e) {
-            return CompletableFuture.failedStage(e);
-        }
+    public void onData(O output) {
+        next.onData(decoder.apply(output));
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        return next.onBinary(buffer);
+    public void onBinary(ByteBuffer buffer) {
+        next.onBinary(buffer);
     }
 
     @Override
@@ -59,30 +54,28 @@ public class CodecHandler<I, O, UI, UO> implements Realtime.Handler<I, O> {
         next.onClosed(ex);
     }
 
-    private record MapEmitter<I, UI>(
-            Function<UI, I> mapper,
-            Realtime.Emitter<I> delegate
-    ) implements Realtime.Emitter<UI> {
+    private record MapEmitter<I, UI>(Function<UI, I> mapper, Realtime.Emitter<I> delegate)
+            implements Realtime.Emitter<UI> {
 
 
         @Override
-        public CompletionStage<Void> data(UI input) {
-            return delegate.data(mapper.apply(input));
+        public void data(UI input) {
+            delegate.data(mapper.apply(input));
         }
 
         @Override
-        public CompletionStage<Void> binary(ByteBuffer buffer) {
-            return delegate.binary(buffer);
+        public void binary(ByteBuffer buffer) {
+            delegate.binary(buffer);
         }
 
         @Override
-        public CompletionStage<Void> closing() {
-            return delegate.closing();
+        public void closing() {
+            delegate.closing();
         }
 
         @Override
-        public CompletionStage<Void> closing(Throwable ex) {
-            return delegate.closing(ex);
+        public void closing(Throwable ex) {
+            delegate.closing(ex);
         }
 
         @Override

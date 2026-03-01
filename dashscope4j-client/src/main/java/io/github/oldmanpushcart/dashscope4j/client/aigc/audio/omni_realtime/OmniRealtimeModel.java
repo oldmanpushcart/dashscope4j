@@ -6,10 +6,8 @@ import io.github.oldmanpushcart.dashscope4j.client.api.Model;
 
 import static io.github.oldmanpushcart.dashscope4j.common.Constants.REALTIME_PATH;
 
-public record OmniRealtimeModel(
-        String name,
-        String path
-) implements Model<ClientEvent, ServerEvent> {
+public record OmniRealtimeModel(String name, String path)
+        implements Model<ClientEvent, ServerEvent> {
 
     public OmniRealtimeModel(String name) {
         this(name, String.format("%s?model=%s".formatted(REALTIME_PATH, name)));

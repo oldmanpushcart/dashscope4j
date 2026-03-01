@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
+import io.github.oldmanpushcart.dashscope4j.client.internal.DashscopeClientImpl;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import okhttp3.OkHttpClient;
 import org.reactivestreams.Publisher;
@@ -89,7 +90,7 @@ public interface DashscopeClient {
      * @return 客户端构造器
      */
     static Builder newBuilder() {
-        return null;
+        return new DashscopeClientImpl.Builder();
     }
 
     /**

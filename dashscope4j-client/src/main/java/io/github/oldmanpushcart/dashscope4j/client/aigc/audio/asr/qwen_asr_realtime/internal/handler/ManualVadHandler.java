@@ -35,22 +35,34 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
     }
 
     @Override
-    public CompletionStage<Void> onData(ServerEvent output) {
-        final var type = output.type();
+    public void onData(ServerEvent event) {
+
+        /*
+         * 根据事件类型从回调池中寻找对应的回调，并通知其完成。
+         */
+        final var type = event.type();
         final var future = futureMap.remove(type);
         if (null != future) {
             future.complete(null);
         }
-        return delegate.onData(output);
+
+        // 向下转发事件
+        delegate.onData(event);
+
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        return delegate.onBinary(buffer);
+    public void onBinary(ByteBuffer buffer) {
+        delegate.onBinary(buffer);
     }
 
     @Override
     public void onClosed(Throwable ex) {
+
+        /*
+         * 连接要关闭了，覆巢之下无完卵。
+         * 通知回调池中所有回调完成
+         */
         futureMap.forEach((type, future) -> {
             if (null != future) {
                 if (null != ex) {
@@ -61,7 +73,10 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             }
         });
         futureMap.clear();
+
+        // 向下转发关闭
         delegate.onClosed(ex);
+
     }
 
 
@@ -80,14 +95,21 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         }
 
         @Override
-        public CompletionStage<InputOp> newInput() {
+        public InputOp newInput() {
+
+            /*
+             * 状态切换：IDLE -> INPUT
+             *
+             * 1. 只有空闲状态才能转到输入状态
+             * 2. 同一时间只能有一个输入操作
+             */
             if (!state.compareAndSet(State.IDLE, State.INPUT)) {
-                throw new IllegalStateException("Expect state %s, but found %s".formatted(
+                throw new IllegalStateException("Expect state %s, but was %s".formatted(
                         State.IDLE,
                         state.get()
                 ));
             }
-            return CompletableFuture.completedStage(new InputOpImpl());
+            return new InputOpImpl();
         }
 
         @Override
@@ -97,40 +119,80 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
 
         private class InputOpImpl implements InputOp {
 
+            private volatile boolean committed = false;
+
             @Override
-            public CompletionStage<InputOp> audio(ByteBuffer buffer) {
-                if (!buffer.hasRemaining()) {
-                    return CompletableFuture.completedStage(this);
+            public InputOp audio(ByteBuffer buffer) {
+
+                if (committed) {
+                    throw new IllegalStateException("Already committed!");
                 }
-                final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-                return data(event)
-                        .thenApply(unused -> this);
+
+                if (!buffer.hasRemaining()) {
+                    return this;
+                }
+                data(new BufferAppendAudioClientEvent(genUUID22(), buffer));
+                return this;
             }
 
             @Override
             public CompletionStage<ManualVad> commit() {
+
+                if (committed) {
+                    throw new IllegalStateException("Already committed!");
+                }
+
                 if (!state.compareAndSet(State.INPUT, State.COMMIT)) {
-                    throw new IllegalStateException("Expect state %s, but found %s".formatted(
+                    throw new IllegalStateException("Expect state %s, but was %s".formatted(
                             State.INPUT,
                             state.get()
                     ));
                 }
-                final var commitF = new CompletableFuture<>();
-                if (futureMap.putIfAbsent(KEY_BUFFER_COMMITTED, commitF) != null) {
-                    throw new IllegalStateException("Exists running commit!");
-                }
-                final var event = new BufferCommitClientEvent(genUUID22());
-                return data(event)
-                        .thenCompose(unused -> commitF)
-                        .whenComplete((unused, ex) -> futureMap.remove(KEY_BUFFER_COMMITTED))
+
+                return CompletableFuture.completedStage(null)
+
+                        /*
+                         * 发送提交请求
+                         */
+                        .thenCompose(unused -> {
+                            final var commitF = new CompletableFuture<>();
+                            futureMap.put(KEY_BUFFER_COMMITTED, commitF);
+                            data(new BufferCommitClientEvent(genUUID22()));
+                            return commitF;
+                        })
+
+                        /*
+                         * 等待提交响应
+                         * 如果出错则需要回滚状态到之前
+                         */
+                        .whenComplete((unused, ex) -> {
+                            futureMap.remove(KEY_BUFFER_COMMITTED);
+                            state.compareAndSet(State.COMMIT, null == ex ? State.IDLE : State.INPUT);
+                        })
+
+                        /*
+                         * 完成并标记已提交。
+                         * 提交完成后，该输入操作已完成，不能再使用。
+                         */
                         .thenApply(unused -> {
-                            state.set(State.IDLE);
+                            committed = true;
                             return ManualVadImpl.this;
                         });
             }
 
         }
 
+
+        /**
+         * 状态
+         * <p>
+         * 状态图：{@code IDLE -> INPUT -> COMMIT -> IDLE}
+         * <ul>
+         *     <li>1. 状态为连接独占设计</li>
+         *     <li>2. 状态不可回头，COMMIT失败会回滚到INPUT状态</li>
+         * </ul>
+         * </p>
+         */
         private enum State {
             IDLE,
             INPUT,

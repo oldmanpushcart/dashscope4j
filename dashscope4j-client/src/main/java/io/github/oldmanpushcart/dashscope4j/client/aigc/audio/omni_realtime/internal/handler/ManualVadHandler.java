@@ -6,11 +6,9 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.Omni
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client.*;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,18 +37,18 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
     }
 
     @Override
-    public CompletionStage<Void> onData(ServerEvent output) {
+    public void onData(ServerEvent output) {
         final var type = output.type();
         final var future = futureMap.remove(type);
         if (null != future) {
             future.complete(null);
         }
-        return delegate.onData(output);
+        delegate.onData(output);
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        return CompletableFuture.completedStage(null);
+    public void onBinary(ByteBuffer buffer) {
+
     }
 
     @Override
@@ -79,116 +77,135 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             this.futureMap = futureMap;
         }
 
-        private boolean tryChangeState(State expect, State update) {
-            return stateRef.compareAndSet(expect, update);
-        }
-
-        private void changeState(State expect, State update) {
-            if (!tryChangeState(expect, update)) {
-                throw new IllegalStateException("Operation requires %s state, but current state is: %s".formatted(expect, stateRef.get()));
-            }
-        }
-
-        private void requireInputState() {
-            final var s = stateRef.get();
-            if (s != State.INPUT) {
-                throw new IllegalStateException("Operation requires %s state, but current state is: %s".formatted(State.INPUT, s));
-            }
-        }
-
-        private void register(String key, CompletableFuture<?> future) {
-            if (futureMap.putIfAbsent(key, future) != null) {
-                throw new IllegalStateException("Key: %s already registered!".formatted(key));
-            }
-        }
-
-        private void unregister(String key, Throwable ex) {
-            final var future = futureMap.remove(key);
-            if (null != future) {
-                if (null != ex) {
-                    future.completeExceptionally(ex);
-                } else {
-                    future.complete(null);
-                }
-            }
-        }
-
-        @Override
-        public CompletionStage<InputOp> newInput() {
-            changeState(State.IDLE, State.INPUT_READY);
-            return CompletableFuture.completedStage(new InputOpImpl());
-        }
-
         @Override
         public OmniRealtimeSession session() {
             return origin.session();
         }
 
+        @Override
+        public InputOp newInput() {
+
+            // 从空闲切换到可输入，同一时间只能有一个缓存可被输入
+            if (!stateRef.compareAndSet(State.IDLE, State.INPUT)) {
+                throw new IllegalStateException("Expect state %s, but was %s".formatted(
+                        State.IDLE,
+                        stateRef.get()
+                ));
+            }
+
+            // 返回输入操作
+            return new InputOpImpl();
+
+        }
+
+        /**
+         * 输入操作
+         */
         private class InputOpImpl implements InputOp {
 
+            private volatile boolean inputted = false;
+            private volatile boolean committed = false;
+
             @Override
-            public CompletionStage<InputOp> image(ByteBuffer image) {
-                tryChangeState(State.INPUT_READY, State.INPUT);
-                requireInputState();
-                final var event = new BufferAppendImageClientEvent(genUUID22(), image);
-                return origin.data(event)
-                        .thenApply(unused -> this);
+            public InputOp image(ByteBuffer image) {
+
+                if (stateRef.get() != State.INPUT) {
+                    throw new IllegalStateException("Expect state %s, but was %s".formatted(
+                            State.INPUT,
+                            stateRef.get()
+                    ));
+                }
+
+                origin.data(new BufferAppendImageClientEvent(genUUID22(), image));
+                inputted = true;
+                return this;
             }
 
             @Override
-            public CompletionStage<InputOp> audio(ByteBuffer buffer) {
-                tryChangeState(State.INPUT_READY, State.INPUT);
-                requireInputState();
-                final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-                return origin.data(event)
-                        .thenApply(unused -> this);
+            public InputOp audio(ByteBuffer buffer) {
+
+                if (stateRef.get() != State.INPUT) {
+                    throw new IllegalStateException("Expect state %s, but was %s".formatted(
+                            State.INPUT,
+                            stateRef.get()
+                    ));
+                }
+
+                origin.data(new BufferAppendAudioClientEvent(genUUID22(), buffer));
+                inputted = true;
+                return this;
             }
 
             @Override
             public CompletionStage<InputOp> clear() {
-
-                /*
-                 * 在没有任何输入之前，clear 操作无效
-                 */
-                if (stateRef.get() == State.INPUT_READY) {
-                    return CompletableFuture.completedStage(this);
-                }
-
-                changeState(State.INPUT, State.INPUT_READY);
-                final var clearF = new CompletableFuture<Void>();
-                register(KEY_BUFFER_CLEARED, clearF);
-                final var event = new BufferClearClientEvent(genUUID22());
-                return origin.data(event)
-                        .thenCompose(unused -> clearF)
-                        .whenComplete((v, ex) -> unregister(KEY_BUFFER_CLEARED, ex))
-                        .thenApply(unused -> this);
-            }
-
-            @Override
-            public CompletionStage<ResponseOp> commit() {
-                changeState(State.INPUT, State.COMMIT);
-                final var commitF = new CompletableFuture<Void>();
-                register(KEY_BUFFER_COMMITTED, commitF);
-                final var event = new BufferCommitClientEvent(genUUID22());
-                return origin.data(event)
-                        .thenCompose(unused -> commitF)
-                        .whenComplete((v, ex) -> unregister(KEY_BUFFER_COMMITTED, ex))
-                        .thenApply(unused -> new ResponseOpImpl());
+                return clearTo(State.INPUT)
+                        .thenApply(v -> this);
             }
 
             @Override
             public CompletionStage<Void> cancel() {
+                return clearTo(State.IDLE);
+            }
 
-                /*
-                 * 在没有任何输入之前，cancel 操作无效
-                 */
-                if (stateRef.get() == State.INPUT_READY) {
+            /**
+             * 清空输入缓存并回到指定状态
+             *
+             * @param target 指定状态
+             * @return 清理回调
+             */
+            private CompletionStage<Void> clearTo(State target) {
+
+                // 在没有任何输入之前，clear 操作无效
+                if (!inputted) {
                     return CompletableFuture.completedStage(null);
                 }
 
-                changeState(State.INPUT, State.IDLE);
-                return clear()
-                        .thenAccept(v -> {
+                if (stateRef.compareAndSet(State.INPUT, State.CLEAR)) {
+                    throw new IllegalStateException("Expect state %s, but was %s".formatted(
+                            State.INPUT,
+                            stateRef.get()
+                    ));
+                }
+
+                return CompletableFuture.completedStage(null)
+                        .thenCompose(unused -> {
+                            final var clearF = new CompletableFuture<Void>();
+                            futureMap.put(KEY_BUFFER_CLEARED, clearF);
+                            origin.data(new BufferClearClientEvent(genUUID22()));
+                            return clearF;
+                        })
+                        .whenComplete((v, ex) -> {
+                            futureMap.remove(KEY_BUFFER_CLEARED);
+                            stateRef.compareAndSet(State.CLEAR, null != ex ? State.INPUT : target);
+                        })
+                        .thenAccept(unused -> inputted = false);
+
+            }
+
+            @Override
+            public CompletionStage<ResponseOp> commit() {
+
+                if (!stateRef.compareAndSet(State.INPUT, State.COMMIT)) {
+                    throw new IllegalStateException("Expect state %s, but was %s".formatted(
+                            State.INPUT,
+                            stateRef.get()
+                    ));
+                }
+
+                return CompletableFuture.completedStage(null)
+                        .thenCompose(unused -> {
+                            final var commitF = new CompletableFuture<Void>();
+                            futureMap.put(KEY_BUFFER_COMMITTED, commitF);
+                            origin.data(new BufferCommitClientEvent(genUUID22()));
+                            return commitF;
+                        })
+                        .whenComplete((v, ex) -> {
+                            futureMap.remove(KEY_BUFFER_COMMITTED);
+                            stateRef.compareAndSet(State.COMMIT, null != ex ? State.COMMITTED : State.INPUT);
+                        })
+                        .thenApply(unused -> {
+                            committed = true;
+                            return new ResponseOpImpl();
                         });
             }
 
@@ -197,82 +214,97 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         private class ResponseOpImpl implements ResponseOp {
 
             @Override
-            public CompletableFuture<Void> create() {
-                changeState(State.COMMIT, State.RESPONSE);
-                final var createF = new CompletableFuture<Void>();
-                final var doneF = new CompletableFuture<Void>();
-                register(KEY_RESPONSE_CREATED, createF);
-                register(KEY_RESPONSE_DONE, doneF);
-                final var createE = new ResponseCreateClientEvent(genUUID22());
-                return origin.data(createE)
+            public CompletionStage<Void> create() {
 
-                        .thenCompose(unused -> createF)
-                        .whenComplete((v, ex) -> unregister(KEY_RESPONSE_CREATED, ex))
+                if (!stateRef.compareAndSet(State.COMMITTED, State.RESPONSE)) {
+                    throw new IllegalStateException("Expect state %s, but was %s".formatted(
+                            State.COMMITTED,
+                            stateRef.get()
+                    ));
+                }
 
-                        .thenCompose(unused -> doneF)
-                        .whenComplete((v, ex) -> unregister(KEY_RESPONSE_DONE, ex))
+                return CompletableFuture.completedStage(null)
 
-                        .exceptionallyCompose(ex -> {
-                            final var cause = CompletableFutureUtils.unwrapEx(ex);
-                            if (!(cause instanceof CancellationException)) {
-                                return CompletableFuture.failedStage(cause);
-                            }
-                            final var cancelE = new ResponseCancelClientEvent(genUUID22());
-                            return origin.data(cancelE)
-                                    .thenCompose(unused -> doneF)
-                                    .whenComplete((v, unusedEx) -> unregister(KEY_RESPONSE_DONE, unusedEx));
+                        /*
+                         * 创建并订阅 CREATE 和 DONE 回调
+                         *
+                         * 因为 CREATE 和 DONE 是顺序发生，而且中间无任何状态转换，所以必须在发送 create 请求之前完成这两个事件的注册。
+                         * 同时要求 CREATE 必须先于 DONE 发生。
+                         */
+                        .thenCompose(unused -> {
+
+                            final var createF = new CompletableFuture<Void>();
+                            futureMap.put(KEY_RESPONSE_CREATED, createF);
+
+                            final var doneF = new CompletableFuture<Void>();
+                            futureMap.put(KEY_RESPONSE_DONE, doneF);
+
+                            origin.data(new ResponseCreateClientEvent(genUUID22()));
+                            return createF.thenCompose(u -> doneF);
                         })
 
-                        .whenComplete((v, ex) -> changeState(State.RESPONSE, State.IDLE))
-                        .toCompletableFuture();
+                        /*
+                         * 无论是 CREATE 还是 DONE 回调导致的错误，都意味着整个响应生成失败。
+                         * 需要回滚状态到响应状态。
+                         */
+                        .whenComplete((unused, ex) -> {
+                            futureMap.remove(KEY_RESPONSE_CREATED);
+                            futureMap.remove(KEY_RESPONSE_DONE);
+                            stateRef.compareAndSet(State.RESPONSE, null != ex ? State.COMMITTED : State.IDLE);
+                        });
+            }
+
+            @Override
+            public void cancel() {
+
+                // 如果没有正在进行中的响应生成，则不用取消。
+                if (stateRef.get() != State.RESPONSE) {
+                    return;
+                }
+
+                /*
+                 * 直接发送取消请求，后续不用管理。
+                 * 由 create 流程处理好状态流转。
+                 */
+                origin.data(new ResponseCancelClientEvent(genUUID22()));
+
             }
 
         }
 
 
         /**
-         * 会话状态机（支持多轮手动 VAD 交互）。
-         *
-         * <p><strong>状态流转：</strong>
-         * IDLE → (newInput) → INPUT_READY → (audio/image) → INPUT → (commit) → COMMITTED → (create) → RESPONSE → (完成/取消) → IDLE
-         *
-         * <p><strong>关键约定：</strong>
-         * <ul>
-         *   <li>仅在 {@code IDLE} 状态允许调用 {@link ManualVad#newInput()}；</li>
-         *   <li>进入 {@code RESPONSE} 后，必须等待其完成（成功/失败/取消），然后自动回到 {@code IDLE}；</li>
-         *   <li>从 {@code RESPONSE} 返回 {@code IDLE} 时，必须清理所有临时资源（buffer、图像、future 等）。</li>
-         * </ul>
+         * 会话状态机
          */
         private enum State {
 
             /**
-             * 会话空闲，可开始新一轮输入。
-             * <p>在此状态下，调用 {@code newInput()} 将切换至 {@code INPUT}。
+             * 会话空闲
              */
             IDLE,
 
             /**
-             * 提交准备已就绪，等待开始提交内容。
-             * <p>在此状态下，调用 {@code audio()}/{@code image()} 将切换至 {@code SUBMISSION}。
-             */
-            INPUT_READY,
-
-            /**
-             * 正在接收多模态输入（音频和/或图像）。
-             * <p>可通过 {@code audio()}/{@code image()} 追加数据，或通过 {@code clear()} 重置，
-             * 或通过 {@code commit()}/{@code cancel()} 结束本轮输入。
+             * 缓存可输入
              */
             INPUT,
 
             /**
-             * 输入已提交，等待启动响应生成。
-             * <p>此状态短暂存在，通常立即调用 {@code ResponseOp#create()} 进入 {@code RESPONSE}。
+             * 缓存清除中
+             */
+            CLEAR,
+
+            /**
+             * 缓存提交中
              */
             COMMIT,
 
             /**
-             * 服务端正在生成并流式返回响应。
-             * <p>响应完成后（无论成功、失败或取消），会话必须自动回到 {@code IDLE}。
+             * 缓存已提交
+             */
+            COMMITTED,
+
+            /**
+             * 响应生成中
              */
             RESPONSE
 

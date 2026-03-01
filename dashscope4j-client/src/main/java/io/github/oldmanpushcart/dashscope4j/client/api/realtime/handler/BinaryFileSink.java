@@ -65,21 +65,20 @@ public class BinaryFileSink<T, R> implements Realtime.Handler<T, R> {
     }
 
     @Override
-    public CompletionStage<Void> onData(R output) {
-        return CompletableFuture.completedFuture(null);
+    public void onData(R output) {
+
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
+    public void onBinary(ByteBuffer buffer) {
         try {
             while (buffer.hasRemaining()) {
-                //noinspection ResultOfMethodCallIgnored
-                channel.write(buffer);
+                if (channel.write(buffer) == 0) {
+                    Thread.yield();
+                }
             }
-            return CompletableFuture.completedFuture(null);
         } catch (IOException ioEx) {
-            logger.warn("{} failed to write binary data to file: {}", this, file.getAbsoluteFile(), ioEx);
-            return CompletableFuture.failedStage(ioEx);
+            throw new RuntimeException("Failed to write binary data to file: %s".formatted(file), ioEx);
         }
 
     }
@@ -87,11 +86,6 @@ public class BinaryFileSink<T, R> implements Realtime.Handler<T, R> {
     @Override
     public void onClosed(Throwable ex) {
         IOUtils.closeQuietly(channel);
-        if (null == ex) {
-            logger.debug("{} file closed. file={}", this, file);
-        } else {
-            logger.warn("{} file closed abnormally. file={}", this, file, ex);
-        }
     }
 
 }

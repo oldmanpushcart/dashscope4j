@@ -38,18 +38,18 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
     }
 
     @Override
-    public CompletionStage<Void> onData(ServerEvent output) {
+    public void onData(ServerEvent output) {
         final var type = output.type();
         final var future = futureMap.remove(type);
         if (null != future) {
             future.complete(null);
         }
-        return delegate.onData(output);
+        delegate.onData(output);
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        return delegate.onBinary(buffer);
+    public void onBinary(ByteBuffer buffer) {
+        delegate.onBinary(buffer);
     }
 
     @Override
@@ -76,39 +76,12 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         private final QwenTtsRealtimeEmitter delegate;
         private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
 
+        private volatile boolean inputted = false;
+
         private ManualVadImpl(Map<String, CompletableFuture<?>> futureMap, QwenTtsRealtimeEmitter delegate) {
             super(delegate);
             this.futureMap = futureMap;
             this.delegate = delegate;
-        }
-
-        private void changeState(State expect, State update) {
-            if (!state.compareAndSet(expect, update)) {
-                throw new IllegalStateException("Operation requires %s state, but current state is: %s".formatted(expect, state.get()));
-            }
-        }
-
-        private void register(String key, CompletableFuture<?> future) {
-            if (futureMap.putIfAbsent(key, future) != null) {
-                throw new IllegalStateException("Key: %s already registered!".formatted(key));
-            }
-        }
-
-        private void unregister(String key, Throwable ex) {
-            final var future = futureMap.remove(key);
-            if (null != future) {
-                if (null != ex) {
-                    future.completeExceptionally(ex);
-                } else {
-                    future.complete(null);
-                }
-            }
-        }
-
-        @Override
-        public CompletionStage<InputOp> newInput() {
-            changeState(State.IDLE, State.INPUT_READY);
-            return CompletableFuture.completedStage(new InputOpImpl());
         }
 
         @Override
@@ -116,61 +89,114 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             return delegate.session();
         }
 
+        @Override
+        public InputOp newInput() {
+
+            if (!state.compareAndSet(State.IDLE, State.INPUT)) {
+                throw new IllegalStateException("Expect state %s, but was %s".formatted(
+                        State.IDLE,
+                        state.get()
+                ));
+            }
+
+            return new InputOpImpl();
+        }
+
+
         private class InputOpImpl implements InputOp {
 
-            @Override
-            public CompletionStage<InputOp> text(String text) {
+            private volatile boolean committed = false;
 
-                state.compareAndSet(State.INPUT_READY, State.INPUT);
-                if (state.get() != State.INPUT) {
-                    throw new IllegalStateException("Operation requires %s state!".formatted(state.get()));
+            @Override
+            public InputOp text(String text) {
+
+                if (committed) {
+                    throw new IllegalStateException("Already committed!");
                 }
 
-                final var event = new BufferAppendTextClientEvent(genUUID22(), text);
-                return data(event)
-                        .thenApply(unused -> this);
+                if (state.get() != State.INPUT) {
+                    throw new IllegalStateException("Expect state %s, but was %s".formatted(
+                            State.INPUT,
+                            state.get()
+                    ));
+                }
+
+                data(new BufferAppendTextClientEvent(genUUID22(), text));
+                inputted = true;
+                return this;
             }
 
             @Override
             public CompletionStage<InputOp> clear() {
-                final var s = state.get();
-                if (s == State.INPUT_READY) {
+
+                if (committed) {
+                    throw new IllegalStateException("Already committed!");
+                }
+
+                if (!inputted) {
                     return CompletableFuture.completedStage(this);
                 }
 
-                changeState(State.INPUT, State.INPUT_READY);
-                final var clearF = new CompletableFuture<Void>();
-                register(KEY_BUFFER_CLEARED, clearF);
-                final var event = new BufferClearClientEvent(genUUID22());
-                return data(event)
-                        .thenCompose(unused -> clearF)
-                        .whenComplete((unused, ex) -> unregister(KEY_BUFFER_CLEARED, ex))
-                        .thenApply(unused -> this);
+                if (!state.compareAndSet(State.INPUT, State.CLEAR)) {
+                    throw new IllegalStateException("Expect state %s, but was %s".formatted(
+                            State.INPUT,
+                            state.get()
+                    ));
+                }
+
+                return CompletableFuture.completedStage(null)
+                        .thenCompose(unused -> {
+                            final var clearF = new CompletableFuture<Void>();
+                            futureMap.put(KEY_BUFFER_CLEARED, clearF);
+                            data(new BufferClearClientEvent(genUUID22()));
+                            return clearF;
+                        })
+                        .whenComplete(((unused, ex) -> {
+                            futureMap.remove(KEY_BUFFER_CLEARED);
+                            state.compareAndSet(State.CLEAR, State.INPUT);
+                        }))
+                        .thenApply(unused -> {
+                            inputted = false;
+                            return this;
+                        });
             }
 
             @Override
             public CompletionStage<ManualVad> commit() {
 
-                final var s = state.get();
-                if (s == State.INPUT_READY) {
-                    return CompletableFuture.completedStage(ManualVadImpl.this);
+                if (committed) {
+                    throw new IllegalStateException("Already committed!");
                 }
 
-                changeState(State.INPUT, State.COMMIT);
-                final var commitF = new CompletableFuture<Void>();
-                final var doneF = new CompletableFuture<Void>();
-                register(KEY_BUFFER_COMMITTED, commitF);
-                register(KEY_RESPONSE_DONE, doneF);
-                final var event = new BufferCommitClientEvent(genUUID22());
-                return data(event)
-                        .thenCompose(unused -> commitF)
-                        .whenComplete((unused, ex) -> unregister(KEY_BUFFER_COMMITTED, ex))
-                        .thenCompose(unused -> doneF)
-                        .whenComplete((unused, ex) -> unregister(KEY_RESPONSE_DONE, ex))
+                if (!state.compareAndSet(State.INPUT, State.COMMIT)) {
+                    throw new IllegalStateException("Expect state %s, but was %s".formatted(
+                            State.INPUT,
+                            state.get()
+                    ));
+                }
+
+                return CompletableFuture.completedStage(null)
+                        .thenCompose(unused -> {
+
+                            final var commitF = new CompletableFuture<Void>();
+                            futureMap.put(KEY_BUFFER_COMMITTED, commitF);
+
+                            final var doneF = new CompletableFuture<Void>();
+                            futureMap.put(KEY_RESPONSE_DONE, doneF);
+
+                            data(new BufferCommitClientEvent(genUUID22()));
+                            return commitF.thenCompose(u -> doneF);
+                        })
+                        .whenComplete(((unused, ex) -> {
+                            futureMap.remove(KEY_BUFFER_COMMITTED);
+                            futureMap.remove(KEY_RESPONSE_DONE);
+                            state.compareAndSet(State.COMMIT, null != ex ? State.INPUT : State.IDLE);
+                        }))
                         .thenApply(unused -> {
-                            state.set(State.IDLE);
+                            committed = true;
                             return ManualVadImpl.this;
                         });
+
             }
 
         }
@@ -178,8 +204,8 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         private enum State {
 
             IDLE,
-            INPUT_READY,
             INPUT,
+            CLEAR,
             COMMIT
 
         }

@@ -14,7 +14,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -42,14 +41,21 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
     }
 
     @Override
-    public CompletionStage<Void> onData(ServerEvent output) {
+    public void onData(ServerEvent output) {
 
+        /*
+         * 根据事件类型从回调池中寻找对应的回调，并通知其完成。
+         */
         final var type = output.type();
         final var future = futureMap.remove(type);
         if (null != future) {
             future.complete(null);
         }
 
+        /*
+         * 这里对错误事件进行优先处理。
+         * 抛出异常，触发连接关闭。
+         */
         if (output instanceof ErrorServerEvent event) {
             final var error = event.error();
             throw new IllegalStateException("Server error! code=%s;desc=%s".formatted(
@@ -59,23 +65,30 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
         }
 
         final var s = state.get();
-        return switch (s) {
+        switch (s) {
+
+            /*
+             * 连接建立后，第一个永远是会话创建事件
+             */
             case AWAITING_SESSION_CREATED -> {
                 if (!(output instanceof SessionCreatedServerEvent)) {
                     throw new IllegalStateException("Expect session.created event, but was: " + output.type());
                 }
                 if (!state.compareAndSet(s, State.AWAITING_SESSION_CONFIRMED)) {
-                    throw new IllegalStateException("Change state failed, expect %s state, but was: %s".formatted(s, state.get()));
+                    throw new IllegalStateException("Expect %s state, but was: %s".formatted(s, state.get()));
                 }
-                final var sessionUpdateEvent = new SessionUpdateClientEvent(genUUID22(), session);
-                yield emitter.data(sessionUpdateEvent);
+                emitter.data(new SessionUpdateClientEvent(genUUID22(), session));
             }
+
+            /*
+             * 第二个收到的事件必定是会话更新事件
+             */
             case AWAITING_SESSION_CONFIRMED -> {
                 if (!(output instanceof SessionUpdatedServerEvent event)) {
                     throw new IllegalStateException("Expect session.updated event, but was: " + output.type());
                 }
                 if (!state.compareAndSet(s, State.HANDSHAKE_COMPLETED)) {
-                    throw new IllegalStateException("Change state failed, expect %s state, but was: %s".formatted(s, state.get()));
+                    throw new IllegalStateException("Expect %s state, but was: %s".formatted(s, state.get()));
                 }
 
                 final var session = event.session();
@@ -84,19 +97,24 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
                         .build();
                 final var qwenAsrRealtimeEmitter = new QwenAsrRealtimeEmitterImpl(emitter, newSession, futureMap);
                 delegate.onOpen(qwenAsrRealtimeEmitter);
-                yield CompletableFuture.completedFuture(null);
             }
+
+            /*
+             * 后续事件无论是什么都转发下游处理
+             */
             case HANDSHAKE_COMPLETED -> delegate.onData(output);
-        };
+        }
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        return delegate.onBinary(buffer);
+    public void onBinary(ByteBuffer buffer) {
+        delegate.onBinary(buffer);
     }
 
     @Override
     public void onClosed(Throwable ex) {
+
+        // 连接关闭，通知并清理所有回调
         futureMap.forEach((type, future) -> {
             if (null != future) {
                 if (null != ex) {
@@ -107,9 +125,21 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
             }
         });
         futureMap.clear();
+
+        // 转发下游
         delegate.onClosed(ex);
+
     }
 
+    /**
+     * 握手状态
+     * <p>
+     * 握手过程：连接建立后，会立即收到会话创建消息，此时客户端必须根据自身配置强制更新一次会话，确保会话配置生效。
+     * </p>
+     * <p>
+     * 状态图：{@code AWAITING_SESSION_CREATED -> AWAITING_SESSION_CONFIRMED -> HANDSHAKE_COMPLETED}
+     * </p>
+     */
     private enum State {
 
         /**
@@ -147,19 +177,51 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
             return session;
         }
 
+        /**
+         * 优雅关闭
+         * <p>
+         * 优雅关闭的流程如下
+         *     <ul>
+         *         <li>STEP1 - 客户端：发起结束申请</li>
+         *         <li>STEP2 - 服务端：立即提交缓存并完成后续所有输入</li>
+         *         <li>STEP3 - 服务端：响应结束</li>
+         *         <li>STEP4 - 客户端：发起连接关闭</li>
+         *         <li>STEP5 - 服务端：响应连接关闭</li>
+         *     </ul>
+         * </p>
+         */
         @Override
-        public CompletionStage<Void> closing() {
+        public void close() {
 
-            final var finishF = new CompletableFuture<>();
-            if (futureMap.putIfAbsent(KEY_SESSION_FINISHED, finishF) != null) {
-                throw new IllegalStateException("Exists finish running.");
+            // 如果已关闭，则幂等
+            if (isClosed()) {
+                return;
             }
 
-            final var event = new SessionFinishClientEvent(genUUID22());
-            return data(event)
-                    .thenCompose(unused -> finishF)
-                    .whenComplete((unused, ex) -> futureMap.remove(KEY_SESSION_FINISHED))
-                    .thenCompose(unused -> super.closing());
+            /*
+             * 同一时间只能有一个结束操作。
+             * 如果已经存在则主动避让，由进行中的结束操作完成后续关闭动作。
+             */
+            final var finishF = new CompletableFuture<>();
+            if (futureMap.putIfAbsent(KEY_SESSION_FINISHED, finishF) != null) {
+                return;
+            }
+
+            CompletableFuture.completedStage(null)
+
+                    // 发送并等待结束动作完成
+                    .thenCompose(unused -> {
+                        data(new SessionFinishClientEvent(genUUID22()));
+                        return finishF;
+                    })
+
+                    // 无论结束的结果如何，都必须走到关闭流程
+                    .handle((unused, ex) -> {
+                        futureMap.remove(KEY_SESSION_FINISHED);
+                        super.close();
+                        return null;
+                    });
+
         }
     }
 

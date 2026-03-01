@@ -16,9 +16,14 @@ import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
 import java.time.Duration;
-import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * QWEN-ASR 实时语音识别会话
+ * <p>
+ * 配置参考：<a href="https://bailian.console.aliyun.com/cn-beijing/?tab=api#/api/?type=model&url=2987033">实时语音识别（Qwen-ASR）客户端事件</a>
+ * </p>
+ */
 public record QwenAsrRealtimeSession(
 
         @JsonProperty("id")
@@ -60,13 +65,9 @@ public record QwenAsrRealtimeSession(
     public Function<Realtime.Handler<ClientEvent, ServerEvent>, Realtime.Handler<String, String>> provider() {
         return ioHandler -> HandlerChain
                 .<String, String>identity()
-                .<ClientEvent, ServerEvent>map(JacksonJsonUtils::toJson, this::toServerEvent)
+                .<ClientEvent, ServerEvent>map(JacksonJsonUtils::toJson, payload -> JacksonJsonUtils.toObject(payload, ServerEvent.class))
                 .<ClientEvent, ServerEvent>then(h -> new SessionHandshakeHandler(this, newHandler(h)))
                 .build(ioHandler);
-    }
-
-    private ServerEvent toServerEvent(String payload) {
-        return JacksonJsonUtils.toObject(payload, ServerEvent.class);
     }
 
     private Realtime.Handler<ClientEvent, ServerEvent> newHandler(Realtime.Handler<ClientEvent, ServerEvent> handler) {
@@ -77,6 +78,9 @@ public record QwenAsrRealtimeSession(
         }
     }
 
+    /**
+     * 输入音频格式
+     */
     public enum InputAudioFormat {
 
         @JsonProperty("pcm")
@@ -87,6 +91,11 @@ public record QwenAsrRealtimeSession(
 
     }
 
+    /**
+     * 输入音频转录配置
+     *
+     * @param language 输入语言
+     */
     public record InputAudioTranscription(
 
             @JsonProperty("language")
@@ -96,6 +105,13 @@ public record QwenAsrRealtimeSession(
 
     }
 
+    /**
+     * 会话轮检测配置
+     *
+     * @param type      检测方式
+     * @param threshold 检测阈值
+     * @param silence   断句检测阈值（ms）
+     */
     public record TurnDetection(
 
             @JsonProperty("type")
@@ -111,12 +127,18 @@ public record QwenAsrRealtimeSession(
 
     ) {
 
+        /**
+         * 服务端自动检测
+         */
         public static final TurnDetection SERVER_VAD = new TurnDetection(
                 Type.SERVER_VAD,
                 null,
                 null
         );
 
+        /**
+         * 手动提交
+         */
         public static final TurnDetection MANUAL_VAD = new TurnDetection(
                 Type.MANUAL_VAD,
                 null,
@@ -138,14 +160,28 @@ public record QwenAsrRealtimeSession(
 
     }
 
+    /**
+     * 创建构建器
+     *
+     * @return 构建器
+     */
     public static Builder newBuilder() {
         return new Builder();
     }
 
+    /**
+     * 创建构建器
+     *
+     * @param session 会话
+     * @return 构建器
+     */
     public static Builder newBuilder(QwenAsrRealtimeSession session) {
         return new Builder(session);
     }
 
+    /**
+     * 构建器
+     */
     public static class Builder implements Buildable<QwenAsrRealtimeSession, Builder> {
 
         private QwenAsrRealtimeModel model;
@@ -166,26 +202,56 @@ public record QwenAsrRealtimeSession(
             this.turnDetection = session.turnDetection;
         }
 
+        /**
+         * 设置模型
+         *
+         * @param model 模型
+         * @return this
+         */
         public Builder model(QwenAsrRealtimeModel model) {
             this.model = model;
             return this;
         }
 
+        /**
+         * 设置采样率
+         *
+         * @param sampleRate 采样率
+         * @return this
+         */
         public Builder sampleRate(Integer sampleRate) {
             this.sampleRate = sampleRate;
             return this;
         }
 
+        /**
+         * 设置输入音频格式
+         *
+         * @param inputAudioFormat 输入音频格式
+         * @return this
+         */
         public Builder inputAudioFormat(InputAudioFormat inputAudioFormat) {
             this.inputAudioFormat = inputAudioFormat;
             return this;
         }
 
+        /**
+         * 设置输入音频转录配置
+         *
+         * @param inputAudioTranscription 输入音频转录配置
+         * @return this
+         */
         public Builder inputAudioTranscription(InputAudioTranscription inputAudioTranscription) {
             this.inputAudioTranscription = inputAudioTranscription;
             return this;
         }
 
+        /**
+         * 设置会话轮检测配置
+         *
+         * @param turnDetection 会话轮检测配置
+         * @return this
+         */
         public Builder turnDetection(TurnDetection turnDetection) {
             this.turnDetection = turnDetection;
             return this;

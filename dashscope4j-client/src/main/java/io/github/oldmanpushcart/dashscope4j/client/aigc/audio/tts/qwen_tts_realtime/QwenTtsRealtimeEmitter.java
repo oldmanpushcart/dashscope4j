@@ -11,16 +11,16 @@ public interface QwenTtsRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
 
     interface ServerVad extends QwenTtsRealtimeEmitter {
 
-        CompletionStage<Void> text(String text);
+        void text(String text);
     }
 
     interface ManualVad extends QwenTtsRealtimeEmitter {
 
-        CompletionStage<InputOp> newInput();
+        InputOp newInput();
 
         interface InputOp {
 
-            CompletionStage<InputOp> text(String text);
+            InputOp text(String text);
 
             CompletionStage<InputOp> clear();
 

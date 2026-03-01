@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.internal.handler;
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.QwenAsrRealtimeEmitter;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.QwenAsrRealtimeEmitter.ServerVad;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.QwenAsrRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.client.BufferAppendAudioClientEvent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.client.ClientEvent;
@@ -26,13 +27,13 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
     }
 
     @Override
-    public CompletionStage<Void> onData(ServerEvent output) {
-        return delegate.onData(output);
+    public void onData(ServerEvent output) {
+        delegate.onData(output);
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        return delegate.onBinary(buffer);
+    public void onBinary(ByteBuffer buffer) {
+        delegate.onBinary(buffer);
     }
 
     @Override
@@ -42,7 +43,7 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
 
     private static class ServerVadImpl
             extends Realtime.DelegateEmitter<ClientEvent>
-            implements QwenAsrRealtimeEmitter.ServerVad {
+            implements ServerVad {
 
         private final QwenAsrRealtimeEmitter delegate;
 
@@ -52,16 +53,15 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         }
 
         @Override
-        public CompletionStage<Void> audio(ByteBuffer buffer) {
-            final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-            return data(event);
+        public ServerVad audio(ByteBuffer buffer) {
+            data(new BufferAppendAudioClientEvent(genUUID22(), buffer));
+            return this;
         }
 
         @Override
         public QwenAsrRealtimeSession session() {
             return delegate.session();
         }
-
 
     }
 

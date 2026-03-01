@@ -32,7 +32,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
          *
          * @return 提交操作
          */
-        CompletionStage<InputOp> newInput();
+        InputOp newInput();
 
         /**
          * 提交操作
@@ -45,7 +45,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              * @param image 图片
              * @return 提交操作
              */
-            CompletionStage<InputOp> image(ByteBuffer image);
+            InputOp image(ByteBuffer image);
 
             /**
              * 提交音频
@@ -53,7 +53,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              * @param buffer 音频数据
              * @return 提交操作
              */
-            CompletionStage<InputOp> audio(ByteBuffer buffer);
+            InputOp audio(ByteBuffer buffer);
 
             /**
              * 清空提交
@@ -94,7 +94,12 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              *
              * @return 创建结果
              */
-            CompletableFuture<Void> create();
+            CompletionStage<Void> create();
+
+            /**
+             * 取消正在进行的响应
+             */
+            void cancel();
 
         }
 
@@ -111,7 +116,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
          * @param image 图片
          * @return 输入结果
          */
-        CompletionStage<Void> image(ByteBuffer image);
+        ServerVad image(ByteBuffer image);
 
         /**
          * 输入音频
@@ -119,7 +124,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
          * @param buffer 音频数据
          * @return 输入结果
          */
-        CompletionStage<Void> audio(ByteBuffer buffer);
+        ServerVad audio(ByteBuffer buffer);
 
     }
 
