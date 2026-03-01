@@ -19,7 +19,7 @@ public class AigcResponse<O> extends ApiResponse implements Accumulator<AigcResp
     private final Usage usage;
 
     @JsonCreator
-    private AigcResponse(
+    public AigcResponse(
 
             @JacksonInject("dashscope/request")
             AigcRequest<?, ?> request,

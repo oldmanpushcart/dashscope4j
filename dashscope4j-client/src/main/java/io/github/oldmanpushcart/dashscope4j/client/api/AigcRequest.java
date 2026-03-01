@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.MT_APPLICATION_JSON;
@@ -223,6 +224,10 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
         public Builder<I, O> parameters(Map<String, Object> parameters) {
             this.parameters = parameters;
             return this;
+        }
+
+        public Builder<I, O> parameters(UnaryOperator<Map<String, Object>> operator) {
+            return parameters(operator.apply(this.parameters));
         }
 
         @Override

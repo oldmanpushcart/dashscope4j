@@ -35,4 +35,6 @@ public interface InternalContents {
 
     MediaType MT_APPLICATION_JSON = MediaType.get("application/json");
 
+    MediaType MT_APPLICATION_OCTET_STREAM = MediaType.get("application/octet-stream");
+
 }

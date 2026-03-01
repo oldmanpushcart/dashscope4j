@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
+import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.DefaultAsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.InterceptionAsyncApi;
@@ -17,6 +18,10 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.api.realtime.Realtim
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.DefaultTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.InterceptionTaskApi;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.task.TaskApi;
+import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
+import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.GeneralAigcInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
 import okhttp3.OkHttpClient;
 import org.reactivestreams.Publisher;
 
@@ -32,9 +37,12 @@ public class DashscopeClientImpl implements DashscopeClient {
     private final FlowApi flowApi;
     private final TaskApi taskApi;
     private final RealtimeApi realtimeApi;
+    private final BaseOp baseOp;
 
     private static final List<Interceptor> globalInterceptors = List.of(
-
+            new BridgeInterceptor(),
+            new IncrementalOutputOnlyInterceptor(),
+            new GeneralAigcInterceptor()
     );
 
     private DashscopeClientImpl(Builder builder) {
@@ -57,6 +65,7 @@ public class DashscopeClientImpl implements DashscopeClient {
         this.flowApi = flowApi;
         this.taskApi = taskApi;
         this.realtimeApi = realtimeApi;
+        this.baseOp = new BaseOpImpl(this);
 
     }
 
@@ -120,6 +129,11 @@ public class DashscopeClientImpl implements DashscopeClient {
     @Override
     public <I, O> CompletionStage<? extends Realtime.Connection> realtime(Realtime.Session<I, O> session, Realtime.Handler<I, O> handler) {
         return realtimeApi.realtime(session, handler);
+    }
+
+    @Override
+    public BaseOp base() {
+        return baseOp;
     }
 
     public static class Builder implements DashscopeClient.Builder {

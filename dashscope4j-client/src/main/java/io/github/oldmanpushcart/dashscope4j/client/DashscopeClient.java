@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
+import io.github.oldmanpushcart.dashscope4j.client.base.BaseOp;
 import io.github.oldmanpushcart.dashscope4j.client.internal.DashscopeClientImpl;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 import okhttp3.OkHttpClient;
@@ -83,6 +84,12 @@ public interface DashscopeClient {
      */
     <I, O> CompletionStage<? extends Realtime.Connection> realtime(Realtime.Session<I, O> session, Realtime.Handler<I, O> handler);
 
+    /**
+     * 获取基础操作接口。
+     *
+     * @return 基础操作接口实例
+     */
+    BaseOp base();
 
     /**
      * 创建一个新的客户端构建器

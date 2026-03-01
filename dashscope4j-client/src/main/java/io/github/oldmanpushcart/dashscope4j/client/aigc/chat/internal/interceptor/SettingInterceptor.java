@@ -1,0 +1,29 @@
+package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.internal.interceptor;
+
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
+import kotlin.reflect.KParameter;
+
+import java.util.concurrent.CompletionStage;
+
+public class SettingInterceptor implements Interceptor {
+
+    @Override
+    public CompletionStage<?> intercept(Chain chain) {
+
+        if (!(chain.request() instanceof AigcRequest<?, ?> request)
+                || !(request.model() instanceof ChatModel model)) {
+            return chain.proceed();
+        }
+
+        final var newRequest = AigcRequest.newBuilder(request.as(model))
+                .parameters(parameter -> {
+                    parameter.put("result_format", "message");
+                    return parameter;
+                })
+                .build();
+        return chain.proceed(newRequest);
+    }
+
+}
