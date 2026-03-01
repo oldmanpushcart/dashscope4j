@@ -14,7 +14,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -41,17 +40,8 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
         this.emitter = emitter;
     }
 
-    private void changeState(State expect, State update) {
-        if (!state.compareAndSet(expect, update)) {
-            throw new IllegalStateException("Change state failed, expect %s state, but was: %s".formatted(
-                    expect,
-                    state.get()
-            ));
-        }
-    }
-
     @Override
-    public CompletionStage<Void> onData(ServerEvent output) {
+    public void onData(ServerEvent output) {
 
         final var type = output.type();
         final var future = futureMap.remove(type);
@@ -61,54 +51,59 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
 
         if (output instanceof ErrorServerEvent event) {
             final var error = event.error();
-            final var cause = new IllegalStateException("Server error! code=%s;desc=%s".formatted(
+            throw new IllegalStateException("Server error! code=%s;desc=%s".formatted(
                     error.code(),
                     error.message()
             ));
-            return CompletableFuture.failedStage(cause);
         }
 
         final var s = state.get();
-        return switch (s) {
+        switch (s) {
             case AWAITING_SESSION_CREATED -> {
                 if (output instanceof SessionCreatedServerEvent) {
-                    changeState(s, State.AWAITING_SESSION_CONFIRMED);
-                    final var event = new SessionUpdateClientEvent(genUUID22(), session);
-                    yield emitter.data(event);
+                    if (!state.compareAndSet(s, State.AWAITING_SESSION_CONFIRMED)) {
+                        throw new IllegalStateException("Expect %s state, but was: %s".formatted(
+                                s,
+                                state.get()
+                        ));
+                    }
+                    emitter.data(new SessionUpdateClientEvent(genUUID22(), session));
                 } else {
-                    final var cause = new IllegalStateException("Expect %s event, but was: %s".formatted(
+                    throw new IllegalStateException("Expect %s event, but was: %s".formatted(
                             "session.created",
                             output.type()
                     ));
-                    yield CompletableFuture.failedStage(cause);
                 }
             }
             case AWAITING_SESSION_CONFIRMED -> {
                 if (output instanceof SessionUpdatedServerEvent event) {
-                    changeState(s, State.HANDSHAKE_COMPLETED);
+                    if (!state.compareAndSet(s, State.HANDSHAKE_COMPLETED)) {
+                        throw new IllegalStateException("Expect %s state, but was: %s".formatted(
+                                s,
+                                state.get()
+                        ));
+                    }
                     final var session = event.session();
                     final var newSession = QwenTtsRealtimeSession.newBuilder(session)
                             .model(session.model())
                             .build();
                     final var qwenTtsRealtimeEmitter = new QwenTtsRealtimeEmitterImpl(newSession, emitter, futureMap);
                     delegate.onOpen(qwenTtsRealtimeEmitter);
-                    yield CompletableFuture.completedStage(null);
                 } else {
-                    final var cause = new IllegalStateException("Expect %s event, but was: %s".formatted(
+                    throw new IllegalStateException("Expect %s event, but was: %s".formatted(
                             "session.created",
                             output.type()
                     ));
-                    yield CompletableFuture.failedStage(cause);
                 }
             }
             case HANDSHAKE_COMPLETED -> delegate.onData(output);
-        };
+        }
+        ;
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        final var cause = new UnsupportedOperationException("Binary data is not supported");
-        return CompletableFuture.failedStage(cause);
+    public void onBinary(ByteBuffer buffer) {
+        throw new UnsupportedOperationException("Binary data is not supported");
     }
 
     @Override
@@ -151,16 +146,18 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
         }
 
         @Override
-        public CompletionStage<Void> closing() {
-            final var finishF = new CompletableFuture<Void>();
-            if (futureMap.putIfAbsent(KEY_SESSION_FINISHED, finishF) != null) {
-                throw new IllegalStateException("Exists finish running.");
-            }
-            final var event = new SessionFinishClientEvent(genUUID22());
-            return data(event)
-                    .thenCompose(unused -> finishF)
-                    .whenComplete((unused, ex) -> futureMap.remove(KEY_SESSION_FINISHED))
-                    .thenCompose(unused -> super.closing());
+        public void close() {
+            CompletableFuture.completedStage(null)
+                    .thenCompose(unused -> {
+                        final var finishF = new CompletableFuture<Void>();
+                        futureMap.put(KEY_SESSION_FINISHED, finishF);
+                        data(new SessionFinishClientEvent(genUUID22()));
+                        return finishF;
+                    })
+                    .whenComplete((unused, ex) -> {
+                        futureMap.remove(KEY_SESSION_FINISHED);
+                        super.close();
+                    });
         }
 
         @Override

@@ -69,7 +69,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
 
         private final OmniRealtimeEmitter origin;
         private final Map<String, CompletableFuture<?>> futureMap;
-        private final AtomicReference<State> stateRef = new AtomicReference<>(State.IDLE);
+        private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
 
         private ManualVadImpl(OmniRealtimeEmitter origin, Map<String, CompletableFuture<?>> futureMap) {
             super(origin);
@@ -86,10 +86,10 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         public InputOp newInput() {
 
             // 从空闲切换到可输入，同一时间只能有一个缓存可被输入
-            if (!stateRef.compareAndSet(State.IDLE, State.INPUT)) {
+            if (!state.compareAndSet(State.IDLE, State.INPUT)) {
                 throw new IllegalStateException("Expect state %s, but was %s".formatted(
                         State.IDLE,
-                        stateRef.get()
+                        state.get()
                 ));
             }
 
@@ -109,10 +109,10 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             @Override
             public InputOp image(ByteBuffer image) {
 
-                if (stateRef.get() != State.INPUT) {
+                if (state.get() != State.INPUT) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
                             State.INPUT,
-                            stateRef.get()
+                            state.get()
                     ));
                 }
 
@@ -124,10 +124,10 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             @Override
             public InputOp audio(ByteBuffer buffer) {
 
-                if (stateRef.get() != State.INPUT) {
+                if (state.get() != State.INPUT) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
                             State.INPUT,
-                            stateRef.get()
+                            state.get()
                     ));
                 }
 
@@ -160,10 +160,10 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                     return CompletableFuture.completedStage(null);
                 }
 
-                if (stateRef.compareAndSet(State.INPUT, State.CLEAR)) {
+                if (state.compareAndSet(State.INPUT, State.CLEAR)) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
                             State.INPUT,
-                            stateRef.get()
+                            state.get()
                     ));
                 }
 
@@ -176,7 +176,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                         })
                         .whenComplete((v, ex) -> {
                             futureMap.remove(KEY_BUFFER_CLEARED);
-                            stateRef.compareAndSet(State.CLEAR, null != ex ? State.INPUT : target);
+                            state.compareAndSet(State.CLEAR, null != ex ? State.INPUT : target);
                         })
                         .thenAccept(unused -> inputted = false);
 
@@ -185,10 +185,10 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             @Override
             public CompletionStage<ResponseOp> commit() {
 
-                if (!stateRef.compareAndSet(State.INPUT, State.COMMIT)) {
+                if (!state.compareAndSet(State.INPUT, State.COMMIT)) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
                             State.INPUT,
-                            stateRef.get()
+                            state.get()
                     ));
                 }
 
@@ -201,7 +201,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                         })
                         .whenComplete((v, ex) -> {
                             futureMap.remove(KEY_BUFFER_COMMITTED);
-                            stateRef.compareAndSet(State.COMMIT, null != ex ? State.COMMITTED : State.INPUT);
+                            state.compareAndSet(State.COMMIT, null != ex ? State.COMMITTED : State.INPUT);
                         })
                         .thenApply(unused -> {
                             committed = true;
@@ -216,10 +216,10 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             @Override
             public CompletionStage<Void> create() {
 
-                if (!stateRef.compareAndSet(State.COMMITTED, State.RESPONSE)) {
+                if (!state.compareAndSet(State.COMMITTED, State.RESPONSE)) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
                             State.COMMITTED,
-                            stateRef.get()
+                            state.get()
                     ));
                 }
 
@@ -250,7 +250,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                         .whenComplete((unused, ex) -> {
                             futureMap.remove(KEY_RESPONSE_CREATED);
                             futureMap.remove(KEY_RESPONSE_DONE);
-                            stateRef.compareAndSet(State.RESPONSE, null != ex ? State.COMMITTED : State.IDLE);
+                            state.compareAndSet(State.RESPONSE, null != ex ? State.COMMITTED : State.IDLE);
                         });
             }
 
@@ -258,7 +258,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             public void cancel() {
 
                 // 如果没有正在进行中的响应生成，则不用取消。
-                if (stateRef.get() != State.RESPONSE) {
+                if (state.get() != State.RESPONSE) {
                     return;
                 }
 

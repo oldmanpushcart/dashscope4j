@@ -9,7 +9,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realt
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 

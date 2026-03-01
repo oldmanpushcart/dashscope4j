@@ -12,8 +12,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.even
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
@@ -23,7 +21,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
     private final OmniRealtimeSession session;
     private final Realtime.Handler<ClientEvent, ServerEvent> delegate;
 
-    private final AtomicReference<State> stateRef = new AtomicReference<>(State.AWAITING_SESSION_CREATED);
+    private final AtomicReference<State> state = new AtomicReference<>(State.AWAITING_SESSION_CREATED);
     private volatile Realtime.Emitter<ClientEvent> emitter;
 
     public SessionHandshakeHandler(OmniRealtimeSession session, Realtime.Handler<ClientEvent, ServerEvent> delegate) {
@@ -36,15 +34,6 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
         this.emitter = emitter;
     }
 
-    private void changeState(State expect, State update) {
-        if (!stateRef.compareAndSet(expect, update)) {
-            throw new IllegalStateException("Change state failed, expect %s state, but was: %s".formatted(
-                    expect,
-                    stateRef.get()
-            ));
-        }
-    }
-
     private boolean isResponseCancelError(ErrorServerEvent.Error error) {
         return null != error
                 && "invalid_request_error".equals(error.type())
@@ -52,7 +41,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
     }
 
     @Override
-    public CompletionStage<Void> onData(ServerEvent output) {
+    public void onData(ServerEvent output) {
 
         if (output instanceof ErrorServerEvent event) {
             final var error = event.error();
@@ -62,54 +51,59 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
              * 因为会存在竞争的情况，即响应完成和响应取消同时发生。这种情况的错误是可被允许。
              */
             if (isResponseCancelError(error)) {
-                return CompletableFuture.completedStage(null);
+                return;
             }
 
-            final var cause = new OmniRealtimeErrorException(error.code(), error.message());
-            return CompletableFuture.failedStage(cause);
+            throw new OmniRealtimeErrorException(error.code(), error.message());
         }
 
-        final var state = stateRef.get();
-        return switch (state) {
+        final var state = this.state.get();
+        switch (state) {
             case AWAITING_SESSION_CREATED -> {
                 if (output instanceof SessionCreatedServerEvent) {
-                    changeState(state, State.AWAITING_SESSION_CONFIRMED);
-                    final var event = new SessionUpdateClientEvent(genUUID22(), session);
-                    yield emitter.data(event);
+                    if (!this.state.compareAndSet(state, State.AWAITING_SESSION_CONFIRMED)) {
+                        throw new IllegalStateException("Expect %s state, but was: %s".formatted(
+                                state,
+                                this.state.get()
+                        ));
+                    }
+                    emitter.data(new SessionUpdateClientEvent(genUUID22(), session));
                 } else {
-                    final var cause = new IllegalStateException("Expect %s event, but was: %s".formatted(
+                    throw new IllegalStateException("Expect %s event, but was: %s".formatted(
                             "session.created",
                             output.type()
                     ));
-                    yield CompletableFuture.failedStage(cause);
                 }
             }
             case AWAITING_SESSION_CONFIRMED -> {
                 if (output instanceof SessionUpdatedServerEvent event) {
-                    changeState(state, State.HANDSHAKE_COMPLETED);
+                    if (!this.state.compareAndSet(state, State.HANDSHAKE_COMPLETED)) {
+                        throw new IllegalStateException("Expect %s state, but was: %s".formatted(
+                                state,
+                                this.state.get()
+                        ));
+                    }
                     final var session = event.session();
                     final var newSession = OmniRealtimeSession.newBuilder(session)
                             .model(session.model())
                             .build();
                     final var omniRealtimeEmitter = new OmniRealtimeEmitterImpl(emitter, newSession);
                     delegate.onOpen(omniRealtimeEmitter);
-                    yield CompletableFuture.completedStage(null);
                 } else {
-                    final var cause = new IllegalStateException("Expect %s event, but was: %s".formatted(
+                    throw new IllegalStateException("Expect %s event, but was: %s".formatted(
                             "session.updated",
                             output.type()
                     ));
-                    yield CompletableFuture.failedStage(cause);
                 }
             }
             case HANDSHAKE_COMPLETED -> delegate.onData(output);
-        };
+        }
+        ;
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        final var cause = new UnsupportedOperationException("Binary data is not supported");
-        return CompletableFuture.failedStage(cause);
+    public void onBinary(ByteBuffer buffer) {
+        throw new UnsupportedOperationException("Binary data is not supported");
     }
 
     @Override

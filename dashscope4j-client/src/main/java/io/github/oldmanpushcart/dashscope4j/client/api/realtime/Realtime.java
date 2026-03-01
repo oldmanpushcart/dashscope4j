@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.realtime;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.Model;
-import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -114,12 +113,12 @@ public interface Realtime {
 
         @Override
         public void close() {
-            delegate.closing();
+            delegate.close();
         }
 
         @Override
         public void close(Throwable ex) {
-            delegate.closing(ex);
+            delegate.close(ex);
         }
 
         @Override

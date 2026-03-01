@@ -12,6 +12,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -25,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * 但这种复用会带来理解和连接管理成本的上升，而且绝大部分场景中都不需要对这个连接进行复用。所以这里就简化为：
  * {@code 连接:任务 = 1:1}的单连接单任务模式。
  * </p>
- * <p>偶尔的处理就不需要复用，经常需要交互的应该用实时性更好的会话模式。</p>
+ * <p>偶尔处理就不需要复用，经常需要交互地应该用实时性更好地会话模式。</p>
  */
 public class CommandHandshakeHandler implements Realtime.Handler<String, String> {
 
@@ -35,6 +39,7 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
     private final Realtime.Handler<String, String> handler;
 
     private final AtomicReference<State> state = new AtomicReference<>(State.AWAITING_HANDSHAKE);
+    private final Map<Event.Type, CompletableFuture<Void>> futureMap = new ConcurrentHashMap<>();
     private volatile SessionEmitter emitter;
 
     public CommandHandshakeHandler(Mode mode, Realtime.Session<?, ?> session, Realtime.Handler<String, String> handler) {
@@ -50,19 +55,16 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
 
     @Override
     public void onOpen(Realtime.Emitter<String> emitter) {
+
         /*
          * STEP1 - 发起握手
          */
-        try {
-            final var sessionEmitter = new SessionEmitter(mode, emitter);
-            sessionEmitter.start(session);
-            this.emitter = sessionEmitter;
-            logger.debug("{}/{} started.", this, emitter.id());
-        } catch (Throwable ex) {
-            logger.warn("{}/{} start failed!", this, emitter.id(), ex);
-            emitter.close();
-        }
-        this.emitter = new SessionEmitter(mode, emitter);
+        this.emitter = new SessionEmitter(mode, emitter, futureMap);
+        final var sessionPayload = JacksonJsonUtils.toJson(session);
+        final var command = Command.of(emitter.id(), mode, Command.Action.RUN, sessionPayload);
+        this.emitter.data(command.toJson());
+        logger.debug("{}/{} started.", this, emitter.id());
+
     }
 
     @Override
@@ -81,6 +83,12 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
                     header.code(),
                     header.desc()
             ));
+        }
+
+        final var type = event.header().type();
+        final var future = futureMap.remove(type);
+        if (null != future) {
+            future.complete(null);
         }
 
         final var s = state.get();
@@ -111,21 +119,9 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
              */
             case HANDSHAKE_COMPLETED: {
 
-                // 会话结束
-                if (header.type() == Event.Type.FINISHED) {
-                    logger.debug("{}/{} session finished.", this, emitter.id());
-                    handler.onData(event.payload());
-                    emitter.close();
-                }
-
                 // 会话通讯
-                else if (header.type() == Event.Type.GENERATED) {
+                if (header.type() == Event.Type.GENERATED) {
                     handler.onData(event.payload());
-                }
-
-                // 其他类型的数据帧不应该被支持
-                else {
-                    throw new IllegalStateException("Unexpected event type: " + header.type());
                 }
 
             }
@@ -141,22 +137,30 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
 
     @Override
     public void onClosed(Throwable ex) {
+        futureMap.forEach((type, future) -> {
+            if (null != future) {
+                if (null != ex) {
+                    future.completeExceptionally(ex);
+                } else {
+                    future.cancel(true);
+                }
+            }
+        });
+        futureMap.clear();
         handler.onClosed(ex);
     }
 
     private static class SessionEmitter extends Realtime.DelegateEmitter<String> {
 
         private final Mode mode;
+        private final Map<Event.Type, CompletableFuture<Void>> futureMap;
 
-        public SessionEmitter(Mode mode, Realtime.Emitter<String> delegate) {
+        private final AtomicBoolean finished = new AtomicBoolean(false);
+
+        public SessionEmitter(Mode mode, Realtime.Emitter<String> delegate, Map<Event.Type, CompletableFuture<Void>> futureMap) {
             super(delegate);
             this.mode = mode;
-        }
-
-        public void start(Realtime.Session<?, ?> session) {
-            final var sessionPayload = JacksonJsonUtils.toJson(session);
-            final var command = Command.of(id(), mode, Command.Action.RUN, sessionPayload);
-            super.data(command.toJson());
+            this.futureMap = futureMap;
         }
 
         public void finish() {
@@ -171,8 +175,28 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
         }
 
         @Override
-        public void closing() {
-            finish();
+        public void close() {
+
+            if (!finished.compareAndSet(false, true)) {
+                return;
+            }
+
+            CompletableFuture.completedStage(null)
+                    .thenCompose(unused -> {
+
+                        final var finishF = new CompletableFuture<Void>();
+                        futureMap.put(Event.Type.FINISHED, finishF);
+
+                        final var command = Command.of(id(), mode, Command.Action.FINISH, "{\"input\": {}}");
+                        super.data(command.toJson());
+
+                        return finishF;
+                    })
+                    .whenComplete((unused, ex) -> {
+                        futureMap.remove(Event.Type.FINISHED);
+                        finished.compareAndSet(true, null != ex);
+                        super.close();
+                    });
         }
 
     }

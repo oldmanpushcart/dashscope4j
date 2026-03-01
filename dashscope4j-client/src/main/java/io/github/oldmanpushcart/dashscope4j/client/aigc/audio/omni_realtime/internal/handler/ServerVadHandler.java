@@ -29,13 +29,13 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
     }
 
     @Override
-    public CompletionStage<Void> onData(ServerEvent output) {
-        return delegate.onData(output);
+    public void onData(ServerEvent output) {
+        delegate.onData(output);
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        return delegate.onBinary(buffer);
+    public void onBinary(ByteBuffer buffer) {
+        delegate.onBinary(buffer);
     }
 
     @Override
@@ -46,15 +46,15 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
     private record ServerVadImpl(OmniRealtimeEmitter origin) implements ServerVad {
 
         @Override
-        public CompletionStage<Void> image(ByteBuffer image) {
-            final var event = new BufferAppendImageClientEvent(genUUID22(), image);
-            return origin.data(event);
+        public ServerVad image(ByteBuffer image) {
+            origin.data(new BufferAppendImageClientEvent(genUUID22(), image));
+            return this;
         }
 
         @Override
-        public CompletionStage<Void> audio(ByteBuffer buffer) {
-            final var event = new BufferAppendAudioClientEvent(genUUID22(), buffer);
-            return origin.data(event);
+        public ServerVad audio(ByteBuffer buffer) {
+            origin.data(new BufferAppendAudioClientEvent(genUUID22(), buffer));
+            return this;
         }
 
         @Override
@@ -63,23 +63,23 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         }
 
         @Override
-        public CompletionStage<Void> data(ClientEvent input) {
-            return origin.data(input);
+        public void data(ClientEvent input) {
+            origin.data(input);
         }
 
         @Override
-        public CompletionStage<Void> binary(ByteBuffer buffer) {
-            return origin.binary(buffer);
+        public void binary(ByteBuffer buffer) {
+            origin.binary(buffer);
         }
 
         @Override
-        public CompletionStage<Void> closing() {
-            return origin.closing();
+        public void close() {
+            origin.close();
         }
 
         @Override
-        public CompletionStage<Void> closing(Throwable ex) {
-            return origin.closing(ex);
+        public void close(Throwable ex) {
+            origin.close(ex);
         }
 
         @Override
@@ -90,11 +90,6 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         @Override
         public boolean isClosed() {
             return origin.isClosed();
-        }
-
-        @Override
-        public void close() {
-            origin.close();
         }
 
         @Override

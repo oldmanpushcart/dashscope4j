@@ -8,7 +8,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realt
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
@@ -27,13 +26,13 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
     }
 
     @Override
-    public CompletionStage<Void> onData(ServerEvent output) {
-        return delegate.onData(output);
+    public void onData(ServerEvent output) {
+        delegate.onData(output);
     }
 
     @Override
-    public CompletionStage<Void> onBinary(ByteBuffer buffer) {
-        return delegate.onBinary(buffer);
+    public void onBinary(ByteBuffer buffer) {
+        delegate.onBinary(buffer);
     }
 
     @Override
@@ -53,9 +52,9 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         }
 
         @Override
-        public CompletionStage<Void> text(String text) {
-            final var event = new BufferAppendTextClientEvent(genUUID22(), text);
-            return data(event);
+        public ServerVad text(String text) {
+            data(new BufferAppendTextClientEvent(genUUID22(), text));
+            return this;
         }
 
         @Override

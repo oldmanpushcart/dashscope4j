@@ -14,16 +14,14 @@ public class CosyVoiceEmitter
         super(delegate);
     }
 
-    public CompletionStage<Void> text(String text) {
-        return data(CosyVoiceModel.In.of(text));
+    public CosyVoiceEmitter text(String text) {
+        data(CosyVoiceModel.In.of(text));
+        return this;
     }
 
-    public CompletionStage<Void> text(List<String> texts) {
-        return CompletableFutureUtils
-                .sequentialMap(texts, this::text)
-                .thenAccept(unused -> {
-
-                });
+    public CosyVoiceEmitter text(List<String> texts) {
+        texts.forEach(this::text);
+        return this;
     }
 
 }

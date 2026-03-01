@@ -11,7 +11,7 @@ public interface QwenTtsRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
 
     interface ServerVad extends QwenTtsRealtimeEmitter {
 
-        void text(String text);
+        ServerVad text(String text);
     }
 
     interface ManualVad extends QwenTtsRealtimeEmitter {

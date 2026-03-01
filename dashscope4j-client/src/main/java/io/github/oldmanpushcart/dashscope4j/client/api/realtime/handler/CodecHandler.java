@@ -69,13 +69,13 @@ public class CodecHandler<I, O, UI, UO> implements Realtime.Handler<I, O> {
         }
 
         @Override
-        public void closing() {
-            delegate.closing();
+        public void close() {
+            delegate.close();
         }
 
         @Override
-        public void closing(Throwable ex) {
-            delegate.closing(ex);
+        public void close(Throwable ex) {
+            delegate.close(ex);
         }
 
         @Override
@@ -86,11 +86,6 @@ public class CodecHandler<I, O, UI, UO> implements Realtime.Handler<I, O> {
         @Override
         public boolean isClosed() {
             return delegate.isClosed();
-        }
-
-        @Override
-        public void close() {
-            delegate.close();
         }
 
         @Override
