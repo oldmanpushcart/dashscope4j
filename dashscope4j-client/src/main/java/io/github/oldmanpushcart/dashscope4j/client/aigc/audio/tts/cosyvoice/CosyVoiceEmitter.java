@@ -1,10 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 public class CosyVoiceEmitter
         extends Realtime.DelegateEmitter<CosyVoiceModel.In>

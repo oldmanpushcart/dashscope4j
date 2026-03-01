@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.internal.intercept
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
-import kotlin.reflect.KParameter;
 
 import java.util.concurrent.CompletionStage;
 

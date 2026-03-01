@@ -8,7 +8,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import org.reactivestreams.Publisher;
 
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Flow;
 
 public class ToolCallInterceptor implements Interceptor {
 

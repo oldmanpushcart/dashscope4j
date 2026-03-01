@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record ResponseDoneServerEvent(
