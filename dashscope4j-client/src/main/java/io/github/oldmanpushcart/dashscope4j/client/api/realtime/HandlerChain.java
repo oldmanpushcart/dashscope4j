@@ -174,13 +174,13 @@ public class HandlerChain<I, O, UI, UO> {
                 }
 
                 @Override
-                public void closing() {
-                    emitter.closing();
+                public void close() {
+                    emitter.close();
                 }
 
                 @Override
-                public void closing(Throwable ex) {
-                    emitter.closing(ex);
+                public void close(Throwable ex) {
+                    emitter.close(ex);
                 }
 
                 @Override
@@ -191,11 +191,6 @@ public class HandlerChain<I, O, UI, UO> {
                 @Override
                 public boolean isClosed() {
                     return emitter.isClosed();
-                }
-
-                @Override
-                public void close() {
-                    emitter.close();
                 }
 
                 @Override
