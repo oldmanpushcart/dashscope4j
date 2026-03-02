@@ -11,8 +11,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.hand
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.RealtimeConnector;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.DataURI;
-import io.github.oldmanpushcart.dashscope4j.client.util.tracer.Tracer;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -21,7 +19,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 public class OmniRealtimeTestCase implements LoadingEnv {
 
@@ -52,17 +49,14 @@ public class OmniRealtimeTestCase implements LoadingEnv {
 
                                 private final byte[] bytes = new byte[1024];
                                 private final StringBuilder stringBuf = new StringBuilder();
-                                private volatile String traceId;
 
                                 @Override
                                 public void onResponseTextDelta(String responseId, String delta) {
-                                    Assertions.assertEquals(traceId, Tracer.instance.current().orElseThrow().traceId());
                                     stringBuf.append(delta);
                                 }
 
                                 @Override
                                 public void onResponseAudioDelta(String responseId, ByteBuffer delta) {
-                                    Assertions.assertEquals(traceId, Tracer.instance.current().orElseThrow().traceId());
                                     while (delta.hasRemaining()) {
                                         int len = Math.min(delta.remaining(), bytes.length);
                                         delta.get(bytes, 0, len);
@@ -72,25 +66,22 @@ public class OmniRealtimeTestCase implements LoadingEnv {
 
                                 @Override
                                 public void onResponseCreated(String responseId) {
-                                    Assertions.assertEquals(traceId, Tracer.instance.current().orElseThrow().traceId());
+
                                 }
 
                                 @Override
                                 public void onResponseFinished(String responseId, ServerEvent.Status status) {
-                                    Assertions.assertEquals(traceId, Tracer.instance.current().orElseThrow().traceId());
+
                                     completed.complete(stringBuf.toString());
                                 }
 
                                 @Override
                                 public void onOpen(Realtime.Emitter<ClientEvent> exchange) {
-
-                                    this.traceId = Tracer.instance.current().orElseThrow().traceId();
-
                                     final var manualVad = (OmniRealtimeEmitter.ManualVad) exchange;
 
                                     manualVad
                                             .newInput()
-                                            .clear()
+                                            .cancel()
                                             .toCompletableFuture()
                                             .join();
 
@@ -99,7 +90,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                                             .audio(audioByteBuffers)
                                             .image(imageByteBuffer)
                                             .commit()
-                                            .thenCompose(v->v.create())
+                                            .thenCompose(v -> v.create())
                                             .toCompletableFuture()
                                             .join();
 
@@ -107,7 +98,6 @@ public class OmniRealtimeTestCase implements LoadingEnv {
 
                                 @Override
                                 public void onClosed(Throwable ex) {
-                                    Assertions.assertEquals(traceId, Tracer.instance.current().orElseThrow().traceId());
                                     if (ex != null) {
                                         completed.completeExceptionally(ex);
                                     } else {

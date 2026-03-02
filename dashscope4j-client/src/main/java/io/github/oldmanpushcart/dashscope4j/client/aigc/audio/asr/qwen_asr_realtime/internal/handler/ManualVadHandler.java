@@ -136,7 +136,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             }
 
             @Override
-            public CompletionStage<ManualVad> commit() {
+            public CompletionStage<Void> commit() {
 
                 if (committed) {
                     throw new IllegalStateException("Already committed!");
@@ -174,9 +174,8 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                          * 完成并标记已提交。
                          * 提交完成后，该输入操作已完成，不能再使用。
                          */
-                        .thenApply(unused -> {
+                        .thenAccept(unused -> {
                             committed = true;
-                            return ManualVadImpl.this;
                         });
             }
 

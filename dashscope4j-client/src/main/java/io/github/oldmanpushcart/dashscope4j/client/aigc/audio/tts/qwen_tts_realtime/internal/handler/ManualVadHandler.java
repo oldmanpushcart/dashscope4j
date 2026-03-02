@@ -162,7 +162,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             }
 
             @Override
-            public CompletionStage<ManualVad> commit() {
+            public CompletionStage<Void> commit() {
 
                 if (committed) {
                     throw new IllegalStateException("Already committed!");
@@ -192,9 +192,8 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                             futureMap.remove(KEY_RESPONSE_DONE);
                             state.compareAndSet(State.COMMIT, null != ex ? State.INPUT : State.IDLE);
                         }))
-                        .thenApply(unused -> {
+                        .thenAccept(unused -> {
                             committed = true;
-                            return ManualVadImpl.this;
                         });
 
             }

@@ -4,7 +4,6 @@ import io.github.oldmanpushcart.dashscope4j.client.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.client.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.AudioHelper;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.QwenAsrRealtimeEmitter;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.QwenAsrRealtimeEmitter.ManualVad.InputOp;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.QwenAsrRealtimeModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.QwenAsrRealtimeSession;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.client.ClientEvent;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 public class QwenAsrRealtimeTestCase implements LoadingEnv {
 
@@ -37,17 +35,18 @@ public class QwenAsrRealtimeTestCase implements LoadingEnv {
             public void onOpen(Realtime.Emitter<ClientEvent> emitter) {
                 final var manualVad = (QwenAsrRealtimeEmitter.ManualVad) emitter;
 
-                CompletableFuture.completedStage(null)
-                        .thenCompose(unused -> manualVad
-                                .newInput()
-                                .audio(buffers)
-                                .commit())
-                        .thenAccept(Realtime.Connection::close)
-                        .whenComplete((v, ex) -> {
-                            if (null != ex) {
-                                completeF.completeExceptionally(ex);
-                            }
-                        });
+                new Thread(()-> {
+                    manualVad
+                            .newInput()
+                            .audio(buffers)
+                            .commit()
+                            .toCompletableFuture()
+                            .join();
+
+                    manualVad
+                            .close();
+                }).start();
+
             }
 
             @Override

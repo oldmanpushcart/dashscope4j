@@ -60,15 +60,16 @@ public interface Realtime {
          *
          * @param in 数据
          */
-        void data(I in);
+        Emitter<I> data(I in);
 
         /**
          * 发送数据集
          *
          * @param ins 数据集
          */
-        default void data(List<I> ins) {
+        default Emitter<I> data(List<I> ins) {
             ins.forEach(this::data);
+            return this;
         }
 
         /**
@@ -76,16 +77,18 @@ public interface Realtime {
          *
          * @param buffer 二进制数据
          */
-        void binary(ByteBuffer buffer);
+        Emitter<I> binary(ByteBuffer buffer);
 
         /**
          * 发送二进制数据集
          *
          * @param buffers 二进制数据集
          */
-        default void binary(Collection<ByteBuffer> buffers) {
+        default Emitter<I> binary(Collection<ByteBuffer> buffers) {
             buffers.forEach(this::binary);
+            return this;
         }
+
     }
 
     /**
@@ -102,13 +105,15 @@ public interface Realtime {
         }
 
         @Override
-        public void data(I input) {
+        public Emitter<I> data(I input) {
             delegate.data(input);
+            return this;
         }
 
         @Override
-        public void binary(ByteBuffer buffer) {
+        public Emitter<I> binary(ByteBuffer buffer) {
             delegate.binary(buffer);
+            return this;
         }
 
         @Override

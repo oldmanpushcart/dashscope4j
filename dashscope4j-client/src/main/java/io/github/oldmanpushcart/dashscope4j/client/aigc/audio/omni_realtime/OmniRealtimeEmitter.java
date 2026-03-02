@@ -42,8 +42,8 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
             /**
              * 提交图片
              *
-             * @param image 图片
-             * @return 提交操作
+             * @param image 图片数据
+             * @return this
              */
             InputOp image(ByteBuffer image);
 
@@ -51,10 +51,16 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              * 提交音频
              *
              * @param buffer 音频数据
-             * @return 提交操作
+             * @return this
              */
             InputOp audio(ByteBuffer buffer);
 
+            /**
+             * 批量提交音频
+             *
+             * @param buffers 音频数据
+             * @return this
+             */
             default InputOp audio(List<ByteBuffer> buffers) {
                 buffers.forEach(this::audio);
                 return this;
@@ -63,7 +69,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
             /**
              * 清空提交
              *
-             * @return 提交操作
+             * @return 清空回调
              */
             CompletionStage<InputOp> clear();
 
@@ -73,7 +79,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              * 输入被提交之后将无法继续输入，开始转入到响应操作。在响应输入阶段进行响应提交、取消的操作。
              * </p>
              *
-             * @return 响应操作
+             * @return 提交回调
              */
             CompletionStage<ResponseOp> commit();
 
@@ -83,7 +89,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              * 输入被取消之后将无法继续输入，响应输入将无法继续进行。
              * </p>
              *
-             * @return 取消操作
+             * @return 取消回调
              */
             CompletionStage<Void> cancel();
 
@@ -97,12 +103,12 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
             /**
              * 创建一个响应
              *
-             * @return 创建结果
+             * @return 创建回调
              */
             CompletionStage<Void> create();
 
             /**
-             * 取消正在进行的响应
+             * 取消正在进行的响应操作
              */
             void cancel();
 

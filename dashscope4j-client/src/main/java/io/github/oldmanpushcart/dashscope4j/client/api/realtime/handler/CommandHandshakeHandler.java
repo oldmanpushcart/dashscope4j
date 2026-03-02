@@ -56,7 +56,6 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
     @Override
     public void onOpen(Realtime.Emitter<String> emitter) {
 
-
         this.emitter = new SessionEmitter(mode, emitter, futureMap);
 
         /*
@@ -75,13 +74,7 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
         final var header = event.header();
 
         if (!header.isSuccess()) {
-            logger.warn("{}/{} handshake failed! code={};desc={};",
-                    this,
-                    emitter.id(),
-                    header.code(),
-                    header.desc()
-            );
-            throw new IllegalStateException("Command handshake failed! code=%s;desc=%s".formatted(
+            throw new IllegalStateException("Handshake failed! code=%s;desc=%s".formatted(
                     header.code(),
                     header.desc()
             ));
@@ -101,19 +94,20 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
              */
             case AWAITING_HANDSHAKE: {
                 if (header.type() != Event.Type.STARTED) {
-                    throw new IllegalStateException("Handshake failed! expect %s event, but was: %s".formatted(
+                    throw new IllegalStateException("Handshake failed! Expect %s event, but was: %s".formatted(
                             Event.Type.STARTED,
                             header.type()
                     ));
                 }
                 if (!state.compareAndSet(State.AWAITING_HANDSHAKE, State.HANDSHAKE_COMPLETED)) {
-                    throw new IllegalStateException("Handshake failed! expect %s state, but was: %s".formatted(
+                    throw new IllegalStateException("Handshake failed! Expect %s state, but was: %s".formatted(
                             State.AWAITING_HANDSHAKE,
                             state.get()
                     ));
                 }
-                handler.onOpen(emitter);
+
                 logger.debug("{}/{} handshake completed.", this, emitter.id());
+                handler.onOpen(emitter);
             }
 
             /*
@@ -166,9 +160,10 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
         }
 
         @Override
-        public void data(String input) {
+        public Realtime.Emitter<String> data(String input) {
             final var command = Command.of(id(), mode, Command.Action.CONTINUE, input);
             super.data(command.toJson());
+            return this;
         }
 
         @Override

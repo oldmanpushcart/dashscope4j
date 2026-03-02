@@ -24,7 +24,7 @@ public interface QwenTtsRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
 
             CompletionStage<InputOp> clear();
 
-            CompletionStage<ManualVad> commit();
+            CompletionStage<Void> commit();
 
         }
 

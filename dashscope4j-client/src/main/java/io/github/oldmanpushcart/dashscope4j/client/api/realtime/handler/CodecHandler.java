@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime.Emitter;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 
 import java.nio.ByteBuffer;
@@ -35,7 +36,7 @@ public class CodecHandler<I, O, UI, UO> implements Realtime.Handler<I, O> {
     }
 
     @Override
-    public void onOpen(Realtime.Emitter<I> emitter) {
+    public void onOpen(Emitter<I> emitter) {
         next.onOpen(new MapEmitter<>(encoder, emitter));
     }
 
@@ -54,18 +55,20 @@ public class CodecHandler<I, O, UI, UO> implements Realtime.Handler<I, O> {
         next.onClosed(ex);
     }
 
-    private record MapEmitter<I, UI>(Function<UI, I> mapper, Realtime.Emitter<I> delegate)
-            implements Realtime.Emitter<UI> {
+    private record MapEmitter<I, UI>(Function<UI, I> mapper, Emitter<I> delegate)
+            implements Emitter<UI> {
 
 
         @Override
-        public void data(UI input) {
+        public Emitter<UI> data(UI input) {
             delegate.data(mapper.apply(input));
+            return this;
         }
 
         @Override
-        public void binary(ByteBuffer buffer) {
+        public Emitter<UI> binary(ByteBuffer buffer) {
             delegate.binary(buffer);
+            return this;
         }
 
         @Override

@@ -53,13 +53,13 @@ public interface QwenAsrRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
                 buffers.forEach(this::audio);
                 return this;
             }
-
+            
             /**
              * 提交音频数据
              *
-             * @return 完成提交
+             * @return 提交回调
              */
-            CompletionStage<ManualVad> commit();
+            CompletionStage<Void> commit();
 
         }
 

@@ -46,6 +46,11 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
     private record ServerVadImpl(OmniRealtimeEmitter origin) implements ServerVad {
 
         @Override
+        public OmniRealtimeSession session() {
+            return origin.session();
+        }
+
+        @Override
         public ServerVad image(ByteBuffer image) {
             origin.data(new BufferAppendImageClientEvent(genUUID22(), image));
             return this;
@@ -58,18 +63,15 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         }
 
         @Override
-        public OmniRealtimeSession session() {
-            return origin.session();
-        }
-
-        @Override
-        public void data(ClientEvent input) {
+        public Realtime.Emitter<ClientEvent> data(ClientEvent input) {
             origin.data(input);
+            return this;
         }
 
         @Override
-        public void binary(ByteBuffer buffer) {
+        public Realtime.Emitter<ClientEvent> binary(ByteBuffer buffer) {
             origin.binary(buffer);
+            return this;
         }
 
         @Override

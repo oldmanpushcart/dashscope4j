@@ -155,16 +155,17 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
              */
             private CompletionStage<Void> clearTo(State target) {
 
-                // 在没有任何输入之前，clear 操作无效
-                if (!inputted) {
-                    return CompletableFuture.completedStage(null);
-                }
-
                 if (state.compareAndSet(State.INPUT, State.CLEAR)) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
                             State.INPUT,
                             state.get()
                     ));
+                }
+
+                // 在没有任何输入之前，clear 操作无效
+                if (!inputted) {
+                    state.compareAndSet(State.CLEAR, target);
+                    return CompletableFuture.completedStage(null);
                 }
 
                 return CompletableFuture.completedStage(null)

@@ -162,15 +162,17 @@ public class HandlerChain<I, O, UI, UO> {
 
         @Override
         public void onOpen(Realtime.Emitter<UI> emitter) {
-            handler.onOpen(new Realtime.Emitter<>() {
+            handler.onOpen(new Realtime.Emitter<NI>() {
                 @Override
-                public void data(NI input) {
+                public Realtime.Emitter<NI> data(NI input) {
                     emitter.data(mapper.apply(input));
+                    return this;
                 }
 
                 @Override
-                public void binary(ByteBuffer buffer) {
+                public Realtime.Emitter<NI> binary(ByteBuffer buffer) {
                     emitter.binary(buffer);
+                    return this;
                 }
 
                 @Override

@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 public class FunAsrTestCase implements LoadingEnv {
 
@@ -28,8 +27,9 @@ public class FunAsrTestCase implements LoadingEnv {
 
             @Override
             public void onOpen(Realtime.Emitter<FunAsrModel.In> emitter) {
-                emitter.binary(buffers);
-                emitter.close();
+                emitter
+                        .binary(buffers)
+                        .close();
             }
 
             @Override

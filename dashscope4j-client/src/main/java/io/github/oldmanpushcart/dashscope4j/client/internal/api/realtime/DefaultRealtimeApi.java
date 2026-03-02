@@ -81,16 +81,18 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
         }
 
         @Override
-        public void data(String in) {
+        public Realtime.Emitter<String> data(String in) {
             sending(() -> ws.send(in));
+            return this;
         }
 
         @Override
-        public void binary(ByteBuffer buffer) {
+        public Realtime.Emitter<String> binary(ByteBuffer buffer) {
             sending(() -> {
                 final ByteString byteString = ByteString.of(buffer);
                 return ws.send(byteString);
             });
+            return this;
         }
 
         @Override
@@ -210,6 +212,7 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
             }
             switch (code) {
                 case 1000, 1001 -> {
+                    logger.debug("{} closed normally.", this);
                     fireHandler(() -> handler.onClosed(null));
                     closeF.complete(null);
                 }
@@ -218,6 +221,7 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
                             code,
                             reason
                     ));
+                    logger.warn("{} closed abnormally.", this, ioEx);
                     fireHandler(() -> handler.onClosed(ioEx));
                     closeF.completeExceptionally(ioEx);
                 }
@@ -229,6 +233,7 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
             if (!closed.compareAndSet(false, true)) {
                 return;
             }
+            logger.warn("{} closed abnormally!", this, t);
             fireHandler(() -> handler.onClosed(t));
             closeF.completeExceptionally(t);
         }
