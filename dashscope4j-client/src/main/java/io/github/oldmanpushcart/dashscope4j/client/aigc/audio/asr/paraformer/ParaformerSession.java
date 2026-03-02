@@ -23,7 +23,9 @@ public class ParaformerSession extends ParameterSession<In, Out> {
     private ParaformerSession(Builder builder) {
         super(builder);
         this.model = builder.model;
-        this.resources = Collections.unmodifiableList(builder.resources);
+        this.resources = builder.resources == null
+                ? Collections.emptyList()
+                : Collections.unmodifiableList(builder.resources);
     }
 
     @JsonProperty("task_group")

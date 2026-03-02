@@ -133,15 +133,16 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                     throw new IllegalStateException("Already committed!");
                 }
 
-                if (!inputted) {
-                    return CompletableFuture.completedStage(this);
-                }
-
                 if (!state.compareAndSet(State.INPUT, State.CLEAR)) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
                             State.INPUT,
                             state.get()
                     ));
+                }
+
+                if (!inputted) {
+                    state.compareAndSet(State.CLEAR, State.INPUT);
+                    return CompletableFuture.completedStage(this);
                 }
 
                 return CompletableFuture.completedStage(null)

@@ -71,7 +71,6 @@ public class OmniRealtimeTestCase implements LoadingEnv {
 
                                 @Override
                                 public void onResponseFinished(String responseId, ServerEvent.Status status) {
-
                                     completed.complete(stringBuf.toString());
                                 }
 
@@ -79,20 +78,22 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                                 public void onOpen(Realtime.Emitter<ClientEvent> exchange) {
                                     final var manualVad = (OmniRealtimeEmitter.ManualVad) exchange;
 
-                                    manualVad
-                                            .newInput()
-                                            .cancel()
-                                            .toCompletableFuture()
-                                            .join();
+                                    new Thread(()-> {
+                                        manualVad
+                                                .newInput()
+                                                .cancel()
+                                                .toCompletableFuture()
+                                                .join();
 
-                                    manualVad
-                                            .newInput()
-                                            .audio(audioByteBuffers)
-                                            .image(imageByteBuffer)
-                                            .commit()
-                                            .thenCompose(v -> v.create())
-                                            .toCompletableFuture()
-                                            .join();
+                                        manualVad
+                                                .newInput()
+                                                .audio(audioByteBuffers)
+                                                .image(imageByteBuffer)
+                                                .commit()
+                                                .thenCompose(v -> v.create())
+                                                .toCompletableFuture()
+                                                .join();
+                                    }).start();
 
                                 }
 

@@ -155,7 +155,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
              */
             private CompletionStage<Void> clearTo(State target) {
 
-                if (state.compareAndSet(State.INPUT, State.CLEAR)) {
+                if (!state.compareAndSet(State.INPUT, State.CLEAR)) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
                             State.INPUT,
                             state.get()
@@ -202,7 +202,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                         })
                         .whenComplete((v, ex) -> {
                             futureMap.remove(KEY_BUFFER_COMMITTED);
-                            state.compareAndSet(State.COMMIT, null != ex ? State.COMMITTED : State.INPUT);
+                            state.compareAndSet(State.COMMIT, null != ex ? State.INPUT : State.COMMITTED);
                         })
                         .thenApply(unused -> {
                             committed = true;

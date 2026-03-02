@@ -120,6 +120,12 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
                     handler.onData(event.payload());
                 }
 
+                if (mode == Mode.OUT && header.type() == Event.Type.FINISHED) {
+                    logger.debug("{}/{} session finished.", this, emitter.id());
+                    handler.onData(event.payload());
+                    emitter.close();
+                }
+
             }
         }
         ;
@@ -170,6 +176,11 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
         public void close() {
 
             if (!finished.compareAndSet(false, true)) {
+                return;
+            }
+
+            if (mode == Mode.OUT) {
+                super.close();
                 return;
             }
 
@@ -315,8 +326,8 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
 
     public enum Mode {
 
-        @JsonProperty("none")
-        ONCE,
+//        @JsonProperty("none")
+//        ONCE,
 
         @JsonProperty("in")
         IN,

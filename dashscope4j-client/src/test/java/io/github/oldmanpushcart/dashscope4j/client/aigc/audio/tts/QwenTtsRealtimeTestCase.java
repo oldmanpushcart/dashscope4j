@@ -38,35 +38,29 @@ public class QwenTtsRealtimeTestCase implements LoadingEnv {
                 public void onOpen(Realtime.Emitter<ClientEvent> emitter) {
                     final var manualVad = (QwenTtsRealtimeEmitter.ManualVad) emitter;
 
-                    manualVad
-                            .newInput()
-                            .text("请问今天星期几？")
-                            .clear()
-                            .toCompletableFuture()
-                            .join();
+                    new Thread(() -> {
 
-                    manualVad
-                            .newInput()
-                            .text("床前明月光")
-                            .text("疑似地上霜")
-                            .text("举头望明月")
-                            .text("低头思故乡")
-                            .commit()
-                            .toCompletableFuture()
-                            .join();
+                        manualVad.newInput()
+                                .text("床前明月光")
+                                .text("疑似地上霜")
+                                .text("举头望明月")
+                                .text("低头思故乡")
+                                .commit()
+                                .toCompletableFuture()
+                                .join();
 
-                    manualVad
-                            .newInput()
-                            .text("锄禾日当午")
-                            .text("汗滴禾下土")
-                            .text("谁知盘中餐")
-                            .text("粒粒皆辛苦")
-                            .commit()
-                            .toCompletableFuture()
-                            .join();
+                        manualVad.newInput()
+                                .text("锄禾日当午")
+                                .text("汗滴禾下土")
+                                .text("谁知盘中餐")
+                                .text("粒粒皆辛苦")
+                                .commit()
+                                .toCompletableFuture()
+                                .join();
 
-                    manualVad
-                            .close();
+                        manualVad
+                                .close();
+                    }).start();
 
                 }
 
