@@ -42,6 +42,11 @@ public interface Realtime {
         void close(Throwable ex);
 
         /**
+         * 强制中断连接
+         */
+        void abort();
+
+        /**
          * @return 连接关闭回调
          */
         CompletionStage<Void> closeFuture();
@@ -124,6 +129,11 @@ public interface Realtime {
         @Override
         public void close(Throwable ex) {
             delegate.close(ex);
+        }
+
+        @Override
+        public void abort() {
+            delegate.abort();
         }
 
         @Override

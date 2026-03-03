@@ -162,7 +162,7 @@ public class HandlerChain<I, O, UI, UO> {
 
         @Override
         public void onOpen(Realtime.Emitter<UI> emitter) {
-            handler.onOpen(new Realtime.Emitter<NI>() {
+            handler.onOpen(new Realtime.Emitter<>() {
                 @Override
                 public Realtime.Emitter<NI> data(NI input) {
                     emitter.data(mapper.apply(input));
@@ -183,6 +183,11 @@ public class HandlerChain<I, O, UI, UO> {
                 @Override
                 public void close(Throwable ex) {
                     emitter.close(ex);
+                }
+
+                @Override
+                public void abort() {
+                    emitter.abort();
                 }
 
                 @Override

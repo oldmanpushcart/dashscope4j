@@ -61,14 +61,22 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
 
     private static class StringEmitter implements Realtime.Emitter<String> {
 
+        private final Logger logger = LoggerFactory.getLogger(getClass());
         private final String uuid;
         private final WebSocket ws;
         private final CompletableFuture<Void> closeF;
+        private final String _toString;
 
         private StringEmitter(String uuid, WebSocket ws, CompletableFuture<Void> closeF) {
             this.uuid = uuid;
             this.ws = ws;
             this.closeF = closeF;
+            this._toString = "dashscope4j-client://realtime/%s".formatted(uuid);
+        }
+
+        @Override
+        public String toString() {
+            return _toString;
         }
 
         private void sending(Supplier<Boolean> action) {
@@ -100,6 +108,7 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
             try {
                 sending(() -> ws.close(NORMAL_CLOSURE, "Bye!"));
             } catch (Throwable t) {
+                logger.warn("{} connection close failure, will be abort!", this, t);
                 ws.cancel();
             }
         }
@@ -109,8 +118,15 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
             try {
                 sending(() -> ws.close(INTERNAL_ERROR_CLOSURE, "Internal error"));
             } catch (Throwable t) {
+                logger.warn("{} connection close failure, will be abort!", this, t);
                 ws.cancel();
             }
+        }
+
+        @Override
+        public void abort() {
+            logger.debug("{} connection abort!", this);
+            ws.cancel();
         }
 
         @Override
@@ -161,10 +177,10 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
                 final var emitter = new StringEmitter(uuid, ws, closeF);
                 handler.onOpen(emitter);
                 completeF.complete(emitter);
-                logger.debug("{} opened.", this);
+                logger.debug("{} connection opened.", this);
             } catch (Throwable ex) {
 
-                logger.warn("{} open failure.", this, ex);
+                logger.warn("{} connection open failure!", this, ex);
 
                 // 立即取消连接，释放宝贵地连接资源
                 ws.cancel();
@@ -229,13 +245,18 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
         }
 
         @Override
-        public void onFailure(@NonNull WebSocket webSocket, @NonNull Throwable t, @Nullable Response httpResponse) {
+        public void onFailure(@NonNull WebSocket ws, @NonNull Throwable t, @Nullable Response httpResponse) {
+
             if (!closed.compareAndSet(false, true)) {
                 return;
             }
-            logger.warn("{} closed abnormally!", this, t);
+
+            logger.warn("{} occur error, will be close abnormally!", this, t);
+            ws.close(INTERNAL_ERROR_CLOSURE, "Internal error");
+
             fireHandler(() -> handler.onClosed(t));
             closeF.completeExceptionally(t);
+
         }
 
     }

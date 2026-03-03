@@ -81,7 +81,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                                     new Thread(()-> {
                                         manualVad
                                                 .newInput()
-                                                .cancel()
+                                                .cancelAsync()
                                                 .toCompletableFuture()
                                                 .join();
 
@@ -89,8 +89,8 @@ public class OmniRealtimeTestCase implements LoadingEnv {
                                                 .newInput()
                                                 .audio(audioByteBuffers)
                                                 .image(imageByteBuffer)
-                                                .commit()
-                                                .thenCompose(v -> v.create())
+                                                .commitAsync()
+                                                .thenCompose(v -> v.createAsync())
                                                 .toCompletableFuture()
                                                 .join();
                                     }).start();

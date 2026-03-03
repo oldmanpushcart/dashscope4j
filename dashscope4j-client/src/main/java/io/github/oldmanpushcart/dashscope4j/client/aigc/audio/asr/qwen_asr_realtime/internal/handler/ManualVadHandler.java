@@ -95,6 +95,11 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         }
 
         @Override
+        public QwenAsrRealtimeSession session() {
+            return delegate.session();
+        }
+
+        @Override
         public InputOp newInput() {
 
             /*
@@ -112,34 +117,39 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             return new InputOpImpl();
         }
 
-        @Override
-        public QwenAsrRealtimeSession session() {
-            return delegate.session();
-        }
-
         private class InputOpImpl implements InputOp {
 
-            private volatile boolean committed = false;
+            /*
+             * 中止标记
+             * 输入操作如被中止，则无法继续操作
+             */
+            private volatile boolean terminated = false;
 
             @Override
             public InputOp audio(ByteBuffer buffer) {
 
-                if (committed) {
-                    throw new IllegalStateException("Already committed!");
+                if (terminated) {
+                    throw new IllegalStateException("Already terminated!");
                 }
 
+                /*
+                 * 不能发送空数据包，不然云端会返回报错。
+                 * 这里进行空数据包的兼容：直接认为发送成功。
+                 */
                 if (!buffer.hasRemaining()) {
                     return this;
                 }
+
+                //noinspection resource
                 data(new BufferAppendAudioClientEvent(genUUID22(), buffer));
                 return this;
             }
 
             @Override
-            public CompletionStage<Void> commit() {
+            public CompletionStage<Void> commitAsync() {
 
-                if (committed) {
-                    throw new IllegalStateException("Already committed!");
+                if (terminated) {
+                    throw new IllegalStateException("Already terminated!");
                 }
 
                 if (!state.compareAndSet(State.INPUT, State.COMMIT)) {
@@ -157,6 +167,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                         .thenCompose(unused -> {
                             final var commitF = new CompletableFuture<>();
                             futureMap.put(KEY_BUFFER_COMMITTED, commitF);
+                            //noinspection resource
                             data(new BufferCommitClientEvent(genUUID22()));
                             return commitF;
                         })
@@ -167,16 +178,14 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                          */
                         .whenComplete((unused, ex) -> {
                             futureMap.remove(KEY_BUFFER_COMMITTED);
-                            state.compareAndSet(State.COMMIT, null == ex ? State.IDLE : State.INPUT);
+                            state.compareAndSet(State.COMMIT, null != ex ? State.INPUT : State.IDLE);
                         })
 
                         /*
                          * 完成并标记已提交。
                          * 提交完成后，该输入操作已完成，不能再使用。
                          */
-                        .thenAccept(unused -> {
-                            committed = true;
-                        });
+                        .thenAccept(unused -> terminated = true);
             }
 
         }

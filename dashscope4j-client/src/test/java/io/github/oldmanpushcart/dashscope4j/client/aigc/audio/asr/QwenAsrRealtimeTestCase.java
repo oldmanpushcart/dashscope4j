@@ -39,7 +39,7 @@ public class QwenAsrRealtimeTestCase implements LoadingEnv {
                     manualVad
                             .newInput()
                             .audio(buffers)
-                            .commit()
+                            .commitAsync()
                             .toCompletableFuture()
                             .join();
 

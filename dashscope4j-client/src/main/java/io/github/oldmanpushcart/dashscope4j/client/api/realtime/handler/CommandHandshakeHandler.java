@@ -41,6 +41,7 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
     private final AtomicReference<State> state = new AtomicReference<>(State.AWAITING_HANDSHAKE);
     private final Map<Event.Type, CompletableFuture<Void>> futureMap = new ConcurrentHashMap<>();
     private volatile SessionEmitter emitter;
+    private volatile Realtime.Emitter<String> origin;
 
     public CommandHandshakeHandler(Mode mode, Realtime.Session<?, ?> session, Realtime.Handler<String, String> handler) {
         this.mode = mode;
@@ -54,16 +55,18 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
     }
 
     @Override
-    public void onOpen(Realtime.Emitter<String> emitter) {
+    public void onOpen(Realtime.Emitter<String> origin) {
 
-        this.emitter = new SessionEmitter(mode, emitter, futureMap);
+        this.origin = origin;
+        this.emitter = new SessionEmitter(mode, origin, futureMap);
 
         /*
          * STEP1 - 发起握手
          */
         final var sessionPayload = JacksonJsonUtils.toJson(session);
-        final var command = Command.of(emitter.id(), mode, Command.Action.RUN, sessionPayload);
-        emitter.data(command.toJson());
+        final var command = Command.of(origin.id(), mode, Command.Action.RUN, sessionPayload);
+        origin.data(command.toJson());
+
         logger.debug("{}/{} started.", this, emitter.id());
 
     }
@@ -99,9 +102,9 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
                             header.type()
                     ));
                 }
-                if (!state.compareAndSet(State.AWAITING_HANDSHAKE, State.HANDSHAKE_COMPLETED)) {
+                if (!state.compareAndSet(s, State.HANDSHAKE_COMPLETED)) {
                     throw new IllegalStateException("Handshake failed! Expect %s state, but was: %s".formatted(
-                            State.AWAITING_HANDSHAKE,
+                            s,
                             state.get()
                     ));
                 }
@@ -120,10 +123,18 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
                     handler.onData(event.payload());
                 }
 
+                /*
+                 * 对于 OUT 模式有一个特殊处理
+                 *
+                 * 该模式的结束行为并非由 emitter 触发，而是系统默认触发。
+                 * OUT 模式下，处理完请求后，系统会主动发送 FINISHED 事件，请求结束本次TASK。
+                 *
+                 * 由于当前的抽象是 一个 Connection 只有一个 Task，所以当 Task FINISHED 的时候，Connection就应该被断开。
+                 */
                 if (mode == Mode.OUT && header.type() == Event.Type.FINISHED) {
                     logger.debug("{}/{} session finished.", this, emitter.id());
                     handler.onData(event.payload());
-                    emitter.close();
+                    origin.close();
                 }
 
             }
@@ -179,8 +190,13 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
                 return;
             }
 
+            /*
+             * OUT 模式的特殊处理
+             *
+             * 对于该模式而言，是不需要主动发起 FINISH 请求进行优雅关闭的，
+             * 而应该由服务端在 TASK 完成时主动发送 FINISHED 来结束这个连接。
+             */
             if (mode == Mode.OUT) {
-                super.close();
                 return;
             }
 

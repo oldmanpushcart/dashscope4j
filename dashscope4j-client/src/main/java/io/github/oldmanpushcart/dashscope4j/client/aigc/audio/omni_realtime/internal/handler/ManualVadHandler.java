@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
@@ -103,11 +104,24 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
          */
         private class InputOpImpl implements InputOp {
 
+            /*
+             * 已输入标记
+             * 标记整个流程中是否存在用户的输入行为
+             */
             private volatile boolean inputted = false;
-            private volatile boolean committed = false;
+
+            /*
+             * 中止标记
+             * 输入操作如被中止，则无法继续操作
+             */
+            private final AtomicBoolean terminated = new AtomicBoolean(false);
 
             @Override
             public InputOp image(ByteBuffer image) {
+
+                if (terminated.get()) {
+                    throw new IllegalStateException("Already terminated!");
+                }
 
                 if (state.get() != State.INPUT) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
@@ -124,6 +138,10 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             @Override
             public InputOp audio(ByteBuffer buffer) {
 
+                if (terminated.get()) {
+                    throw new IllegalStateException("Already terminated!");
+                }
+
                 if (state.get() != State.INPUT) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
                             State.INPUT,
@@ -137,13 +155,13 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             }
 
             @Override
-            public CompletionStage<InputOp> clear() {
+            public CompletionStage<InputOp> clearAsync() {
                 return clearTo(State.INPUT)
                         .thenApply(v -> this);
             }
 
             @Override
-            public CompletionStage<Void> cancel() {
+            public CompletionStage<Void> cancelAsync() {
                 return clearTo(State.IDLE);
             }
 
@@ -154,6 +172,10 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
              * @return 清理回调
              */
             private CompletionStage<Void> clearTo(State target) {
+
+                if (terminated.get()) {
+                    throw new IllegalStateException("Already terminated!");
+                }
 
                 if (!state.compareAndSet(State.INPUT, State.CLEAR)) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
@@ -184,7 +206,11 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             }
 
             @Override
-            public CompletionStage<ResponseOp> commit() {
+            public CompletionStage<ResponseOp> commitAsync() {
+
+                if (terminated.get()) {
+                    throw new IllegalStateException("Already terminated!");
+                }
 
                 if (!state.compareAndSet(State.INPUT, State.COMMIT)) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
@@ -204,18 +230,25 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                             futureMap.remove(KEY_BUFFER_COMMITTED);
                             state.compareAndSet(State.COMMIT, null != ex ? State.INPUT : State.COMMITTED);
                         })
-                        .thenApply(unused -> {
-                            committed = true;
-                            return new ResponseOpImpl();
-                        });
+                        .thenApply(unused -> new ResponseOpImpl(terminated));
             }
 
         }
 
         private class ResponseOpImpl implements ResponseOp {
 
+            private final AtomicBoolean terminated;
+
+            private ResponseOpImpl(AtomicBoolean terminated) {
+                this.terminated = terminated;
+            }
+
             @Override
-            public CompletionStage<Void> create() {
+            public CompletionStage<Void> createAsync() {
+
+                if (terminated.get()) {
+                    throw new IllegalStateException("Already terminated!");
+                }
 
                 if (!state.compareAndSet(State.COMMITTED, State.RESPONSE)) {
                     throw new IllegalStateException("Expect state %s, but was %s".formatted(
@@ -242,6 +275,7 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
 
                             origin.data(new ResponseCreateClientEvent(genUUID22()));
                             return createF.thenCompose(u -> doneF);
+
                         })
 
                         /*
@@ -252,11 +286,18 @@ public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEve
                             futureMap.remove(KEY_RESPONSE_CREATED);
                             futureMap.remove(KEY_RESPONSE_DONE);
                             state.compareAndSet(State.RESPONSE, null != ex ? State.COMMITTED : State.IDLE);
-                        });
+                        })
+
+                        // 标记整个InputOp->ResponseOp流程已经结束
+                        .thenAccept(unused -> terminated.set(true));
             }
 
             @Override
             public void cancel() {
+
+                if (terminated.get()) {
+                    throw new IllegalStateException("Already terminated!");
+                }
 
                 // 如果没有正在进行中的响应生成，则不用取消。
                 if (state.get() != State.RESPONSE) {

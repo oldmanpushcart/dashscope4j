@@ -71,7 +71,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              *
              * @return 清空回调
              */
-            CompletionStage<InputOp> clear();
+            CompletionStage<InputOp> clearAsync();
 
             /**
              * 提交
@@ -81,7 +81,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              *
              * @return 提交回调
              */
-            CompletionStage<ResponseOp> commit();
+            CompletionStage<ResponseOp> commitAsync();
 
             /**
              * 取消提交
@@ -91,7 +91,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              *
              * @return 取消回调
              */
-            CompletionStage<Void> cancel();
+            CompletionStage<Void> cancelAsync();
 
         }
 
@@ -105,7 +105,7 @@ public interface OmniRealtimeEmitter extends Realtime.Emitter<ClientEvent> {
              *
              * @return 创建回调
              */
-            CompletionStage<Void> create();
+            CompletionStage<Void> createAsync();
 
             /**
              * 取消正在进行的响应操作

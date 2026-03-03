@@ -10,7 +10,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.even
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
 
@@ -43,7 +42,16 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
         delegate.onClosed(ex);
     }
 
-    private record ServerVadImpl(OmniRealtimeEmitter origin) implements ServerVad {
+    private static class ServerVadImpl
+            extends Realtime.DelegateEmitter<ClientEvent>
+            implements ServerVad {
+
+        private final OmniRealtimeEmitter origin;
+
+        public ServerVadImpl(OmniRealtimeEmitter origin) {
+            super(origin);
+            this.origin = origin;
+        }
 
         @Override
         public OmniRealtimeSession session() {
@@ -62,42 +70,6 @@ public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEve
             return this;
         }
 
-        @Override
-        public Realtime.Emitter<ClientEvent> data(ClientEvent input) {
-            origin.data(input);
-            return this;
-        }
-
-        @Override
-        public Realtime.Emitter<ClientEvent> binary(ByteBuffer buffer) {
-            origin.binary(buffer);
-            return this;
-        }
-
-        @Override
-        public void close() {
-            origin.close();
-        }
-
-        @Override
-        public void close(Throwable ex) {
-            origin.close(ex);
-        }
-
-        @Override
-        public String id() {
-            return origin.id();
-        }
-
-        @Override
-        public boolean isClosed() {
-            return origin.isClosed();
-        }
-
-        @Override
-        public CompletionStage<Void> closeFuture() {
-            return origin.closeFuture();
-        }
     }
 
 }

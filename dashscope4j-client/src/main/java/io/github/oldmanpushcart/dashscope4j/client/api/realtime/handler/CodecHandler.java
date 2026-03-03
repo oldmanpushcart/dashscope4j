@@ -82,6 +82,11 @@ public class CodecHandler<I, O, UI, UO> implements Realtime.Handler<I, O> {
         }
 
         @Override
+        public void abort() {
+            delegate.abort();
+        }
+
+        @Override
         public String id() {
             return delegate.id();
         }
