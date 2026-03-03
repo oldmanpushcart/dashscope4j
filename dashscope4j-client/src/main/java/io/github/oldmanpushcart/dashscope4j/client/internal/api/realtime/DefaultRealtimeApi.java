@@ -228,7 +228,7 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
             }
             switch (code) {
                 case 1000, 1001 -> {
-                    logger.debug("{} closed normally.", this);
+                    logger.debug("{} connection closed normally.", this);
                     fireHandler(() -> handler.onClosed(null));
                     closeF.complete(null);
                 }
@@ -237,7 +237,7 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
                             code,
                             reason
                     ));
-                    logger.warn("{} closed abnormally.", this, ioEx);
+                    logger.warn("{} connection closed abnormally.", this, ioEx);
                     fireHandler(() -> handler.onClosed(ioEx));
                     closeF.completeExceptionally(ioEx);
                 }
@@ -251,7 +251,7 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
                 return;
             }
 
-            logger.warn("{} occur error, will be close abnormally!", this, t);
+            logger.warn("{} occur error, connection will be close abnormally!", this, t);
             ws.close(INTERNAL_ERROR_CLOSURE, "Internal error");
 
             fireHandler(() -> handler.onClosed(t));

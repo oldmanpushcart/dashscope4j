@@ -51,7 +51,7 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
 
     @Override
     public String toString() {
-        return "dashscope4j-client://realtime/command";
+        return "dashscope4j-client://realtime";
     }
 
     @Override
@@ -67,8 +67,6 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
         final var command = Command.of(origin.id(), mode, Command.Action.RUN, sessionPayload);
         origin.data(command.toJson());
 
-        logger.debug("{}/{} started.", this, emitter.id());
-
     }
 
     @Override
@@ -77,7 +75,7 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
         final var header = event.header();
 
         if (!header.isSuccess()) {
-            throw new IllegalStateException("Handshake failed! code=%s;desc=%s".formatted(
+            throw new IllegalStateException("Command handshake failed! code=%s;desc=%s".formatted(
                     header.code(),
                     header.desc()
             ));
@@ -97,19 +95,19 @@ public class CommandHandshakeHandler implements Realtime.Handler<String, String>
              */
             case AWAITING_HANDSHAKE: {
                 if (header.type() != Event.Type.STARTED) {
-                    throw new IllegalStateException("Handshake failed! Expect %s event, but was: %s".formatted(
+                    throw new IllegalStateException("Command handshake failed! Expect %s event, but was: %s".formatted(
                             Event.Type.STARTED,
                             header.type()
                     ));
                 }
                 if (!state.compareAndSet(s, State.HANDSHAKE_COMPLETED)) {
-                    throw new IllegalStateException("Handshake failed! Expect %s state, but was: %s".formatted(
+                    throw new IllegalStateException("Command handshake failed! Expect %s state, but was: %s".formatted(
                             s,
                             state.get()
                     ));
                 }
 
-                logger.debug("{}/{} handshake completed.", this, emitter.id());
+                logger.debug("{}/{} command handshake completed.", this, emitter.id());
                 handler.onOpen(emitter);
             }
 
