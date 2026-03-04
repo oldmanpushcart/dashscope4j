@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.SchemaUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
+import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
 
 import java.lang.reflect.Type;
 import java.util.Objects;
@@ -50,7 +51,7 @@ class DefaultFunctionTool implements FunctionTool {
         try {
             return JacksonJsonUtils.toObject(argumentJson, parameterType);
         } catch (Throwable cause) {
-            throw ToolException.unmarshalFailed(meta.name(), cause);
+            throw ToolExecutionException.marshalFailed(meta.name(), cause);
         }
     }
 
@@ -58,41 +59,39 @@ class DefaultFunctionTool implements FunctionTool {
         try {
             return JacksonJsonUtils.toJson(result);
         } catch (Throwable cause) {
-            throw ToolException.marshalFailed(meta.name(), cause);
+            throw ToolExecutionException.unmarshalFailed(meta.name(), cause);
         }
     }
 
     @Override
     public CompletionStage<String> call(Caller caller, String argumentJson) {
-        try {
-            final var result = function.apply(caller, toArgument(argumentJson));
+        return CompletableFuture.completedStage(null)
+                .thenCompose(unused -> {
 
-            // 处理异步返回
-            if (result instanceof CompletionStage<?> stage) {
-                return stage
-                        .thenApply(this::toResultJson)
-                        .handle((r, ex) -> {
-                            if (null == ex) {
-                                return CompletableFuture.completedStage(r);
-                            } else {
-                                final var toolEx = ToolException.callFailed(meta.name(), ex);
-                                return CompletableFuture.<String>failedStage(toolEx);
-                            }
-                        })
-                        .thenCompose(v -> v);
-            }
+                    // 1. 执行核心逻辑，获取原始结果 (可能是 T 或 CompletionStage<T>)
+                    final var rawResult = function.apply(caller, toArgument(argumentJson));
 
-            // 处理同步返回
-            else {
-                final var resultJson = toResultJson(result);
-                return CompletableFuture.completedFuture(resultJson);
-            }
-        } catch (ToolException toolEx) {
-            return CompletableFuture.failedStage(toolEx);
-        } catch (Throwable ex) {
-            final var toolEx = ToolException.callFailed(meta.name(), ex);
-            return CompletableFuture.failedStage(toolEx);
-        }
+                    // 2. 统一转换为 CompletionStage 进行处理
+                    //noinspection unchecked
+                    return (rawResult instanceof CompletionStage<?>)
+                            ? (CompletionStage<Object>) rawResult
+                            : CompletableFuture.completedFuture(rawResult);
+                })
+                .thenApply(JacksonJsonUtils::toJson)
+                .handle((r, ex) -> {
+
+                    if (null == ex) {
+                        return CompletableFuture.completedStage(r);
+                    }
+
+                    final var cause = CompletableFutureUtils.unwrapEx(ex);
+                    final var toolEx = (cause instanceof ToolExecutionException teCause)
+                            ? teCause
+                            : ToolExecutionException.callFailed(meta.name(), cause);
+                    return CompletableFuture.<String>failedStage(toolEx);
+
+                })
+                .thenCompose(v -> v);
     }
 
     public static class Builder implements FunctionTool.Builder {

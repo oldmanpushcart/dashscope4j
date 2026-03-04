@@ -9,7 +9,8 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.ToolMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolException;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolExecutionException;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolResult;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
@@ -136,7 +137,12 @@ class FunctionToolCaller implements Tool.Caller {
             logger.debug("{}/{} >>> {}", this, call.stub().name(), call.stub().arguments());
         }
 
-        return tool.call(this, call.stub().arguments())
+        return CompletableFuture.completedStage(null)
+
+                // 执行函数
+                .thenCompose(unused -> tool.call(this, call.stub().arguments()))
+
+                // 日志记录调用结果
                 .whenComplete((result, ex) -> {
 
                     if (ex == null) {
@@ -148,17 +154,19 @@ class FunctionToolCaller implements Tool.Caller {
                 })
 
                 /*
-                 * 对函数调用失败进行处理
+                 * 对函数调用结果进行处理
+                 * 将失败的信息封装为 ToolResult，并返回给LLM提供其下一步的决策。
                  */
                 .handle((r, ex) -> {
 
                     if (null == ex) {
-                        return CompletableFuture.completedFuture(r);
+                        return CompletableFuture.completedStage(r);
                     }
 
-                    final var cause = CompletableFutureUtils.unwrapEx(ex);
-                    if (cause instanceof ToolException toolEx && !request.input().failOnToolError()) {
-                        final var errorJson = JacksonJsonUtils.toJson(toolEx.toResult());
+                    if (!request.input().failOnToolError()) {
+                        final var cause = CompletableFutureUtils.unwrapEx(ex);
+                        final var result = ToolResult.error(cause);
+                        final var errorJson = JacksonJsonUtils.toJson(result);
                         return CompletableFuture.completedStage(errorJson);
                     } else {
                         return CompletableFuture.<String>failedStage(ex);
@@ -178,12 +186,19 @@ class FunctionToolCaller implements Tool.Caller {
         }
 
         // 找到指定的工具
-        return tools.stream()
-                .filter(FunctionTool.class::isInstance)
-                .map(FunctionTool.class::cast)
-                .filter(tool -> Objects.equals(tool.meta().name(), functionCall.stub().name()))
-                .findFirst()
-                .orElseThrow(() -> ToolException.notFound(functionCall.stub().name()));
+        for (final var tool : tools) {
+
+            if (!(tool instanceof FunctionTool functionTool)) {
+                continue;
+            }
+
+            if (Objects.equals(functionTool.meta().name(), functionCall.stub().name())) {
+                return tool;
+            }
+
+        }
+
+        throw ToolExecutionException.notFound(functionCall.stub().name());
 
     }
 
