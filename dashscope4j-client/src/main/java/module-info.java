@@ -11,13 +11,59 @@ open module dashscope4j.client {
     requires com.github.victools.jsonschema.module.jackson;
     requires com.github.victools.jsonschema.module.jakarta.validation;
     requires okhttp3;
-    requires org.reactivestreams;
-    requires org.jspecify;
-    requires reactor.core;
     requires okhttp3.sse;
+    requires org.reactivestreams;
+    requires reactor.core;
     
-    // OpenTelemetry 埋点模块依赖（可选）
+    requires static org.jspecify;
     requires static io.opentelemetry.api;
     requires static io.opentelemetry.context;
+
+    // Export main API packages
+    exports io.github.oldmanpushcart.dashscope4j.client;
+
+    exports io.github.oldmanpushcart.dashscope4j.client.api;
+    exports io.github.oldmanpushcart.dashscope4j.client.api.interceptor;
+    exports io.github.oldmanpushcart.dashscope4j.client.api.realtime;
+    exports io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler;
+    exports io.github.oldmanpushcart.dashscope4j.client.api.task;
+
+    exports io.github.oldmanpushcart.dashscope4j.client.base;
+    exports io.github.oldmanpushcart.dashscope4j.client.base.files;
+    exports io.github.oldmanpushcart.dashscope4j.client.base.store;
+    exports io.github.oldmanpushcart.dashscope4j.client.base.tokenizer;
+
+    exports io.github.oldmanpushcart.dashscope4j.client.util;
+    exports io.github.oldmanpushcart.dashscope4j.client.util.jackson;
+
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.chat;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.fun_asr;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.fun_asr.timespan;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.gummy;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.gummy.timespan;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.paraformer;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.paraformer.timespan;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.client;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.qwen_asr_realtime.event.server;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.client;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.handler;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.timespan;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.client;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realtime.event.server;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.sambert.timespan;
+    exports io.github.oldmanpushcart.dashscope4j.client.aigc.embedding;
 
 }

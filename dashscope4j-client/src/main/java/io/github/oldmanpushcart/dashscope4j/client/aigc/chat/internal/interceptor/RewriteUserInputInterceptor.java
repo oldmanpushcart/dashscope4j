@@ -27,7 +27,7 @@ public interface RewriteUserInputInterceptor extends Interceptor {
     }
 
     private CompletionStage<AigcRequest<Input, Output>> rewriteRequest(Chain chain, AigcRequest<Input, Output> request) {
-        if(!request.input().hasUserInputMessage()) {
+        if (!request.input().hasUserInputMessage()) {
             return CompletableFuture.completedStage(request);
         }
         final var inputMessage = request.input().userInputMessage();
@@ -35,7 +35,7 @@ public interface RewriteUserInputInterceptor extends Interceptor {
                 .thenCompose(v -> rewriteUserInputMessage(chain, request, inputMessage))
                 .thenApply(newInputMessage ->
                         AigcRequest.newBuilder(request)
-                                .input(Input.newBuilder(request.input())
+                                .input(input -> Input.newBuilder(input)
                                         .messages(request.input().historyMessages())
                                         .addMessage(newInputMessage)
                                         .build())

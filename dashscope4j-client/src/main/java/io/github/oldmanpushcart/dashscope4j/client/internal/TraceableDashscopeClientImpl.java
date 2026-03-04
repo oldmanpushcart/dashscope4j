@@ -12,7 +12,6 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Scope;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
@@ -72,7 +71,7 @@ public class TraceableDashscopeClientImpl implements DashscopeClient {
                 .setSpanKind(SpanKind.CLIENT)
                 .startSpan();
         
-        try (Scope ignored = span.makeCurrent()) {
+        try (final var ignored = span.makeCurrent()) {
             return delegate.realtime(session, wrapHandler(handler, span));
         } catch (Exception e) {
             span.setStatus(StatusCode.ERROR, "Failed to execute realtime");
@@ -96,7 +95,8 @@ public class TraceableDashscopeClientImpl implements DashscopeClient {
      * @return 包装后的 Handler
      */
     private <I, O> Realtime.Handler<I, O> wrapHandler(Realtime.Handler<I, O> original, Span span) {
-        return new Realtime.Handler<I, O>() {
+        return new Realtime.Handler<>() {
+
             @Override
             public void onOpen(Realtime.Emitter<I> emitter) {
                 original.onOpen(emitter);
@@ -126,6 +126,7 @@ public class TraceableDashscopeClientImpl implements DashscopeClient {
                 }
                 span.end();
             }
+
         };
     }
 
@@ -145,7 +146,7 @@ public class TraceableDashscopeClientImpl implements DashscopeClient {
         final var span = tracer.spanBuilder(operationName)
                 .setSpanKind(SpanKind.CLIENT)
                 .startSpan();
-        try (Scope ignored = span.makeCurrent()) {
+        try (final var ignored = span.makeCurrent()) {
             return supplier.apply(null)
                     .whenComplete((response, throwable) -> completeSpan(span, throwable));
         } catch (Exception e) {
@@ -167,7 +168,7 @@ public class TraceableDashscopeClientImpl implements DashscopeClient {
         final var span = tracer.spanBuilder(operationName)
                 .setSpanKind(SpanKind.CLIENT)
                 .startSpan();
-        try (Scope ignored = span.makeCurrent()) {
+        try (final var ignored = span.makeCurrent()) {
             return Flux.from(supplier.apply(null))
                     .doOnComplete(() -> {
                         span.setStatus(StatusCode.OK);
@@ -197,16 +198,13 @@ public class TraceableDashscopeClientImpl implements DashscopeClient {
         final var span = tracer.spanBuilder(operationName)
                 .setSpanKind(SpanKind.CLIENT)
                 .startSpan();
-        try (Scope ignored = span.makeCurrent()) {
+        try (final var ignored = span.makeCurrent()) {
             return supplier.apply(null)
                     .thenApply(half -> {
                         // 包装 Half 对象，在 waitingFor 阶段也进行埋点
-                        return new Task.Half<R>() {
-                            @Override
-                            public CompletionStage<R> waitingFor(Task.WaitStrategy strategy) {
-                                return traceAsync("task.waitingFor", v -> half.waitingFor(strategy));
-                            }
-                        };
+                        return (Task.Half<R>) strategy ->
+                                traceAsync("task.waitingFor", v ->
+                                        half.waitingFor(strategy));
                     })
                     .whenComplete((half, throwable) -> completeSpan(span, throwable));
         } catch (Exception e) {

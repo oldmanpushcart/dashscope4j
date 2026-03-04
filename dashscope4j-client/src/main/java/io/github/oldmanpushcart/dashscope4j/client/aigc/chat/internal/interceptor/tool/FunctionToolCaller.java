@@ -95,7 +95,7 @@ class FunctionToolCaller implements Tool.Caller {
     // 构建新的对话请求消息，并记住本次函数调用历史
     private AigcRequest<Input, Output> newHistoryRequest(List<Message> history) {
         return AigcRequest.newBuilder(request)
-                .input(Input.newBuilder(request.input())
+                .input(input -> Input.newBuilder(input)
                         .addMessages(history)
                         .build())
                 .build();

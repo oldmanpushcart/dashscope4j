@@ -138,6 +138,14 @@ public interface DashscopeClient {
          */
         Builder traceable(boolean traceable);
 
+        /**
+         * 设置请求拦截链
+         *
+         * @param interceptors 拦截器链
+         * @return 构建器
+         */
+        Builder interceptors(List<Interceptor> interceptors);
+
     }
 
 }

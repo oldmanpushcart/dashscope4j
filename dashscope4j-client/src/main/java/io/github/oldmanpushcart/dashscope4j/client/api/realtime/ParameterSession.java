@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.api.realtime;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 
@@ -70,7 +71,10 @@ public abstract class ParameterSession<I, O> implements Realtime.Session<I, O> {
         }
 
         public B parameters(UnaryOperator<Map<String, Object>> operator) {
-            return parameters(operator.apply(this.parameters));
+            final var newParameters = null == this.parameters
+                    ? new HashMap<String, Object>()
+                    : new HashMap<>(this.parameters);
+            return parameters(operator.apply(newParameters));
         }
 
     }

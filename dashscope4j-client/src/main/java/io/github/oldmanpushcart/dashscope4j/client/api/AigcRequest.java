@@ -212,6 +212,10 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
             return this;
         }
 
+        public Builder<I, O> input(UnaryOperator<I> operator) {
+            return input(operator.apply(input));
+        }
+
         /**
          * 设置算法参数
          *
@@ -224,10 +228,10 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
         }
 
         public Builder<I, O> parameters(UnaryOperator<Map<String, Object>> operator) {
-            return parameters(operator.apply(Optional
-                    .ofNullable(this.parameters)
-                    .map(HashMap::new)
-                    .orElseGet(HashMap::new)));
+            final var newParameters = null == this.parameters
+                    ? new HashMap<String, Object>()
+                    : new HashMap<>(this.parameters);
+            return parameters(operator.apply(newParameters));
         }
 
         @Override
