@@ -59,9 +59,6 @@ public class DefaultAsyncApi implements AsyncApi, InternalContents {
                 // 解码 HTTP-RESPONSE
                 .thenCompose(httpResponse -> {
                     try {
-                        if (!httpResponse.isSuccessful()) {
-                            throw new IllegalStateException("Unexpected HTTP-CODE: %s".formatted(httpResponse.code()));
-                        }
                         final var stringResponseBody = httpResponse.body().string();
                         final var response = request.responseDecoder().apply(httpResponse, stringResponseBody);
                         if (!response.isSuccess()) {

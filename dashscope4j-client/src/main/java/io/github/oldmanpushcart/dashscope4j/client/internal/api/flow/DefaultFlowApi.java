@@ -61,11 +61,6 @@ public class DefaultFlowApi implements FlowApi, InternalContents {
                 @Override
                 public void onEvent(@NonNull EventSource source, @Nullable String id, @Nullable String type, @NonNull String data) {
 
-//                    if (!"result".equals(type) && !"error".equals(type)) {
-//                        throw new IllegalArgumentException("Unexpected Event-Type: " + type);
-//                    }
-
-
                     // 修复 omni 模型结尾弄个 [DONE] 的问题
                     if ("[DONE]".equals(data)) {
                         return;
