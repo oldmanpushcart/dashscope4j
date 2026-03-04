@@ -22,6 +22,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.GeneralAigcInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.TracingInterceptor;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import okhttp3.OkHttpClient;
 import org.reactivestreams.Publisher;
@@ -42,6 +43,7 @@ public class DashscopeClientImpl implements DashscopeClient {
     private final BaseOp baseOp;
 
     private static final List<Interceptor> globalInterceptors = List.of(
+            new TracingInterceptor(),  // 跟踪信息拦截器（最优先执行）
             new BridgeInterceptor(),
             new IncrementalOutputOnlyInterceptor(),
             new GeneralAigcInterceptor()
@@ -143,6 +145,7 @@ public class DashscopeClientImpl implements DashscopeClient {
         private String host = Constants.DEFAULT_HOST;
         private String ak;
         private OkHttpClient http;
+        private boolean traceable = false;
 
         @Override
         public DashscopeClient.Builder host(String host) {
@@ -163,8 +166,16 @@ public class DashscopeClientImpl implements DashscopeClient {
         }
 
         @Override
+        public DashscopeClient.Builder traceable(boolean traceable) {
+            this.traceable = traceable;
+            return this;
+        }
+
+        @Override
         public DashscopeClient build() {
-            return new DashscopeClientImpl(this);
+            var client = new DashscopeClientImpl(this);
+            // 如果启用了追踪，返回包装后的客户端
+            return traceable ? new TraceableDashscopeClientImpl(client) : client;
         }
 
     }

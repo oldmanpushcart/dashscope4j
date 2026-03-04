@@ -130,6 +130,14 @@ public interface DashscopeClient {
          */
         Builder http(OkHttpClient http);
 
+        /**
+         * 是否启用 OpenTelemetry 追踪
+         *
+         * @param traceable 是否启用追踪
+         * @return 构建器
+         */
+        Builder traceable(boolean traceable);
+
     }
 
 }
