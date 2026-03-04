@@ -25,6 +25,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.Incremen
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import okhttp3.OkHttpClient;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Objects;
@@ -113,7 +114,7 @@ public class DashscopeClientImpl implements DashscopeClient {
                 ? this.flowApi
                 : InterceptionFlowApi.group(this, this.flowApi, merged);
 
-        return flowApi.execute(request);
+        return Flux.from(flowApi.execute(request));
     }
 
     @Override

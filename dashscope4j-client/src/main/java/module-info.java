@@ -15,5 +15,10 @@ open module dashscope4j.client {
     requires org.jspecify;
     requires reactor.core;
     requires okhttp3.sse;
+    requires io.opentelemetry.api;
+    requires io.opentelemetry.exporter.logging;
+    requires io.opentelemetry.sdk.trace;
+    requires io.opentelemetry.sdk;
+    requires io.opentelemetry.instrumentation.reactor_3_1;
 
 }
