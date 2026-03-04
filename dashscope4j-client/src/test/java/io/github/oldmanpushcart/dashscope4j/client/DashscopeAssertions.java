@@ -76,7 +76,7 @@ public class DashscopeAssertions {
                                 Content.text(prompt),
                                 Content.image(imageURI)
                         )))
-                        .inlineEnabled(true)
+                        .uploadEnabled(true)
                         .build())
                 .build();
         final var response = client.async(request)
@@ -108,7 +108,7 @@ public class DashscopeAssertions {
                                 Content.text(prompt),
                                 Content.video(videoURI)
                         )))
-                        .inlineEnabled(true)
+                        .uploadEnabled(true)
                         .build())
                 .build();
         final var response = client.async(request)
@@ -140,7 +140,7 @@ public class DashscopeAssertions {
                                 Content.text(prompt),
                                 Content.audio(audioURI)
                         )))
-                        .inlineEnabled(true)
+                        .uploadEnabled(true)
                         .build())
                 .build();
         final var response = client.async(request)

@@ -33,7 +33,7 @@ import java.util.function.Function;
  *
  * @author dashscope4j
  */
-public class TraceableDashscopeClient implements DashscopeClient {
+public class TraceableDashscopeClientImpl implements DashscopeClient {
 
     private static final Tracer tracer = GlobalOpenTelemetry.getTracer("dashscope4j");
 
@@ -47,7 +47,7 @@ public class TraceableDashscopeClient implements DashscopeClient {
      *
      * @param delegate 实际客户端实例
      */
-    public TraceableDashscopeClient(DashscopeClient delegate) {
+    public TraceableDashscopeClientImpl(DashscopeClient delegate) {
         this.delegate = delegate;
     }
 

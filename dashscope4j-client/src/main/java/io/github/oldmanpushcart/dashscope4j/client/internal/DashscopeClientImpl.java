@@ -22,7 +22,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.base.BaseOpImpl;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.GeneralAigcInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.TracingInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.OpenTelemetryContextInterceptor;
 import io.github.oldmanpushcart.dashscope4j.common.Constants;
 import okhttp3.OkHttpClient;
 import org.reactivestreams.Publisher;
@@ -43,7 +43,7 @@ public class DashscopeClientImpl implements DashscopeClient {
     private final BaseOp baseOp;
 
     private static final List<Interceptor> globalInterceptors = List.of(
-            new TracingInterceptor(),  // 跟踪信息拦截器（最优先执行）
+            new OpenTelemetryContextInterceptor(),  // OpenTelemetry 上下文信息拦截器
             new BridgeInterceptor(),
             new IncrementalOutputOnlyInterceptor(),
             new GeneralAigcInterceptor()

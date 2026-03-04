@@ -10,6 +10,7 @@ public interface LoadingEnv {
 
     DashscopeClient client = DashscopeClient.newBuilder()
             .ak(AK)
+            .traceable(true)
             .http(new OkHttpClient.Builder()
                     .pingInterval(Duration.ofSeconds(60))
                     .connectTimeout(Duration.ofSeconds(3))
