@@ -15,7 +15,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
+import static io.github.oldmanpushcart.dashscope4j.client.util.UUIDUtils.genUUID22;
 
 public class ManualVadHandler implements Realtime.Handler<ClientEvent, ServerEvent> {
 

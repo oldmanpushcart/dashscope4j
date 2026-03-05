@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.realtime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.util.HashMap;
 import java.util.Map;

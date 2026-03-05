@@ -8,7 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.task.TaskException;
 import io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents;
 import io.github.oldmanpushcart.dashscope4j.client.internal.api.async.AsyncApi;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.common.Constants;
+import io.github.oldmanpushcart.dashscope4j.client.Constants;
 import okhttp3.*;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;

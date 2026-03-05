@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.SchemaUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 
 import java.lang.reflect.Type;
 import java.util.Objects;
@@ -13,7 +13,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static io.github.oldmanpushcart.dashscope4j.common.util.CheckUtils.requireNonBlankString;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils.requireNonBlankString;
 import static java.util.Objects.requireNonNull;
 
 class DefaultFunctionTool implements FunctionTool {

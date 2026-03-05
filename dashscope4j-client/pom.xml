@@ -13,19 +13,16 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
-                <filtering>false</filtering>
+                <filtering>true</filtering>
                 <includes>
                     <include>qwen/qwen.tiktoken</include>
+                    <include>dashscope4j-meta.properties</include>
                 </includes>
             </resource>
         </resources>
     </build>
 
     <dependencies>
-        <dependency>
-            <groupId>io.github.oldmanpushcart</groupId>
-            <artifactId>dashscope4j-common</artifactId>
-        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>

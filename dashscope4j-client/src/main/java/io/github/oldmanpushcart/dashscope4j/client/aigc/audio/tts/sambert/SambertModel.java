@@ -8,7 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.Usage;
 import java.util.Collections;
 import java.util.Map;
 
-import static io.github.oldmanpushcart.dashscope4j.common.Constants.INFERENCE_PATH;
+import static io.github.oldmanpushcart.dashscope4j.client.Constants.INFERENCE_PATH;
 
 public record SambertModel(
         String name,

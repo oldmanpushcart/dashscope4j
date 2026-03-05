@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.internal.base.store;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.http.OctetStreamRequestBody;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonXmlUtils;
-import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 import okhttp3.MultipartBody;
 import okhttp3.Request;
 import okhttp3.Response;

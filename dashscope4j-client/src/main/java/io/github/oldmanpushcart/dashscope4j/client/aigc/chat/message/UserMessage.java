@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.TextContent;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.util.ArrayList;
 import java.util.List;

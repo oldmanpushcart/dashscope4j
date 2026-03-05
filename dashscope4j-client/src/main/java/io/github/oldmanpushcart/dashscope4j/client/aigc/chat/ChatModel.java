@@ -15,7 +15,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import static io.github.oldmanpushcart.dashscope4j.common.Constants.*;
+import static io.github.oldmanpushcart.dashscope4j.client.Constants.*;
 import static java.util.Collections.unmodifiableList;
 
 public record ChatModel(

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.io.IOException;
 import java.net.URI;

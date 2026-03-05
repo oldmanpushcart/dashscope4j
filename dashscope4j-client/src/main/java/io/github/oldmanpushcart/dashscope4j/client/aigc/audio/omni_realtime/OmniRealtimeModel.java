@@ -4,7 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.even
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.event.server.ServerEvent;
 import io.github.oldmanpushcart.dashscope4j.client.api.Model;
 
-import static io.github.oldmanpushcart.dashscope4j.common.Constants.REALTIME_PATH;
+import static io.github.oldmanpushcart.dashscope4j.client.Constants.REALTIME_PATH;
 
 public record OmniRealtimeModel(String name, String path)
         implements Model<ClientEvent, ServerEvent> {

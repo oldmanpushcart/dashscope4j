@@ -1,7 +1,5 @@
 open module dashscope4j.client {
 
-    requires transitive dashscope4j.common;
-
     requires org.slf4j;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.annotation;

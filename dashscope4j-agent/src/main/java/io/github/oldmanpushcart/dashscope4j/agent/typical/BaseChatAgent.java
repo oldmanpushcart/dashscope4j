@@ -10,7 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 

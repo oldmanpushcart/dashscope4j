@@ -9,7 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.nio.ByteBuffer;
 
-import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
+import static io.github.oldmanpushcart.dashscope4j.client.util.UUIDUtils.genUUID22;
 
 public class ServerVadHandler implements Realtime.Handler<ClientEvent, ServerEvent> {
 

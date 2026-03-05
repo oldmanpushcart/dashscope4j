@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 public final class TextContent implements Content {
 

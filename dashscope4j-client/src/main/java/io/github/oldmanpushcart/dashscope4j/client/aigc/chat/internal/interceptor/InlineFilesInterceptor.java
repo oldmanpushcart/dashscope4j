@@ -11,7 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Vid
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.DataURI;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.codec.AsyncFileBase64Encoder;
-import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 
 import java.net.URI;
 import java.nio.file.Paths;

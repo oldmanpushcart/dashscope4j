@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.common;
+package io.github.oldmanpushcart.dashscope4j.client;
 
 import java.io.IOException;
 import java.util.Properties;

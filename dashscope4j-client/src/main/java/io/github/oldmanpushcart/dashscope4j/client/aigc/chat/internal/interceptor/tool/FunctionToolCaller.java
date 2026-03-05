@@ -14,7 +14,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolResult;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.common.util.CompletableFutureUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

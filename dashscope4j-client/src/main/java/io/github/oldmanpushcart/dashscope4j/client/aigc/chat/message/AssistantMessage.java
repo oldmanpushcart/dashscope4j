@@ -9,8 +9,8 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Con
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.TextContent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
-import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
 import java.util.*;
 import java.util.function.Function;

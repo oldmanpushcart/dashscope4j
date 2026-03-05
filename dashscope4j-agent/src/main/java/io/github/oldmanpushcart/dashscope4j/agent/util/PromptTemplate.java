@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.util;
 
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.io.InputStream;
 import java.util.HashMap;

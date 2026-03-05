@@ -23,7 +23,7 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeIn
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.GeneralAigcInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.OpenTelemetryContextInterceptor;
-import io.github.oldmanpushcart.dashscope4j.common.Constants;
+import io.github.oldmanpushcart.dashscope4j.client.Constants;
 import okhttp3.OkHttpClient;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;

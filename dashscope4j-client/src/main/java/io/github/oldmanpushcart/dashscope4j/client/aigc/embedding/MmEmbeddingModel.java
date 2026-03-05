@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.embedding.internal.interceptor.UploadMmContentInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -86,11 +86,7 @@ public record Usage(List<Item> items, Map<String, Usage> children) {
             final var items = new ArrayList<Item>();
             final var children = new LinkedHashMap<String, Usage>();
 
-            root.fields().forEachRemaining(entry -> {
-
-                final var name = entry.getKey();
-                final var value = entry.getValue();
-
+            root.forEachEntry((name, value) -> {
                 // 数值
                 if (value.isNumber()) {
                     items.add(new Item(name, value.asInt()));
@@ -102,7 +98,6 @@ public record Usage(List<Item> items, Map<String, Usage> children) {
                 }
 
                 // 其他类型忽略
-
             });
 
             return new Usage(items, children);

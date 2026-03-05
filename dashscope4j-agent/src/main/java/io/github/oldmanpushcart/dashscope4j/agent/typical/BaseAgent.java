@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 public abstract class BaseAgent implements Agent {
 

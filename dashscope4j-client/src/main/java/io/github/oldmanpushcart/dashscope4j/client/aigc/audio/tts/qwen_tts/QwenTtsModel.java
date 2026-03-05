@@ -8,7 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.ByteBufferBase64JsonDeserializer;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.InstantSecondJsonDeserializer;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -16,7 +16,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static io.github.oldmanpushcart.dashscope4j.common.Constants.MULTIMODAL_GENERATION_PATH;
+import static io.github.oldmanpushcart.dashscope4j.client.Constants.MULTIMODAL_GENERATION_PATH;
 
 public record QwenTtsModel(String name, String path) implements AigcModel<QwenTtsModel.Input, QwenTtsModel.Output> {
 

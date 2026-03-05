@@ -7,7 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Con
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
-import io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
 import java.net.URI;
 import java.util.ArrayList;

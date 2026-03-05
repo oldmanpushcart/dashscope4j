@@ -14,7 +14,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.github.oldmanpushcart.dashscope4j.common.util.UUIDUtils.genUUID22;
+import static io.github.oldmanpushcart.dashscope4j.client.util.UUIDUtils.genUUID22;
 
 public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, ServerEvent> {
 

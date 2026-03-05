@@ -9,7 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realt
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.HandlerChain;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.util.function.Function;
 

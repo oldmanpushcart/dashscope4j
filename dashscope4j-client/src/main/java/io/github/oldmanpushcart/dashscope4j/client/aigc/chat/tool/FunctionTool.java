@@ -3,14 +3,14 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
-import io.github.oldmanpushcart.dashscope4j.common.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.lang.reflect.Type;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static io.github.oldmanpushcart.dashscope4j.common.util.CommonUtils.joinStrings;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils.joinStrings;
 
 /**
  * 函数工具

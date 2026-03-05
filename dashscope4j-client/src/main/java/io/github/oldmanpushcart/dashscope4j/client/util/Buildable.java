@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.common.util;
+package io.github.oldmanpushcart.dashscope4j.client.util;
 
 import java.util.function.Consumer;
 

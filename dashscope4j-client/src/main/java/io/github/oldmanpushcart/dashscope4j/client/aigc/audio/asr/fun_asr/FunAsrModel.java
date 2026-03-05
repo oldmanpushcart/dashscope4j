@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.fun_asr.timespan.Sentence;
 import io.github.oldmanpushcart.dashscope4j.client.api.Model;
 
-import static io.github.oldmanpushcart.dashscope4j.common.Constants.INFERENCE_PATH;
+import static io.github.oldmanpushcart.dashscope4j.client.Constants.INFERENCE_PATH;
 
 /**
  * FunASR 语音识别模型。
