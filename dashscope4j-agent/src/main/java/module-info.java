@@ -6,4 +6,5 @@ open module dashscope4j.agent {
     requires com.fasterxml.jackson.databind;
     requires reactor.core;
     requires okhttp3;
+    requires java.net.http;
 }
