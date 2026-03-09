@@ -101,7 +101,6 @@ public class DebugTestCase implements LoadingEnv {
         final var transport = HttpClientStreamableHttpTransport
                 .builder("http://localhost:3001")
                 .endpoint("/mcp")
-                .openConnectionOnStartup(true)
                 .build();
 
         final var mcpClient = McpClient.async(transport)
@@ -114,23 +113,32 @@ public class DebugTestCase implements LoadingEnv {
 //                .toFuture()
 //                .join();
 
-        System.out.println("TOOLS:");
-        mcpClient.listTools()
+//        System.out.println("TOOLS:");
+//        mcpClient.listTools()
+//                .toFuture()
+//                .thenAccept(System.out::println)
+//                .join();
+
+        mcpClient.listResourceTemplates()
                 .toFuture()
-                .thenAccept(System.out::println)
+                .thenAccept(r-> {
+                    r.resourceTemplates().forEach(System.out::println);
+                })
                 .join();
 
         System.out.println("RESOURCES:");
         mcpClient.listResources()
                 .toFuture()
-                .thenAccept(System.out::println)
+                .thenAccept(r-> {
+                    r.resources().forEach(System.out::println);
+                })
                 .join();
 
-        System.out.println("PROMPTS:");
-        mcpClient.listPrompts()
-                .toFuture()
-                .thenAccept(System.out::println)
-                .join();
+//        System.out.println("PROMPTS:");
+//        mcpClient.listPrompts()
+//                .toFuture()
+//                .thenAccept(System.out::println)
+//                .join();
 
         mcpClient.closeGracefully()
                 .block();
