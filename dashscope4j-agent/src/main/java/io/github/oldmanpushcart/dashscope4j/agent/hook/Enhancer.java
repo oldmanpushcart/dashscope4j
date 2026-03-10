@@ -4,10 +4,8 @@ import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 
 import java.util.concurrent.CompletionStage;
 
-public interface Hook {
+public interface Enhancer {
 
-    CompletionStage<Agent> before(Agent agent);
-
-    CompletionStage<Agent> after(Agent agent);
+    CompletionStage<Agent> enhance(Agent agent);
 
 }

@@ -1,17 +1,15 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
-import io.github.oldmanpushcart.dashscope4j.agent.hook.Hook;
+import io.github.oldmanpushcart.dashscope4j.agent.hook.Enhancer;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import org.reactivestreams.Publisher;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
 
@@ -27,33 +25,33 @@ public interface Agent {
 
     Publisher<AssistantMessage> flow(UserMessage message);
 
+    static Builder newBuilder() {
+        return null;
+    }
+
+    static Builder newBuilder(Agent agent) {
+        return null;
+    }
+
     interface Builder extends Buildable<Agent, Builder> {
 
         Builder name(String name);
 
         Builder description(String description);
 
-        Builder client(DashscopeClient client);
-
         Builder introduction(String introduction);
 
-        Builder hooks(List<Hook> hooks);
-
-        Builder hooks(UnaryOperator<List<Hook>> operator);
+        Builder client(DashscopeClient client);
 
         Builder model(ChatModel model);
 
-        Builder parameters(Map<String, Object> parameters);
+        Builder enhancers(List<Enhancer> enhancers);
 
-        Builder parameters(UnaryOperator<Map<String, Object>> operator);
+        Builder enhancers(UnaryOperator<List<Enhancer>> operator);
 
         Builder interceptors(List<Interceptor> interceptors);
 
         Builder interceptors(UnaryOperator<List<Interceptor>> operator);
-
-        Builder tools(List<Tool> tools);
-
-        Builder tools(UnaryOperator<List<Tool>> operator);
 
         CompletionStage<Agent> buildAsync();
 
