@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.typical.react.interceptor;
+package io.github.oldmanpushcart.dashscope4j.agent.enhancer.react.interceptor;
 
 import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
@@ -32,7 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ReActInterceptor implements Interceptor {
+public class ReactInterceptor implements Interceptor {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -95,7 +95,7 @@ public class ReActInterceptor implements Interceptor {
     }
 
     /**
-     * 重新构建适合 ReAct 的请求
+     * 重新构建适合 React 的请求
      *
      * @param tools   工具列表
      * @param request 原始请求
@@ -129,7 +129,7 @@ public class ReActInterceptor implements Interceptor {
                                 .cacheControl(Content.CacheControl.EPHEMERAL)
                                 .build())
                         .build());
-        // 重(TextContent).newBuilder()
+
         return AigcRequest.newBuilder(request)
                 .input(Input.newBuilder()
                         .messages(List.of())
@@ -143,15 +143,15 @@ public class ReActInterceptor implements Interceptor {
 
                     /*
                      * 清理请求中的 TOOLS
-                     * ReAct 模式下不支持 LLM 自主调用工具
+                     * React 模式下不支持 LLM 自主调用工具
                      */
                     newParameters.remove("tools");
                     newParameters.remove("parallel_tool_calls");
 
                     /*
-                     * 设置 ReAct 的停止词
+                     * 设置 React 的停止词
                      */
-                    newParameters.put("stop", new String[]{ReAct.KEY_OBSERVATION});
+                    newParameters.put("stop", new String[]{React.KEY_OBSERVATION});
 
                     // 返回编辑后的参数
                     return newParameters;
@@ -224,14 +224,14 @@ public class ReActInterceptor implements Interceptor {
 
         final var client = chain.client();
         final var message = response.output().best().message();
-        final var reAct = ReAct.of(message.text());
+        final var reAct = React.of(message.text());
 
         // 如果有最终答案，直接返回
         if (reAct.hasFinalAnswer()) {
             return CompletableFuture.completedStage(response);
         }
 
-        // 没有答案你就必须得有动作，如果没有动作则不符合对 ReAct 模式的预期
+        // 没有答案你就必须得有动作，如果没有动作则不符合对 React 模式的预期
         if (!reAct.hasAction()) {
             throw new IllegalStateException("No action");
         }
@@ -251,14 +251,14 @@ public class ReActInterceptor implements Interceptor {
                 .thenCompose(unused -> calling(request, tools, functionName, caller, argumentJson))
 
                 /*
-                 * 返回工具调用结果，作为 ReAct 的观察值。
-                 * 并且继续执行下一步 ReAct
+                 * 返回工具调用结果，作为 React 的观察值。
+                 * 并且继续执行下一步 React
                  */
                 .thenCompose(resultJson -> {
                     final var nextRequest = AigcRequest.newBuilder(request)
                             .input(Input.newBuilder(request.input())
                                     .addMessage(message)
-                                    .addMessage(Message.user("%s: %s".formatted(ReAct.KEY_OBSERVATION, resultJson)))
+                                    .addMessage(Message.user("%s: %s".formatted(React.KEY_OBSERVATION, resultJson)))
                                     .build())
                             .build();
                     return client.async(nextRequest)
@@ -285,14 +285,14 @@ public class ReActInterceptor implements Interceptor {
                     final var client = chain.client();
                     final var response = responseRef.get();
                     final var message = response.output().best().message();
-                    final var reAct = ReAct.of(message.text());
+                    final var reAct = React.of(message.text());
 
                     // 如果有最终答案，直接返回
                     if (reAct.hasFinalAnswer()) {
                         return Flux.empty();
                     }
 
-                    // 没有答案你就必须得有动作，如果没有动作则不符合对 ReAct 模式的预期
+                    // 没有答案你就必须得有动作，如果没有动作则不符合对 React 模式的预期
                     if (!reAct.hasAction()) {
                         return Flux.error(new IllegalStateException("No action"));
                     }
@@ -302,7 +302,7 @@ public class ReActInterceptor implements Interceptor {
                     final var caller = newFunctionCaller(client, request);
 
                     /*
-                     * 递归执行 Tool -> ReAct.Observation -> ReAct.Thought -> ReAct.Action -> Tool ...
+                     * 递归执行 Tool -> React.Observation -> React.Thought -> React.Action -> Tool ...
                      */
                     final String functionName = reAct.action();
                     final String argumentJson = reAct.actionInput();
@@ -312,7 +312,7 @@ public class ReActInterceptor implements Interceptor {
                                 final var nextRequest = AigcRequest.newBuilder(request)
                                         .input(Input.newBuilder(request.input())
                                                 .addMessage(message)
-                                                .addMessage(Message.user("%s: %s".formatted(ReAct.KEY_OBSERVATION, resultJson)))
+                                                .addMessage(Message.user("%s: %s".formatted(React.KEY_OBSERVATION, resultJson)))
                                                 .build())
                                         .build();
                                 return client.flow(nextRequest);
@@ -327,7 +327,7 @@ public class ReActInterceptor implements Interceptor {
     /**
      * 解包异步响应
      * <p>
-     * ReAct 在结束的时候都会输出 {@code Final Answer: }，这些 ReAct 的框架信息对用户没有帮助，
+     * React 在结束的时候都会输出 {@code Final Answer: }，这些 React 的框架信息对用户没有帮助，
      * 所以这里会将这些信息进行解包，只返回最终答案。
      * </p>
      *
@@ -338,7 +338,7 @@ public class ReActInterceptor implements Interceptor {
         final var newOutput = response.output()
                 .changeChoice(choice ->
                         choice.changeMessage(message -> {
-                            final var reAct = ReAct.of(message.text());
+                            final var reAct = React.of(message.text());
 
                             final var thought = reAct.hasThought()
                                     ? reAct.thought()
@@ -364,7 +364,7 @@ public class ReActInterceptor implements Interceptor {
     }
 
     private Publisher<AigcResponse<Output>> unpackingFlowResponse(Publisher<AigcResponse<Output>> flow) {
-        final var detector = new StringDetector("%s: ".formatted(ReAct.KEY_FINAL_ANSWER));
+        final var detector = new StringDetector("%s: ".formatted(React.KEY_FINAL_ANSWER));
         return Flux.from(flow)
                 .map(response -> {
                     final var newOutput = response.output()

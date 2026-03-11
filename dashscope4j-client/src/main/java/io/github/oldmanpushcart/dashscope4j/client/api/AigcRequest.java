@@ -175,7 +175,7 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
     public static class Builder<I, O> extends ApiRequest.Builder<AigcRequest<I, O>, Builder<I, O>> {
 
         private final AigcModel<I, O> model;
-        private Map<String, Object> parameters;
+        private final Map<String, Object> parameters = new HashMap<>();
         private I input;
 
         /**
@@ -198,7 +198,7 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
             super(request);
             this.model = request.model;
             this.input = request.input;
-            this.parameters = request.parameters;
+            this.parameters.putAll(request.parameters);
         }
 
         /**
@@ -223,15 +223,21 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
          * @return this
          */
         public Builder<I, O> parameters(Map<String, Object> parameters) {
-            this.parameters = parameters;
+            this.parameters.clear();
+            if (null != parameters) {
+                this.parameters.putAll(parameters);
+            }
             return this;
         }
 
+        /**
+         * 修改算法参数
+         *
+         * @param operator 修改操作
+         * @return this
+         */
         public Builder<I, O> parameters(UnaryOperator<Map<String, Object>> operator) {
-            final var newParameters = null == this.parameters
-                    ? new HashMap<String, Object>()
-                    : new HashMap<>(this.parameters);
-            return parameters(operator.apply(newParameters));
+            return parameters(operator.apply(this.parameters));
         }
 
         @Override

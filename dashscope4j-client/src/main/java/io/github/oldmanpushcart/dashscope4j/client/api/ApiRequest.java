@@ -4,9 +4,11 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.UnaryOperator;
 
 import static java.util.Objects.requireNonNull;
 
@@ -44,9 +46,7 @@ public abstract class ApiRequest<R extends ApiResponse> {
         requireNonNull(responseType, "responseType must not be null");
         requireNonNull(builder, "builder must not be null");
         this.responseType = responseType;
-        this.interceptors = null != builder.interceptors
-                ? Collections.unmodifiableList(builder.interceptors)
-                : Collections.emptyList();
+        this.interceptors = Collections.unmodifiableList(builder.interceptors);
     }
 
     /**
@@ -96,14 +96,24 @@ public abstract class ApiRequest<R extends ApiResponse> {
      */
     public static abstract class Builder<T extends ApiRequest<?>, B extends Builder<T, B>> implements Buildable<T, B> {
 
-        private List<Interceptor> interceptors;
+        private final List<Interceptor> interceptors = new ArrayList<>();
 
         protected Builder() {
 
         }
 
         protected Builder(ApiRequest<?> request) {
-            this.interceptors = request.interceptors;
+            this.interceptors.addAll(request.interceptors);
+        }
+
+        /**
+         * 修改拦截器列表
+         *
+         * @param operator 修改操作
+         * @return this
+         */
+        public B interceptors(UnaryOperator<List<Interceptor>> operator) {
+            return interceptors(operator.apply(this.interceptors));
         }
 
         /**
@@ -121,7 +131,10 @@ public abstract class ApiRequest<R extends ApiResponse> {
          * @return this
          */
         public B interceptors(List<Interceptor> interceptors) {
-            this.interceptors = interceptors;
+            this.interceptors.clear();
+            if (null != interceptors) {
+                this.interceptors.addAll(interceptors);
+            }
             return self();
         }
 

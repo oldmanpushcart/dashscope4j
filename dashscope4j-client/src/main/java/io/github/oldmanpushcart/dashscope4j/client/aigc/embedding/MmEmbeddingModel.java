@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 public record MmEmbeddingModel(
         String name,
@@ -85,18 +86,14 @@ public record MmEmbeddingModel(
 
             public Builder contents(List<MmContent> contents) {
                 this.contents.clear();
-                this.contents.addAll(contents);
+                if (null != contents) {
+                    this.contents.addAll(contents);
+                }
                 return this;
             }
 
-            public Builder addContent(MmContent content) {
-                this.contents.add(content);
-                return this;
-            }
-
-            public Builder addContents(List<MmContent> contents) {
-                this.contents.addAll(contents);
-                return this;
+            public Builder contents(UnaryOperator<List<MmContent>> operator) {
+                return contents(operator.apply(this.contents));
             }
 
             @Override

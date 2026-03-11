@@ -7,8 +7,10 @@ import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
-public record TextEmbeddingModel(String name, String path) implements AigcModel<TextEmbeddingModel.Input, TextEmbeddingModel.Output> {
+public record TextEmbeddingModel(String name,
+                                 String path) implements AigcModel<TextEmbeddingModel.Input, TextEmbeddingModel.Output> {
 
     private static final String PATH = "/api/v1/services/embeddings/text-embedding/text-embedding";
 
@@ -46,18 +48,14 @@ public record TextEmbeddingModel(String name, String path) implements AigcModel<
 
             public Builder texts(List<String> texts) {
                 this.texts.clear();
-                this.texts.addAll(texts);
+                if (null != texts) {
+                    this.texts.addAll(texts);
+                }
                 return this;
             }
 
-            public Builder addText(String text) {
-                this.texts.add(text);
-                return this;
-            }
-
-            public Builder addTexts(List<String> texts) {
-                this.texts.addAll(texts);
-                return this;
+            public Builder texts(UnaryOperator<List<String>> operator) {
+                return texts(operator.apply(this.texts));
             }
 
             @Override

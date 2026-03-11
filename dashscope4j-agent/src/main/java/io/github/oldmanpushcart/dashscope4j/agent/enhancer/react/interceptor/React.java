@@ -1,11 +1,11 @@
-package io.github.oldmanpushcart.dashscope4j.agent.typical.react.interceptor;
+package io.github.oldmanpushcart.dashscope4j.agent.enhancer.react.interceptor;
 
 import java.util.HashMap;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-record ReAct(
+record React(
         String observation,
         String finalAnswer,
         String thought,
@@ -51,7 +51,7 @@ record ReAct(
         return thought != null && !thought.isEmpty();
     }
 
-    public static ReAct of(String text) {
+    public static React of(String text) {
         final var pojoMap = new HashMap<String, String>();
         final var matcher = pattern.matcher(text);
         while (matcher.find()) {
@@ -60,7 +60,7 @@ record ReAct(
             pojoMap.put(key, value);
         }
 
-        return new ReAct(
+        return new React(
                 pojoMap.get(KEY_OBSERVATION),
                 pojoMap.get(KEY_FINAL_ANSWER),
                 pojoMap.get(KEY_THOUGHT),

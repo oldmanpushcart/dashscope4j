@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.hook;
+package io.github.oldmanpushcart.dashscope4j.agent.enhancer;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 

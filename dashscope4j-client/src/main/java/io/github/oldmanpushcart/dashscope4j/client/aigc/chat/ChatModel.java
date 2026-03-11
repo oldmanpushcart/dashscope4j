@@ -225,18 +225,28 @@ public record ChatModel(
 
             public Builder messages(List<Message> messages) {
                 this.messages.clear();
-                this.messages.addAll(messages);
+                if (null != messages) {
+                    this.messages.addAll(messages);
+                }
                 return this;
+            }
+
+            public Builder messages(UnaryOperator<List<Message>> operator) {
+                return messages(operator.apply(this.messages));
             }
 
             public Builder addMessage(Message message) {
-                messages.add(message);
-                return this;
+                return messages(messages-> {
+                    messages.add(message);
+                    return messages;
+                });
             }
 
-            public Builder addMessages(List<? extends Message> messages) {
-                this.messages.addAll(messages);
-                return this;
+            public Builder addMessages(List<? extends Message> _messages) {
+                return messages(messages-> {
+                    messages.addAll(_messages);
+                    return messages;
+                });
             }
 
             public Builder uploadEnabled(boolean uploadEnabled) {
@@ -258,6 +268,7 @@ public record ChatModel(
             public Input build() {
                 return new Input(this);
             }
+
         }
 
     }

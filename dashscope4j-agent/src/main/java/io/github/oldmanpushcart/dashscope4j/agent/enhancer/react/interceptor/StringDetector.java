@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.typical.react.interceptor;
+package io.github.oldmanpushcart.dashscope4j.agent.enhancer.react.interceptor;
 
 /**
  * 检测字符串
