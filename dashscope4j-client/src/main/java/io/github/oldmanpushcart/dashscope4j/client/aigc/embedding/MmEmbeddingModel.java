@@ -5,8 +5,8 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.embedding.internal.inter
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
@@ -60,7 +60,7 @@ public record MmEmbeddingModel(
 
         public static class Builder implements Buildable<Input, Builder> {
 
-            private final List<MmContent> contents = new ArrayList<>();
+            private List<MmContent> contents;
             private boolean uploadEnabled;
             private boolean inlineEnabled;
 
@@ -69,7 +69,7 @@ public record MmEmbeddingModel(
             }
 
             public Builder(Input input) {
-                this.contents.addAll(input.contents);
+                this.contents = input.contents;
                 this.uploadEnabled = input.uploadEnabled;
                 this.inlineEnabled = input.inlineEnabled;
             }
@@ -85,15 +85,13 @@ public record MmEmbeddingModel(
             }
 
             public Builder contents(List<MmContent> contents) {
-                this.contents.clear();
-                if (null != contents) {
-                    this.contents.addAll(contents);
-                }
+                this.contents = contents;
                 return this;
             }
 
             public Builder contents(UnaryOperator<List<MmContent>> operator) {
-                return contents(operator.apply(this.contents));
+                this.contents = operator.apply(CommonUtils.mutableCopy(this.contents));
+                return this;
             }
 
             @Override

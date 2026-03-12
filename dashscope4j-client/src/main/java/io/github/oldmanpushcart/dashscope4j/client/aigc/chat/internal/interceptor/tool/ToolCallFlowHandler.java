@@ -54,7 +54,8 @@ class ToolCallFlowHandler implements UnaryOperator<Publisher<AigcResponse<Output
                         requestRef.set((AigcRequest<Input, Output>) response.request());
                     }
 
-                    if (response.output().choices().isEmpty()) {
+                    if (response.output().choices() == null
+                            || response.output().choices().isEmpty()) {
                         return true;
                     }
 

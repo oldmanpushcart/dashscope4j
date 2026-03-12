@@ -2,10 +2,9 @@ package io.github.oldmanpushcart.dashscope4j.client.api;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -46,7 +45,7 @@ public abstract class ApiRequest<R extends ApiResponse> {
         requireNonNull(responseType, "responseType must not be null");
         requireNonNull(builder, "builder must not be null");
         this.responseType = responseType;
-        this.interceptors = Collections.unmodifiableList(builder.interceptors);
+        this.interceptors = CommonUtils.unmodifiableCopy(builder.interceptors);
     }
 
     /**
@@ -96,14 +95,14 @@ public abstract class ApiRequest<R extends ApiResponse> {
      */
     public static abstract class Builder<T extends ApiRequest<?>, B extends Builder<T, B>> implements Buildable<T, B> {
 
-        private final List<Interceptor> interceptors = new ArrayList<>();
+        private List<Interceptor> interceptors;
 
         protected Builder() {
 
         }
 
         protected Builder(ApiRequest<?> request) {
-            this.interceptors.addAll(request.interceptors);
+            this.interceptors = request.interceptors;
         }
 
         /**
@@ -113,7 +112,8 @@ public abstract class ApiRequest<R extends ApiResponse> {
          * @return this
          */
         public B interceptors(UnaryOperator<List<Interceptor>> operator) {
-            return interceptors(operator.apply(this.interceptors));
+            this.interceptors = operator.apply(CommonUtils.mutableCopy(this.interceptors));
+            return self();
         }
 
         /**
@@ -131,10 +131,7 @@ public abstract class ApiRequest<R extends ApiResponse> {
          * @return this
          */
         public B interceptors(List<Interceptor> interceptors) {
-            this.interceptors.clear();
-            if (null != interceptors) {
-                this.interceptors.addAll(interceptors);
-            }
+            this.interceptors = interceptors;
             return self();
         }
 

@@ -54,27 +54,21 @@ public class CommonUtils {
                 .collect(Collectors.joining());
     }
 
-    /**
-     * 返回一个新列表，其元素顺序为原列表的倒序。
-     * 原列表不受影响。
-     *
-     * @param list 要反转的列表（可为 null）
-     * @param <T>  元素类型
-     * @return 返回不可变列表
-     */
-    public static <T> List<T> reverseListImmutable(List<T> list) {
-        if (list == null) {
-            return null;
-        }
-        final var reversed = new ArrayList<>(list);
-        Collections.reverse(reversed);
-        return Collections.unmodifiableList(reversed);
+    public static <T> List<T> mutableCopy(List<T> list) {
+        return null != list ? new ArrayList<>(list) : new ArrayList<>();
     }
 
-    public static boolean hasKeyValue(Map<?, ?> map, Object key, Object value) {
-        return null != map
-                && map.containsKey(key)
-                && Objects.equals(map.get(key), value);
+    public static <T> List<T> unmodifiableCopy(List<T> list) {
+        return null != list ? Collections.unmodifiableList(list) : Collections.emptyList();
     }
+
+    public static <K, V> Map<K, V> mutableCopy(Map<K, V> map) {
+        return null != map ? new HashMap<>(map) : new HashMap<>();
+    }
+
+    public static <K, V> Map<K, V> unmodifiableCopy(Map<K, V> map) {
+        return null != map ? Collections.unmodifiableMap(map) : Collections.emptyMap();
+    }
+
 
 }

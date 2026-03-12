@@ -16,6 +16,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.AigcModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Accumulator;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -26,7 +27,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import static io.github.oldmanpushcart.dashscope4j.client.Constants.*;
-import static java.util.Collections.unmodifiableList;
 
 public record ChatModel(
         String name,
@@ -109,7 +109,7 @@ public record ChatModel(
         private final boolean failOnToolError;
 
         private Input(Builder builder) {
-            this.messages = unmodifiableList(builder.messages);
+            this.messages = CommonUtils.unmodifiableCopy(builder.messages);
             this.uploadEnabled = builder.uploadEnabled;
             this.inlineEnabled = builder.inlineEnabled;
             this.failOnToolError = builder.failOnToolError;
@@ -207,7 +207,7 @@ public record ChatModel(
 
         public static class Builder implements Buildable<Input, Builder> {
 
-            private final List<Message> messages = new ArrayList<>();
+            private List<Message> messages;
             private boolean uploadEnabled;
             private boolean inlineEnabled;
             private boolean failOnToolError;
@@ -217,35 +217,33 @@ public record ChatModel(
             }
 
             public Builder(Input input) {
-                this.messages.addAll(input.messages);
+                this.messages = input.messages;
                 this.uploadEnabled = input.uploadEnabled;
                 this.inlineEnabled = input.inlineEnabled;
                 this.failOnToolError = input.failOnToolError;
             }
 
             public Builder messages(List<Message> messages) {
-                this.messages.clear();
-                if (null != messages) {
-                    this.messages.addAll(messages);
-                }
+                this.messages = messages;
                 return this;
             }
 
             public Builder messages(UnaryOperator<List<Message>> operator) {
-                return messages(operator.apply(this.messages));
+                this.messages = operator.apply(CommonUtils.mutableCopy(this.messages));
+                return this;
             }
 
             public Builder addMessage(Message message) {
-                return messages(messages-> {
-                    messages.add(message);
-                    return messages;
+                return messages(list -> {
+                    list.add(message);
+                    return list;
                 });
             }
 
-            public Builder addMessages(List<? extends Message> _messages) {
-                return messages(messages-> {
-                    messages.addAll(_messages);
-                    return messages;
+            public Builder addMessages(List<? extends Message> messages) {
+                return messages(list -> {
+                    list.addAll(messages);
+                    return list;
                 });
             }
 

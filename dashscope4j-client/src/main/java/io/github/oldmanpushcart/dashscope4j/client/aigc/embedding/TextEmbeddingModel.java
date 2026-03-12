@@ -3,14 +3,13 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.embedding;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-public record TextEmbeddingModel(String name,
-                                 String path) implements AigcModel<TextEmbeddingModel.Input, TextEmbeddingModel.Output> {
+public record TextEmbeddingModel(String name, String path)
+        implements AigcModel<TextEmbeddingModel.Input, TextEmbeddingModel.Output> {
 
     private static final String PATH = "/api/v1/services/embeddings/text-embedding/text-embedding";
 
@@ -22,9 +21,7 @@ public record TextEmbeddingModel(String name,
     public record Input(List<String> texts) {
 
         private Input(Builder builder) {
-            this(
-                    Collections.unmodifiableList(builder.texts)
-            );
+            this(CommonUtils.unmodifiableCopy(builder.texts));
         }
 
         public static Builder newBuilder() {
@@ -37,25 +34,23 @@ public record TextEmbeddingModel(String name,
 
         public static class Builder implements Buildable<Input, Builder> {
 
-            private final List<String> texts = new ArrayList<>();
+            private List<String> texts;
 
             public Builder() {
             }
 
             public Builder(Input input) {
-                this.texts.addAll(input.texts);
+                this.texts = input.texts;
             }
 
             public Builder texts(List<String> texts) {
-                this.texts.clear();
-                if (null != texts) {
-                    this.texts.addAll(texts);
-                }
+                this.texts = texts;
                 return this;
             }
 
             public Builder texts(UnaryOperator<List<String>> operator) {
-                return texts(operator.apply(this.texts));
+                this.texts = operator.apply(CommonUtils.mutableCopy(this.texts));
+                return this;
             }
 
             @Override

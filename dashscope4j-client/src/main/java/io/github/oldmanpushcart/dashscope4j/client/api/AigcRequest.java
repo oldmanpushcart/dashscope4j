@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.api;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -57,9 +58,7 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
         Objects.requireNonNull(builder.input, "input must not be null");
         this.model = builder.model;
         this.input = builder.input;
-        this.parameters = null != builder.parameters
-                ? builder.parameters
-                : Collections.emptyMap();
+        this.parameters = CommonUtils.unmodifiableCopy(builder.parameters);
     }
 
     @Override
@@ -175,7 +174,7 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
     public static class Builder<I, O> extends ApiRequest.Builder<AigcRequest<I, O>, Builder<I, O>> {
 
         private final AigcModel<I, O> model;
-        private final Map<String, Object> parameters = new HashMap<>();
+        private Map<String, Object> parameters;
         private I input;
 
         /**
@@ -198,7 +197,7 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
             super(request);
             this.model = request.model;
             this.input = request.input;
-            this.parameters.putAll(request.parameters);
+            this.parameters = request.parameters;
         }
 
         /**
@@ -223,10 +222,7 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
          * @return this
          */
         public Builder<I, O> parameters(Map<String, Object> parameters) {
-            this.parameters.clear();
-            if (null != parameters) {
-                this.parameters.putAll(parameters);
-            }
+            this.parameters = parameters;
             return this;
         }
 
@@ -237,7 +233,8 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
          * @return this
          */
         public Builder<I, O> parameters(UnaryOperator<Map<String, Object>> operator) {
-            return parameters(operator.apply(this.parameters));
+            this.parameters = operator.apply(CommonUtils.mutableCopy(this.parameters));
+            return this;
         }
 
         @Override
