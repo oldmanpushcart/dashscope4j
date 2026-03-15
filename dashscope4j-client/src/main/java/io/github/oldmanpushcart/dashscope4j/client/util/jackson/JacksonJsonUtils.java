@@ -65,6 +65,16 @@ public class JacksonJsonUtils {
     }
 
     /**
+     * {@code object -> node}
+     *
+     * @param object object
+     * @return node
+     */
+    public static JsonNode toNode(Object object) {
+        return mapper.valueToTree(object);
+    }
+
+    /**
      * {@code json -> T}
      *
      * @param json json
@@ -81,7 +91,7 @@ public class JacksonJsonUtils {
         }
     }
 
-    public static <T> T toObject(Map<String,Object> variableMap, String json, Class<T> type) {
+    public static <T> T toObject(Map<String, Object> variableMap, String json, Class<T> type) {
         try {
             return mapper.reader(new NullableInjectableValues(variableMap))
                     .forType(type).readValue(json);

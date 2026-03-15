@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.tool;
+package io.github.oldmanpushcart.dashscope4j.agent.tool.loader;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -21,7 +21,17 @@ import java.util.regex.Pattern;
 
 import static java.time.LocalDateTime.now;
 
-public class SystemTools {
+public class SystemToolLoader implements ToolLoader {
+
+    @Override
+    public void init(Updater updater) {
+        updater.update(List.of(
+                datetime(),
+                os(),
+                env(),
+                cmd()
+        ));
+    }
 
     public static Tool datetime() {
         final String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS";
@@ -61,7 +71,7 @@ public class SystemTools {
                         .<Spec>function(new BiFunction<>() {
 
                             private static final Pattern ACTIVE_CODE_PAGE_PATTERN = Pattern.compile(".*?(\\d+).*?");
-                            private final Logger logger = LoggerFactory.getLogger(SystemTools.class);
+                            private final Logger logger = LoggerFactory.getLogger(SystemToolLoader.class);
 
                             @Override
                             public Object apply(Tool.Caller caller, Spec spec) {
@@ -226,13 +236,5 @@ public class SystemTools {
 
     }
 
-    public static List<Tool> tools() {
-        return List.of(
-                datetime(),
-                os(),
-                env(),
-                cmd()
-        );
-    }
 
 }

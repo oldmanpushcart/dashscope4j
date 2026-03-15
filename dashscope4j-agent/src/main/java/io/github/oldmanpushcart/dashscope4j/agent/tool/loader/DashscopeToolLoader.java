@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.tool;
+package io.github.oldmanpushcart.dashscope4j.agent.tool.loader;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -29,7 +29,19 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-public class DashscopeTools {
+public class DashscopeToolLoader implements ToolLoader {
+
+    @Override
+    public void init(Updater updater) {
+        updater.update(List.of(
+                document(),
+                vision(),
+                imageEdit(),
+                t2i(),
+                t2v(),
+                tts()
+        ));
+    }
 
     /**
      * @return 文档理解工具
@@ -539,17 +551,6 @@ public class DashscopeTools {
             }
 
         }.get();
-    }
-
-    public static List<Tool> tools() {
-        return List.of(
-                document(),
-                vision(),
-                imageEdit(),
-                t2i(),
-                t2v(),
-                tts()
-        );
     }
 
 }
