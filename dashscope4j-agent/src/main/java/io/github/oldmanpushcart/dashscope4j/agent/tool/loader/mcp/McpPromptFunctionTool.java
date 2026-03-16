@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.agent.tool.loader.mcp;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
@@ -9,7 +8,6 @@ import io.modelcontextprotocol.spec.McpSchema;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
@@ -32,10 +30,10 @@ class McpPromptFunctionTool implements FunctionTool {
     private final McpSchema.Prompt mcpPrompt;
     private final Meta meta;
 
-    public McpPromptFunctionTool(McpAsyncClient client, McpSchema.Prompt mcpPrompt) {
+    public McpPromptFunctionTool(McpAsyncClient client, McpSchema.Prompt mcpPrompt, String namePrefix) {
         this.client = client;
         this.mcpPrompt = mcpPrompt;
-        this.meta = newMeta(mcpPrompt);
+        this.meta = newMeta(mcpPrompt, namePrefix);
     }
 
     /**
@@ -47,11 +45,11 @@ class McpPromptFunctionTool implements FunctionTool {
      * @param mcpPrompt MCP Prompt 定义
      * @return 函数元数据
      */
-    private static Meta newMeta(McpSchema.Prompt mcpPrompt) {
+    private static Meta newMeta(McpSchema.Prompt mcpPrompt, String namePrefix) {
         // 从 Prompt 的参数列表构建 JSON Schema
-        final var parameterSchema = JacksonJsonUtils.toNode(new PromptArgumentsSchema(mcpPrompt.arguments()));
+        final var parameterSchema = JacksonJsonUtils.toNode(McpSchemaHelper.buildPromptArgumentsSchema(mcpPrompt.arguments()));
         return new Meta(
-                mcpPrompt.name(),
+                namePrefix + mcpPrompt.name(),
                 mcpPrompt.description() != null ? mcpPrompt.description() : "MCP Prompt: " + mcpPrompt.name(),
                 parameterSchema
         );
@@ -88,16 +86,9 @@ class McpPromptFunctionTool implements FunctionTool {
                 // 提取并拼接 prompt 消息内容
                 .thenApply(McpSchema.GetPromptResult::messages)
                 .thenApply(messages -> messages.stream()
-                        .map(promptMessage -> {
-                            // PromptMessage 包含 content 字段
-                            final var content = promptMessage.content();
-                            // Content 可能是多种类型，这里处理 TextContent
-                            if (content instanceof McpSchema.TextContent textContent) {
-                                return textContent.text();
-                            }
-                            return null;
-                        })
-                        .filter(text -> text != null && !text.isEmpty())
+                        .map(McpSchema.PromptMessage::content)
+                        .filter(content -> content instanceof McpSchema.TextContent)
+                        .map(content -> ((McpSchema.TextContent) content).text())
                         .collect(Collectors.joining("\n")));
     }
 
@@ -131,50 +122,5 @@ class McpPromptFunctionTool implements FunctionTool {
                 .collect(Collectors.joining("\n"));
     }
 
-    /**
-     * Prompt 参数的 JSON Schema 表示
-     */
-    private record PromptArgumentsSchema(
 
-            @JsonProperty("type")
-            String type,
-
-            @JsonProperty("properties")
-            Map<String, ArgumentProperty> properties,
-
-            @JsonProperty("required")
-            List<String> required
-
-    ) {
-        public PromptArgumentsSchema(List<McpSchema.PromptArgument> arguments) {
-            this(
-                    "object",
-                    arguments != null
-                            ? arguments.stream()
-                            .collect(Collectors.toMap(
-                                    McpSchema.PromptArgument::name,
-                                    arg -> new ArgumentProperty("string", arg.description())
-                            ))
-                            : Map.of(),
-                    arguments != null
-                            ? arguments.stream()
-                            .filter(arg -> Boolean.TRUE.equals(arg.required()))
-                            .map(McpSchema.PromptArgument::name)
-                            .toList()
-                            : List.of()
-            );
-        }
-    }
-
-    /**
-     * 参数属性定义
-     */
-    private record ArgumentProperty(
-            @JsonProperty("type")
-            String type,
-
-            @JsonProperty("description")
-            String description
-    ) {
-    }
 }

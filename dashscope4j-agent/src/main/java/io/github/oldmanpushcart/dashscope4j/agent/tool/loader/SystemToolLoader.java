@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -24,13 +25,15 @@ import static java.time.LocalDateTime.now;
 public class SystemToolLoader implements ToolLoader {
 
     @Override
-    public void init(Updater updater) {
-        updater.update(List.of(
-                datetime(),
-                os(),
-                env(),
-                cmd()
-        ));
+    public CompletionStage<Void> init(Updater updater) {
+        return CompletableFuture.completedStage(null)
+                .thenAccept(unused ->
+                        updater.update(List.of(
+                                datetime(),
+                                os(),
+                                env(),
+                                cmd()
+                        )));
     }
 
     public static Tool datetime() {

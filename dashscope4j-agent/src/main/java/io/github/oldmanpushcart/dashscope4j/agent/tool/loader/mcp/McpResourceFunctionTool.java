@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.agent.tool.loader.mcp;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
@@ -31,14 +30,14 @@ class McpResourceFunctionTool implements FunctionTool {
     private static final Type mapType = new TypeReference<HashMap<String, Object>>() {
     }.getType();
 
-    private final McpAsyncClient client;
+    private final McpAsyncClient mcpClient;
     private final McpSchema.Resource mcpResource;
     private final Meta meta;
 
-    public McpResourceFunctionTool(McpAsyncClient client, McpSchema.Resource mcpResource) {
-        this.client = client;
+    public McpResourceFunctionTool(McpAsyncClient mcpClient, McpSchema.Resource mcpResource, String namePrefix) {
+        this.mcpClient = mcpClient;
         this.mcpResource = mcpResource;
-        this.meta = newMeta(mcpResource);
+        this.meta = newMeta(mcpResource, namePrefix);
     }
 
     /**
@@ -50,11 +49,11 @@ class McpResourceFunctionTool implements FunctionTool {
      * @param mcpResource MCP Resource 定义
      * @return 函数元数据
      */
-    private static Meta newMeta(McpSchema.Resource mcpResource) {
+    private static Meta newMeta(McpSchema.Resource mcpResource, String namePrefix) {
         // Resource 通常需要一个 uri 参数来读取
-        final var parameterSchema = JacksonJsonUtils.toNode(new ResourceArgumentsSchema(mcpResource));
+        final var parameterSchema = JacksonJsonUtils.toNode(McpSchemaHelper.buildResourceArgumentsSchema(mcpResource));
         return new Meta(
-                mcpResource.name(),
+                namePrefix + mcpResource.name(),
                 mcpResource.description() != null ? mcpResource.description() : "MCP Resource: " + mcpResource.name(),
                 parameterSchema
         );
@@ -67,7 +66,7 @@ class McpResourceFunctionTool implements FunctionTool {
 
     @Override
     public CompletionStage<String> call(Caller caller, String argumentJson) {
-        final var serverInfo = client.getServerInfo();
+        final var serverInfo = mcpClient.getServerInfo();
         final var prefix = "%s@%s/%s".formatted(serverInfo.name(), serverInfo.version(), mcpResource.name());
 
         // 解析用户输入的参数
@@ -79,7 +78,7 @@ class McpResourceFunctionTool implements FunctionTool {
         // 调用 MCP 服务器的 readResource API
         final var request = new McpSchema.ReadResourceRequest(uri);
 
-        return client.readResource(request)
+        return mcpClient.readResource(request)
                 .toFuture()
                 .thenApply(result -> {
                     // 检查是否有错误
@@ -118,36 +117,17 @@ class McpResourceFunctionTool implements FunctionTool {
         final var resultMap = new HashMap<String, Object>();
         
         try {
-            // 尝试获取文本内容（使用反射兼容不同版本）
-            String text = null;
-            byte[] blob = null;
-            String mimeType = null;
-            
-            try {
-                final var getTextMethod = content.getClass().getMethod("getText");
-                text = (String) getTextMethod.invoke(content);
-                final var getMimeTypeMethod = content.getClass().getMethod("getMimeType");
-                mimeType = (String) getMimeTypeMethod.invoke(content);
-            } catch (Exception e) {
-                // 不是 Text 类型
+
+            // 处理文本内容
+            if (content instanceof McpSchema.TextResourceContents textContent) {
+                return processTextContent(resultMap, textContent.text(), textContent.mimeType());
             }
-            
-            if (text == null) {
-                try {
-                    final var getBlobMethod = content.getClass().getMethod("getBlob");
-                    blob = (byte[]) getBlobMethod.invoke(content);
-                    final var getMimeTypeMethod = content.getClass().getMethod("getMimeType");
-                    mimeType = (String) getMimeTypeMethod.invoke(content);
-                } catch (Exception e) {
-                    // 也不是 Blob 类型
-                }
+
+            // 处理二进制内容
+            else if (content instanceof McpSchema.BlobResourceContents blobContent) {
+                return processBlobContent(resultMap, blobContent.blob().getBytes(StandardCharsets.UTF_8), blobContent.mimeType());
             }
-            
-            if (text != null) {
-                return processTextContent(resultMap, text, mimeType);
-            } else if (blob != null) {
-                return processBlobContent(resultMap, blob, mimeType);
-            }
+
         } catch (IOException e) {
             throw new RuntimeException("Failed to process resource content", e);
         }
@@ -206,53 +186,10 @@ class McpResourceFunctionTool implements FunctionTool {
             return "Unknown error";
         }
         return result.contents().stream()
-                .map(content -> {
-                    try {
-                        final var getTextMethod = content.getClass().getMethod("getText");
-                        return (String) getTextMethod.invoke(content);
-                    } catch (Exception e) {
-                        return null;
-                    }
-                })
-                .filter(text -> text != null)
+                .filter(content -> content instanceof McpSchema.TextResourceContents)
+                .map(content -> ((McpSchema.TextResourceContents) content).text())
                 .collect(java.util.stream.Collectors.joining("\n"));
     }
 
-    /**
-     * Resource 参数的 JSON Schema 表示
-     */
-    private record ResourceArgumentsSchema(
 
-            @JsonProperty("type")
-            String type,
-
-            @JsonProperty("properties")
-            Map<String, ArgumentProperty> properties,
-
-            @JsonProperty("required")
-            List<String> required
-
-    ) {
-        public ResourceArgumentsSchema(McpSchema.Resource resource) {
-            this(
-                    "object",
-                    Map.of(
-                            "uri", new ArgumentProperty("string", "Resource URI to read (default: " + resource.uri() + ")")
-                    ),
-                    List.of() // uri 是可选的
-            );
-        }
-    }
-
-    /**
-     * 参数属性定义
-     */
-    private record ArgumentProperty(
-            @JsonProperty("type")
-            String type,
-
-            @JsonProperty("description")
-            String description
-    ) {
-    }
 }

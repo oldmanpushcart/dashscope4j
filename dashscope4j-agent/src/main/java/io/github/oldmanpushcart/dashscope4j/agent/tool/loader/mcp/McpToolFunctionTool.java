@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-class McpFunctionTool implements FunctionTool {
+class McpToolFunctionTool implements FunctionTool {
 
     private static final Type mapType = new TypeReference<HashMap<String, Object>>() {
     }.getType();
@@ -21,11 +21,11 @@ class McpFunctionTool implements FunctionTool {
     private final McpSchema.Tool mcpTool;
     private final Meta meta;
 
-    public McpFunctionTool(McpAsyncClient mcpClient, McpSchema.Tool mcpTool) {
+    public McpToolFunctionTool(McpAsyncClient mcpClient, McpSchema.Tool mcpTool, String namePrefix) {
         this.mcpClient = mcpClient;
         this.mcpTool = mcpTool;
         this.meta = new Meta(
-                mcpTool.name(),
+                namePrefix + mcpTool.name(),
                 mcpTool.description(),
                 JacksonJsonUtils.toNode(mcpTool.inputSchema())
         );

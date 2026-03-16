@@ -27,20 +27,23 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 public class DashscopeToolLoader implements ToolLoader {
 
     @Override
-    public void init(Updater updater) {
-        updater.update(List.of(
-                document(),
-                vision(),
-                imageEdit(),
-                t2i(),
-                t2v(),
-                tts()
-        ));
+    public CompletionStage<Void> init(Updater updater) {
+        return CompletableFuture.completedStage(null)
+                .thenAccept(unused ->
+                        updater.update(List.of(
+                                document(),
+                                vision(),
+                                imageEdit(),
+                                t2i(),
+                                t2v(),
+                                tts()
+                        )));
     }
 
     /**

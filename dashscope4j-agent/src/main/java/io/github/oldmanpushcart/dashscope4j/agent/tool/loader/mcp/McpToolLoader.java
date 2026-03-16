@@ -9,7 +9,11 @@ import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * MCP 工具加载器
@@ -21,70 +25,178 @@ public class McpToolLoader implements ToolLoader {
 
     private final McpClientTransport transport;
 
-    private volatile McpAsyncClient client;
+    private volatile McpAsyncClient mcpClient;
     private volatile Updater updater;
+
+    // 缓存三个列表，避免重复查询
+    private final List<Tool> cachedTools = new CopyOnWriteArrayList<>();
+    private final List<Tool> cachedPrompts = new CopyOnWriteArrayList<>();
+    private final List<Tool> cachedResources = new CopyOnWriteArrayList<>();
 
     public McpToolLoader(Builder builder) {
         this.transport = builder.transport;
     }
 
     @Override
-    public void init(Updater updater) {
+    public CompletionStage<Void> init(Updater updater) {
         this.updater = updater;
-        this.client = McpClient.async(transport)
+        this.mcpClient = McpClient.async(transport)
                 .toolsChangeConsumer(changed -> {
-                    registerMcpTools(changed);
+                    updateToolsCache(changed);
+                    pushTools();
                     return Mono.empty();
                 })
                 .promptsChangeConsumer(changed -> {
-                    registerMcpPrompts(changed);
+                    updatePromptsCache(changed);
+                    pushTools();
                     return Mono.empty();
                 })
                 .resourcesChangeConsumer(changed -> {
-                    registerMcpResources(changed);
+                    updateResourcesCache(changed);
+                    pushTools();
                     return Mono.empty();
                 })
                 .build();
-        
-        // 初始化加载所有工具、Prompts 和 Resources
-        this.client.listTools()
-                .toFuture()
-                .thenApply(r -> r.tools())
-                .thenAccept(this::registerMcpTools)
-                .join();
-        
-        this.client.listPrompts()
-                .toFuture()
-                .thenApply(r -> r.prompts())
-                .thenAccept(this::registerMcpPrompts)
-                .join();
-        
-        this.client.listResources()
-                .toFuture()
-                .thenApply(r -> r.resources())
-                .thenAccept(this::registerMcpResources)
-                .join();
+
+        // 异步加载所有功能并返回回调
+        return loadAllFeatures();
     }
 
-    private void registerMcpTools(List<McpSchema.Tool> mcpTools) {
-        final var tools = mcpTools.stream()
-                .<Tool>map(mcpTool -> new McpFunctionTool(client, mcpTool))
-                .toList();
+    /**
+     * 加载所有功能并全量推送
+     *
+     * @return 初始化完成的异步回调
+     */
+    private CompletionStage<Void> loadAllFeatures() {
+        final var capabilities = mcpClient.getServerCapabilities();
+
+        // 清空缓存
+        cachedTools.clear();
+        cachedPrompts.clear();
+        cachedResources.clear();
+
+        return CompletableFuture.completedStage(null)
+                // 加载工具（如果服务器支持）
+                .thenCompose(unused -> {
+                    if (capabilities != null && capabilities.tools() != null) {
+                        return loadMcpToolsToCache();
+                    }
+                    return CompletableFuture.completedStage(null);
+                })
+                // 加载提示词（如果服务器支持）
+                .thenCompose(unused -> {
+                    if (capabilities != null && capabilities.prompts() != null) {
+                        return loadMcpPromptsToCache();
+                    }
+                    return CompletableFuture.completedStage(null);
+                })
+                // 加载资源（如果服务器支持）
+                .thenCompose(unused -> {
+                    if (capabilities != null && capabilities.resources() != null) {
+                        return loadMcpResourcesToCache();
+                    }
+                    return CompletableFuture.completedStage(null);
+                })
+                // 全量推送
+                .thenAccept(unused -> pushTools());
+    }
+
+    /**
+     * 更新工具缓存
+     */
+    private void updateToolsCache(List<McpSchema.Tool> changed) {
+        cachedTools.clear();
+        if (changed != null) {
+            changed.stream()
+                    .map(mcpTool -> new McpToolFunctionTool(mcpClient, mcpTool, "tool_"))
+                    .forEach(cachedTools::add);
+        }
+    }
+
+    /**
+     * 更新提示词缓存
+     */
+    private void updatePromptsCache(List<McpSchema.Prompt> changed) {
+        cachedPrompts.clear();
+        if (changed != null) {
+            changed.stream()
+                    .map(mcpPrompt -> new McpPromptFunctionTool(mcpClient, mcpPrompt, "prompt_"))
+                    .forEach(cachedPrompts::add);
+        }
+    }
+
+    /**
+     * 更新资源缓存
+     */
+    private void updateResourcesCache(List<McpSchema.Resource> changed) {
+        cachedResources.clear();
+        if (changed != null) {
+            changed.stream()
+                    .map(mcpResource -> new McpResourceFunctionTool(mcpClient, mcpResource, "resource_"))
+                    .forEach(cachedResources::add);
+        }
+    }
+
+    /**
+     * 全量推送所有工具
+     */
+    private void pushTools() {
+        final var tools = new ArrayList<Tool>();
+        tools.addAll(cachedTools);
+        tools.addAll(cachedPrompts);
+        tools.addAll(cachedResources);
         updater.update(tools);
     }
 
-    private void registerMcpPrompts(List<McpSchema.Prompt> mcpPrompts) {
-        final var prompts = mcpPrompts.stream()
-                .<Tool>map(mcpPrompt -> new McpPromptFunctionTool(client, mcpPrompt))
-                .toList();
-        updater.update(prompts);
+    /**
+     * 加载 MCP 工具到缓存中
+     *
+     * @return 加载完成的异步回调
+     */
+    private CompletionStage<Void> loadMcpToolsToCache() {
+        return this.mcpClient.listTools()
+                .toFuture()
+                .thenAccept(r -> {
+                    if (r != null && r.tools() != null) {
+                        r.tools().stream()
+                                .map(mcpTool -> new McpToolFunctionTool(mcpClient, mcpTool, "tool_"))
+                                .forEach(cachedTools::add);
+                    }
+                });
     }
 
-    private void registerMcpResources(List<McpSchema.Resource> mcpResources) {
-        final var resources = mcpResources.stream()
-                .<Tool>map(mcpResource -> new McpResourceFunctionTool(client, mcpResource))
-                .toList();
-        updater.update(resources);
+    /**
+     * 加载 MCP 提示词到缓存中
+     *
+     * @return 加载完成的异步回调
+     */
+    private CompletionStage<Void> loadMcpPromptsToCache() {
+        return this.mcpClient.listPrompts()
+                .toFuture()
+                .thenAccept(r -> {
+                    if (r != null && r.prompts() != null) {
+                        r.prompts().stream()
+                                .map(mcpPrompt -> new McpPromptFunctionTool(mcpClient, mcpPrompt, "prompt_"))
+                                .forEach(cachedPrompts::add);
+                    }
+                });
+    }
+
+    /**
+     * 加载 MCP 资源到缓存中
+     *
+     * @return 加载完成的异步回调
+     */
+    private CompletionStage<Void> loadMcpResourcesToCache() {
+        return this.mcpClient.listResources()
+                .toFuture()
+                .thenAccept(r -> {
+                    if (r != null && r.resources() != null) {
+                        r.resources().stream()
+                                .map(mcpResource -> new McpResourceFunctionTool(mcpClient, mcpResource, "resource_"))
+                                .forEach(cachedResources::add);
+                    }
+                });
     }
 
     public static Builder newBuilder() {
