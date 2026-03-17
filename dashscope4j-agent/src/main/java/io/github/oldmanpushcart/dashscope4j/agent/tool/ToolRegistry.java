@@ -24,49 +24,54 @@ public class ToolRegistry {
 
     private final Map<String, Stub> stubMap = new ConcurrentHashMap<>();
     private final List<ToolRouter> routers;
+    private final List<ToolLoader> loaders;
 
     public ToolRegistry(Builder builder) {
         this.routers = CommonUtils.unmodifiableCopy(builder.routers);
-        init(CommonUtils.unmodifiableCopy(builder.loaders));
+        this.loaders = CommonUtils.unmodifiableCopy(builder.loaders);
     }
 
-    private void init(List<ToolLoader> loaders) {
-        loaders.forEach(loader -> loader.init(tools -> {
+    private CompletionStage<ToolRegistry> init() {
+        CompletionStage<Void> stage = CompletableFuture.completedStage(null);
+        for (var loader : loaders) {
+            stage = stage.thenCompose(unused -> loader.init(tools -> {
 
-            // cleanup
-            final var entryIt = stubMap.entrySet().iterator();
-            while (entryIt.hasNext()) {
-                final var entry = entryIt.next();
-                final var stub = entry.getValue();
-                if (stub.loader() == loader) {
-                    entryIt.remove();
+                // cleanup
+                final var entryIt = stubMap.entrySet().iterator();
+                while (entryIt.hasNext()) {
+                    final var entry = entryIt.next();
+                    final var stub = entry.getValue();
+                    if (stub.loader() == loader) {
+                        entryIt.remove();
+                    }
                 }
-            }
 
-            // reset
-            tools.forEach(tool -> {
-                if (tool instanceof FunctionTool functionTool) {
-                    final var identity = PREFIX + indexer.getAndIncrement();
-                    final var description = functionTool.meta().description();
-                    final var schema = functionTool.meta().parameterSchema();
-                    final var stub = new Stub(identity, loader, new FunctionTool() {
+                // reset
+                tools.forEach(tool -> {
+                    if (tool instanceof FunctionTool functionTool) {
+                        final var identity = PREFIX + indexer.getAndIncrement();
+                        final var description = functionTool.meta().description();
+                        final var schema = functionTool.meta().parameterSchema();
+                        final var stub = new Stub(identity, loader, new FunctionTool() {
 
-                        @Override
-                        public CompletionStage<String> call(Caller caller, String argumentJson) {
-                            return functionTool.call(caller, argumentJson);
-                        }
+                            @Override
+                            public CompletionStage<String> call(Caller caller, String argumentJson) {
+                                return functionTool.call(caller, argumentJson);
+                            }
 
-                        @Override
-                        public Meta meta() {
-                            return new Meta(identity, description, schema);
-                        }
+                            @Override
+                            public Meta meta() {
+                                return new Meta(identity, description, schema);
+                            }
 
-                    });
-                    stubMap.put(identity, stub);
-                }
-            });
+                        });
+                        stubMap.put(identity, stub);
+                    }
+                });
 
-        }));
+            }));
+        }
+        return stage.thenApply(u -> this);
     }
 
     public CompletionStage<List<Tool>> routing(String intent) {
@@ -100,7 +105,7 @@ public class ToolRegistry {
         return new Builder();
     }
 
-    public static class Builder implements Buildable<ToolRegistry, Builder> {
+    public static class Builder implements Buildable<CompletionStage<ToolRegistry>, Builder> {
 
         private List<ToolLoader> loaders;
         private List<ToolRouter> routers;
@@ -126,8 +131,8 @@ public class ToolRegistry {
         }
 
         @Override
-        public ToolRegistry build() {
-            return new ToolRegistry(this);
+        public CompletionStage<ToolRegistry> build() {
+            return new ToolRegistry(this).init();
         }
 
     }

@@ -71,48 +71,54 @@ public class McpToolLoader implements ToolLoader {
      * @return 初始化完成的异步回调
      */
     private CompletionStage<Void> loadAllFeatures() {
-        final var capabilities = mcpClient.getServerCapabilities();
-
-        // 清空缓存
-        cachedTools.clear();
-        cachedPrompts.clear();
-        cachedResources.clear();
-
-        return CompletableFuture.completedStage(null)
-
-                // 加载工具（如果服务器支持）
-                .thenCompose(unused -> {
-                    if (capabilities != null && capabilities.tools() != null) {
-                        return mcpClient.listTools()
-                                .toFuture()
-                                .thenApply(result -> result != null ? result.tools() : null)
-                                .thenAccept(this::loadAndCacheTools);
-                    }
-                    return CompletableFuture.completedStage(null);
+        // 先初始化 MCP Client，然后获取服务器能力
+        return mcpClient.initialize()
+                .toFuture()
+                .thenApply(unused -> {
+                    final var capabilities = mcpClient.getServerCapabilities();
+    
+                    // 清空缓存
+                    cachedTools.clear();
+                    cachedPrompts.clear();
+                    cachedResources.clear();
+    
+                    return CompletableFuture.completedStage(null)
+    
+                            // 加载工具（如果服务器支持）
+                            .thenCompose(u -> {
+                                if (capabilities != null && capabilities.tools() != null) {
+                                    return mcpClient.listTools()
+                                            .toFuture()
+                                            .thenApply(result -> result != null ? result.tools() : null)
+                                            .thenAccept(this::loadAndCacheTools);
+                                }
+                                return CompletableFuture.completedStage(null);
+                            })
+    
+                            // 加载提示词（如果服务器支持）
+                            .thenCompose(u -> {
+                                if (capabilities != null && capabilities.prompts() != null) {
+                                    return mcpClient.listPrompts()
+                                            .toFuture()
+                                            .thenApply(result -> result != null ? result.prompts() : null)
+                                            .thenAccept(this::loadAndCachePrompts);
+                                }
+                                return CompletableFuture.completedStage(null);
+                            })
+    
+                            // 加载资源（如果服务器支持）
+                            .thenCompose(u -> {
+                                if (capabilities != null && capabilities.resources() != null) {
+                                    return mcpClient.listResources()
+                                            .toFuture()
+                                            .thenApply(result -> result != null ? result.resources() : null)
+                                            .thenAccept(this::loadAndCacheResources);
+                                }
+                                return CompletableFuture.completedStage(null);
+                            });
                 })
-
-                // 加载提示词（如果服务器支持）
-                .thenCompose(unused -> {
-                    if (capabilities != null && capabilities.prompts() != null) {
-                        return mcpClient.listPrompts()
-                                .toFuture()
-                                .thenApply(result -> result != null ? result.prompts() : null)
-                                .thenAccept(this::loadAndCachePrompts);
-                    }
-                    return CompletableFuture.completedStage(null);
-                })
-
-                // 加载资源（如果服务器支持）
-                .thenCompose(unused -> {
-                    if (capabilities != null && capabilities.resources() != null) {
-                        return mcpClient.listResources()
-                                .toFuture()
-                                .thenApply(result -> result != null ? result.resources() : null)
-                                .thenAccept(this::loadAndCacheResources);
-                    }
-                    return CompletableFuture.completedStage(null);
-                })
-
+                .thenCompose(fn -> fn)
+    
                 // 全量推送
                 .thenAccept(unused -> pushTools());
     }
