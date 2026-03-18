@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.internal.intercept
 
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
@@ -28,7 +29,7 @@ class ToolCallHandler implements Function<AigcResponse<Output>, CompletionStage<
         }
 
         //noinspection unchecked
-        final var chatRequest = (AigcRequest<ChatModel.Input, Output>) chatResponse.request();
+        final var chatRequest = (AigcRequest<Input, Output>) chatResponse.request();
         return new FunctionToolCaller(client, chatRequest, choice.message())
                 .asyncCall();
     }

@@ -1,8 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
@@ -14,6 +12,7 @@ import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,60 +29,39 @@ import java.util.stream.Stream;
  * </p>
  *
  */
-public final class AssistantMessage implements Message, Accumulator<AssistantMessage> {
+public record AssistantMessage(
 
-    private final List<Content> contents;
-    private final String reasoningContent;
-    private final boolean partial;
-    private final List<Tool.Call> calls;
+        @JsonProperty("content")
+        @JsonDeserialize(using = ContentListJsonDeserializer.class)
+        List<Content> contents,
 
-    @JsonCreator
-    private AssistantMessage(
+        @JsonProperty("reasoning_content")
+        String reasoningContent,
 
-            @JsonProperty("content")
-            @JsonDeserialize(using = ContentListJsonDeserializer.class)
-            List<Content> contents,
+        @JsonProperty("partial")
+        boolean partial,
 
-            @JsonProperty("reasoning_content")
-            String reasoningContent,
+        @JsonProperty("tool_calls")
+        List<Tool.Call> calls,
 
-            @JsonProperty("partial")
-            boolean partial,
+        @JsonIgnore
+        Set<String> tags
 
-            @JsonProperty("tool_calls")
-            List<Tool.Call> calls
+) implements Message, Accumulator<AssistantMessage> {
 
-    ) {
-        this.contents = contents;
-        this.reasoningContent = reasoningContent;
-        this.partial = partial;
-        this.calls = calls;
+    private AssistantMessage(Builder builder) {
+        this(
+                CommonUtils.unmodifiableCopy(builder.contents),
+                builder.reasoningContent,
+                builder.partial,
+                CommonUtils.unmodifiableCopy(builder.calls),
+                CommonUtils.unmodifiableCopy(builder.tags)
+        );
     }
 
     @Override
     public Role role() {
         return Role.AI;
-    }
-
-    @JsonProperty("content")
-    public List<Content> contents() {
-        return contents;
-    }
-
-    @JsonProperty("reasoning_content")
-    public String reasoningContent() {
-        return reasoningContent;
-    }
-
-    @JsonProperty("partial")
-    public boolean partial() {
-        return partial;
-    }
-
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    @JsonProperty("tool_calls")
-    public List<Tool.Call> calls() {
-        return calls;
     }
 
     @Override
@@ -115,7 +93,7 @@ public final class AssistantMessage implements Message, Accumulator<AssistantMes
         final var newReasoningContent = CommonUtils.joinStrings(reasoningContent, next.reasoningContent);
 
         // 合并工具调用
-        final var mergedCalls = Stream.of(calls, next.calls)
+        final var newCalls = Stream.of(calls, next.calls)
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toMap(
@@ -128,7 +106,18 @@ public final class AssistantMessage implements Message, Accumulator<AssistantMes
                 .stream()
                 .toList();
 
-        return new AssistantMessage(newContents, newReasoningContent, partial, mergedCalls);
+        final var newTags = Stream.of(tags, next.tags)
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toSet());
+
+        return AssistantMessage.newBuilder()
+                .contents(newContents)
+                .reasoningContent(newReasoningContent)
+                .partial(partial)
+                .calls(newCalls)
+                .tags(newTags)
+                .build();
     }
 
     public static Builder newBuilder() {
@@ -141,20 +130,22 @@ public final class AssistantMessage implements Message, Accumulator<AssistantMes
 
     public static class Builder implements Buildable<AssistantMessage, Builder> {
 
-        private final List<Content> contents = new ArrayList<>();
-        private final List<Tool.Call> calls = new ArrayList<>();
+        private List<Content> contents;
+        private List<Tool.Call> calls;
         private String reasoningContent;
         private boolean partial;
+        private Set<String> tags;
 
         public Builder() {
 
         }
 
         public Builder(AssistantMessage message) {
-            this.contents.addAll(message.contents);
-            this.calls.addAll(message.calls);
+            this.contents = message.contents;
+            this.calls = message.calls;
             this.partial = message.partial;
             this.reasoningContent = message.reasoningContent;
+            this.tags = message.tags;
         }
 
         public Builder reasoningContent(String reasoningContent) {
@@ -163,34 +154,32 @@ public final class AssistantMessage implements Message, Accumulator<AssistantMes
         }
 
         public Builder contents(List<Content> contents) {
-            this.contents.clear();
-            this.contents.addAll(contents);
+            this.contents = contents;
             return this;
         }
 
-        public Builder addContent(Content content) {
-            contents.add(content);
-            return this;
-        }
-
-        public Builder addContents(List<Content> contents) {
-            this.contents.addAll(contents);
+        public Builder contents(UnaryOperator<List<Content>> operator) {
+            this.contents = operator.apply(CommonUtils.mutableCopy(this.contents));
             return this;
         }
 
         public Builder calls(List<Tool.Call> calls) {
-            this.calls.clear();
-            this.calls.addAll(calls);
+            this.calls = calls;
             return this;
         }
 
-        public Builder addCall(Tool.Call call) {
-            this.calls.add(call);
+        public Builder calls(UnaryOperator<List<Tool.Call>> operator) {
+            this.calls = operator.apply(CommonUtils.mutableCopy(this.calls));
             return this;
         }
 
-        public Builder addCalls(List<Tool.Call> calls) {
-            this.calls.addAll(calls);
+        public Builder tags(Set<String> tags) {
+            this.tags = tags;
+            return this;
+        }
+
+        public Builder tags(UnaryOperator<Set<String>> operator) {
+            this.tags = operator.apply(CommonUtils.mutableCopy(this.tags));
             return this;
         }
 
@@ -201,7 +190,7 @@ public final class AssistantMessage implements Message, Accumulator<AssistantMes
 
         @Override
         public AssistantMessage build() {
-            return new AssistantMessage(contents, reasoningContent, partial, calls);
+            return new AssistantMessage(this);
         }
 
     }

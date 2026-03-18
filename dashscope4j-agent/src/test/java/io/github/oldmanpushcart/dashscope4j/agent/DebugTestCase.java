@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
-import io.github.oldmanpushcart.dashscope4j.agent.tool.SearchToolFunctionTool;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolInterceptor;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.RoutingDynamicToolInterceptor;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolRegistry;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.DashscopeToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.SystemToolLoader;
@@ -10,7 +9,6 @@ import io.github.oldmanpushcart.dashscope4j.agent.tool.router.PromptBaseToolRout
 import io.github.oldmanpushcart.dashscope4j.agent.typical.DashscopeAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
 
@@ -43,27 +41,21 @@ public class DebugTestCase implements LoadingEnv {
                 .toCompletableFuture()
                 .join();
 
-        final var searchToolFunctionTool = new SearchToolFunctionTool(registry);
-        final var toolInterceptor = new ToolInterceptor(registry);
+
+        final var toolInterceptor = new RoutingDynamicToolInterceptor(registry);
         final var agent = DashscopeAgent.newBuilder()
                 .client(client)
                 .name("Dashscope Agent")
-                .introduction("你是一个智能助手")
+                .introduction("你是一个智能助手，请严格按照 STEP BY STEP 完成主人的要求。")
                 .model(ChatModel.QWEN_MAX)
-                .interceptors(interceptors ->  {
+                .interceptors(interceptors -> {
                     interceptors.add(toolInterceptor);
                     return interceptors;
-                })
-                .parameters(parameters-> {
-                    parameters.put("tools", List.of(
-                            searchToolFunctionTool
-                    ));
-                    return parameters;
                 })
                 .build();
 
         final var outbound = agent
-                .async(Message.user("我在杭州，请你根据明天天气画一幅山水画"))
+                .async(Message.user("我在杭州，请你根据明天天气生成一幅山水画"))
                 .toCompletableFuture()
                 .join();
 

@@ -15,8 +15,14 @@ public class SearchToolFunctionTool {
         this.registry = registry;
     }
 
-    private CompletionStage<List<Tool>> query(Query query) {
-        return registry.routing(query.intent());
+    private CompletionStage<List<Tool>> query(Tool.Caller caller, Query query) {
+        return registry.routing(query.intent())
+                .whenComplete((tools, ex) -> {
+                    if (null != tools) {
+                        final var context = caller.request().context();
+                        context.put("DYNAMIC_TOOLS", tools);
+                    }
+                });
     }
 
     private record Query(
@@ -31,7 +37,7 @@ public class SearchToolFunctionTool {
     public Tool toTool() {
         return FunctionTool.newBuilder()
                 .name("search_tools")
-                .description("根据意图搜索可以使用的工具")
+                .description("当你手头上没有合适的工具时，可以根据意图找到可以解决你问题的工具。")
                 .parameterType(Query.class)
                 .function(this::query)
                 .build();

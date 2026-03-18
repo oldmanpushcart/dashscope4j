@@ -1,11 +1,13 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -23,6 +25,12 @@ import java.util.List;
         @JsonSubTypes.Type(value = ToolMessage.class, name = "tool")
 })
 public sealed interface Message permits SystemMessage, AssistantMessage, UserMessage, ToolMessage {
+
+    /**
+     * @return 消息标签集
+     */
+    @JsonIgnore
+    Set<String> tags();
 
     /**
      * @return 角色
@@ -68,43 +76,64 @@ public sealed interface Message permits SystemMessage, AssistantMessage, UserMes
 
     static SystemMessage system(String content) {
         return SystemMessage.newBuilder()
-                .addContent(Content.text(content))
+                .contents(contents -> {
+                    contents.add(Content.text(content));
+                    return contents;
+                })
                 .build();
     }
 
     static SystemMessage system(Content content) {
         return SystemMessage.newBuilder()
-                .addContent(content)
+                .contents(contents -> {
+                    contents.add(content);
+                    return contents;
+                })
                 .build();
     }
 
     static UserMessage user(String content) {
         return UserMessage.newBuilder()
-                .addContent(Content.text(content))
+                .contents(contents -> {
+                    contents.add(Content.text(content));
+                    return contents;
+                })
                 .build();
     }
 
     static UserMessage user(Content content) {
         return UserMessage.newBuilder()
-                .addContent(content)
+                .contents(contents -> {
+                    contents.add(content);
+                    return contents;
+                })
                 .build();
     }
 
-    static UserMessage user(List<Content> contents) {
+    static UserMessage user(List<Content> _contents) {
         return UserMessage.newBuilder()
-                .addContents(contents)
+                .contents(contents -> {
+                    contents.addAll(_contents);
+                    return contents;
+                })
                 .build();
     }
 
     static AssistantMessage assistant(String content) {
         return AssistantMessage.newBuilder()
-                .addContent(Content.text(content))
+                .contents(contents -> {
+                    contents.add(Content.text(content));
+                    return contents;
+                })
                 .build();
     }
 
     static AssistantMessage assistant(String content, boolean partial) {
         return AssistantMessage.newBuilder()
-                .addContent(Content.text(content))
+                .contents(contents -> {
+                    contents.add(Content.text(content));
+                    return contents;
+                })
                 .partial(partial)
                 .build();
     }

@@ -6,6 +6,8 @@ import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
@@ -20,6 +22,7 @@ public abstract class ApiRequest<R extends ApiResponse> {
 
     private final Type responseType;
     private final List<Interceptor> interceptors;
+    private final Map<String, Object> context;
 
     /**
      * 构造 API 请求
@@ -33,6 +36,7 @@ public abstract class ApiRequest<R extends ApiResponse> {
         requireNonNull(responseType, "responseType must not be null");
         this.responseType = responseType;
         this.interceptors = List.of();
+        this.context = new ConcurrentHashMap<>();
     }
 
     /**
@@ -46,6 +50,9 @@ public abstract class ApiRequest<R extends ApiResponse> {
         requireNonNull(builder, "builder must not be null");
         this.responseType = responseType;
         this.interceptors = CommonUtils.unmodifiableCopy(builder.interceptors);
+        this.context = null != builder.context
+                ? builder.context
+                : new ConcurrentHashMap<>();
     }
 
     /**
@@ -60,6 +67,13 @@ public abstract class ApiRequest<R extends ApiResponse> {
      */
     public List<Interceptor> interceptors() {
         return interceptors;
+    }
+
+    /**
+     * @return 上下文
+     */
+    public Map<String, Object> context() {
+        return context;
     }
 
     /**
@@ -96,13 +110,14 @@ public abstract class ApiRequest<R extends ApiResponse> {
     public static abstract class Builder<T extends ApiRequest<?>, B extends Builder<T, B>> implements Buildable<T, B> {
 
         private List<Interceptor> interceptors;
+        private Map<String, Object> context;
 
         protected Builder() {
-
         }
 
         protected Builder(ApiRequest<?> request) {
             this.interceptors = request.interceptors;
+            this.context = request.context;
         }
 
         /**

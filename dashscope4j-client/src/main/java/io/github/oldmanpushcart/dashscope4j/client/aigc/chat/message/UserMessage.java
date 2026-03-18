@@ -1,29 +1,36 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.TextContent;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-public final class UserMessage implements Message {
+public record UserMessage(
 
-    private final List<Content> contents;
+        @JsonProperty("content")
+        @JsonDeserialize(using = ContentListJsonDeserializer.class)
+        List<Content> contents,
+
+        @JsonIgnore
+        Set<String> tags
+
+) implements Message {
 
     @JsonCreator
-    private UserMessage(
-
-            @JsonProperty("content")
-            @JsonDeserialize(using = ContentListJsonDeserializer.class)
-            List<Content> contents
-
-    ) {
-        this.contents = contents;
+    private UserMessage(Builder builder) {
+        this(
+                CommonUtils.unmodifiableCopy(builder.contents),
+                CommonUtils.unmodifiableCopy(builder.tags)
+        );
     }
 
     @Override
@@ -40,11 +47,6 @@ public final class UserMessage implements Message {
         return Role.USER;
     }
 
-    @JsonProperty("content")
-    public List<Content> contents() {
-        return contents;
-    }
-
     public static Builder newBuilder() {
         return new Builder();
     }
@@ -55,7 +57,8 @@ public final class UserMessage implements Message {
 
     public static class Builder implements Buildable<UserMessage, Builder> {
 
-        private final List<Content> contents = new ArrayList<>();
+        private List<Content> contents;
+        private Set<String> tags;
 
         public Builder() {
 
@@ -66,24 +69,28 @@ public final class UserMessage implements Message {
         }
 
         public Builder contents(List<Content> contents) {
-            this.contents.clear();
-            this.contents.addAll(contents);
+            this.contents = contents;
             return this;
         }
 
-        public Builder addContent(Content content) {
-            contents.add(content);
+        public Builder contents(UnaryOperator<List<Content>> operator) {
+            this.contents = operator.apply(CommonUtils.mutableCopy(this.contents));
             return this;
         }
 
-        public Builder addContents(List<Content> contents) {
-            this.contents.addAll(contents);
+        public Builder tags(Set<String> tags) {
+            this.tags = tags;
+            return this;
+        }
+
+        public Builder tags(UnaryOperator<Set<String>> operator) {
+            this.tags = operator.apply(CommonUtils.mutableCopy(this.tags));
             return this;
         }
 
         @Override
         public UserMessage build() {
-            return new UserMessage(contents);
+            return new UserMessage(this);
         }
 
     }

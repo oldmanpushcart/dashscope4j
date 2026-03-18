@@ -54,6 +54,14 @@ public class CommonUtils {
                 .collect(Collectors.joining());
     }
 
+    public static <T> Set<T> mutableCopy(Set<T> set) {
+        return null != set ? new HashSet<>(set) : new HashSet<>();
+    }
+
+    public static <T> Set<T> unmodifiableCopy(Set<T> set) {
+        return null != set ? Collections.unmodifiableSet(set) : Collections.emptySet();
+    }
+
     public static <T> List<T> mutableCopy(List<T> list) {
         return null != list ? new ArrayList<>(list) : new ArrayList<>();
     }
