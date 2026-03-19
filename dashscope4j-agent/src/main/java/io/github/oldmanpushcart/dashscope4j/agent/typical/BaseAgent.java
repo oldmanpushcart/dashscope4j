@@ -84,6 +84,7 @@ public class BaseAgent implements Agent {
 
                             return messages;
                         })
+                        .failOnToolError(false)
                         .build())
                 .parameters(parameters())
                 .build();
