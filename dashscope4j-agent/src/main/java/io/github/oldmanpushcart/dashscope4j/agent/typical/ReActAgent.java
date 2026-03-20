@@ -6,20 +6,7 @@ public class ReActAgent extends BaseAgent {
         super(builder);
     }
 
-    public static class Builder extends BaseAgent.Builder<ReActAgent, Builder> {
-
-        public Builder() {
-
-        }
-
-        public Builder(ReActAgent agent) {
-            super(agent);
-        }
-
-        @Override
-        public Builder self() {
-            return this;
-        }
+    public static class Builder extends BaseAgent.Builder<ReActAgent, ReActAgent.Builder> {
 
         @Override
         public ReActAgent build() {
