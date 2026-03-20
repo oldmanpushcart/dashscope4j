@@ -10,6 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -95,6 +96,10 @@ public class ToolRegistry {
 
         return stage
                 .thenApply(repo -> new ArrayList<>(repo.values()));
+    }
+
+    public Tool get(String name) {
+        return stubMap.get(name).tool();
     }
 
     private record Stub(String identity, ToolLoader loader, Tool tool) {
