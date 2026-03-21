@@ -87,13 +87,14 @@ public class BaseAgent implements Agent {
                         .failOnToolError(false)
                         .build())
                 .parameters(parameters())
+                .interceptors(interceptors())
                 .build();
     }
 
     @Override
     public CompletionStage<AssistantMessage> async(UserMessage inbound) {
         final var request = newRequest(inbound);
-        return client().async(request, interceptors())
+        return client().async(request)
                 .thenApply(response -> response.output().best().message());
     }
 
@@ -108,7 +109,7 @@ public class BaseAgent implements Agent {
                     return parameters;
                 })
                 .build();
-        return Flux.from(client().flow(request, interceptors()))
+        return Flux.from(client().flow(request))
                 .map(response -> response.output().best().message());
     }
 

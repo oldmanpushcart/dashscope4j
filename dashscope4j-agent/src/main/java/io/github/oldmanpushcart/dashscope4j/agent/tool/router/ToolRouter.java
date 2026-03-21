@@ -15,7 +15,7 @@ public interface ToolRouter {
      *
      * @param repository 工具仓库
      * @param intent     意图
-     * @return 工具列表
+     * @return 路由回调
      */
     CompletionStage<Map<String, Tool>> routing(Map<String, Tool> repository, String intent);
 

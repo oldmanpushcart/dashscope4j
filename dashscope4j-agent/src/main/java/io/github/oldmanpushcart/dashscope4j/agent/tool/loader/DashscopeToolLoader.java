@@ -33,10 +33,15 @@ import java.util.function.Supplier;
 public class DashscopeToolLoader implements ToolLoader {
 
     @Override
-    public CompletionStage<Void> init(Updater updater) {
+    public String name() {
+        return "dashscope";
+    }
+
+    @Override
+    public CompletionStage<Void> init(Registrar registrar) {
         return CompletableFuture.completedStage(null)
                 .thenAccept(unused ->
-                        updater.update(List.of(
+                        registrar.register(List.of(
                                 document(),
                                 vision(),
                                 imageEdit(),
@@ -55,8 +60,8 @@ public class DashscopeToolLoader implements ToolLoader {
             @Override
             public Tool get() {
                 return FunctionTool.newBuilder()
-                        .name("dashscope$document")
-                        .description("文档理解")
+                        .name("analyze_document")
+                        .description("文档分析、理解")
                         .parameterType(Spec.class)
                         .<Spec>function((caller, spec) -> {
 
@@ -123,8 +128,8 @@ public class DashscopeToolLoader implements ToolLoader {
             @Override
             public Tool get() {
                 return FunctionTool.newBuilder()
-                        .name("dashscope$vision")
-                        .description("图片和视频理解")
+                        .name("analyze_vision")
+                        .description("图片和视频分析、理解")
                         .parameterType(Spec.class)
                         .<Spec>function((caller, spec) -> {
                             final var client = caller.client();
@@ -186,7 +191,7 @@ public class DashscopeToolLoader implements ToolLoader {
             @Override
             public Tool get() {
                 return FunctionTool.newBuilder()
-                        .name("dashscope$image_edit")
+                        .name("edit_image")
                         .description("图片编辑")
                         .parameterType(Spec.class)
                         .<Spec>function((caller, spec) -> {
@@ -280,7 +285,7 @@ public class DashscopeToolLoader implements ToolLoader {
             @Override
             public Tool get() {
                 return FunctionTool.newBuilder()
-                        .name("dashscope$text_to_image")
+                        .name("text_to_image")
                         .description("文生图")
                         .parameterType(Spec.class)
                         .<Spec>function((caller, spec) -> {
@@ -338,7 +343,7 @@ public class DashscopeToolLoader implements ToolLoader {
             @Override
             public Tool get() {
                 return FunctionTool.newBuilder()
-                        .name("dashscope$text_to_video")
+                        .name("text_to_video")
                         .description("文生视频")
                         .parameterType(Spec.class)
                         .<Spec>function((caller, spec) -> {
@@ -461,7 +466,7 @@ public class DashscopeToolLoader implements ToolLoader {
             @Override
             public Tool get() {
                 return FunctionTool.newBuilder()
-                        .name("dashscope$text_to_speech")
+                        .name("text_to_speech")
                         .description("文本转音频")
                         .parameterType(Spec.class)
                         .<Spec>function((caller, spec) -> {

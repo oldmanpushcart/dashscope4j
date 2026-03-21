@@ -1,4 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.agent.typical;
+package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
+
+import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseAgent;
 
 public class ReActAgent extends BaseAgent {
 

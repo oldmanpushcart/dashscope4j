@@ -5,10 +5,18 @@ import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.DashscopeToolLoade
 import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.SystemToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.mcp.McpToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.router.PromptBaseToolRouter;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActInterceptor;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.function.BiFunction;
 
 public class DebugTestCase implements LoadingEnv {
 
@@ -24,18 +32,39 @@ public class DebugTestCase implements LoadingEnv {
                         PromptBaseToolRouter.newBuilder()
                                 .client(client)
                                 .threshold(0.5f)
+                                .limit(5)
                                 .build()
                 ))
                 .loaders(List.of(
                         new DashscopeToolLoader(),
                         new SystemToolLoader(),
                         McpToolLoader.newBuilder()
+                                .name("amap")
                                 .transport(transport)
                                 .build()
                 ))
                 .build()
                 .toCompletableFuture()
                 .join();
+
+        final var agent = new ReActAgent.Builder()
+                .client(client)
+                .model(ChatModel.QWEN_FLASH)
+                .interceptors(List.of(
+                        //new ReActLoopInterceptor(registry)
+                        new ReActInterceptor(registry)
+                ))
+                .build();
+
+        final var outbound = Flux.from(agent.flow(Message.user("今天星期几？")))
+                .doOnNext(message-> {
+                    System.out.println("=="+message.text());
+                })
+                .reduce(AssistantMessage::accumulate)
+                .toFuture()
+                .join();
+
+        System.out.println(outbound.text());
 
     }
 

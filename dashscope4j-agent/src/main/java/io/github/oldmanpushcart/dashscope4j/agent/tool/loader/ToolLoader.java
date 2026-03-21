@@ -11,24 +11,29 @@ import java.util.concurrent.CompletionStage;
 public interface ToolLoader {
 
     /**
-     * 初始化
-     *
-     * @param updater 工具更新器
-     * @return 初始化完成的异步回调
+     * @return 加载器名称
      */
-    CompletionStage<Void> init(Updater updater);
+    String name();
 
     /**
-     * 工具更新器
+     * 初始化加载器
+     *
+     * @param registrar 工具注册器
+     * @return 初始化完成的异步回调
      */
-    interface Updater {
+    CompletionStage<Void> init(Registrar registrar);
+
+    /**
+     * 工具注册器
+     */
+    interface Registrar {
 
         /**
-         * 更新工具
+         * 注册、更新工具列表
          *
-         * @param tools 工具列表
+         * @param tools 工具列表（全量）
          */
-        void update(List<Tool> tools);
+        void register(List<Tool> tools);
 
     }
 

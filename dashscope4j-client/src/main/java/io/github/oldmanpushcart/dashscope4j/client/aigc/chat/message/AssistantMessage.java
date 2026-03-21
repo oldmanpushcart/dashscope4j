@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
@@ -42,6 +43,7 @@ public record AssistantMessage(
         boolean partial,
 
         @JsonProperty("tool_calls")
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
         List<Tool.Call> calls,
 
         @JsonIgnore

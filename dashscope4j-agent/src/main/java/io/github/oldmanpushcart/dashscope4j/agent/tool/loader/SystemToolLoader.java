@@ -25,10 +25,15 @@ import static java.time.LocalDateTime.now;
 public class SystemToolLoader implements ToolLoader {
 
     @Override
-    public CompletionStage<Void> init(Updater updater) {
+    public String name() {
+        return "system";
+    }
+
+    @Override
+    public CompletionStage<Void> init(Registrar registrar) {
         return CompletableFuture.completedStage(null)
                 .thenAccept(unused ->
-                        updater.update(List.of(
+                        registrar.register(List.of(
                                 datetime(),
                                 os(),
                                 env(),
@@ -40,7 +45,7 @@ public class SystemToolLoader implements ToolLoader {
         final String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS";
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
         return FunctionTool.newBuilder()
-                .name("system$datetime")
+                .name("datetime")
                 .description("获取当前时间")
                 .supplier(() -> formatter.format(now()))
                 .build();
@@ -48,7 +53,7 @@ public class SystemToolLoader implements ToolLoader {
 
     public static Tool os() {
         return FunctionTool.newBuilder()
-                .name("system$os")
+                .name("os")
                 .description("获取当前操作系统信息")
                 .supplier(System::getProperties)
                 .build();
@@ -56,7 +61,7 @@ public class SystemToolLoader implements ToolLoader {
 
     public static Tool env() {
         return FunctionTool.newBuilder()
-                .name("system$env")
+                .name("env")
                 .description("获取当前环境信息")
                 .supplier(() -> System.getenv())
                 .build();
@@ -68,8 +73,8 @@ public class SystemToolLoader implements ToolLoader {
             @Override
             public Tool get() {
                 return FunctionTool.newBuilder()
-                        .name("system$cmd")
-                        .description("执行命令")
+                        .name("cmd")
+                        .description("这是一个通用命令行执行工具，允许你在本地环境中执行脚本、命令。")
                         .parameterType(Spec.class)
                         .<Spec>function(new BiFunction<>() {
 
@@ -87,7 +92,7 @@ public class SystemToolLoader implements ToolLoader {
                                     if (ex instanceof InterruptedException) {
                                         Thread.currentThread().interrupt();
                                     }
-                                    logger.warn("dashscope4j-agent://tool/{} execute occur error!", "system$cmd", ex);
+                                    logger.warn("dashscope4j-agent://tool/{} execute occur error!", "cmd", ex);
                                     final var result = new Result(ex.getMessage(), -1);
                                     return CompletableFuture.completedStage(result);
                                 }

@@ -26,10 +26,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class McpToolLoader implements ToolLoader {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final String name;
     private final McpClientTransport transport;
+    private final String _toString;
 
     private volatile McpAsyncClient mcpClient;
-    private volatile Updater updater;
+    private volatile Registrar registrar;
 
     // 缓存三个列表，避免重复查询
     private final List<Tool> cachedTools = new CopyOnWriteArrayList<>();
@@ -37,12 +39,24 @@ public class McpToolLoader implements ToolLoader {
     private final List<Tool> cachedResources = new CopyOnWriteArrayList<>();
 
     public McpToolLoader(Builder builder) {
+        this.name = "mcp$" + builder.name;
         this.transport = builder.transport;
+        this._toString = "dashscope4j-agent:/tool/loader/mcp/%s".formatted(this.name);
     }
 
     @Override
-    public CompletionStage<Void> init(Updater updater) {
-        this.updater = updater;
+    public String name() {
+        return name;
+    }
+
+    @Override
+    public String toString() {
+        return _toString;
+    }
+
+    @Override
+    public CompletionStage<Void> init(Registrar registrar) {
+        this.registrar = registrar;
         this.mcpClient = McpClient.async(transport)
                 .toolsChangeConsumer(changed -> {
                     loadAndCacheTools(changed);
@@ -74,16 +88,23 @@ public class McpToolLoader implements ToolLoader {
         // 先初始化 MCP Client，然后获取服务器能力
         return mcpClient.initialize()
                 .toFuture()
+                .whenComplete((u, ex) -> {
+                    if (null != ex) {
+                        logger.warn("{} initialize failed!", this, ex);
+                    } else {
+                        logger.debug("{} initialized.", this);
+                    }
+                })
                 .thenApply(unused -> {
                     final var capabilities = mcpClient.getServerCapabilities();
-    
+
                     // 清空缓存
                     cachedTools.clear();
                     cachedPrompts.clear();
                     cachedResources.clear();
-    
+
                     return CompletableFuture.completedStage(null)
-    
+
                             // 加载工具（如果服务器支持）
                             .thenCompose(u -> {
                                 if (capabilities != null && capabilities.tools() != null) {
@@ -94,7 +115,7 @@ public class McpToolLoader implements ToolLoader {
                                 }
                                 return CompletableFuture.completedStage(null);
                             })
-    
+
                             // 加载提示词（如果服务器支持）
                             .thenCompose(u -> {
                                 if (capabilities != null && capabilities.prompts() != null) {
@@ -105,7 +126,7 @@ public class McpToolLoader implements ToolLoader {
                                 }
                                 return CompletableFuture.completedStage(null);
                             })
-    
+
                             // 加载资源（如果服务器支持）
                             .thenCompose(u -> {
                                 if (capabilities != null && capabilities.resources() != null) {
@@ -116,9 +137,10 @@ public class McpToolLoader implements ToolLoader {
                                 }
                                 return CompletableFuture.completedStage(null);
                             });
+
                 })
                 .thenCompose(fn -> fn)
-    
+
                 // 全量推送
                 .thenAccept(unused -> pushTools());
     }
@@ -173,7 +195,7 @@ public class McpToolLoader implements ToolLoader {
         tools.addAll(cachedTools);
         tools.addAll(cachedPrompts);
         tools.addAll(cachedResources);
-        updater.update(tools);
+        registrar.register(tools);
     }
 
 
@@ -183,7 +205,13 @@ public class McpToolLoader implements ToolLoader {
 
     public static class Builder implements Buildable<McpToolLoader, Builder> {
 
+        private String name;
         private McpClientTransport transport;
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
 
         public Builder transport(McpClientTransport transport) {
             this.transport = transport;
