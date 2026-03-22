@@ -56,15 +56,21 @@ public class DebugTestCase implements LoadingEnv {
                 ))
                 .build();
 
-        final var outbound = Flux.from(agent.flow(Message.user("今天星期几？")))
-                .doOnNext(message-> {
-                    System.out.println("=="+message.text());
-                })
-                .reduce(AssistantMessage::accumulate)
-                .toFuture()
-                .join();
+//        {
+//            final var outbound = Flux.from(agent.flow(Message.user("根据杭州今天天气，画一幅山水画。")))
+//                    .reduce(AssistantMessage::accumulate)
+//                    .toFuture()
+//                    .join();
+//            System.out.println(outbound.text());
+//        }
 
-        System.out.println(outbound.text());
+        {
+            final var outbound = agent.async(Message.user("根据杭州今天天气，画一幅山水画。"))
+                    .toCompletableFuture()
+                    .join();
+
+            System.out.println(outbound.text());
+        }
 
     }
 

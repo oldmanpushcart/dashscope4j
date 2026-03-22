@@ -33,8 +33,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ReActInterceptor implements ChatInterceptor {
 
-    private static final String INJECTED_FLAG = "REACT_INJECTED";
-
     private static final PromptTemplate REACT_PROMPT_TEMPLATE = PromptTemplate.newBuilder()
             .template(ReActInterceptor.class.getResourceAsStream("/prompt/REACT_AGENT.md"))
             .build();
@@ -60,7 +58,7 @@ public class ReActInterceptor implements ChatInterceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain, AigcRequest<Input, Output> request) {
-        final var newRequest = injectReactIfNecessary(request);
+        final var newRequest = newReActRequest(request);
         return switch (chain.type()) {
             case ASYNC -> processAsync(chain, newRequest);
             case FLOW -> processFlow(chain, newRequest);
@@ -68,12 +66,13 @@ public class ReActInterceptor implements ChatInterceptor {
         };
     }
 
-    private AigcRequest<Input, Output> injectReactIfNecessary(AigcRequest<Input, Output> request) {
-
-        if (request.context().putIfAbsent(INJECTED_FLAG, true) != null) {
-            return request;
-        }
-
+    /**
+     * 重新构建适合 ReAct 的请求
+     *
+     * @param request 原始请求
+     * @return 重新构建的请求
+     */
+    private AigcRequest<Input, Output> newReActRequest(AigcRequest<Input, Output> request) {
         return AigcRequest.newBuilder(request)
                 .input(input -> Input.newBuilder(input)
                         .messages(messages -> {
@@ -99,6 +98,7 @@ public class ReActInterceptor implements ChatInterceptor {
                             // 添加到 SystemMessage
                             messages.add(0, Message.system(prompt));
                             return messages;
+
                         })
                         .build())
                 .parameters(parameters -> {
@@ -119,71 +119,129 @@ public class ReActInterceptor implements ChatInterceptor {
                 .build();
     }
 
-
-    private Tool requireTool(String name) {
-        if (searchTool.meta().name().equals(name)) {
-            return searchTool;
-        }
-        return toolLookup.get(name)
-                .orElseThrow(() -> ToolExecutionException.notFound(name));
-    }
-
+    /**
+     * 处理异步请求
+     *
+     * @param chain   链路
+     * @param request 请求
+     * @return 响应
+     */
     private CompletionStage<AigcResponse<Output>> processAsync(Chain chain, AigcRequest<Input, Output> request) {
         return chain.proceed(request)
                 .thenCompose(r -> {
 
                     //noinspection unchecked
                     final var response = (AigcResponse<Output>) r;
+                    return processAsyncResponse(chain, request, response);
 
-                    final var responseMessage = response.output().best().message();
-                    final var responseText = responseMessage.text();
-                    final var react = ReAct.valueOf(responseText);
-
-                    // 如果有最终答案了，则直接返回应答
-                    if (react.hasFinalAnswer()) {
-                        return CompletableFuture.completedStage(response);
-                    }
-
-                    // 如果有 Action，则获取工具并执行
-                    else if (react.hasAction()) {
-
-                        final var argumentJson = react.actionInput();
-                        final var caller = new Caller(request, chain.client());
-
-                        return callingTool(request, react.action(), caller, argumentJson)
-
-                                /*
-                                 * 继续沟通：反馈 Action 执行结果
-                                 *
-                                 * 拿到函数调用后，反馈给 LLM 告知当前阶段的执行结果，并开始下一阶段的思考
-                                 */
-                                .thenCompose(resultJson -> {
-                                    final var observationRequest = AigcRequest.newBuilder(request)
-
-                                            // 将函数调用结果作为观察结果写回到对话流中
-                                            .input(input ->
-                                                    Input.newBuilder(input)
-                                                            .messages(messages -> {
-                                                                messages.addAll(List.of(
-                                                                        responseMessage,
-                                                                        Message.user("%s: %s".formatted(ReAct.OBSERVATION, resultJson))
-                                                                ));
-                                                                return messages;
-                                                            })
-                                                            .build())
-                                            .build();
-                                    return chain.client().async(observationRequest);
-                                });
-                    }
-
-                    // 其他情况
-                    else {
-                        return CompletableFuture.completedStage(response);
-                    }
-
-                });
+                })
+                .thenApply(this::unpackingAsyncResponse);
     }
 
+    /**
+     * 处理异步应答
+     *
+     * @param chain    链路
+     * @param request  请求
+     * @param response 应答
+     * @return 响应
+     */
+    private CompletionStage<AigcResponse<Output>> processAsyncResponse(Chain chain, AigcRequest<Input, Output> request, AigcResponse<Output> response) {
+
+        final var responseMessage = response.output().best().message();
+        final var responseText = responseMessage.text();
+        final var react = ReAct.valueOf(responseText);
+
+        // 如果有最终答案了，则直接返回应答
+        if (react.hasFinalAnswer()) {
+            return CompletableFuture.completedStage(response);
+        }
+
+        // 如果有 Action，则获取工具并执行
+        else if (react.hasAction()) {
+
+            final var argumentJson = react.actionInput();
+            final var caller = new Caller(request, chain.client());
+
+            return callingTool(request, react.action(), caller, argumentJson)
+
+                    /*
+                     * 继续沟通：反馈 Action 执行结果
+                     *
+                     * 拿到函数调用后，反馈给 LLM 告知当前阶段的执行结果，并开始下一阶段的思考
+                     */
+                    .thenCompose(resultJson -> {
+                        final var nextRequest = AigcRequest.newBuilder(request)
+
+                                // 将函数调用结果作为观察结果写回到对话流中
+                                .input(input ->
+                                        Input.newBuilder(input)
+                                                .messages(messages -> {
+                                                    messages.addAll(List.of(
+                                                            responseMessage,
+                                                            Message.user("%s: %s".formatted(ReAct.OBSERVATION, resultJson))
+                                                    ));
+                                                    return messages;
+                                                })
+                                                .build())
+                                .build();
+                        return chain.client().async(nextRequest)
+                                .thenCompose(nextResponse -> processAsyncResponse(chain, nextRequest, nextResponse));
+                    });
+        }
+
+        // 其他情况
+        else {
+            return CompletableFuture.completedStage(response);
+        }
+    }
+
+    /**
+     * 解包异步响应
+     * <p>
+     * ReAct 在结束的时候都会输出 {@code Final Answer: }，这些 ReAct 的框架信息对用户没有帮助，
+     * 所以这里会将这些信息进行解包，只返回最终答案。
+     * </p>
+     *
+     * @param response 响应
+     * @return 解包后的响应
+     */
+    private AigcResponse<Output> unpackingAsyncResponse(AigcResponse<Output> response) {
+        final var newOutput = response.output()
+                .changeChoice(choice ->
+                        choice.changeMessage(message -> {
+                            final var reAct = ReAct.valueOf(message.text());
+
+                            final var thought = reAct.hasThought()
+                                    ? reAct.thought()
+                                    : message.reasoningContent();
+
+                            final var answer = reAct.hasFinalAnswer()
+                                    ? reAct.finalAnswer()
+                                    : message.text();
+
+                            return AssistantMessage.newBuilder()
+                                    .contents(List.of(Content.text(answer)))
+                                    .reasoningContent(thought)
+                                    .build();
+                        }));
+        return new AigcResponse<>(
+                response.request(),
+                response.uuid(),
+                response.code(),
+                response.desc(),
+                response.usage(),
+                newOutput
+        );
+    }
+
+    /**
+     * 处理流式请求
+     *
+     * @param chain   链路
+     * @param request 请求
+     * @return 响应
+     */
     private CompletionStage<Publisher<AigcResponse<Output>>> processFlow(Chain chain, AigcRequest<Input, Output> request) {
         return chain.proceed(request)
                 .thenApply(r -> {
@@ -192,11 +250,17 @@ public class ReActInterceptor implements ChatInterceptor {
                     final var flow = (Publisher<AigcResponse<Output>>) r;
                     return Flux.from(flow)
                             .transform(_f -> processFlowResponse(chain, request, _f))
-                            .transform(this::unpackingFlowResponse);
-
+                            .transform(this::unpackingFlowResponse)
+                            ;
                 });
     }
 
+    /**
+     * 处理流式响应
+     *
+     * @param flow 响应
+     * @return 响应
+     */
     private Publisher<AigcResponse<Output>> processFlowResponse(Chain chain, AigcRequest<Input, Output> request, Publisher<AigcResponse<Output>> flow) {
         final var responseRef = new AtomicReference<AigcResponse<Output>>();
         return Flux.from(flow)
@@ -231,7 +295,7 @@ public class ReActInterceptor implements ChatInterceptor {
                     final var stage = callingTool(request, reAct.action(), caller, argumentJson)
                             .thenApply(resultJson -> {
                                 final var nextRequest = AigcRequest.newBuilder(request)
-                                        .input(Input.newBuilder(request.input())
+                                        .input(input -> Input.newBuilder(input)
                                                 .addMessage(message)
                                                 .addMessage(Message.user("%s: %s".formatted(ReAct.OBSERVATION, resultJson)))
                                                 .build())
@@ -244,6 +308,17 @@ public class ReActInterceptor implements ChatInterceptor {
                 }));
     }
 
+
+    /**
+     * 解包流式响应
+     * <p>
+     * ReAct 在结束的时候都会输出 {@code Final Answer: }，这些 ReAct 的框架信息对用户没有帮助，
+     * 所以这里会将这些信息进行解包，只返回最终答案。
+     * </p>
+     *
+     * @param flow 响应流
+     * @return 解包后的响应
+     */
     private Publisher<AigcResponse<Output>> unpackingFlowResponse(Publisher<AigcResponse<Output>> flow) {
         final var detector = new StringDetector("%s: ".formatted(ReAct.FINAL_ANSWER));
         return Flux.from(flow)
@@ -275,6 +350,32 @@ public class ReActInterceptor implements ChatInterceptor {
                 });
     }
 
+    /**
+     * 请求工具
+     * <p>
+     * 如果工具名称不存在，则抛出异常 {@link ToolExecutionException}
+     * </p>
+     *
+     * @param name 工具名称
+     * @return 工具
+     */
+    private Tool requireTool(String name) {
+        if (searchTool.meta().name().equals(name)) {
+            return searchTool;
+        }
+        return toolLookup.get(name)
+                .orElseThrow(() -> ToolExecutionException.notFound(name));
+    }
+
+    /**
+     * 调用工具
+     *
+     * @param request      请求
+     * @param name         工具名称
+     * @param caller       调用者
+     * @param argumentJson 参数
+     * @return 响应
+     */
     private CompletionStage<String> callingTool(AigcRequest<Input, Output> request, String name, Tool.Caller caller, String argumentJson) {
         final var tool = requireTool(name);
         logger.debug("{}/function/{} >>> {}", this, name, argumentJson);
@@ -303,12 +404,18 @@ public class ReActInterceptor implements ChatInterceptor {
                 .thenCompose(v -> v);
     }
 
+    /**
+     * 调用者
+     */
     private record Caller(
             AigcRequest<?, ?> request,
             DashscopeClient client
     ) implements Tool.Caller {
     }
 
+    /**
+     * 搜索工具
+     */
     private record Search(
 
             @JsonPropertyDescription("意图")

@@ -6,26 +6,28 @@ ${tools}
 
 ## 沟通格式
 
-- Question: 你必须回答的输入问题
-- Thought: 我需要将其分解为步骤。首先，我需要 [步骤 1 目标]。我将搜索与此相关的工具。
-- Action: search_tools
-- Action Input: {"intent": "步骤 1 的关键词"}
-- Observation: [步骤 1 的工具列表]
-- Thought: 我找到了步骤 1 的工具。我将执行 [工具名称]。
-- Action: [工具名称]
-- Action Input: [输入内容]
-- Observation: [步骤 1 的结果]
-- Thought: 现在我需要 [步骤 2 目标]。之前的工具列表中没有这一步所需的工具。我必须再次搜索。
-- Action: search_tools
-- Action Input: {"intent": "步骤 2 的关键词"}
-- Observation: [步骤 2 的工具列表]
-- Thought: 我找到了步骤 2 的工具。我将执行 [工具名称]。
-- Action: [工具名称]
-- Action Input: [输入内容]
-- Observation: [步骤 2 的结果]
-> ... (根据需要重复)
-- Thought: 我现在知道了最终答案。
-- Final Answer: 对原始输入问题的最终回答
+Question: 你必须回答的输入问题  
+Thought: 我需要将其分解为步骤。首先，我需要 [步骤 1 目标]。我将搜索与此相关的工具。  
+Action: search_tools  
+Action Input: {"intent": "步骤 1 的关键词"}  
+Observation: [步骤 1 的工具列表]  
+Thought: 我找到了步骤 1 的工具。我将执行 [工具名称]。  
+Action: [工具名称]  
+Action Input: [输入内容]  
+Observation: [步骤 1 的结果]  
+Thought: 现在我需要 [步骤 2 目标]。之前的工具列表中没有这一步所需的工具。我必须再次搜索。  
+Action: search_tools  
+Action Input: {"intent": "步骤 2 的关键词"}  
+Observation: [步骤 2 的工具列表]  
+Thought: 我找到了步骤 2 的工具。我将执行 [工具名称]。  
+Action: [工具名称]  
+Action Input: [输入内容]  
+Observation: [步骤 2 的结果]
+
+> ... (根据需要重复)  
+
+Thought: 我现在知道了最终答案。  
+Final Answer: 对原始输入问题的最终回答
 
 ## 行为准则
 

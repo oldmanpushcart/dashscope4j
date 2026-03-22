@@ -73,12 +73,12 @@ public record ChatModel(
      * PS：请务必注意拦截器的顺序
      */
     private static final List<Interceptor> interceptors = List.of(
-            new SettingInterceptor(),
-            new ToolCallInterceptor(),
-            new InlineFilesInterceptor(),
-            new UploadFilesInterceptor(),
-            new CompatPlaintextInterceptor(),
-            new CompatOpenAiInterceptor()
+            new SettingInterceptor()
+            //new ToolCallInterceptor(),
+            //new InlineFilesInterceptor(),
+            //new UploadFilesInterceptor(),
+            //new CompatPlaintextInterceptor(),
+            //new CompatOpenAiInterceptor()
     );
 
     /**
