@@ -25,7 +25,6 @@ public class BaseAgent implements Agent {
     private final String name;
     private final String description;
     private final String introduction;
-    private final String sessionId;
 
     private final DashscopeClient client;
     private final ChatModel model;
@@ -36,7 +35,6 @@ public class BaseAgent implements Agent {
         this.name = builder.name;
         this.description = builder.description;
         this.introduction = builder.introduction;
-        this.sessionId = builder.sessionId;
         this.client = builder.client;
         this.model = builder.model;
         this.parameters = CommonUtils.unmodifiableCopy(builder.parameters);
@@ -57,11 +55,6 @@ public class BaseAgent implements Agent {
     @Override
     public String introduction() {
         return introduction;
-    }
-
-    @Override
-    public String sessionId() {
-        return sessionId;
     }
 
     private AigcRequest<ChatModel.Input, ChatModel.Output> newRequest(UserMessage inbound) {
@@ -87,7 +80,6 @@ public class BaseAgent implements Agent {
                         .failOnToolError(false)
                         .build())
                 .parameters(parameters())
-                //.interceptors(interceptors())
                 .build();
     }
 
@@ -134,7 +126,6 @@ public class BaseAgent implements Agent {
         private String name;
         private String description;
         private String introduction;
-        private String sessionId;
 
         private DashscopeClient client;
         private ChatModel model;
@@ -150,7 +141,6 @@ public class BaseAgent implements Agent {
             this.name = agent.name;
             this.description = agent.description;
             this.introduction = agent.introduction;
-            this.sessionId = agent.sessionId;
 
             this.client = agent.client;
             this.model = agent.model;
@@ -171,11 +161,6 @@ public class BaseAgent implements Agent {
 
         public B introduction(String introduction) {
             this.introduction = introduction;
-            return self();
-        }
-
-        public B sessionId(String sessionId) {
-            this.sessionId = sessionId;
             return self();
         }
 

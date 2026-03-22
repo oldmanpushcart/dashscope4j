@@ -14,8 +14,6 @@ public interface Agent {
 
     String introduction();
 
-    String sessionId();
-
     CompletionStage<AssistantMessage> async(UserMessage inbound);
 
     Publisher<AssistantMessage> flow(UserMessage inbound);

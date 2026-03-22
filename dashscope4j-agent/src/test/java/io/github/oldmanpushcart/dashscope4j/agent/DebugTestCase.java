@@ -65,7 +65,7 @@ public class DebugTestCase implements LoadingEnv {
 //        }
 
         {
-            final var outbound = agent.async(Message.user("根据杭州今天天气，画一幅山水画。"))
+            final var outbound = agent.async(Message.user("找到桌面中最小的图片"))
                     .toCompletableFuture()
                     .join();
 
