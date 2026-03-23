@@ -31,10 +31,6 @@ import java.util.stream.Collectors;
  */
 public class ToolIndexer implements Repository.Indexer<String, Tool> {
 
-    private static final PromptTemplate TOOL_ROUTER_PROMPT_TEMPLATE = PromptTemplate.newBuilder()
-            .template(ToolIndexer.class.getResourceAsStream("/prompt/TOOL_ROUTER.md"))
-            .build();
-
     private static final Message TOOL_ROUTER_MESSAGE = SystemMessage.newBuilder()
             .contents(contents -> {
                 final var prompt = PromptTemplate.newBuilder()
@@ -63,8 +59,7 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
             })
             .build();
 
-    private static final Type routeMatchListType = new TypeReference<List<RouteMatch>>() {
-    }.getType();
+    private static final Type routeMatchListType = new TypeReference<List<RouteMatch>>() {}.getType();
 
     private final DashscopeClient client;
     private final Map<String, Index> indexes = new ConcurrentHashMap<>();
@@ -87,28 +82,21 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
     public CompletionStage<Set<String>> lookup(UserMessage instant) {
         final var request = AigcRequest.newBuilder(ChatModel.QWEN_FLASH)
                 .input(ChatModel.Input.newBuilder()
-                        .messages(messages -> {
-                            final var prompt = TOOL_ROUTER_PROMPT_TEMPLATE
-                                    .render(Map.of(
-                                            "INTENT", instant.text(),
-                                            "TOOL_METAS", JacksonJsonUtils.toJson(indexes.values())
-                                    ));
-                            return List.of(
-                                    TOOL_ROUTER_MESSAGE,
-                                    Message.user(PromptTemplate.newBuilder()
-                                            .template("""
-                                                    # Input Data
-                                                    - **用户意图**: ${INTENT}
-                                                    - **候选工具列表**:
-                                                      ${TOOL_METAS}
-                                                      (注意：每个工具包含 name, summary, capabilities, constraints 字段)
-                                                    """)
-                                            .variable("INTENT", instant.text())
-                                            .variable("TOOL_METAS", JacksonJsonUtils.toJson(indexes.values()))
-                                            .build()
-                                            .render())
-                            );
-                        })
+                        .messages(messages -> List.of(
+                                TOOL_ROUTER_MESSAGE,
+                                Message.user(PromptTemplate.newBuilder()
+                                        .template("""
+                                                # Input Data
+                                                - **用户意图**: ${INTENT}
+                                                - **候选工具列表**:
+                                                  ${TOOL_METAS}
+                                                  (注意：每个工具包含 name, summary, capabilities, constraints 字段)
+                                                """)
+                                        .variable("INTENT", instant.text())
+                                        .variable("TOOL_METAS", JacksonJsonUtils.toJson(indexes.values()))
+                                        .build()
+                                        .render())
+                        ))
                         .build())
                 .build();
         return client.async(request)
@@ -122,69 +110,55 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
 
     @Override
     public CompletionStage<Void> upsert(String key, Tool item) {
-        return CompletableFuture.completedStage(null)
-                .thenCompose(unused -> {
-
-                    if (!(item instanceof FunctionTool tool)) {
-                        return CompletableFuture.failedStage(new IllegalArgumentException("Item is not a function tool"));
-                    }
-
-                    final var request = AigcRequest.newBuilder(ChatModel.QWEN_FLASH)
-                            .input(ChatModel.Input.newBuilder()
-                                    .messages(messages -> List.of(
-                                            TOOL_META_EXTRACTOR_MESSAGE,
-                                            Message.user(PromptTemplate.newBuilder()
-                                                    .template("""
-                                                            # Input Data
-                                                            工具名称: ${tool_name}
-                                                            
-                                                            工具描述:
-                                                            ```
-                                                            ${tool_description}
-                                                            ```
-                                                            """)
-                                                    .variable("tool_name", tool.meta().name())
-                                                    .variable("tool_description", tool.meta().description())
-                                                    .build()
-                                                    .render())
-                                    ))
-                                    .build())
-                            .build();
-
-                    return client.async(request)
-                            .thenApply(response -> response.output().best().message().text())
-                            .thenApply(json -> JacksonJsonUtils.toObject(json, Index.Meta.class))
-                            .thenAccept(meta -> {
-                                final var index = new Index(
-                                        tool.meta().name(),
-                                        tool.meta().description(),
-                                        meta
-                                );
-                                indexes.put(index.key(), index);
-                            });
-
+        if (!(item instanceof FunctionTool tool)) {
+            return CompletableFuture.failedStage(new IllegalArgumentException("Item is not a function tool"));
+        }
+    
+        final var request = AigcRequest.newBuilder(ChatModel.QWEN_FLASH)
+                .input(ChatModel.Input.newBuilder()
+                        .messages(messages -> List.of(
+                                TOOL_META_EXTRACTOR_MESSAGE,
+                                Message.user(PromptTemplate.newBuilder()
+                                        .template("""
+                                                # Input Data
+                                                工具名称：${tool_name}
+                                                
+                                                工具描述:
+                                                ```
+                                                ${tool_description}
+                                                ```
+                                                """)
+                                        .variable("tool_name", tool.meta().name())
+                                        .variable("tool_description", tool.meta().description())
+                                        .build()
+                                        .render())
+                        ))
+                        .build())
+                .build();
+    
+        return client.async(request)
+                .thenApply(response -> response.output().best().message().text())
+                .thenApply(json -> JacksonJsonUtils.toObject(json, Index.Meta.class))
+                .thenAccept(meta -> {
+                    final var index = new Index(
+                            tool.meta().name(),
+                            tool.meta().description(),
+                            meta
+                    );
+                    indexes.put(index.key(), index);
                 });
     }
 
     @Override
     public CompletionStage<Void> remove(String key) {
-        return CompletableFuture.completedStage(null)
-                .thenAccept(unused -> indexes.remove(key));
+        indexes.remove(key);
+        return CompletableFuture.completedStage(null);
     }
 
     @Override
     public void close() {
-
     }
 
-    /**
-     * 路由匹配结果
-     *
-     * @param rank   排序
-     * @param name   标识
-     * @param score  分数
-     * @param reason 原因
-     */
     private record RouteMatch(
 
             @JsonProperty("rank")
@@ -202,23 +176,8 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
     ) {
     }
 
-    /**
-     * 索引
-     *
-     * @param key         索引主键
-     * @param description 索引描述
-     * @param meta        元数据
-     */
     private record Index(String key, String description, Meta meta) {
 
-        /**
-         * 元数据
-         *
-         * @param summary      摘要
-         * @param keywords     关键词列表
-         * @param capabilities 能力/正向场景列表
-         * @param constraints  约束/负向场景列表
-         */
         public record Meta(
 
                 @JsonProperty("name")

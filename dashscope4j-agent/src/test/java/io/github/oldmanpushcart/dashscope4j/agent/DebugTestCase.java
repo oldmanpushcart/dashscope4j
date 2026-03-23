@@ -10,12 +10,14 @@ import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp.Rec
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -57,21 +59,21 @@ public class DebugTestCase implements LoadingEnv {
                 ))
                 .build();
 
-//        {
-//            final var outbound = Flux.from(agent.flow(Message.user("根据杭州今天天气，画一幅山水画。")))
-//                    .reduce(AssistantMessage::accumulate)
-//                    .toFuture()
-//                    .join();
-//            System.out.println(outbound.text());
-//        }
-
         {
-            final var outbound = agent.async(Message.user("我住在杭州，根据明天天气画一幅山水画。"))
-                    .toCompletableFuture()
+            final var outbound = Flux.from(agent.flow(Message.user("根据杭州今天天气，画一幅山水画。")))
+                    .reduce(AssistantMessage::accumulate)
+                    .toFuture()
                     .join();
-
             System.out.println(outbound.text());
         }
+
+//        {
+//            final var outbound = agent.async(Message.user("我住在杭州，根据明天天气画一幅山水画。"))
+//                    .toCompletableFuture()
+//                    .join();
+//
+//            System.out.println(outbound.text());
+//        }
 
     }
 
