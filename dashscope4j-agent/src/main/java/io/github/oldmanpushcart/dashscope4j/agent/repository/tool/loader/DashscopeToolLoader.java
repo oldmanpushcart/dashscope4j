@@ -36,6 +36,8 @@ import java.util.function.Supplier;
  */
 public class DashscopeToolLoader implements Repository.Loader<String, Tool> {
 
+    public static final Repository.Loader<String, Tool> INSTANCE = new DashscopeToolLoader();
+
     /**
      * @return 文档理解工具
      */

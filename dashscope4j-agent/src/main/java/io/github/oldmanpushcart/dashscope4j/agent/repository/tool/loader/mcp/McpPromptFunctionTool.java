@@ -28,10 +28,10 @@ class McpPromptFunctionTool implements McpFunctionTool {
     private final McpSchema.Prompt mcpPrompt;
     private final Meta meta;
 
-    public McpPromptFunctionTool(McpAsyncClient client, McpSchema.Prompt mcpPrompt) {
+    public McpPromptFunctionTool(String namespace, McpAsyncClient client, McpSchema.Prompt mcpPrompt) {
         this.client = client;
         this.mcpPrompt = mcpPrompt;
-        this.meta = newMeta(mcpPrompt);
+        this.meta = newMeta(namespace, mcpPrompt);
     }
 
     @Override
@@ -45,14 +45,15 @@ class McpPromptFunctionTool implements McpFunctionTool {
      * 从 Prompt 的定义中提取参数 schema
      * </p>
      *
+     * @param namespace 函数命名空间
      * @param mcpPrompt MCP Prompt 定义
      * @return 函数元数据
      */
-    private static Meta newMeta(McpSchema.Prompt mcpPrompt) {
+    private static Meta newMeta(String namespace, McpSchema.Prompt mcpPrompt) {
         // 从 Prompt 的参数列表构建 JSON Schema
         final var parameterSchema = JacksonJsonUtils.toNode(McpSchemaHelper.buildPromptArgumentsSchema(mcpPrompt.arguments()));
         return new Meta(
-                "prompt$%s".formatted(mcpPrompt.name()),
+                "%s$prompt$%s".formatted(namespace, mcpPrompt.name()),
                 mcpPrompt.description() != null ? mcpPrompt.description() : "MCP Prompt: " + mcpPrompt.name(),
                 parameterSchema
         );

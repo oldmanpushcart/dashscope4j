@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolLookup;
+import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
 import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
@@ -38,16 +38,16 @@ public class ReActInterceptor implements ChatInterceptor {
             .build();
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final ToolLookup toolLookup;
+    private final Repository<String, Tool> toolRepository;
     private final FunctionTool searchTool;
 
-    public ReActInterceptor(ToolLookup toolLookup) {
-        this.toolLookup = toolLookup;
+    public ReActInterceptor(Repository<String, Tool> toolRepository) {
+        this.toolRepository = toolRepository;
         this.searchTool = FunctionTool.newBuilder()
                 .name("search_tools")
                 .description("根据意图搜索工具。当你没有工具可以完成任务时调用。")
                 .parameterType(Search.class)
-                .<Search>function((caller, search) -> toolLookup.lookup(search.intent()))
+                .<Search>function((caller, search) -> toolRepository.lookup(Message.user(search.intent())))
                 .build();
     }
 
@@ -359,12 +359,18 @@ public class ReActInterceptor implements ChatInterceptor {
      * @param name 工具名称
      * @return 工具
      */
-    private Tool requireTool(String name) {
+    private CompletionStage<Tool> requireTool(String name) {
         if (searchTool.meta().name().equals(name)) {
-            return searchTool;
+            return CompletableFuture.completedStage(searchTool);
         }
-        return toolLookup.get(name)
-                .orElseThrow(() -> ToolExecutionException.notFound(name));
+        return toolRepository.lookupByKey(name)
+                .thenCompose(tool -> {
+                    if (tool == null) {
+                        return CompletableFuture.failedStage(ToolExecutionException.notFound(name));
+                    } else {
+                        return CompletableFuture.completedStage(tool);
+                    }
+                });
     }
 
     /**
@@ -377,9 +383,11 @@ public class ReActInterceptor implements ChatInterceptor {
      * @return 响应
      */
     private CompletionStage<String> callingTool(AigcRequest<Input, Output> request, String name, Tool.Caller caller, String argumentJson) {
-        final var tool = requireTool(name);
         logger.debug("{}/function/{} >>> {}", this, name, argumentJson);
-        return tool.call(caller, argumentJson)
+        return CompletableFuture.completedStage(null)
+                .thenCompose(unused ->
+                        requireTool(name)
+                                .thenCompose(tool -> tool.call(caller, argumentJson)))
                 .whenComplete((resultJson, ex) -> {
                     if (null != ex) {
                         logger.warn("{}/function/{} <<< ERROR!", this, name, ex);

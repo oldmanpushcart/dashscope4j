@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp;
 
 import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.modelcontextprotocol.client.McpAsyncClient;
@@ -12,67 +11,64 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Stream;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
-/**
- * MCP 工具加载器
- * <p>
- * 支持加载 MCP 服务器的 Tools、Prompts 和 Resources，并将它们统一包装为 FunctionTool。
- * </p>
- */
+import static io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils.requireNonBlankString;
+import static java.util.Objects.requireNonNull;
+
 public class McpToolLoader implements Repository.Loader<String, Tool> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final String name;
+    private final String namespace;
     private final McpClientTransport transport;
+    private final Duration syncInterval;
     private final String _toString;
+
+    private final CompletableFuture<Void> closeF = new CompletableFuture<>();
+    private final ReentrantLock syncerLock = new ReentrantLock();
+    private final Condition syncerCondition = syncerLock.newCondition();
+
+    // 生效工具集合
+    private final Map<String, McpFunctionTool> activeTools = new ConcurrentHashMap<>();
+
+    // 生效版本
+    private final AtomicInteger activeVersion = new AtomicInteger();
+
+    // 工具草稿集合
+    private final Map<String, McpFunctionTool> stagedTools = new ConcurrentHashMap<>();
+
+    // 草稿版本
+    private final AtomicInteger stagedVersion = new AtomicInteger();
+
+    // 同步线程
+    private final Thread syncer;
 
     private volatile McpAsyncClient mcpClient;
     private volatile Repository.Updater<String, Tool> updater;
 
-    // 缓存三个列表，避免重复查询
-    private final List<FunctionTool> cachedTools = new CopyOnWriteArrayList<>();
-    private final List<FunctionTool> cachedPrompts = new CopyOnWriteArrayList<>();
-    private final List<FunctionTool> cachedResources = new CopyOnWriteArrayList<>();
-
     public McpToolLoader(Builder builder) {
-        this.name = "mcp$" + builder.name;
+
+        requireNonBlankString(builder.name, "name must not be blank");
+        requireNonNull(builder.transport, "transport must not be null");
+        requireNonNull(builder.syncInterval, "syncInterval must not be null");
+
+        this.namespace = "mcp$" + builder.name;
         this.transport = builder.transport;
-        this._toString = "dashscope4j-agent:/tool/loader/mcp/%s".formatted(this.name);
-    }
+        this.syncInterval = builder.syncInterval;
+        this._toString = "dashscope4j-agent:/tool/loader/mcp/%s".formatted(builder.name);
+        this.syncer = new Thread(this::syncing, "%s/syncer".formatted(this));
 
-    @Override
-    public CompletionStage<Void> init(Repository.Updater<String, Tool> updater) {
-        this.updater = updater;
-        this.mcpClient = McpClient.async(transport)
-                .toolsChangeConsumer(changed -> {
-                    loadAndCacheTools(changed);
-                    pushTools();
-                    return Mono.empty();
-                })
-                .promptsChangeConsumer(changed -> {
-                    loadAndCachePrompts(changed);
-                    pushTools();
-                    return Mono.empty();
-                })
-                .resourcesChangeConsumer(changed -> {
-                    loadAndCacheResources(changed);
-                    pushTools();
-                    return Mono.empty();
-                })
-                .build();
-
-        // 异步加载所有功能并返回回调
-        return loadAllFeatures();
-    }
-
-    @Override
-    public void close() throws Exception {
-        mcpClient.close();
     }
 
     @Override
@@ -80,145 +76,321 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
         return _toString;
     }
 
-    /**
-     * 加载所有功能并全量推送
-     *
-     * @return 初始化完成的异步回调
-     */
-    private CompletionStage<Void> loadAllFeatures() {
-        // 先初始化 MCP Client，然后获取服务器能力
-        return mcpClient.initialize()
+    @Override
+    public CompletionStage<Void> init(Repository.Updater<String, Tool> updater) {
+
+        this.updater = updater;
+
+        // 启动同步器
+        this.syncer.setDaemon(true);
+        this.syncer.start();
+
+        /*
+         * 初始化 McpClient
+         *
+         * 1. 需要动态变更
+         * 2. 初始化时全量同步所有工具
+         */
+        this.mcpClient = McpClient.async(transport)
+                .toolsChangeConsumer(mcpTools -> {
+                    stagingMcpTools(mcpTools);
+                    notifySyncer();
+                    return Mono.empty();
+                })
+                .promptsChangeConsumer(mcpPrompts -> {
+                    stagingMcpPrompts(mcpPrompts);
+                    notifySyncer();
+                    return Mono.empty();
+                })
+                .resourcesChangeConsumer(mcpResources -> {
+                    stagingMcpResources(mcpResources);
+                    notifySyncer();
+                    return Mono.empty();
+                })
+                .build();
+        return this.mcpClient.initialize()
                 .toFuture()
-                .whenComplete((u, ex) -> {
-                    if (null != ex) {
-                        logger.warn("{} initialize failed!", this, ex);
-                    } else {
-                        logger.debug("{} initialized.", this);
-                    }
-                })
-                .thenApply(unused -> {
+                .thenCompose(result -> {
                     final var capabilities = mcpClient.getServerCapabilities();
-
-                    // 清空缓存
-                    cachedTools.clear();
-                    cachedPrompts.clear();
-                    cachedResources.clear();
-
+                    if (null == capabilities) {
+                        return CompletableFuture.completedStage(null);
+                    }
                     return CompletableFuture.completedStage(null)
-
-                            // 加载工具（如果服务器支持）
-                            .thenCompose(u -> {
-                                if (capabilities != null && capabilities.tools() != null) {
-                                    return mcpClient.listTools()
-                                            .toFuture()
-                                            .thenApply(result -> result != null ? result.tools() : null)
-                                            .thenAccept(this::loadAndCacheTools);
+                            .thenCompose(unused -> {
+                                if (capabilities.tools() == null) {
+                                    return CompletableFuture.completedStage(null);
                                 }
-                                return CompletableFuture.completedStage(null);
+                                return mcpClient.listTools()
+                                        .toFuture()
+                                        .thenAccept(r -> {
+                                            if (null != r) {
+                                                stagingMcpTools(r.tools());
+                                            }
+                                        });
                             })
-
-                            // 加载提示词（如果服务器支持）
-                            .thenCompose(u -> {
-                                if (capabilities != null && capabilities.prompts() != null) {
-                                    return mcpClient.listPrompts()
-                                            .toFuture()
-                                            .thenApply(result -> result != null ? result.prompts() : null)
-                                            .thenAccept(this::loadAndCachePrompts);
+                            .thenCompose(unused -> {
+                                if (capabilities.prompts() == null) {
+                                    return CompletableFuture.completedStage(null);
                                 }
-                                return CompletableFuture.completedStage(null);
+                                return mcpClient.listPrompts()
+                                        .toFuture()
+                                        .thenAccept(r -> {
+                                            if (null != r) {
+                                                stagingMcpPrompts(r.prompts());
+                                            }
+                                        });
                             })
-
-                            // 加载资源（如果服务器支持）
-                            .thenCompose(u -> {
-                                if (capabilities != null && capabilities.resources() != null) {
-                                    return mcpClient.listResources()
-                                            .toFuture()
-                                            .thenApply(result -> result != null ? result.resources() : null)
-                                            .thenAccept(this::loadAndCacheResources);
+                            .thenCompose(unused -> {
+                                if (capabilities.resources() == null) {
+                                    return CompletableFuture.completedStage(null);
                                 }
-                                return CompletableFuture.completedStage(null);
-                            });
-
-                })
-                .thenCompose(fn -> fn)
-
-                // 全量推送
-                .thenAccept(unused -> pushTools());
+                                return mcpClient.listResources()
+                                        .toFuture()
+                                        .thenAccept(r -> {
+                                            if (null != r) {
+                                                stagingMcpResources(r.resources());
+                                            }
+                                        });
+                            })
+                            .thenAccept(unused -> notifySyncer());
+                });
     }
 
     /**
-     * 加载并缓存 MCP 工具
+     * 将 McpClient Tool 存入草稿集合中
      *
-     * @param tools 工具列表，如果为 null 则清空缓存
+     * @param mcpTools McpClient Tools
      */
-    private void loadAndCacheTools(List<McpSchema.Tool> tools) {
-        cachedTools.clear();
-        if (tools != null) {
-            tools.stream()
-                    .map(mcpTool -> new McpToolFunctionTool(mcpClient, mcpTool, "tool_"))
-                    .forEach(cachedTools::add);
+    private void stagingMcpTools(List<McpSchema.Tool> mcpTools) {
+        final var tools = mcpTools.stream()
+                .map(mcpTool -> new McpToolFunctionTool(namespace, mcpClient, mcpTool))
+                .collect(Collectors.toMap(
+                        tool -> tool.meta().name(),
+                        tool -> tool
+                ));
+        final var removeIt = stagedTools.entrySet().iterator();
+        while (removeIt.hasNext()) {
+            final var entry = removeIt.next();
+            final var tool = entry.getValue();
+            if (tool.type() == McpFunctionTool.Type.TOOL) {
+                removeIt.remove();
+            }
         }
+        stagedTools.putAll(tools);
     }
 
     /**
-     * 加载并缓存 MCP 提示词
+     * 将 McpClient Prompt 存入草稿集合中
      *
-     * @param prompts 提示词列表，如果为 null 则清空缓存
+     * @param mcpPrompts McpClient Prompts
      */
-    private void loadAndCachePrompts(List<McpSchema.Prompt> prompts) {
-        cachedPrompts.clear();
-        if (prompts != null) {
-            prompts.stream()
-                    .map(mcpPrompt -> new McpPromptFunctionTool(mcpClient, mcpPrompt, "prompt_"))
-                    .forEach(cachedPrompts::add);
+    private void stagingMcpPrompts(List<McpSchema.Prompt> mcpPrompts) {
+        final var prompts = mcpPrompts.stream()
+                .map(mcpPrompt -> new McpPromptFunctionTool(namespace, mcpClient, mcpPrompt))
+                .collect(Collectors.toMap(
+                        tool -> tool.meta().name(),
+                        tool -> tool
+                ));
+        final var removeIt = stagedTools.entrySet().iterator();
+        while (removeIt.hasNext()) {
+            final var entry = removeIt.next();
+            final var tool = entry.getValue();
+            if (tool.type() == McpFunctionTool.Type.PROMPT) {
+                removeIt.remove();
+            }
         }
+        stagedTools.putAll(prompts);
     }
 
     /**
-     * 加载并缓存 MCP 资源
+     * 将 McpClient Resource 存入草稿集合中
      *
-     * @param resources 资源列表，如果为 null 则清空缓存
+     * @param mcpResources McpClient Resources
      */
-    private void loadAndCacheResources(List<McpSchema.Resource> resources) {
-        cachedResources.clear();
-        if (resources != null) {
-            resources.stream()
-                    .map(mcpResource -> new McpResourceFunctionTool(mcpClient, mcpResource, "resource_"))
-                    .forEach(cachedResources::add);
+    private void stagingMcpResources(List<McpSchema.Resource> mcpResources) {
+        final var resources = mcpResources.stream()
+                .map(mcpResource -> new McpResourceFunctionTool(namespace, mcpClient, mcpResource))
+                .collect(Collectors.toMap(
+                        tool -> tool.meta().name(),
+                        tool -> tool
+                ));
+        final var removeIt = stagedTools.entrySet().iterator();
+        while (removeIt.hasNext()) {
+            final var entry = removeIt.next();
+            final var tool = entry.getValue();
+            if (tool.type() == McpFunctionTool.Type.RESOURCE) {
+                removeIt.remove();
+            }
+        }
+        stagedTools.putAll(resources);
+    }
+
+    /**
+     * 唤醒同步器
+     */
+    private void notifySyncer() {
+        if (syncerLock.tryLock()) {
+            try {
+                stagedVersion.incrementAndGet();
+                syncerCondition.signal();
+            } finally {
+                syncerLock.unlock();
+            }
+        }
+    }
+
+
+    /**
+     * 同步作业
+     */
+    private void syncing() {
+
+        logger.debug("{}/syncer running...", this);
+        while (!closeF.isDone() && !Thread.currentThread().isInterrupted()) {
+
+            /*
+             * 休眠，等待唤醒或者自己唤醒
+             */
+            syncerLock.lock();
+            try {
+
+                //noinspection ResultOfMethodCallIgnored
+                syncerCondition.await(syncInterval.toMillis(), TimeUnit.MILLISECONDS);
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            } finally {
+                syncerLock.unlock();
+            }
+
+            logger.debug("{}/syncer wakeup.", this);
+
+            // 醒来先检查环境是否还存在，如果已关闭则自杀
+            if (closeF.isDone()) {
+                break;
+            }
+
+            try {
+
+                do {
+
+                    /*
+                     * 通过比对发布版本号和草稿版本号是否一致来判定草稿是否有修改。
+                     * 若修改则进入同步作业，
+                     * 否则进入休眠等待下一轮同步周期。
+                     */
+                    final var currentVersion = stagedVersion.get();
+                    if (activeVersion.get() == currentVersion) {
+                        logger.debug("{}/syncer nothing synced.", this);
+                        break;
+                    }
+
+                    // 开始同步作业
+                    {
+
+                        /*
+                         * STEP1：clone一个稳定副本。
+                         * 接下来的比对都非常依赖一个稳定的集合作为基线
+                         */
+                        final var cloneStagedTools = new HashMap<>(stagedTools);
+
+                        // STEP2：清理被删除的工具
+                        final var cleanupNameSet = activeTools.keySet().stream()
+                                .filter(name -> !cloneStagedTools.containsKey(name))
+                                .collect(Collectors.toSet());
+                        cleanupNameSet.forEach(name -> {
+                            updater.remove(name).toCompletableFuture().join();
+                            activeTools.remove(name);
+                            logger.debug("{} remove tool: {}", this, name);
+                        });
+
+                        // STEP3：更新有变动的工具（包括新增）
+                        cloneStagedTools.forEach((name, tool) -> {
+
+                            // 检测是否有变动，如有变动立即同步
+                            final var activeTool = activeTools.get(name);
+                            if (activeTool == null || tool.meta().equals(activeTool.meta())) {
+                                updater.upsert(name, tool);
+                                activeTools.put(name, tool);
+                                logger.debug("{} upsert tool: {}", this, name);
+                            }
+
+                        });
+
+                    }
+
+                    // 同步完成，标记已同步
+                    activeVersion.set(currentVersion);
+                    logger.debug("{}/syncer sync completed.", this);
+
+                } while (true);
+
+            } catch (Throwable ex) {
+                logger.warn("{}/syncer sync failed!", this, ex);
+            }
+
+        }
+        logger.debug("{}/syncer stopped.", this);
+    }
+
+    @Override
+    public void close() {
+        syncer.interrupt();
+        if (null != mcpClient) {
+            try {
+                mcpClient.close();
+            } catch (Throwable ex) {
+                // ignored.
+            }
         }
     }
 
     /**
-     * 全量推送所有工具
+     * @return 构建器
      */
-    private CompletionStage<Void> pushTools() {
-        final var tools = Stream.of(cachedTools, cachedPrompts, cachedResources)
-                .flatMap(List::stream)
-                .toList();
-        CompletionStage<Void> stage = CompletableFuture.completedStage(null);
-        for (final var tool : tools) {
-            stage = stage.thenCompose(unused -> updater.upsert(tool.meta().name(), tool));
-        }
-        return stage;
-    }
-
-
     public static Builder newBuilder() {
         return new Builder();
     }
 
+    /**
+     * 构建器
+     */
     public static class Builder implements Buildable<McpToolLoader, Builder> {
 
         private String name;
         private McpClientTransport transport;
+        private Duration syncInterval = Duration.ofSeconds(10);
 
+        /**
+         * 设置名称
+         *
+         * @return this
+         */
         public Builder name(String name) {
             this.name = name;
             return this;
         }
 
+        /**
+         * 设置 Mcp Transport
+         *
+         * @param transport Mcp Transport
+         * @return this
+         */
         public Builder transport(McpClientTransport transport) {
             this.transport = transport;
+            return this;
+        }
+
+        /**
+         * 设置同步间隔
+         *
+         * @param syncInterval 同步间隔
+         * @return this
+         */
+        public Builder syncInterval(Duration syncInterval) {
+            this.syncInterval = syncInterval;
             return this;
         }
 
@@ -226,6 +398,7 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
         public McpToolLoader build() {
             return new McpToolLoader(this);
         }
+
     }
 
 }

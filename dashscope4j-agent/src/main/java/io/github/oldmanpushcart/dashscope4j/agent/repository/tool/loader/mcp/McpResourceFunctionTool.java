@@ -32,10 +32,10 @@ class McpResourceFunctionTool implements McpFunctionTool {
     private final McpSchema.Resource mcpResource;
     private final Meta meta;
 
-    public McpResourceFunctionTool(McpAsyncClient mcpClient, McpSchema.Resource mcpResource) {
+    public McpResourceFunctionTool(String namespace, McpAsyncClient mcpClient, McpSchema.Resource mcpResource) {
         this.mcpClient = mcpClient;
         this.mcpResource = mcpResource;
-        this.meta = newMeta(mcpResource);
+        this.meta = newMeta(namespace, mcpResource);
     }
 
     @Override
@@ -49,14 +49,15 @@ class McpResourceFunctionTool implements McpFunctionTool {
      * 从 Resource 的定义中提取参数 schema
      * </p>
      *
+     * @param namespace   函数命名空间
      * @param mcpResource MCP Resource 定义
      * @return 函数元数据
      */
-    private static Meta newMeta(McpSchema.Resource mcpResource) {
+    private static Meta newMeta(String namespace, McpSchema.Resource mcpResource) {
         // Resource 通常需要一个 uri 参数来读取
         final var parameterSchema = JacksonJsonUtils.toNode(McpSchemaHelper.buildResourceArgumentsSchema(mcpResource));
         return new Meta(
-                "resource$%s".formatted(mcpResource.name()),
+                "%s$resource$%s".formatted(namespace, mcpResource.name()),
                 mcpResource.description() != null ? mcpResource.description() : "MCP Resource: " + mcpResource.name(),
                 parameterSchema
         );

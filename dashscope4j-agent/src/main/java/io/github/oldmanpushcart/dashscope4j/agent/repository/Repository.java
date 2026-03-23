@@ -37,6 +37,14 @@ public interface Repository<K, E> extends AutoCloseable {
     CompletionStage<Map<K, E>> lookup(UserMessage instant);
 
     /**
+     * 根据主键获取数据
+     *
+     * @param key 主键
+     * @return 数据回调
+     */
+    CompletionStage<E> lookupByKey(K key);
+
+    /**
      * @return 是否已关闭
      */
     boolean isClosed();
@@ -145,7 +153,7 @@ public interface Repository<K, E> extends AutoCloseable {
 
                 @Override
                 public CompletionStage<Void> init(Updater<K, E> updater) {
-                    CompletionStage<Void> stage = new CompletableFuture<>();
+                    CompletionStage<Void> stage = CompletableFuture.completedStage(null);
                     for (final var loader : loaders) {
                         stage = stage.thenCompose(unused -> loader.init(updater));
                     }

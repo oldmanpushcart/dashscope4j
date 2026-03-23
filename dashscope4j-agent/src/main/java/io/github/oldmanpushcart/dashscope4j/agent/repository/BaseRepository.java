@@ -87,6 +87,11 @@ public class BaseRepository<K, E> implements Repository<K, E> {
     }
 
     @Override
+    public CompletionStage<E> lookupByKey(K key) {
+        return storer.get(key);
+    }
+
+    @Override
     public boolean isClosed() {
         return closeF.isDone();
     }

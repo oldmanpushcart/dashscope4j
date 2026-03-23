@@ -19,11 +19,11 @@ class McpToolFunctionTool implements McpFunctionTool {
     private final McpSchema.Tool mcpTool;
     private final Meta meta;
 
-    public McpToolFunctionTool(McpAsyncClient mcpClient, McpSchema.Tool mcpTool) {
+    public McpToolFunctionTool(String namespace, McpAsyncClient mcpClient, McpSchema.Tool mcpTool) {
         this.mcpClient = mcpClient;
         this.mcpTool = mcpTool;
         this.meta = new Meta(
-                "tool$%s".formatted(mcpTool.name()),
+                "%s$tool$%s".formatted(namespace, mcpTool.name()),
                 mcpTool.description(),
                 JacksonJsonUtils.toNode(mcpTool.inputSchema())
         );

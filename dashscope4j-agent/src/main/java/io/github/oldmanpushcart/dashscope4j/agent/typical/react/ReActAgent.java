@@ -8,8 +8,6 @@ public class ReActAgent extends BaseAgent {
         super(builder);
     }
 
-
-
     public static class Builder extends BaseAgent.Builder<ReActAgent, ReActAgent.Builder> {
 
         @Override

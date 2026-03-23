@@ -26,6 +26,8 @@ import static java.time.LocalDateTime.now;
  */
 public class SystemToolLoader implements Repository.Loader<String, Tool> {
 
+    public static final Repository.Loader<String, Tool> INSTANCE = new SystemToolLoader();
+
     public static FunctionTool datetime() {
         final String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS";
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);

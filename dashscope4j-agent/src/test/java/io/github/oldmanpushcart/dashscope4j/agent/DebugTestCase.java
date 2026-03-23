@@ -1,11 +1,12 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
+import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.ToolIndexer;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolRegistry;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.DashscopeToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.SystemToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.ToolRepository;
+import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.DashscopeToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.SystemToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp.McpToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.router.PromptBaseToolRouter;
+import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp.RecoverableMcpClientTransport;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
@@ -23,27 +24,27 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug$1() {
 
-        final var transport = HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
-                .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+        final var transport = RecoverableMcpClientTransport.newBuilder()
+                .transportFactory(mapper-> {
+                    return HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
+                            .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+                            .build();
+                })
                 .build();
 
-        final var registry = ToolRegistry.newBuilder()
-                .routers(List.of(
-                        PromptBaseToolRouter.newBuilder()
-                                .client(client)
-                                .threshold(0.5f)
-                                .limit(5)
-                                .build()
-                ))
-                .loaders(List.of(
-                        new DashscopeToolLoader(),
-                        new SystemToolLoader(),
+        final var toolRepository = ToolRepository.newBuilder()
+                .name("tool")
+                .client(client)
+                .loader(Repository.Loader.group(List.of(
+                        DashscopeToolLoader.INSTANCE,
+                        SystemToolLoader.INSTANCE,
                         McpToolLoader.newBuilder()
                                 .name("amap")
                                 .transport(transport)
                                 .build()
-                ))
+                )))
                 .build()
+                .initialize()
                 .toCompletableFuture()
                 .join();
 
@@ -52,7 +53,7 @@ public class DebugTestCase implements LoadingEnv {
                 .model(ChatModel.QWEN_FLASH)
                 .interceptors(List.of(
                         //new ReActLoopInterceptor(registry)
-                        new ReActInterceptor(registry)
+                        new ReActInterceptor(toolRepository)
                 ))
                 .build();
 
@@ -65,7 +66,7 @@ public class DebugTestCase implements LoadingEnv {
 //        }
 
         {
-            final var outbound = agent.async(Message.user("找到桌面中最小的图片"))
+            final var outbound = agent.async(Message.user("我住在杭州，根据明天天气画一幅山水画。"))
                     .toCompletableFuture()
                     .join();
 
