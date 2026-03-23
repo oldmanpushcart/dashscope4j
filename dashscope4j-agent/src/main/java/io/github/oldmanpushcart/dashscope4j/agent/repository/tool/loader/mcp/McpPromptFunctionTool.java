@@ -1,12 +1,10 @@
-package io.github.oldmanpushcart.dashscope4j.agent.tool.loader.mcp;
+package io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -21,19 +19,24 @@ import java.util.stream.Collectors;
  * 3. 直接返回渲染后的文本内容
  * </p>
  */
-class McpPromptFunctionTool implements FunctionTool {
+class McpPromptFunctionTool implements McpFunctionTool {
 
-    private static final Type mapType = new TypeReference<HashMap<String, Object>>() {
-    }.getType();
+    private static final TypeReference<HashMap<String, Object>> mapTypeRef = new TypeReference<>() {
+    };
 
     private final McpAsyncClient client;
     private final McpSchema.Prompt mcpPrompt;
     private final Meta meta;
 
-    public McpPromptFunctionTool(McpAsyncClient client, McpSchema.Prompt mcpPrompt, String namePrefix) {
+    public McpPromptFunctionTool(McpAsyncClient client, McpSchema.Prompt mcpPrompt) {
         this.client = client;
         this.mcpPrompt = mcpPrompt;
-        this.meta = newMeta(mcpPrompt, namePrefix);
+        this.meta = newMeta(mcpPrompt);
+    }
+
+    @Override
+    public Type type() {
+        return Type.PROMPT;
     }
 
     /**
@@ -45,11 +48,11 @@ class McpPromptFunctionTool implements FunctionTool {
      * @param mcpPrompt MCP Prompt 定义
      * @return 函数元数据
      */
-    private static Meta newMeta(McpSchema.Prompt mcpPrompt, String namePrefix) {
+    private static Meta newMeta(McpSchema.Prompt mcpPrompt) {
         // 从 Prompt 的参数列表构建 JSON Schema
         final var parameterSchema = JacksonJsonUtils.toNode(McpSchemaHelper.buildPromptArgumentsSchema(mcpPrompt.arguments()));
         return new Meta(
-                namePrefix + mcpPrompt.name(),
+                "prompt$%s".formatted(mcpPrompt.name()),
                 mcpPrompt.description() != null ? mcpPrompt.description() : "MCP Prompt: " + mcpPrompt.name(),
                 parameterSchema
         );
@@ -66,7 +69,7 @@ class McpPromptFunctionTool implements FunctionTool {
         final var prefix = "%s@%s/%s".formatted(serverInfo.name(), serverInfo.version(), mcpPrompt.name());
 
         // 解析用户输入的参数
-        final var argumentMap = JacksonJsonUtils.<Map<String, Object>>toObject(argumentJson, mapType);
+        final var argumentMap = JacksonJsonUtils.<Map<String, Object>>toObject(argumentJson, mapTypeRef.getType());
 
         // 调用 MCP 服务器的 getPrompt API
         final var request = new McpSchema.GetPromptRequest(mcpPrompt.name(), argumentMap);

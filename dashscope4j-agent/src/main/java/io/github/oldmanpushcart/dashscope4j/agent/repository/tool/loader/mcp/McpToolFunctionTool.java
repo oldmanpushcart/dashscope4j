@@ -1,34 +1,37 @@
-package io.github.oldmanpushcart.dashscope4j.agent.tool.loader.mcp;
+package io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-class McpToolFunctionTool implements FunctionTool {
+class McpToolFunctionTool implements McpFunctionTool {
 
-    private static final Type mapType = new TypeReference<HashMap<String, Object>>() {
-    }.getType();
+    private static final TypeReference<HashMap<String, Object>> mapType = new TypeReference<>() {
+    };
 
     private final McpAsyncClient mcpClient;
     private final McpSchema.Tool mcpTool;
     private final Meta meta;
 
-    public McpToolFunctionTool(McpAsyncClient mcpClient, McpSchema.Tool mcpTool, String namePrefix) {
+    public McpToolFunctionTool(McpAsyncClient mcpClient, McpSchema.Tool mcpTool) {
         this.mcpClient = mcpClient;
         this.mcpTool = mcpTool;
         this.meta = new Meta(
-                namePrefix + mcpTool.name(),
+                "tool$%s".formatted(mcpTool.name()),
                 mcpTool.description(),
                 JacksonJsonUtils.toNode(mcpTool.inputSchema())
         );
+    }
+
+    @Override
+    public Type type() {
+        return Type.TOOL;
     }
 
     @Override
@@ -42,7 +45,7 @@ class McpToolFunctionTool implements FunctionTool {
         final var serverInfo = mcpClient.getServerInfo();
         final var prefix = "%s@%s/%s".formatted(serverInfo.name(), serverInfo.version(), mcpTool.name());
 
-        final var argumentMap = JacksonJsonUtils.<Map<String, Object>>toObject(argumentJson, mapType);
+        final var argumentMap = JacksonJsonUtils.<Map<String, Object>>toObject(argumentJson, mapType.getType());
         final var name = mcpTool.name();
         final var request = new McpSchema.CallToolRequest(name, argumentMap);
 

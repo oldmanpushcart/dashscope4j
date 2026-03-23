@@ -1,6 +1,7 @@
-package io.github.oldmanpushcart.dashscope4j.agent.tool.loader.mcp;
+package io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp;
 
-import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.ToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.modelcontextprotocol.client.McpAsyncClient;
@@ -11,11 +12,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Stream;
 
 /**
  * MCP 工具加载器
@@ -23,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * 支持加载 MCP 服务器的 Tools、Prompts 和 Resources，并将它们统一包装为 FunctionTool。
  * </p>
  */
-public class McpToolLoader implements ToolLoader {
+public class McpToolLoader implements Repository.Loader<String, Tool> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String name;
@@ -31,12 +32,12 @@ public class McpToolLoader implements ToolLoader {
     private final String _toString;
 
     private volatile McpAsyncClient mcpClient;
-    private volatile Registrar registrar;
+    private volatile Repository.Updater<String, Tool> updater;
 
     // 缓存三个列表，避免重复查询
-    private final List<Tool> cachedTools = new CopyOnWriteArrayList<>();
-    private final List<Tool> cachedPrompts = new CopyOnWriteArrayList<>();
-    private final List<Tool> cachedResources = new CopyOnWriteArrayList<>();
+    private final List<FunctionTool> cachedTools = new CopyOnWriteArrayList<>();
+    private final List<FunctionTool> cachedPrompts = new CopyOnWriteArrayList<>();
+    private final List<FunctionTool> cachedResources = new CopyOnWriteArrayList<>();
 
     public McpToolLoader(Builder builder) {
         this.name = "mcp$" + builder.name;
@@ -45,18 +46,8 @@ public class McpToolLoader implements ToolLoader {
     }
 
     @Override
-    public String name() {
-        return name;
-    }
-
-    @Override
-    public String toString() {
-        return _toString;
-    }
-
-    @Override
-    public CompletionStage<Void> init(Registrar registrar) {
-        this.registrar = registrar;
+    public CompletionStage<Void> init(Repository.Updater<String, Tool> updater) {
+        this.updater = updater;
         this.mcpClient = McpClient.async(transport)
                 .toolsChangeConsumer(changed -> {
                     loadAndCacheTools(changed);
@@ -77,6 +68,16 @@ public class McpToolLoader implements ToolLoader {
 
         // 异步加载所有功能并返回回调
         return loadAllFeatures();
+    }
+
+    @Override
+    public void close() throws Exception {
+        mcpClient.close();
+    }
+
+    @Override
+    public String toString() {
+        return _toString;
     }
 
     /**
@@ -190,12 +191,15 @@ public class McpToolLoader implements ToolLoader {
     /**
      * 全量推送所有工具
      */
-    private void pushTools() {
-        final var tools = new ArrayList<Tool>();
-        tools.addAll(cachedTools);
-        tools.addAll(cachedPrompts);
-        tools.addAll(cachedResources);
-        registrar.register(tools);
+    private CompletionStage<Void> pushTools() {
+        final var tools = Stream.of(cachedTools, cachedPrompts, cachedResources)
+                .flatMap(List::stream)
+                .toList();
+        CompletionStage<Void> stage = CompletableFuture.completedStage(null);
+        for (final var tool : tools) {
+            stage = stage.thenCompose(unused -> updater.upsert(tool.meta().name(), tool));
+        }
+        return stage;
     }
 
 

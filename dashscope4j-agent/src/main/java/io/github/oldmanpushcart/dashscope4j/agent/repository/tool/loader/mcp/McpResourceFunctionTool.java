@@ -1,7 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.agent.tool.loader.mcp;
+package io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -9,7 +8,6 @@ import io.modelcontextprotocol.spec.McpSchema;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,19 +23,24 @@ import java.util.concurrent.CompletionStage;
  * 4. 返回临时文件的 URI，Text 类型还会返回编码信息
  * </p>
  */
-class McpResourceFunctionTool implements FunctionTool {
+class McpResourceFunctionTool implements McpFunctionTool {
 
-    private static final Type mapType = new TypeReference<HashMap<String, Object>>() {
-    }.getType();
+    private static final TypeReference<HashMap<String, Object>> mapType = new TypeReference<>() {
+    };
 
     private final McpAsyncClient mcpClient;
     private final McpSchema.Resource mcpResource;
     private final Meta meta;
 
-    public McpResourceFunctionTool(McpAsyncClient mcpClient, McpSchema.Resource mcpResource, String namePrefix) {
+    public McpResourceFunctionTool(McpAsyncClient mcpClient, McpSchema.Resource mcpResource) {
         this.mcpClient = mcpClient;
         this.mcpResource = mcpResource;
-        this.meta = newMeta(mcpResource, namePrefix);
+        this.meta = newMeta(mcpResource);
+    }
+
+    @Override
+    public Type type() {
+        return Type.RESOURCE;
     }
 
     /**
@@ -49,11 +52,11 @@ class McpResourceFunctionTool implements FunctionTool {
      * @param mcpResource MCP Resource 定义
      * @return 函数元数据
      */
-    private static Meta newMeta(McpSchema.Resource mcpResource, String namePrefix) {
+    private static Meta newMeta(McpSchema.Resource mcpResource) {
         // Resource 通常需要一个 uri 参数来读取
         final var parameterSchema = JacksonJsonUtils.toNode(McpSchemaHelper.buildResourceArgumentsSchema(mcpResource));
         return new Meta(
-                namePrefix + mcpResource.name(),
+                "resource$%s".formatted(mcpResource.name()),
                 mcpResource.description() != null ? mcpResource.description() : "MCP Resource: " + mcpResource.name(),
                 parameterSchema
         );
@@ -70,7 +73,7 @@ class McpResourceFunctionTool implements FunctionTool {
         final var prefix = "%s@%s/%s".formatted(serverInfo.name(), serverInfo.version(), mcpResource.name());
 
         // 解析用户输入的参数
-        final var argumentMap = JacksonJsonUtils.<Map<String, Object>>toObject(argumentJson, mapType);
+        final var argumentMap = JacksonJsonUtils.<Map<String, Object>>toObject(argumentJson, mapType.getType());
 
         // 获取 resource URI，如果没有提供则使用默认的 URI
         final var uri = (String) argumentMap.getOrDefault("uri", mcpResource.uri());
@@ -115,7 +118,7 @@ class McpResourceFunctionTool implements FunctionTool {
      */
     private Map<String, Object> processContent(McpSchema.ResourceContents content) {
         final var resultMap = new HashMap<String, Object>();
-        
+
         try {
 
             // 处理文本内容
@@ -131,7 +134,7 @@ class McpResourceFunctionTool implements FunctionTool {
         } catch (IOException e) {
             throw new RuntimeException("Failed to process resource content", e);
         }
-        
+
         return resultMap;
     }
 
@@ -141,12 +144,12 @@ class McpResourceFunctionTool implements FunctionTool {
     private Map<String, Object> processTextContent(Map<String, Object> resultMap, String text, String mimeType) throws IOException {
         final var tempFile = Files.createTempFile("mcp-resource-", ".txt");
         Files.writeString(tempFile, text, StandardCharsets.UTF_8);
-        
+
         resultMap.put("type", "text");
         resultMap.put("uri", tempFile.toUri().toString());
         resultMap.put("encoding", StandardCharsets.UTF_8.name());
         resultMap.put("mimeType", mimeType != null ? mimeType : "text/plain");
-        
+
         return resultMap;
     }
 
@@ -156,11 +159,11 @@ class McpResourceFunctionTool implements FunctionTool {
     private Map<String, Object> processBlobContent(Map<String, Object> resultMap, byte[] blob, String mimeType) throws IOException {
         final var tempFile = Files.createTempFile("mcp-resource-", ".bin");
         Files.write(tempFile, blob);
-        
+
         resultMap.put("type", "blob");
         resultMap.put("uri", tempFile.toUri().toString());
         resultMap.put("mimeType", mimeType != null ? mimeType : "application/octet-stream");
-        
+
         return resultMap;
     }
 
