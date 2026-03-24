@@ -108,31 +108,6 @@ public interface Repository<K, E> extends AutoCloseable {
     }
 
     /**
-     * 数据存储
-     *
-     * @param <K> 主键类型
-     * @param <E> 数据类型
-     */
-    interface Storer<K, E> extends Updater<K, E>, AutoCloseable {
-
-        /**
-         * 初始化
-         *
-         * @return 初始化完成的异步回调
-         */
-        CompletionStage<Void> init();
-
-        /**
-         * 根据主键获取数据
-         *
-         * @param key 主键
-         * @return 数据回调
-         */
-        CompletionStage<E> get(K key);
-
-    }
-
-    /**
      * 数据加载器
      *
      * @param <K> 主键类型
@@ -171,6 +146,33 @@ public interface Repository<K, E> extends AutoCloseable {
                     });
                 }
 
+            };
+        }
+
+        /**
+         * 空加载器，不加载任何数据
+         *
+         * @param <K> 主键类型
+         * @param <E> 数据类型
+         * @return 空加载器实例
+         */
+        @SuppressWarnings("unchecked")
+        static <K, E> Loader<K, E> empty() {
+            return (Loader<K, E>) EmptyHolder.EMPTY;
+        }
+
+        @SuppressWarnings("rawtypes")
+        class EmptyHolder {
+            private static final Loader EMPTY = new Loader<>() {
+                @Override
+                public CompletionStage<Void> init(Updater updater) {
+                    return CompletableFuture.completedStage(null);
+                }
+
+                @Override
+                public void close() {
+                    // no-op
+                }
             };
         }
 

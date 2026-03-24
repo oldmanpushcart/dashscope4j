@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.repository;
 
+import io.github.oldmanpushcart.dashscope4j.agent.storage.Storage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,17 +16,17 @@ public class BaseRepository<K, E> implements Repository<K, E> {
     private final String name;
     private final Repository.Updater<K, E> updater;
     private final Repository.Indexer<K, E> indexer;
-    private final Repository.Storer<K, E> storer;
+    private final Storage<K, E> storage;
     private final Repository.Loader<K, E> loader;
     private final String _toString;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final CompletableFuture<Void> closeF = new CompletableFuture<>();
 
-    protected BaseRepository(String name, Indexer<K, E> indexer, Storer<K, E> storer, Loader<K, E> loader) {
+    protected BaseRepository(String name, Indexer<K, E> indexer, Storage<K, E> storage, Loader<K, E> loader) {
         this.name = name;
         this.indexer = indexer;
-        this.storer = storer;
+        this.storage = storage;
         this.loader = loader;
         this.updater = new Updater();
         this._toString = "dashscope4j-agent:/repository/%s".formatted(name);
@@ -34,8 +35,8 @@ public class BaseRepository<K, E> implements Repository<K, E> {
     @Override
     public CompletionStage<Repository<K, E>> initialize() {
         return CompletableFuture.<Void>completedStage(null)
+                .thenCompose(u -> storage.init())
                 .thenCompose(u -> indexer.init())
-                .thenCompose(u -> storer.init())
                 .thenCompose(u -> loader.init(updater))
                 .thenApply(u -> (Repository<K, E>) this)
                 .whenComplete((u, ex) -> {
@@ -71,7 +72,7 @@ public class BaseRepository<K, E> implements Repository<K, E> {
                     // 从索引中查询的是 KEY 集合，需要通过 KEYS 去存储中回表获取数据
                     CompletionStage<Map<K, E>> stage = CompletableFuture.completedStage(new ConcurrentHashMap<>());
                     for (K key : keys) {
-                        stage = stage.thenCompose(map -> storer.get(key)
+                        stage = stage.thenCompose(map -> storage.get(key)
                                 .thenApply(item -> {
                                     if (item != null) {
                                         map.put(key, item);
@@ -88,7 +89,7 @@ public class BaseRepository<K, E> implements Repository<K, E> {
 
     @Override
     public CompletionStage<E> lookupByKey(K key) {
-        return storer.get(key);
+        return storage.get(key);
     }
 
     @Override
@@ -111,10 +112,10 @@ public class BaseRepository<K, E> implements Repository<K, E> {
         }
 
         try {
-            storer.close();
-            logger.debug("{} close storer normally.", this);
+            storage.close();
+            logger.debug("{} close storage normally.", this);
         } catch (Exception e) {
-            logger.warn("{} close storer failed!", this, e);
+            logger.warn("{} close storage failed!", this, e);
         }
 
         try {
@@ -146,7 +147,7 @@ public class BaseRepository<K, E> implements Repository<K, E> {
          */
         @Override
         public CompletionStage<Void> upsert(K key, E item) {
-            return storer.upsert(key, item)
+            return storage.upsert(key, item)
                     .thenCompose(u -> indexer.upsert(key, item))
                     .whenComplete((u, ex) -> {
                         if (ex != null) {
@@ -170,7 +171,7 @@ public class BaseRepository<K, E> implements Repository<K, E> {
         @Override
         public CompletionStage<Void> remove(K key) {
             return indexer.remove(key)
-                    .thenCompose(u -> storer.remove(key))
+                    .thenCompose(u -> storage.remove(key))
                     .whenComplete((u, ex) -> {
                         if (ex != null) {
                             logger.warn("{}/{} remove failed!", BaseRepository.this, key, ex);
