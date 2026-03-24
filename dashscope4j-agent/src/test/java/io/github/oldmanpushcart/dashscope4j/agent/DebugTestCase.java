@@ -63,21 +63,21 @@ public class DebugTestCase implements LoadingEnv {
                 ))
                 .build();
 
-//        {
-//            final var outbound = Flux.from(agent.flow(Message.user("列出当前目录以及其下子目录下所有的图片文件，并解析其内容。")))
-//                    .reduce(AssistantMessage::accumulate)
-//                    .toFuture()
-//                    .join();
-//            System.out.println(outbound.text());
-//        }
-
         {
-            final var outbound = agent.async(Message.user("列出当前目录以及其下子目录下所有的图片文件，并解析其内容。"))
-                    .toCompletableFuture()
+            final var outbound = Flux.from(agent.flow(Message.user("根据杭州明天天气生成一幅山水画，图片保存为weatcher.jpg")))
+                    .reduce(AssistantMessage::accumulate)
+                    .toFuture()
                     .join();
-
             System.out.println(outbound.text());
         }
+
+//        {
+//            final var outbound = agent.async(Message.user("列出当前目录以及其下子目录下所有的图片文件，并解析其内容。"))
+//                    .toCompletableFuture()
+//                    .join();
+//
+//            System.out.println(outbound.text());
+//        }
 
     }
 
