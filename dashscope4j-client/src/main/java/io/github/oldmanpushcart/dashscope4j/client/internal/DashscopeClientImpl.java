@@ -82,9 +82,9 @@ public class DashscopeClientImpl implements DashscopeClient {
 
         // 最后添加系统自带拦截链
         newInterceptors.addAll(List.of(
-                //new BridgeInterceptor(),
-                //new IncrementalOutputOnlyInterceptor(),
-                //new GeneralAigcInterceptor()
+                new BridgeInterceptor(),
+                new IncrementalOutputOnlyInterceptor(),
+                new GeneralAigcInterceptor()
         ));
         
         return Collections.unmodifiableList(newInterceptors);

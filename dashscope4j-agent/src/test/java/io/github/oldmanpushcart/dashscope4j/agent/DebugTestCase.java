@@ -20,6 +20,8 @@ import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTranspor
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class DebugTestCase implements LoadingEnv {
@@ -28,7 +30,7 @@ public class DebugTestCase implements LoadingEnv {
     public void debug$1() {
 
         final var transport = RecoverableMcpClientTransport.newBuilder()
-                .transportFactory(mapper-> {
+                .transportFactory(mapper -> {
                     return HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
                             .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
                             .build();
@@ -61,55 +63,29 @@ public class DebugTestCase implements LoadingEnv {
                 ))
                 .build();
 
-        {
-            final var outbound = Flux.from(agent.flow(Message.user("将weather.txt的内容转成json格式")))
-                    .reduce(AssistantMessage::accumulate)
-                    .toFuture()
-                    .join();
-            System.out.println(outbound.text());
-        }
-
 //        {
-//            final var outbound = agent.async(Message.user("我住在杭州，根据明天天气画一幅山水画。"))
-//                    .toCompletableFuture()
+//            final var outbound = Flux.from(agent.flow(Message.user("列出当前目录以及其下子目录下所有的图片文件，并解析其内容。")))
+//                    .reduce(AssistantMessage::accumulate)
+//                    .toFuture()
 //                    .join();
-//
 //            System.out.println(outbound.text());
 //        }
+
+        {
+            final var outbound = agent.async(Message.user("列出当前目录以及其下子目录下所有的图片文件，并解析其内容。"))
+                    .toCompletableFuture()
+                    .join();
+
+            System.out.println(outbound.text());
+        }
 
     }
 
 
     @Test
     public void debug$2() {
-
-        try (final var indexer = new ToolIndexer(client)) {
-            indexer.init()
-                    .toCompletableFuture()
-                    .join();
-            final var tools = List.of(
-                    (FunctionTool)SystemToolLoader.cmd(),
-                    (FunctionTool)SystemToolLoader.os(),
-                    (FunctionTool)SystemToolLoader.datetime(),
-                    (FunctionTool)SystemToolLoader.env()
-            );
-
-            tools.forEach(tool-> {
-                indexer.upsert(tool.meta().name(), tool)
-                        .toCompletableFuture()
-                        .join();
-            });
-
-            final var result = indexer.lookup(UserMessage.newBuilder()
-                            .contents(List.of(Content.text("阿里巴巴股票今天多少美金了？")))
-                    .build())
-                    .toCompletableFuture()
-                    .join();
-
-            System.out.println(result);
-
-        }
-
+        final var path = Paths.get("test-data/image/IMG_0942.JPG");
+        System.out.println(path.toFile().getAbsolutePath());
     }
 
 }
