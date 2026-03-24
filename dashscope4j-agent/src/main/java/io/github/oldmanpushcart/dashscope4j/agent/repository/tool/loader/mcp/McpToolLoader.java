@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp;
 
 import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
+import io.github.oldmanpushcart.dashscope4j.agent.util.VersionSync;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.modelcontextprotocol.client.McpAsyncClient;
@@ -19,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -41,7 +41,7 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
 
     private final Map<String, McpFunctionTool> activeTools = new ConcurrentHashMap<>();
     private final Map<String, McpFunctionTool> stagedTools = new ConcurrentHashMap<>();
-    private final AtomicLong versionPair = new AtomicLong(0);
+    private final VersionSync versionSync = new VersionSync();
     private final Thread syncer;
     private volatile McpAsyncClient mcpClient;
     private volatile Repository.Updater<String, Tool> updater;
@@ -88,7 +88,7 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
                     return Mono.empty();
                 })
                 .build();
-        
+
         return this.mcpClient.initialize()
                 .toFuture()
                 .thenAccept(result -> {
@@ -103,22 +103,28 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
                     }
 
                     final var futures = new java.util.ArrayList<CompletableFuture<Void>>(3);
-                    
+
                     if (capabilities.tools() != null) {
                         futures.add(mcpClient.listTools().toFuture()
-                                .thenAccept(r -> { if (null != r) stagingMcpTools(r.tools()); })
+                                .thenAccept(r -> {
+                                    if (null != r) stagingMcpTools(r.tools());
+                                })
                                 .toCompletableFuture());
                     }
-                    
+
                     if (capabilities.prompts() != null) {
                         futures.add(mcpClient.listPrompts().toFuture()
-                                .thenAccept(r -> { if (null != r) stagingMcpPrompts(r.prompts()); })
+                                .thenAccept(r -> {
+                                    if (null != r) stagingMcpPrompts(r.prompts());
+                                })
                                 .toCompletableFuture());
                     }
-                    
+
                     if (capabilities.resources() != null) {
                         futures.add(mcpClient.listResources().toFuture()
-                                .thenAccept(r -> { if (null != r) stagingMcpResources(r.resources()); })
+                                .thenAccept(r -> {
+                                    if (null != r) stagingMcpResources(r.resources());
+                                })
                                 .toCompletableFuture());
                     }
 
@@ -143,8 +149,8 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
         final var newItemMap = items.stream()
                 .map(mapper)
                 .collect(Collectors.toMap(tool -> tool.meta().name(), tool -> tool));
-        stagedTools.entrySet().removeIf(entry -> 
-            entry.getValue().type() == type && !newItemMap.containsKey(entry.getKey())
+        stagedTools.entrySet().removeIf(entry ->
+                entry.getValue().type() == type && !newItemMap.containsKey(entry.getKey())
         );
         stagedTools.putAll(newItemMap);
     }
@@ -155,37 +161,20 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
         }
         if (syncerLock.tryLock()) {
             try {
-                incrementStagedVersion();
+                versionSync.incrementStaged();
                 syncerCondition.signal();
             } finally {
                 syncerLock.unlock();
             }
         }
     }
-    
-    private void incrementStagedVersion() {
-        long staged = (versionPair.get() & 0xFFFFFFFFL) + 1;
-        versionPair.set((versionPair.get() & 0xFFFFFFFF00000000L) | staged);
-    }
-    
-    private int getActiveVersion() {
-        return (int) ((versionPair.get() >>> 32) & 0xFFFFFFFFL);
-    }
-    
-    private int getStagedVersion() {
-        return (int) (versionPair.get() & 0xFFFFFFFFL);
-    }
-    
-    private void setActiveVersion(int version) {
-        versionPair.set((versionPair.get() & 0xFFFFFFFFL) | ((long) version << 32));
-    }
-
 
     private void syncing() {
         logger.debug("{}/syncer running...", this);
         while (!closeF.isDone() && !Thread.currentThread().isInterrupted()) {
             syncerLock.lock();
             try {
+                //noinspection ResultOfMethodCallIgnored
                 syncerCondition.await(syncInterval.toMillis(), TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -201,8 +190,8 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
             }
 
             try {
-                final var currentVersion = getStagedVersion();
-                if (getActiveVersion() == currentVersion) {
+                final var currentVersion = versionSync.staged();
+                if (!versionSync.hasChanges()) {
                     logger.trace("{}/syncer nothing synced.", this);
                     continue;
                 }
@@ -234,8 +223,8 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
                     }
                 });
 
-                setActiveVersion(currentVersion);
-                logger.trace("{}/syncer sync completed.", this);
+                versionSync.activate(currentVersion);
+                logger.trace("{}/syncer sync completed. Version: {}", this, versionSync);
 
             } catch (Throwable ex) {
                 logger.warn("{}/syncer sync failed!", this, ex);
@@ -248,7 +237,7 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
     public void close() {
         // Mark as closing
         closeF.complete(null);
-        
+
         // Interrupt and wait for syncer thread
         syncer.interrupt();
         try {
@@ -256,7 +245,7 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        
+
         // Close mcpClient
         if (null != mcpClient) {
             try {
@@ -265,7 +254,7 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
                 logger.warn("{} failed to close mcpClient", this, ex);
             }
         }
-        
+
         // Close transport if it's AutoCloseable
         if (transport instanceof AutoCloseable) {
             try {
