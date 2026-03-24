@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.ToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.ToolRepository;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.DashscopeToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.FileOpsToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.SystemToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp.McpToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp.RecoverableMcpClientTransport;
@@ -38,6 +39,7 @@ public class DebugTestCase implements LoadingEnv {
                 .name("tool")
                 .client(client)
                 .loader(Repository.Loader.group(List.of(
+                        FileOpsToolLoader.INSTANCE,
                         DashscopeToolLoader.INSTANCE,
                         SystemToolLoader.INSTANCE,
                         McpToolLoader.newBuilder()
@@ -60,7 +62,7 @@ public class DebugTestCase implements LoadingEnv {
                 .build();
 
         {
-            final var outbound = Flux.from(agent.flow(Message.user("根据杭州今天天气，画一幅山水画。")))
+            final var outbound = Flux.from(agent.flow(Message.user("将weather.txt的内容转成json格式")))
                     .reduce(AssistantMessage::accumulate)
                     .toFuture()
                     .join();
