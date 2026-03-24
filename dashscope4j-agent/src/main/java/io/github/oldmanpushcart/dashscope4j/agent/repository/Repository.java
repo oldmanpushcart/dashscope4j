@@ -156,22 +156,16 @@ public interface Repository<K, E> extends AutoCloseable {
          * @param <E> 数据类型
          * @return 空加载器实例
          */
-        @SuppressWarnings("unchecked")
         static <K, E> Loader<K, E> empty() {
-            return (Loader<K, E>) EmptyHolder.EMPTY;
-        }
-
-        @SuppressWarnings("rawtypes")
-        class EmptyHolder {
-            private static final Loader EMPTY = new Loader<>() {
+            return new Loader<>() {
                 @Override
-                public CompletionStage<Void> init(Updater updater) {
+                public CompletionStage<Void> init(Updater<K, E> updater) {
                     return CompletableFuture.completedStage(null);
                 }
 
                 @Override
                 public void close() {
-                    // no-op
+
                 }
             };
         }

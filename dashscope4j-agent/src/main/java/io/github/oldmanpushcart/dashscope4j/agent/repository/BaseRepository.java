@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BaseRepository<K, E> implements Repository<K, E> {
 
-
     private final String name;
     private final Repository.Updater<K, E> updater;
     private final Repository.Indexer<K, E> indexer;
