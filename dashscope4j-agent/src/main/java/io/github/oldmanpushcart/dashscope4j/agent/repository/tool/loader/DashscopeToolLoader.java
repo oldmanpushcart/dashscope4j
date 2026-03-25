@@ -145,7 +145,7 @@ public class DashscopeToolLoader implements Repository.Loader<String, Tool> {
     
         List<URI> toUris() {
             return files.stream()
-                    .map(path -> Paths.get(path).toUri())
+                    .map(DashscopeToolLoader::parseUri)
                     .toList();
         }
     }
@@ -228,13 +228,13 @@ public class DashscopeToolLoader implements Repository.Loader<String, Tool> {
     
         List<URI> toImageUris() {
             return images != null ? images.stream()
-                    .map(path -> Paths.get(path).toUri())
+                    .map(DashscopeToolLoader::parseUri)
                     .toList() : List.of();
         }
         
         List<URI> toVideoUris() {
             return videos != null ? videos.stream()
-                    .map(path -> Paths.get(path).toUri())
+                    .map(DashscopeToolLoader::parseUri)
                     .toList() : List.of();
         }
     
@@ -359,7 +359,7 @@ public class DashscopeToolLoader implements Repository.Loader<String, Tool> {
 
         List<URI> toImageUris() {
             return images != null ? images.stream()
-                    .map(path -> Paths.get(path).toUri())
+                    .map(DashscopeToolLoader::parseUri)
                     .toList() : List.of();
         }
 
@@ -508,7 +508,7 @@ public class DashscopeToolLoader implements Repository.Loader<String, Tool> {
                     final var input = new HashMap<String, Object>();
                     input.put("prompt", spec.prompt());
                     if (spec.audio() != null) {
-                        input.put("audio_url", Paths.get(spec.audio()).toUri());
+                        input.put("audio_url", parseUri(spec.audio()));
                     }
 
                     final var request = AigcRequest.newBuilder(VIDEO_MODEL)
@@ -754,6 +754,25 @@ public class DashscopeToolLoader implements Repository.Loader<String, Tool> {
     @Override
     public void close() {
 
+    }
+
+    /**
+     * 解析 URI 字符串，智能识别不同类型的资源标识符
+     * - 如果已经是 URI 格式（包含 scheme），则直接返回
+     * - 如果是本地文件路径，则转换为 file:// URI
+     *
+     * @param uriOrPath URI 字符串或文件路径
+     * @return 解析后的 URI
+     */
+    private static URI parseUri(String uriOrPath) {
+        // 尝试直接解析为 URI
+        final var uri = URI.create(uriOrPath);
+        // 如果有 scheme（如 https://, file://, fileid://），说明已经是 URI 格式
+        if (uri.getScheme() != null && !uri.getScheme().isEmpty()) {
+            return uri;
+        }
+        // 否则当作本地文件路径处理
+        return Paths.get(uriOrPath).toUri();
     }
 
 }
