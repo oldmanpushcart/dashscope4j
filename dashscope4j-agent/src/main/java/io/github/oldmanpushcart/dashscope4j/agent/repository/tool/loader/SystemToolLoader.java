@@ -439,13 +439,19 @@ public class SystemToolLoader implements Repository.Loader<String, Tool> {
 
     @Override
     public CompletionStage<Void> init(Repository.Updater<String, Tool> updater) {
-        return CompletableFuture.completedStage(null)
-                .thenAccept(unused -> List.of(
-                        os(),
-                        env(),
-                        cmd(),
-                        datetime()
-                ).forEach(tool -> updater.upsert(tool.meta().name(), tool)));
+        List<FunctionTool> tools = List.of(
+                os(),
+                env(),
+                cmd(),
+                datetime()
+        );
+        
+        // 串行等待所有 upsert 操作完成
+        CompletionStage<Void> stage = CompletableFuture.completedStage(null);
+        for (FunctionTool tool : tools) {
+            stage = stage.thenCompose(unused -> updater.upsert(tool.meta().name(), tool));
+        }
+        return stage;
     }
 
     @Override

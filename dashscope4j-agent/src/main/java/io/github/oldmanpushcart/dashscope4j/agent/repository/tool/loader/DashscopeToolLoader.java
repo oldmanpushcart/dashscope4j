@@ -740,15 +740,21 @@ public class DashscopeToolLoader implements Repository.Loader<String, Tool> {
 
     @Override
     public CompletionStage<Void> init(Repository.Updater<String, Tool> updater) {
-        return CompletableFuture.completedStage(null)
-                .thenAccept(unused -> List.of(
-                        analyzeDocument(),
-                        analyzeVision(),
-                        imageEdit(),
-                        t2i(),
-                        t2v(),
-                        tts()
-                ).forEach(tool -> updater.upsert(tool.meta().name(), tool)));
+        List<FunctionTool> tools = List.of(
+                analyzeDocument(),
+                analyzeVision(),
+                imageEdit(),
+                t2i(),
+                t2v(),
+                tts()
+        );
+        
+        // 串行等待所有 upsert 操作完成
+        CompletionStage<Void> stage = CompletableFuture.completedStage(null);
+        for (FunctionTool tool : tools) {
+            stage = stage.thenCompose(unused -> updater.upsert(tool.meta().name(), tool));
+        }
+        return stage;
     }
 
     @Override
