@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,6 +16,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
 import static java.time.LocalDateTime.now;
@@ -428,9 +431,9 @@ public class SystemToolLoader implements Repository.Loader<String, Tool> {
         String output;
         try {
             output = outputFuture.get(CMD_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS);
-        } catch (java.util.concurrent.ExecutionException e) {
+        } catch (ExecutionException e) {
             output = "获取输出失败：" + e.getCause().getMessage();
-        } catch (java.util.concurrent.TimeoutException e) {
+        } catch (TimeoutException e) {
             output = "读取输出超时";
         }
         return new Result(output, process.exitValue());
@@ -446,12 +449,11 @@ public class SystemToolLoader implements Repository.Loader<String, Tool> {
                 datetime()
         );
         
-        // 串行等待所有 upsert 操作完成
-        CompletionStage<Void> stage = CompletableFuture.completedStage(null);
-        for (FunctionTool tool : tools) {
-            stage = stage.thenCompose(unused -> updater.upsert(tool.meta().name(), tool));
-        }
-        return stage;
+        // 并行等待所有 upsert 操作完成
+        final var stages = tools.stream()
+                .map(tool -> updater.upsert(tool.meta().name(), tool))
+                .toList();
+        return CompletableFutureUtils.allOf(10, stages);
     }
 
     @Override

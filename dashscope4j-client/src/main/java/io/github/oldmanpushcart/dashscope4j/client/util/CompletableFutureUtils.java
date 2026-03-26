@@ -3,10 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.client.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
+import java.util.Queue;
+import java.util.concurrent.*;
 import java.util.function.Function;
 
 import static java.util.Objects.nonNull;
@@ -44,12 +42,9 @@ public class CompletableFutureUtils {
      * @param <T>      输入元素类型
      * @param <R>      异步处理后的结果类型
      * @return 一个 {@link CompletionStage}，在其成功完成时包含按输入顺序排列的所有处理结果组成的 {@link List<R>}；
-     *         若任一中间步骤失败，则返回的阶段将以该异常失败。
-     *
+     * 若任一中间步骤失败，则返回的阶段将以该异常失败。
      * @throws NullPointerException 如果 {@code source} 或 {@code function} 为 {@code null}
-     *
-     * @implNote
-     * 本实现使用可变的 {@link ArrayList} 在链式回调中累积结果。由于所有操作通过 {@code thenCompose} 串行执行，
+     * @implNote 本实现使用可变的 {@link ArrayList} 在链式回调中累积结果。由于所有操作通过 {@code thenCompose} 串行执行，
      * 因此不会发生并发访问，无需使用线程安全集合（如 {@code synchronizedList}）。
      * 使用普通 {@code ArrayList} 即可保证正确性并提升性能。
      */
@@ -79,6 +74,50 @@ public class CompletableFutureUtils {
         }
 
         return result;
+    }
+
+
+    /**
+     * 并行执行多个 CompletionStage，并等待所有任务完成。
+     *
+     * @param parallel 并行数量
+     * @param stages   任务列表
+     * @return 所有任务完成时返回的 CompletionStage
+     */
+    public static CompletionStage<Void> allOf(int parallel, List<? extends CompletionStage<?>> stages) {
+
+        // 参数校验
+        Objects.requireNonNull(stages, "stages must not be null");
+        if (parallel <= 0) {
+            throw new IllegalArgumentException("parallel must be greater than 0, but got: " + parallel);
+        }
+
+        // 空列表情况：直接返回已完成的阶段
+        if (stages.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        // 如果并行度大于等于任务数，直接使用 CompletableFuture.allOf()
+        if (parallel >= stages.size()) {
+            CompletableFuture<?>[] futures = stages.stream()
+                    .map(CompletionStage::toCompletableFuture)
+                    .toArray(CompletableFuture[]::new);
+            return CompletableFuture.allOf(futures);
+        }
+
+        final var queue = new ConcurrentLinkedQueue<>(stages);
+        final var runners = new CompletableFuture<?>[parallel];
+        for (int i = 0; i < parallel; i++) {
+            runners[i] = rolling(queue, CompletableFuture.completedStage(null)).toCompletableFuture();
+        }
+        return CompletableFuture.allOf(runners);
+    }
+
+    private static CompletionStage<?> rolling(Queue<? extends CompletionStage<?>> queue, CompletionStage<?> stage) {
+        return stage.thenCompose(unused -> {
+            final var next = queue.poll();
+            return next == null ? CompletableFuture.completedStage(null) : rolling(queue, next);
+        });
     }
 
 }

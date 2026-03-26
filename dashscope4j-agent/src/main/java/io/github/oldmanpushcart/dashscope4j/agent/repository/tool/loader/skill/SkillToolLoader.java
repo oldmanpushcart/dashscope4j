@@ -9,6 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,7 @@ public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoClo
     private final Path skillsRootDir;
     private final long debounceMillis;
     private final boolean lazy;
+    private final int parallel;
     private final Map<String, SkillInfo> loadedSkills;
     private final ExecutorService executor; // 用于异步任务处理
 
@@ -67,6 +69,7 @@ public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoClo
         this.skillsRootDir = builder.skillsRootDir.toAbsolutePath().normalize();
         this.debounceMillis = builder.debounceMillis;
         this.lazy = builder.lazy;
+        this.parallel = builder.parallel;
         this.loadedSkills = new HashMap<>();
 
         // 创建执行器（用于异步任务处理）
@@ -160,7 +163,7 @@ public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoClo
 
         // 等待所有 upsert 操作完成
         if (!futures.isEmpty()) {
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            CompletableFutureUtils.allOf(parallel, futures).toCompletableFuture().join();
         }
     }
 
@@ -195,7 +198,7 @@ public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoClo
         final String toolName = "skill$" + correctedSkillDef.name();
 
         // 创建 FunctionTool 并等待 upsert 完成
-        return updater.upsert(toolName, createSkillTool(correctedSkillDef))
+        return updater.upsert(toolName, createSkillTool(correctedSkillDef, skillDir))
                 .thenRun(() -> {
                     // 记录已加载的 Skill
                     try {
@@ -294,11 +297,12 @@ public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoClo
      * 工具名称格式：skill$<SKILL 名称>
      *
      * @param skillDef Skill 定义
+     * @param skillDir Skill 所在目录路径
      * @return FunctionTool 实例
      */
-    private static FunctionTool createSkillTool(SkillDefinition skillDef) {
+    private FunctionTool createSkillTool(SkillDefinition skillDef, Path skillDir) {
         final var toolName = "skill$" + skillDef.name();
-        
+
         return FunctionTool.newBuilder()
                 .name(toolName)
                 .description(buildToolDescription(skillDef))
@@ -308,7 +312,7 @@ public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoClo
                     logger.debug("Invoking skill: {} with input: {}", toolName, spec);
 
                     // 返回 Skill 的指令集，作为 ReAct 的提示
-                    String response = buildSkillResponse(skillDef, spec);
+                    String response = buildSkillResponse(skillDef, skillDir);
                     return CompletableFuture.completedStage(response);
 
                 })
@@ -348,21 +352,42 @@ public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoClo
     /**
      * 构建 Skill 响应（作为 ReAct 的提示）
      *
-     * @param def  Skill 定义
-     * @param spec 调用参数
+     * @param def Skill 定义
+     * @param skillDir Skill 所在目录路径
      * @return 响应文本，包含 Role、Goal、Constraints 等引导信息
      */
-    private static String buildSkillResponse(SkillDefinition def, SkillInvocationSpec spec) {
+    private static String buildSkillResponse(SkillDefinition def, Path skillDir) {
         return PromptTemplate.newBuilder()
                 .template("""
-                        ## 写在前边
-                        这里并非为最终答案，我将通过`描述正文`引导你完成任务。
-                        你需要根据引导进行思考和使用推荐的工具完成工作。现在请进行下一步的思考。
+                        [SYSTEM INSTRUCTION: SKILL MODE ACTIVATED]
+                        当前已加载专用技能指南。请严格遵循以下执行流程，不要直接输出最终答案。
                         
-                        ## 描述正文
+                        ## 1. 任务上下文 (来自技能文档)
+                        <skill_content>
                         ${skill_body}
+                        </skill_content>
+                        
+                        ## 2. 路径指引 (重要)
+                        - 当前技能位于目录：./skills/${skill_name}
+                        - 如果技能文档中引用了其他文件（如模板、配置文件等），所有路径都是**相对于该目录的相对路径**，在使用文件读取工具时，请务必使用正确的相对路径或绝对路径。
+                        
+                        **例如：引用路径为`./example.md`，实际路径应该为`./skills/${skill_name}/example.md`**
+                        
+                        ## 3. 执行指令 (最高优先级)
+                        根据上述 <skill_content> 中的指引，你当前的任务是**拆解并执行**其中提到的信息收集步骤。
+                        请务必执行以下操作：
+                        1. **分析** <skill_content>，提取出接下来需要验证或查询的具体关键点（例如：特定数据、最新新闻、对比信息等）。
+                        2. **构造** 获取上述关键点缺失的信息。
+                        3. **禁止** 在此时总结全文或给出最终结论，除非 <skill_content> 明确指出所有信息已完备。
+                        
+                        ## 4. 下一步行动建议
+                        请思考：为了落实 <skill_content> 中的要求，我现在最需要搜索什么？
+                        Action: search_tools
+                        Action Input: { "query": "在此处填入具体的搜索关键词", "intent": "在此处填入意图，如 'fact_check' 或 'data_retrieval'" }
                         """)
                 .variable("skill_body", def.bodyContent())
+                .variable("skill_dir", skillDir.toAbsolutePath().toString())
+                .variable("skill_name", def.name())
                 .build()
                 .render();
     }
@@ -508,7 +533,7 @@ public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoClo
                     }
 
                     // 处理每个变化的 skill
-                    List<CompletableFuture<Void>> futures = new ArrayList<>();
+                    List<CompletableFuture<?>> futures = new ArrayList<>();
                     for (Path skillDir : readyToProcess) {
                         try {
                             CompletableFuture<Void> future = reloadSingleSkillAsync(skillDir, updater);
@@ -517,10 +542,10 @@ public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoClo
                             logger.error("Failed to reload skill: {}", skillDir, e);
                         }
                     }
-                    
+
                     // 等待所有 reload 操作完成
                     if (!futures.isEmpty()) {
-                        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                        CompletableFutureUtils.allOf(parallel, futures).toCompletableFuture().join();
                     }
                 }
             } catch (InterruptedException e) {
@@ -583,7 +608,7 @@ public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoClo
         final String toolName = "skill$" + correctedSkillDef.name();
 
         // 更新到 updater 并等待完成
-        return updater.upsert(toolName, createSkillTool(correctedSkillDef))
+        return updater.upsert(toolName, createSkillTool(correctedSkillDef, skillDir))
                 .thenRun(() -> {
                     // 更新已加载的 Skill
                     try {
@@ -671,6 +696,7 @@ public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoClo
         private Path skillsRootDir;
         private long debounceMillis = 500; // 默认 500ms 防抖
         private boolean lazy = false; // 默认 eager 模式，立即加载
+        private int parallel = 10; // 默认并行度 10
 
         /**
          * 设置技能根目录（必需）
@@ -710,6 +736,22 @@ public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoClo
          */
         public Builder lazy(boolean lazy) {
             this.lazy = lazy;
+            return this;
+        }
+
+        /**
+         * Set the parallelism for skill loading.
+         * Controls how many skill load operations can run concurrently.
+         *
+         * @param parallel the parallelism level (must be greater than 0)
+         * @return this builder
+         * @throws IllegalArgumentException if parallel is less than or equal to 0
+         */
+        public Builder parallel(int parallel) {
+            if (parallel <= 0) {
+                throw new IllegalArgumentException("parallel must be greater than 0");
+            }
+            this.parallel = parallel;
             return this;
         }
 

@@ -2,6 +2,9 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.ToolRepository;
+import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.DashscopeToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.FileOpsToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.SystemToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp.McpToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp.RecoverableMcpClientTransport;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.skill.SkillToolLoader;
@@ -33,9 +36,9 @@ public class DebugTestCase implements LoadingEnv {
                 .name("tool")
                 .client(client)
                 .loader(Repository.Loader.group(List.of(
-                        // FileOpsToolLoader.INSTANCE,
-                        // DashscopeToolLoader.INSTANCE,
-                        // SystemToolLoader.INSTANCE,
+                        FileOpsToolLoader.INSTANCE,
+                        DashscopeToolLoader.INSTANCE,
+                        SystemToolLoader.INSTANCE,
                         McpToolLoader.newBuilder()
                                 .name("amap")
                                 .transport(transport)
@@ -68,8 +71,9 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(Message.user("""
-                            使用技能生成一份周报，并写入到weekly-report.md文件中
-                            杭州；2026年3月25日；
+                            我叫杜琨，请帮我使用速记模式生成一份周报
+                            
+                            杭州；当前时间是2026年3月25日；
                             我今天给汽车加了油，排了好长的队伍啊，油价好高。但不影响我下周去海南玩的心情。
                             """))
                     .toCompletableFuture()

@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.spec.McpClientTransport;
@@ -53,6 +54,7 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
     private final McpClientTransport transport;
     private final Duration syncInterval;
     private final boolean lazy;
+    private final int parallel;
     private final String _toString;
 
     // === Lifecycle ===
@@ -87,6 +89,7 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
         this.transport = builder.transport;
         this.syncInterval = builder.syncInterval;
         this.lazy = builder.lazy;
+        this.parallel = builder.parallel;
         this._toString = "dashscope4j-agent:/tool/loader/mcp/%s".formatted(builder.name);
         this.syncer = new Thread(this::syncing, "%s/syncer".formatted(this));
 
@@ -301,29 +304,19 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
             return CompletableFuture.completedStage(null);
         }
 
-        CompletionStage<Void> stage = CompletableFuture.completedStage(null);
-        for (Change change : changes) {
-            if (change.type() == Change.Type.REMOVE) {
-                stage = stage.thenCompose(unused -> updater.remove(change.name()))
-                        .exceptionally(ex -> {
-                            logger.warn("{} failed to remove tool: {}", this, change.name(), ex);
-                            return null;
-                        });
-            } else {
-                stage = stage.thenCompose(unused -> updater.upsert(change.name(), change.tool()))
-                        .exceptionally(ex -> {
-                            logger.warn("{} failed to upsert tool: {}", this, change.name(), ex);
-                            return null;
-                        });
-            }
-        }
-        stage = stage.thenAccept(unused -> {
-            final var upsertCnt = changes.stream().filter(Change::isUpsert).count();
-            final var removeCnt = changes.stream().filter(Change::isRemove).count();
-            logger.debug("{}/sync completed: version={}, +{}/-{}", this, version, upsertCnt, removeCnt);
-        });
+        final var stages = changes.stream()
+                .<CompletionStage<?>>map(change -> switch (change.type()) {
+                    case REMOVE -> updater.remove(change.name());
+                    case UPSERT -> updater.upsert(change.name(), change.tool());
+                })
+                .toList();
 
-        return stage;
+        return CompletableFutureUtils.allOf(parallel, stages)
+                .thenAccept(unused -> {
+                    final var upsertCnt = changes.stream().filter(Change::isUpsert).count();
+                    final var removeCnt = changes.stream().filter(Change::isRemove).count();
+                    logger.debug("{}/sync completed: version={}, +{}/-{}", this, version, upsertCnt, removeCnt);
+                });
     }
 
     @Override
@@ -394,6 +387,7 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
         private McpClientTransport transport;
         private Duration syncInterval = Duration.ofSeconds(10);
         private boolean lazy = false;
+        private int parallel = 10;
 
         public Builder name(String name) {
             this.name = name;
@@ -415,6 +409,22 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
 
         public Builder lazy(boolean lazy) {
             this.lazy = lazy;
+            return this;
+        }
+
+        /**
+         * Set the parallelism for tool synchronization.
+         * Controls how many tool sync operations can run concurrently.
+         *
+         * @param parallel the parallelism level (must be greater than 0)
+         * @return this builder
+         * @throws IllegalArgumentException if parallel is less than or equal to 0
+         */
+        public Builder parallel(int parallel) {
+            if (parallel <= 0) {
+                throw new IllegalArgumentException("parallel must be greater than 0");
+            }
+            this.parallel = parallel;
             return this;
         }
 

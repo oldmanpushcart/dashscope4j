@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.jspecify.annotations.NonNull;
 
 import java.io.BufferedReader;
@@ -52,12 +53,11 @@ public class FileOpsToolLoader implements Repository.Loader<String, Tool> {
                 diffFiles()
         );
         
-        // 串行等待所有 upsert 操作完成
-        CompletionStage<Void> stage = CompletableFuture.completedStage(null);
-        for (FunctionTool tool : tools) {
-            stage = stage.thenCompose(unused -> updater.upsert(tool.meta().name(), tool));
-        }
-        return stage;
+        // 并行等待所有 upsert 操作完成
+        final var stages = tools.stream()
+                .map(tool -> updater.upsert(tool.meta().name(), tool))
+                .toList();
+        return CompletableFutureUtils.allOf(10, stages);
     }
 
     @Override

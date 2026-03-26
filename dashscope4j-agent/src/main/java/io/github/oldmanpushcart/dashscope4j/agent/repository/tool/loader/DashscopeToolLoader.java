@@ -18,6 +18,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.GeneralAigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.BinaryFileSink;
 import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -749,12 +750,11 @@ public class DashscopeToolLoader implements Repository.Loader<String, Tool> {
                 tts()
         );
         
-        // 串行等待所有 upsert 操作完成
-        CompletionStage<Void> stage = CompletableFuture.completedStage(null);
-        for (FunctionTool tool : tools) {
-            stage = stage.thenCompose(unused -> updater.upsert(tool.meta().name(), tool));
-        }
-        return stage;
+        // 并行等待所有 upsert 操作完成
+        final var stages = tools.stream()
+                .map(tool -> updater.upsert(tool.meta().name(), tool))
+                .toList();
+        return CompletableFutureUtils.allOf(10, stages);
     }
 
     @Override
