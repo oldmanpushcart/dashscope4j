@@ -321,10 +321,21 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
 
     @Override
     public void close() {
-        logger.debug("{} closing...", this);
 
         // Signal shutdown
-        closeF.complete(null);
+        if (!closeF.complete(null)) {
+            return;
+        }
+
+        logger.debug("{} closing...", this);
+
+        // Remove Mcp Tool
+        if (updater != null) {
+            toolsMap.keySet().forEach(name -> {
+                updater.remove(name);
+            });
+            updater = null;
+        }
 
         // Close MCP client first to stop receiving events
         if (mcpClient != null) {
