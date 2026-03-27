@@ -2,804 +2,386 @@ package io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.skill;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
 import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
-import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Anthropic Skills 加载器
- * <p>
- * 根据 Anthropic Skills 规范，从本地技能目录加载工具：
- * - 扫描技能根目录下的所有子目录（每个子目录是一个 Skill）
- * - 解析每个 Skill 的 SKILL.md 文件（包含 YAML frontmatter 和 Markdown 主体）
- * - 将每个 Skill 注册为 FunctionTool，名称前缀为 skill$<SKILL 名称>$
- * - 监听文件变化，自动重新加载
- * <p>
- * 使用示例：
- * <pre>{@code
- * SkillToolLoader loader = SkillToolLoader.newBuilder()
- *     .skillsRootDir(Paths.get("/path/to/skills"))
- *     .debounceMillis(500)
- *     .build();
- * }</pre>
+ * Skill tool loader that registers skill-based tools to the tool repository.
+ * Works with multiple SkillLoader instances, each managing a single skill.
+ * 
+ * <h2>Design Principles:</h2>
+ * <ul>
+ *     <li><strong>SkillLoader Responsibility:</strong> Loads and manages a single skill's resources</li>
+ *     <li><strong>SkillToolLoader Responsibility:</strong> Registers tools based on skill definitions</li>
+ *     <li><strong>Resource Isolation:</strong> SkillToolLoader never directly accesses files - always through SkillLoader</li>
+ * </ul>
+ * 
+ * <h2>Architecture:</h2>
+ * <pre>
+ * SkillToolLoader (manages multiple loaders)
+ *   ├─ SkillLoader #1 → Skill A
+ *   ├─ SkillLoader #2 → Skill B
+ *   └─ SkillLoader #3 → Skill C
+ * </pre>
+ * 
+ * <h2>Tools Created per Skill:</h2>
+ * <ol>
+ *     <li><strong>Main Tool</strong> (skill${name}): Executes the skill's workflow defined in SKILL.md body</li>
+ *     <li><strong>Read File Tool</strong> (skill${name}$read-file): Reads any file from skill resources</li>
+ *     <li><strong>Execute Script Tool</strong> (skill${name}$exec-script): Executes scripts in skill resources</li>
+ * </ol>
  */
 public class SkillToolLoader implements Repository.Loader<String, Tool>, AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(SkillToolLoader.class);
-    private static final YAMLMapper YAML_MAPPER = new YAMLMapper();
-
-    private final Path skillsRootDir;
-    private final long debounceMillis;
-    private final boolean lazy;
-    private final int parallel;
-    private final Map<String, SkillInfo> loadedSkills;
-    private final ExecutorService executor; // 用于异步任务处理
-
-    // WatchService 和防抖相关（volatile 保证可见性）
-    private final WatchService watchService;
-    private volatile boolean isWatching;
-    private final Map<Path, Long> pendingChanges; // skillDir -> nextProcessTime
-    private final Object taskLock = new Object(); // 任务锁
-    private volatile CompletableFuture<Void> currentProcessingTask;
 
     /**
-     * 私有构造函数，通过 Builder 构建实例
+     * Map of skill loaders managed by this loader.
+     * Key: skill ID, Value: SkillLoader instance
      */
-    private SkillToolLoader(Builder builder) {
-        this.skillsRootDir = builder.skillsRootDir.toAbsolutePath().normalize();
-        this.debounceMillis = builder.debounceMillis;
-        this.lazy = builder.lazy;
-        this.parallel = builder.parallel;
-        this.loadedSkills = new HashMap<>();
+    private final Map<String, SkillLoader> skillLoaders = new ConcurrentHashMap<>();
 
-        // 创建执行器（用于异步任务处理）
-        this.executor = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "SkillToolLoader-Processor");
-            t.setDaemon(true);
-            return t;
-        });
+    private Repository.Updater<String, Tool> updater;
 
-        // 创建 WatchService（用于文件监听）
-        try {
-            this.watchService = FileSystems.getDefault().newWatchService();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create WatchService", e);
-        }
-
-        this.isWatching = false;
-        this.pendingChanges = new HashMap<>();
-        this.currentProcessingTask = null;
-        logger.info("SkillToolLoader initialized with skills root directory: {}, debounce: {}ms",
-                this.skillsRootDir, this.debounceMillis);
+    /**
+     * Constructor.
+     *
+     * @param skillLoaders Map of skill loaders to manage
+     */
+    public SkillToolLoader(Map<String, SkillLoader> skillLoaders) {
+        this.skillLoaders.putAll(skillLoaders);
     }
 
     /**
-     * 创建 Builder 实例
+     * Create a new SkillToolLoader instance from a single skill directory.
      *
-     * @return Builder
+     * @param skillDir The skill directory containing SKILL.md
+     * @return SkillToolLoader instance
      */
-    public static Builder newBuilder() {
-        return new Builder();
+    public static SkillToolLoader fromSingleSkill(Path skillDir) {
+        FileSkillLoader skillLoader = FileSkillLoader.fromSkillDir(skillDir);
+        Map<String, SkillLoader> loaders = new java.util.HashMap<>();
+        loaders.put(skillDir.getFileName().toString(), skillLoader);
+        return new SkillToolLoader(loaders);
     }
 
     @Override
     public CompletionStage<Void> init(Repository.Updater<String, Tool> updater) {
-        return CompletableFuture.completedStage(null)
-                .thenAccept(unused -> {
-                    try {
-                        if (lazy) {
-                            // Lazy 模式：仅创建目录，不立即加载，等待文件变化时触发
-                            logger.info("SkillToolLoader initialized in LAZY mode. Skills will be loaded on first change.");
-                            ensureSkillsDirExists();
-                        } else {
-                            // Eager 模式：立即加载所有 Skills
-                            loadAllSkillsSync(updater);
-                            logger.info("SkillToolLoader initialized successfully, loaded {} skills", loadedSkills.size());
-                        }
+        this.updater = updater;
 
-                        // 启动文件监听
-                        startWatching(updater);
-
-                    } catch (IOException e) {
-                        logger.error("Failed to initialize SkillToolLoader", e);
-                        throw new RuntimeException("Failed to initialize SkillToolLoader", e);
+        // Initialize all skill loaders and load skills in parallel
+        List<CompletionStage<Void>> initializations = new ArrayList<>();
+        
+        for (SkillLoader loader : skillLoaders.values()) {
+            initializations.add(CompletableFuture.runAsync(() -> {
+                try {
+                    loader.init();
+                    SkillDefinition skillDef = loader.getSkill();
+                    if (skillDef != null) {
+                        logger.info("Initialized skill loader: {}", skillDef.name());
                     }
-                });
-    }
-
-    /**
-     * 确保技能目录存在
-     */
-    private void ensureSkillsDirExists() throws IOException {
-        if (!Files.exists(skillsRootDir)) {
-            logger.warn("Skills root directory does not exist: {}, creating it", skillsRootDir);
-            Files.createDirectories(skillsRootDir);
-        }
-
-        if (!Files.isDirectory(skillsRootDir)) {
-            throw new IOException("Skills root path is not a directory: " + skillsRootDir);
-        }
-    }
-
-    /**
-     * 加载所有 Skills（同步版本，等待所有 upsert 完成）
-     */
-    private void loadAllSkillsSync(Repository.Updater<String, Tool> updater) throws IOException {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-
-        // 遍历所有子目录（每个子目录是一个 Skill）
-        try (var stream = Files.list(skillsRootDir)) {
-            stream
-                    .filter(Files::isDirectory)
-                    .forEach(skillDir -> {
-                        try {
-                            CompletableFuture<Void> future = loadSingleSkillAsync(skillDir, updater);
-                            futures.add(future);
-                        } catch (Exception e) {
-                            logger.error("Failed to load skill from directory: {}", skillDir, e);
-                        }
-                    });
-        }
-
-        // 等待所有 upsert 操作完成
-        if (!futures.isEmpty()) {
-            CompletableFutureUtils.allOf(parallel, futures).toCompletableFuture().join();
-        }
-    }
-
-    /**
-     * 异步加载单个 Skill
-     *
-     * @param skillDir Skill 目录
-     * @param updater  仓库更新器
-     * @return 异步完成标识
-     */
-    private CompletableFuture<Void> loadSingleSkillAsync(Path skillDir, Repository.Updater<String, Tool> updater) throws IOException {
-        Path skillMdPath = skillDir.resolve("SKILL.md");
-
-        if (!Files.exists(skillMdPath)) {
-            logger.warn("SKILL.md not found in directory: {}, skipping", skillDir);
-            return CompletableFuture.completedFuture(null);
-        }
-
-        // 读取并解析 SKILL.md
-        String content = Files.readString(skillMdPath);
-        SkillDefinition skillDef = parseSkillMd(content);
-
-        if (skillDef == null) {
-            logger.error("Failed to parse SKILL.md in directory: {}", skillDir);
-            return CompletableFuture.completedFuture(null);
-        }
-
-        // 验证 name 字段与目录名一致
-        SkillDefinition correctedSkillDef = validateAndCorrectSkillName(skillDef, skillDir);
-
-        // 最终的工具名称：skill$<SKILL 名称>
-        final String toolName = "skill$" + correctedSkillDef.name();
-
-        // 创建 FunctionTool 并等待 upsert 完成
-        return updater.upsert(toolName, createSkillTool(correctedSkillDef, skillDir))
-                .thenRun(() -> {
-                    // 记录已加载的 Skill
-                    try {
-                        loadedSkills.put(toolName, new SkillInfo(skillDir, correctedSkillDef, Files.getLastModifiedTime(skillMdPath).toMillis()));
-                        logger.info("Loaded skill: {} from directory: {}", toolName, skillDir);
-                    } catch (IOException e) {
-                        logger.error("Failed to get last modified time for skill: {}", toolName, e);
-                    }
-                }).toCompletableFuture();
-    }
-
-
-    /**
-     * 验证并校正 Skill 名称（确保与目录名一致）
-     *
-     * @param skillDef Skill 定义
-     * @param skillDir Skill 目录
-     * @return 校正后的 Skill 定义
-     */
-    private SkillDefinition validateAndCorrectSkillName(SkillDefinition skillDef, Path skillDir) {
-        String dirName = skillDir.getFileName().toString();
-        if (!skillDef.name().equals(dirName)) {
-            logger.warn("Skill name '{}' does not match directory name '{}', using directory name",
-                    skillDef.name(), dirName);
-            return new SkillDefinition(
-                    dirName,
-                    skillDef.description(),
-                    skillDef.license(),
-                    skillDef.compatibility(),
-                    skillDef.metadata(),
-                    skillDef.allowedTools(),
-                    skillDef.bodyContent()
-            );
-        }
-        return skillDef;
-    }
-
-    /**
-     * 解析 SKILL.md 文件
-     *
-     * @param content SKILL.md 内容
-     * @return SkillDefinition 对象
-     */
-    private SkillDefinition parseSkillMd(String content) {
-        // 提取 YAML frontmatter（--- 之间的部分）
-        Pattern frontmatterPattern = Pattern.compile("^---\\s*\n(.*?)\n---\\s*\n(.*)", Pattern.DOTALL);
-        Matcher matcher = frontmatterPattern.matcher(content);
-
-        if (!matcher.matches()) {
-            logger.error("Invalid SKILL.md format: missing YAML frontmatter");
-            return null;
-        }
-
-        String yamlContent = matcher.group(1);
-        String bodyContent = matcher.group(2);
-
-        try {
-            // 解析 YAML 为 JsonNode
-            JsonNode yamlNode = YAML_MAPPER.readTree(yamlContent);
-
-            String name = yamlNode.has("name") ? yamlNode.get("name").asText() : null;
-            String description = yamlNode.has("description") ? yamlNode.get("description").asText() : "";
-            String license = yamlNode.has("license") ? yamlNode.get("license").asText() : null;
-            String compatibility = yamlNode.has("compatibility") ? yamlNode.get("compatibility").asText() : null;
-
-            // 解析 metadata（可选）
-            Map<String, String> metadata = new HashMap<>();
-            if (yamlNode.has("metadata") && yamlNode.get("metadata").isObject()) {
-                JsonNode metadataNode = yamlNode.get("metadata");
-                // 使用 properties() 替代已废弃的 fields()
-                metadataNode.properties().forEach(entry ->
-                        metadata.put(entry.getKey(), entry.getValue().asText())
-                );
-            }
-
-            // 解析 allowed-tools（可选）
-            List<String> allowedTools = new ArrayList<>();
-            if (yamlNode.has("allowed-tools") && yamlNode.get("allowed-tools").isArray()) {
-                JsonNode allowedToolsNode = yamlNode.get("allowed-tools");
-                for (JsonNode node : allowedToolsNode) {
-                    allowedTools.add(node.asText());
+                } catch (Exception e) {
+                    logger.error("Failed to initialize skill loader", e);
                 }
-            }
-
-            return new SkillDefinition(name, description, license, compatibility, metadata, allowedTools, bodyContent);
-
-        } catch (IOException e) {
-            logger.error("Failed to parse YAML frontmatter", e);
-            return null;
+            }));
         }
+        
+        return CompletableFuture.allOf(initializations.toArray(new CompletableFuture[0]))
+                .thenCompose(v -> {
+                    // Create tools for all loaded skills in parallel
+                    List<CompletionStage<Void>> toolCreations = new ArrayList<>();
+                    for (Map.Entry<String, SkillLoader> entry : skillLoaders.entrySet()) {
+                        SkillLoader loader = entry.getValue();
+                        SkillDefinition skillDef = loader.getSkill();
+                        if (skillDef != null) {
+                            toolCreations.add(createSkillToolsAsync(skillDef));
+                        }
+                    }
+                    
+                    // Wait for all tool creations to complete
+                    return CompletableFuture.allOf(
+                        toolCreations.toArray(new CompletableFuture[0])
+                    );
+                })
+                .thenRun(() -> logger.info("Initialized {} skills", skillLoaders.size()));
     }
 
     /**
-     * 创建 Skill 对应的 FunctionTool
-     * <p>
-     * 工具名称格式：skill$<SKILL 名称>
-     *
-     * @param skillDef Skill 定义
-     * @param skillDir Skill 所在目录路径
-     * @return FunctionTool 实例
+     * Create tools for a skill asynchronously.
      */
-    private FunctionTool createSkillTool(SkillDefinition skillDef, Path skillDir) {
-        final var toolName = "skill$" + skillDef.name();
+    private CompletionStage<Void> createSkillToolsAsync(SkillDefinition skillDef) {
+        String skillName = skillDef.name();
 
+        // Create all tools in parallel
+        List<CompletionStage<Void>> toolCreations = new ArrayList<>();
+        
+        // 1. Main skill tool
+        FunctionTool mainTool = createMainSkillTool(skillDef);
+        toolCreations.add(updater.upsert("skill$" + skillName, mainTool)
+                .thenRun(() -> logger.info("Created main tool: {}", skillName)));
+
+        // 2. Read-file tool
+        FunctionTool readFileTool = createReadFileTool(skillDef);
+        toolCreations.add(updater.upsert("skill$" + skillName + "$read-file", readFileTool)
+                .thenRun(() -> logger.info("Created read-file tool: {}", skillName)));
+
+        // 3. Execute-script tool
+        FunctionTool execScriptTool = createExecuteScriptTool(skillDef);
+        toolCreations.add(updater.upsert("skill$" + skillName + "$exec-script", execScriptTool)
+                .thenRun(() -> logger.info("Created exec-script tool: {}", skillName)));
+        
+        // Return a CompletableFuture that completes when all tools are created
+        return CompletableFuture.allOf(
+            toolCreations.toArray(new CompletableFuture[0])
+        );
+    }
+    
+    /**
+     * Remove all tools for a skill asynchronously.
+     */
+    private CompletionStage<Void> removeSkillToolsAsync(String skillId) {
+        // Remove all tools in parallel
+        List<CompletionStage<Void>> removals = new ArrayList<>();
+        
+        removals.add(updater.remove("skill$" + skillId));
+        removals.add(updater.remove("skill$" + skillId + "$read-file"));
+        removals.add(updater.remove("skill$" + skillId + "$exec-script"));
+        
+        return CompletableFuture.allOf(
+                removals.toArray(new CompletableFuture[0])
+            )
+            .thenRun(() -> logger.info("Removed tools for skill: {}", skillId));
+    }
+
+    /**
+     * Create main skill tool that executes the workflow defined in SKILL.md body.
+     * 
+     * <p>The tool will:</p>
+     * <ol>
+     *     <li>Return the SKILL.md body content as instructions (default behavior)</li>
+     *     <li>Optionally execute scripts if specified in the input</li>
+     * </ol>
+     */
+    private FunctionTool createMainSkillTool(SkillDefinition skillDef) {
         return FunctionTool.newBuilder()
-                .name(toolName)
-                .description(buildToolDescription(skillDef))
+                .name("skill$" + skillDef.name())
+                .description(buildDescription(skillDef))
                 .parameterType(SkillInvocationSpec.class)
                 .<SkillInvocationSpec>function((caller, spec) -> {
-                    // Skill 调用逻辑
-                    logger.debug("Invoking skill: {} with input: {}", toolName, spec);
+                    logger.debug("Executing skill: {} with input: {}",
+                            skillDef.name(), spec);
 
-                    // 返回 Skill 的指令集，作为 ReAct 的提示
-                    String response = buildSkillResponse(skillDef, skillDir);
-                    return CompletableFuture.completedStage(response);
+                    try {
+                        // Return the skill's body content as workflow instructions
+                        // The body contains the actual skill logic and prompts
+                        return CompletableFuture.completedStage(skillDef.bodyContent());
 
+                    } catch (Exception e) {
+                        return CompletableFuture.failedFuture(
+                                new RuntimeException("Failed to execute skill: " + e.getMessage(), e)
+                        );
+                    }
                 })
                 .build();
     }
 
     /**
-     * 构建工具描述（仅包含 YAML 元数据）
-     *
-     * @param def Skill 定义
-     * @return 工具描述文本
+     * Create read-file tool for accessing files within the skill resources.
+     * 
+     * <p>This tool allows LLM to read any file from the skill's resource directory.</p>
+     * <p><strong>Security:</strong> Path traversal is prevented - can only access files within the skill's base directory.</p>
      */
-    private static String buildToolDescription(SkillDefinition def) {
-        return PromptTemplate.newBuilder()
-                .template("""
-                        这是一个`SKILL`工具，里面描述了如何解决问题并最终得到答案。
-                        
-                        ## 名称: ${skill_name}
-                        
-                        ## 描述
-                        ${skill_description}
-                        
-                        ## 能力
-                        ${skill_compatibility}
-                        
-                        ## 使用工具
-                        ${skill_allowed_tools}
-                        """)
-                .variable("skill_name", def.name())
-                .variable("skill_description", def.description())
-                .variable("skill_compatibility", def.compatibility())
-                .variable("skill_allowed_tools", def.allowedTools())
-                .build()
-                .render();
-    }
-
-    /**
-     * 构建 Skill 响应（作为 ReAct 的提示）
-     *
-     * @param def Skill 定义
-     * @param skillDir Skill 所在目录路径
-     * @return 响应文本，包含 Role、Goal、Constraints 等引导信息
-     */
-    private static String buildSkillResponse(SkillDefinition def, Path skillDir) {
-        return PromptTemplate.newBuilder()
-                .template("""
-                        [SYSTEM INSTRUCTION: SKILL MODE ACTIVATED]
-                        当前已加载专用技能指南。请严格遵循以下执行流程，不要直接输出最终答案。
-                        
-                        ## 1. 任务上下文 (来自技能文档)
-                        <skill_content>
-                        ${skill_body}
-                        </skill_content>
-                        
-                        ## 2. 路径指引 (重要)
-                        - 当前技能位于目录：./skills/${skill_name}
-                        - 如果技能文档中引用了其他文件（如模板、配置文件等），所有路径都是**相对于该目录的相对路径**，在使用文件读取工具时，请务必使用正确的相对路径或绝对路径。
-                        
-                        **例如：引用路径为`./example.md`，实际路径应该为`./skills/${skill_name}/example.md`**
-                        
-                        ## 3. 执行指令 (最高优先级)
-                        根据上述 <skill_content> 中的指引，你当前的任务是**拆解并执行**其中提到的信息收集步骤。
-                        请务必执行以下操作：
-                        1. **分析** <skill_content>，提取出接下来需要验证或查询的具体关键点（例如：特定数据、最新新闻、对比信息等）。
-                        2. **构造** 获取上述关键点缺失的信息。
-                        3. **禁止** 在此时总结全文或给出最终结论，除非 <skill_content> 明确指出所有信息已完备。
-                        
-                        ## 4. 下一步行动建议
-                        请思考：为了落实 <skill_content> 中的要求，我现在最需要搜索什么？
-                        Action: search_tools
-                        Action Input: { "query": "在此处填入具体的搜索关键词", "intent": "在此处填入意图，如 'fact_check' 或 'data_retrieval'" }
-                        """)
-                .variable("skill_body", def.bodyContent())
-                .variable("skill_dir", skillDir.toAbsolutePath().toString())
-                .variable("skill_name", def.name())
-                .build()
-                .render();
-    }
-
-    /**
-     * 启动文件监听，当 Skill 文件变更时重新加载
-     */
-    private void startWatching(Repository.Updater<String, Tool> updater) {
-        // 注册根目录和现有子目录的监听
-        registerDirectory(skillsRootDir, watchService);
-        try (var stream = Files.list(skillsRootDir)) {
-            stream
-                    .filter(Files::isDirectory)
-                    .forEach(dir -> registerDirectory(dir, watchService));
-        } catch (IOException e) {
-            logger.error("Failed to list skill directories", e);
-        }
-
-        isWatching = true;
-
-        // 在后台线程中监听文件变化
-        Thread watchThread = new Thread(() -> runWatchLoop(watchService, updater), "SkillToolLoader-WatchLoop");
-        watchThread.setDaemon(true);
-        watchThread.start();
-
-        logger.info("Started watching skill directory changes");
-    }
-
-    /**
-     * 运行文件监听循环
-     */
-    private void runWatchLoop(WatchService watchService, Repository.Updater<String, Tool> updater) {
-        logger.debug("Watch loop started");
-        while (isWatching) {
-            WatchKey key = null;
-            try {
-                logger.trace("Waiting for watch key...");
-                key = watchService.take();
-                logger.debug("Watch key received: {}", key);
-
-                for (WatchEvent<?> event : key.pollEvents()) {
-                    WatchEvent.Kind<?> kind = event.kind();
-                    Path changedPath = (Path) event.context();
-                    Path contextPath = ((Path) key.watchable()).resolve(changedPath);
-
-                    logger.debug("File event detected: kind={}, path={}, context={}", kind, changedPath, contextPath);
-
-                    // 检查是否是 SKILL.md 文件或新目录
-                    if (changedPath.toString().equals("SKILL.md")) {
-                        // SKILL.md 文件变化，加入待处理队列
-                        logger.debug("SKILL.md changed, scheduling reload for: {}", contextPath.getParent());
-                        scheduleReload(contextPath.getParent(), updater);
-                    } else if (Files.isDirectory(contextPath)) {
-                        // 新目录创建，注册监听并重新加载
-                        if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-                            logger.debug("New directory created: {}, registering watch", contextPath);
-                            registerDirectory(contextPath, watchService);
-                        }
-                        logger.debug("Directory change detected: {}", contextPath);
-                        scheduleReload(contextPath, updater);
-                    }
-                }
-
-                key.reset();
-
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Exception e) {
-                logger.error("Error watching file changes", e);
-                if (key != null) {
-                    key.reset();
-                }
-            }
-        }
-        logger.debug("Watch loop stopped");
-    }
-
-    /**
-     * 注册目录监听
-     */
-    private void registerDirectory(Path dir, WatchService watchService) {
-        try {
-            if (Files.isDirectory(dir)) {
-                dir.register(watchService,
-                        StandardWatchEventKinds.ENTRY_CREATE,
-                        StandardWatchEventKinds.ENTRY_MODIFY,
-                        StandardWatchEventKinds.ENTRY_DELETE);
-                logger.debug("Registered watch for directory: {}", dir);
-            }
-        } catch (IOException e) {
-            logger.warn("Failed to register watch for directory: {}", dir, e);
-        }
-    }
-
-    /**
-     * 调度重新加载任务（带防抖）
-     */
-    private void scheduleReload(Path skillDir, Repository.Updater<String, Tool> updater) {
-        long currentTime = System.currentTimeMillis();
-        long processTime = currentTime + debounceMillis;
-
-        synchronized (pendingChanges) {
-            pendingChanges.put(skillDir, processTime);
-            logger.debug("Scheduled reload for skill: {} at {}", skillDir, processTime);
-        }
-
-        // 启动处理任务（使用简单的同步检查）
-        synchronized (taskLock) {
-            if (currentProcessingTask == null || currentProcessingTask.isDone()) {
-                currentProcessingTask = processPendingChanges(updater);
-            }
-        }
-    }
-
-
-    /**
-     * 处理待处理的变更（带防抖逻辑）
-     */
-    private CompletableFuture<Void> processPendingChanges(Repository.Updater<String, Tool> updater) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                while (isWatching) {
-                    Thread.sleep(50); // 短暂休眠，避免空转
-
-                    long currentTime = System.currentTimeMillis();
-                    List<Path> readyToProcess;
-
-                    synchronized (pendingChanges) {
-                        // 找出所有已到期的任务
-                        readyToProcess = pendingChanges.entrySet().stream()
-                                .filter(entry -> entry.getValue() <= currentTime)
-                                .map(Map.Entry::getKey)
-                                .toList();
-
-                        if (readyToProcess.isEmpty()) {
-                            // 没有待处理的任务，继续等待下一批
-                            continue;
-                        }
-
-                        // 移除已处理的任务
-                        readyToProcess.forEach(pendingChanges::remove);
-                    }
-
-                    // 处理每个变化的 skill
-                    List<CompletableFuture<?>> futures = new ArrayList<>();
-                    for (Path skillDir : readyToProcess) {
-                        try {
-                            CompletableFuture<Void> future = reloadSingleSkillAsync(skillDir, updater);
-                            futures.add(future);
-                        } catch (Exception e) {
-                            logger.error("Failed to reload skill: {}", skillDir, e);
-                        }
-                    }
-
-                    // 等待所有 reload 操作完成
-                    if (!futures.isEmpty()) {
-                        CompletableFutureUtils.allOf(parallel, futures).toCompletableFuture().join();
-                    }
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } catch (Exception e) {
-                logger.error("Error processing pending changes", e);
-            }
-        }, executor);
-    }
-
-    /**
-     * 重新加载单个 Skill（异步版本，等待 upsert 完成）
-     */
-    private CompletableFuture<Void> reloadSingleSkillAsync(Path skillDir, Repository.Updater<String, Tool> updater) throws IOException {
-        // 初始工具名称（用于查找已加载的技能）：skill$<目录名>
-        final String initialToolName = "skill$" + skillDir.getFileName();
-
-        logger.info("Reloading skill: {} from directory: {}", initialToolName, skillDir);
-
-        // 检查目录是否存在
-        if (!Files.exists(skillDir) || !Files.isDirectory(skillDir)) {
-            // 目录被删除，移除工具
-            if (loadedSkills.containsKey(initialToolName)) {
-                return updater.remove(initialToolName)
-                        .thenRun(() -> {
-                            loadedSkills.remove(initialToolName);
-                            logger.info("Removed deleted skill: {}", initialToolName);
-                        }).toCompletableFuture();
-            }
-            return CompletableFuture.completedFuture(null);
-        }
-
-        // 检查 SKILL.md 是否存在
-        Path skillMdPath = skillDir.resolve("SKILL.md");
-        if (!Files.exists(skillMdPath)) {
-            // SKILL.md 被删除，移除工具
-            if (loadedSkills.containsKey(initialToolName)) {
-                return updater.remove(initialToolName)
-                        .thenRun(() -> {
-                            loadedSkills.remove(initialToolName);
-                            logger.info("Removed skill due to missing SKILL.md: {}", initialToolName);
-                        }).toCompletableFuture();
-            }
-            return CompletableFuture.completedFuture(null);
-        }
-
-        // 读取并解析 SKILL.md
-        String content = Files.readString(skillMdPath);
-        SkillDefinition skillDef = parseSkillMd(content);
-
-        if (skillDef == null) {
-            logger.error("Failed to parse SKILL.md in directory: {}, keeping old version if exists", skillDir);
-            return CompletableFuture.completedFuture(null);
-        }
-
-        // 验证 name 字段与目录名一致
-        SkillDefinition correctedSkillDef = validateAndCorrectSkillName(skillDef, skillDir);
-
-        // 最终的工具名称：skill$<SKILL 名称>
-        final String toolName = "skill$" + correctedSkillDef.name();
-
-        // 更新到 updater 并等待完成
-        return updater.upsert(toolName, createSkillTool(correctedSkillDef, skillDir))
-                .thenRun(() -> {
-                    // 更新已加载的 Skill
+    private FunctionTool createReadFileTool(SkillDefinition skillDef) {
+        return FunctionTool.newBuilder()
+                .name("skill$" + skillDef.name() + "$read-file")
+                .description("Read any file from the skill's resource directory. " +
+                        "Use this tool to access skill-specific files such as templates, documentation, or data files. " +
+                        "The path parameter must be relative to the skill's base directory. " +
+                        "Examples: 'weekly-report-template.md', 'scripts/extract_data.py', 'docs/guide.md'. " +
+                        "Note: For security reasons, you can only access files within this skill's directory. " +
+                        "Cross-skill access or accessing parent directories is not allowed.")
+                .parameterType(FileReadSpec.class)
+                .<FileReadSpec>function((caller, spec) -> {
                     try {
-                        loadedSkills.put(toolName, new SkillInfo(skillDir, correctedSkillDef, Files.getLastModifiedTime(skillMdPath).toMillis()));
-                        logger.info("Reloaded skill: {} successfully", toolName);
+                        // Read file through SkillLoader's ResourceProvider
+                        String content = readSkillFile(skillDef, spec.path());
+                        return CompletableFuture.completedStage(content);
                     } catch (IOException e) {
-                        logger.error("Failed to get last modified time for skill: {}", toolName, e);
+                        return CompletableFuture.failedFuture(
+                                new IOException("Failed to read file: " + spec.path() +
+                                        " - " + e.getMessage(), e)
+                        );
+                    } catch (SecurityException e) {
+                        return CompletableFuture.failedFuture(
+                                new SecurityException("Access denied: " + e.getMessage())
+                        );
                     }
-                }).toCompletableFuture();
+                })
+                .build();
     }
 
     /**
-     * 重新加载所有 Skills（保留防抖机制）
+     * Create execute-script tool for running scripts in the skill resources.
+     * 
+     * <p>This tool allows LLM to execute scripts (Python, Node.js, Bash, etc.) within the skill's resource directory.</p>
+     * <p><strong>Security Features:</strong></p>
+     * <ul>
+     *     <li>Path traversal prevention - scripts must be within skill's base directory</li>
+     *     <li>Timeout control - scripts are terminated after 60 seconds</li>
+     *     <li>Interpreter auto-detection based on file extension</li>
+     * </ul>
      */
-    private void reloadAllSkills(Repository.Updater<String, Tool> updater) {
-        logger.info("Reloading all skills...");
+    private FunctionTool createExecuteScriptTool(SkillDefinition skillDef) {
+        return FunctionTool.newBuilder()
+                .name("skill$" + skillDef.name() + "$exec-script")
+                .description("Execute a script in the skill's resource directory. " +
+                        "Supports Python (.py), Node.js (.js), Bash (.sh), Ruby (.rb), and other interpreters. " +
+                        "Use this tool to run custom scripts that process data, generate reports, or perform automated tasks. " +
+                        "Parameters: script_path (relative path like 'scripts/extract.py'), " +
+                        "args (command-line arguments array). " +
+                        "Example usage: script_path='scripts/extract_data.py', args=['/mnt/data/invoice.pdf']. " +
+                        "Note: Script execution is sandboxed with security restrictions including path validation " +
+                        "and a 60-second timeout to prevent resource abuse.")
+                .parameterType(ScriptExecSpec.class)
+                .<ScriptExecSpec>function((caller, spec) -> {
+                    try {
+                        // Execute script through SkillLoader's ResourceProvider
+                        String result = executeSkillScript(skillDef, spec);
+                        return CompletableFuture.completedStage(result);
 
-        try {
-            // 清空已加载的 Skills
-            loadedSkills.keySet().forEach(key -> {
-                try {
-                    updater.remove(key);
-                } catch (Exception e) {
-                    logger.error("Failed to remove skill: {}", key, e);
-                }
-            });
-            loadedSkills.clear();
+                    } catch (IOException e) {
+                        return CompletableFuture.failedFuture(
+                                new IOException("Failed to execute script: " + e.getMessage(), e)
+                        );
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return CompletableFuture.failedFuture(
+                                new RuntimeException("Script execution interrupted", e)
+                        );
+                    } catch (Exception e) {
+                        return CompletableFuture.failedFuture(
+                                new RuntimeException("Error executing script: " + e.getMessage(), e)
+                        );
+                    }
+                })
+                .build();
+    }
 
-            // 重新加载（使用异步版本并等待完成）
-            try {
-                loadAllSkillsSync(updater);
-            } catch (Exception e) {
-                logger.error("Failed to reload skills", e);
-                throw e;
-            }
-
-            logger.info("Reloaded {} skills", loadedSkills.size());
-
-        } catch (IOException e) {
-            logger.error("Failed to reload skills", e);
+    /**
+     * Read a file from skill resources through SkillLoader.
+     * This is the ONLY way SkillToolLoader accesses files - completely isolated from storage implementation.
+     */
+    private String readSkillFile(SkillDefinition skillDef, String relativePath) throws IOException {
+        // Get the skill loader for this skill and read resource
+        SkillLoader loader = skillLoaders.get(skillDef.name());
+        if (loader == null) {
+            throw new IOException("No skill loader found for skill: " + skillDef.name());
         }
+        return loader.withSkill(skillDef)
+                     .readResource(relativePath);
+    }
+    
+    /**
+     * Execute a script in skill resources through SkillLoader.
+     */
+    private String executeSkillScript(SkillDefinition skillDef, ScriptExecSpec spec) throws Exception {
+        // Get the skill loader for this skill and execute script
+        SkillLoader loader = skillLoaders.get(skillDef.name());
+        if (loader == null) {
+            throw new Exception("No skill loader found for skill: " + skillDef.name());
+        }
+        return loader.withSkill(skillDef)
+                     .executeScript(spec.scriptPath(), spec.args(), spec.interpreter());
+    }
+
+    private String buildDescription(SkillDefinition skillDef) {
+        return PromptTemplate.newBuilder()
+                .template("""
+                        ${description}
+                        
+                        ## Available Capabilities
+                        
+                        This skill provides the following tools:
+                        1. **Main Tool** (this): Execute the complete workflow automatically
+                        2. **Read File** (skill$${name}$read-file): Read any file in the skill directory
+                        3. **Execute Script** (skill$${name}$exec-script): Run custom scripts with parameters
+                        
+                        ## Workflow
+                        
+                        The skill will automatically execute its built-in workflow when called.
+                        For advanced usage, you can use the read-file or exec-script sub-tools.
+                        
+                        ## License
+                        ${license}
+                        """)
+                .variable("description", skillDef.description())
+                .variable("name", skillDef.name())
+                .variable("license", skillDef.license() != null ? skillDef.license() : "Unknown")
+                .build()
+                .render();
     }
 
     @Override
     public void close() {
-        // 停止监听
-        isWatching = false;
-
-        // 关闭 WatchService
-        if (watchService != null) {
+        for (SkillLoader loader : skillLoaders.values()) {
             try {
-                watchService.close();
-            } catch (IOException e) {
-                logger.error("Failed to close watch service", e);
+                loader.close();
+            } catch (Exception e) {
+                logger.warn("Error closing skill loader", e);
             }
         }
-
-        // 关闭执行器（优雅关闭）
-        if (executor != null) {
-            executor.shutdown();
-            try {
-                if (!executor.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
-                    executor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executor.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        // 清空缓存
-        loadedSkills.clear();
-        pendingChanges.clear();
-
+        skillLoaders.clear();
         logger.info("SkillToolLoader closed");
     }
 
-    // ==================== Builder 模式 ====================
-
     /**
-     * Builder for creating {@link SkillToolLoader} instances.
+     * File read parameter specification.
      */
-    public static class Builder implements Buildable<SkillToolLoader, Builder> {
-
-        private Path skillsRootDir;
-        private long debounceMillis = 500; // 默认 500ms 防抖
-        private boolean lazy = false; // 默认 eager 模式，立即加载
-        private int parallel = 10; // 默认并行度 10
-
-        /**
-         * 设置技能根目录（必需）
-         *
-         * @param skillsRootDir 技能根目录路径
-         * @return Builder
-         */
-        public Builder skillsRootDir(Path skillsRootDir) {
-            this.skillsRootDir = skillsRootDir;
-            return this;
-        }
-
-        /**
-         * 设置防抖时间（可选，默认 500ms）
-         * <p>
-         * 当同一个 skill 文件在短时间内多次变化时，只会触发一次加载。
-         *
-         * @param debounceMillis 防抖时间（毫秒）
-         * @return Builder
-         */
-        public Builder debounceMillis(long debounceMillis) {
-            if (debounceMillis < 0) {
-                throw new IllegalArgumentException("debounceMillis must be non-negative");
-            }
-            this.debounceMillis = debounceMillis;
-            return this;
-        }
-
-        /**
-         * 设置是否使用 lazy 加载模式（可选，默认 false）
-         * <p>
-         * - lazy=false（eager 模式）：初始化时立即加载所有现有 skills
-         * - lazy=true（lazy 模式）：初始化时不加载，仅在检测到文件变化时加载
-         *
-         * @param lazy 是否使用 lazy 模式
-         * @return Builder
-         */
-        public Builder lazy(boolean lazy) {
-            this.lazy = lazy;
-            return this;
-        }
-
-        /**
-         * Set the parallelism for skill loading.
-         * Controls how many skill load operations can run concurrently.
-         *
-         * @param parallel the parallelism level (must be greater than 0)
-         * @return this builder
-         * @throws IllegalArgumentException if parallel is less than or equal to 0
-         */
-        public Builder parallel(int parallel) {
-            if (parallel <= 0) {
-                throw new IllegalArgumentException("parallel must be greater than 0");
-            }
-            this.parallel = parallel;
-            return this;
-        }
-
-        @Override
-        public SkillToolLoader build() {
-            if (skillsRootDir == null) {
-                throw new IllegalArgumentException("skillsRootDir is required");
-            }
-            return new SkillToolLoader(this);
-        }
-    }
-
-    // ==================== 数据结构 ====================
-
-    /**
-     * Skill 定义信息
-     */
-    private record SkillDefinition(
-            String name,
-            String description,
-            String license,
-            String compatibility,
-            Map<String, String> metadata,
-            List<String> allowedTools,
-            String bodyContent
+    public record FileReadSpec(
+            @JsonPropertyDescription("Relative file path within the skill directory")
+            @JsonProperty("path")
+            String path
     ) {
     }
 
     /**
-     * 已加载 Skill 的信息
+     * Script execution parameter specification.
      */
-    private record SkillInfo(
-            Path directory,
-            SkillDefinition definition,
-            long lastModifiedTime
+    public record ScriptExecSpec(
+            @JsonPropertyDescription("Relative script path, e.g., 'scripts/extract.py'")
+            @JsonProperty("script_path")
+            String scriptPath,
+
+            @JsonPropertyDescription("Command-line arguments array")
+            @JsonProperty("args")
+            List<String> args,
+
+            @JsonPropertyDescription("Interpreter override (optional), e.g., 'python', 'node', 'bash'")
+            @JsonProperty("interpreter")
+            String interpreter
     ) {
     }
 
     /**
-     * Skill 调用参数规格
+     * Skill invocation parameter specification.
      */
     public record SkillInvocationSpec(
-
-            @JsonPropertyDescription("输入参数（JSON 格式）")
+            @JsonPropertyDescription("Input parameters (JSON format)")
             @JsonProperty("input")
             String input
-
     ) {
     }
-
 }

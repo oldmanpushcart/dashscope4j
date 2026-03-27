@@ -42,9 +42,6 @@ public class DebugTestCase implements LoadingEnv {
                         McpToolLoader.newBuilder()
                                 .name("amap")
                                 .transport(transport)
-                                .build(),
-                        SkillToolLoader.newBuilder()
-                                .skillsRootDir(Path.of("./skills"))
                                 .build()
                 )))
                 .build()
