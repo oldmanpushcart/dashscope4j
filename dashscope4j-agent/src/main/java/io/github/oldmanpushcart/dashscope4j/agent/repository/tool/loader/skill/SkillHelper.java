@@ -1,0 +1,9 @@
+package io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.skill;
+
+public class SkillHelper {
+
+    public static String toToolName(String skillName) {
+        return "skill$" + skillName;
+    }
+
+}

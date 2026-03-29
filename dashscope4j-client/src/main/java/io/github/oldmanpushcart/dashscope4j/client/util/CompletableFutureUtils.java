@@ -76,6 +76,9 @@ public class CompletableFutureUtils {
         return result;
     }
 
+    public static CompletionStage<Void> allOf(List<? extends CompletionStage<?>> stages) {
+        return allOf(stages.size(), stages);
+    }
 
     /**
      * 并行执行多个 CompletionStage，并等待所有任务完成。

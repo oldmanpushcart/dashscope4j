@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.SystemT
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp.McpToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.mcp.RecoverableMcpClientTransport;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.skill.SkillToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.skill.provider.file.FileSkillProvider;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
@@ -42,6 +43,15 @@ public class DebugTestCase implements LoadingEnv {
                         McpToolLoader.newBuilder()
                                 .name("amap")
                                 .transport(transport)
+                                .build(),
+                        SkillToolLoader.newBuilder()
+                                .blocking(true)
+                                .providers(List.of(
+                                        FileSkillProvider.newBuilder()
+                                                .baseDir("./skills")
+                                                .blocking(true)
+                                                .build()
+                                ))
                                 .build()
                 )))
                 .build()
