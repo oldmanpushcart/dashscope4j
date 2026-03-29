@@ -36,7 +36,7 @@ public class DebugTestCase implements LoadingEnv {
         final var toolRepository = ToolRepository.newBuilder()
                 .name("tool")
                 .client(client)
-                .loader(Repository.Loader.group(List.of(
+                .loaders(List.of(
                         FileOpsToolLoader.INSTANCE,
                         DashscopeToolLoader.INSTANCE,
                         SystemToolLoader.INSTANCE,
@@ -53,7 +53,7 @@ public class DebugTestCase implements LoadingEnv {
                                                 .build()
                                 ))
                                 .build()
-                )))
+                ))
                 .build()
                 .initialize()
                 .toCompletableFuture()
@@ -78,9 +78,9 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(Message.user("""
-                            我叫杜琨，请帮我使用速记模式生成一份周报
+                            我叫杜琨，住在杭州。请帮我使用速记模式生成一份当天的周报
                             
-                            杭州；当前时间是2026年3月25日；
+                            
                             我今天给汽车加了油，排了好长的队伍啊，油价好高。但不影响我下周去海南玩的心情。
                             """))
                     .toCompletableFuture()

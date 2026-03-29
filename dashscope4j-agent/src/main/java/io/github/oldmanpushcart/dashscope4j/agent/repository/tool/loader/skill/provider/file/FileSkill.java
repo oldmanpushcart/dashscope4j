@@ -120,7 +120,7 @@ public class FileSkill implements Skill {
     public CompletionStage<String> getReference(String relativePath) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                final var resourcePath = resolveAndValidate(relativePath, REFERENCES_DIR);
+                final var resourcePath = resolveAndValidate(relativePath);
                 if (!Files.exists(resourcePath)) {
                     throw new IOException("Reference not found: " + relativePath);
                 }
@@ -134,7 +134,7 @@ public class FileSkill implements Skill {
     @Override
     public boolean hasReference(String relativePath) {
         try {
-            Path resourcePath = resolveAndValidate(relativePath, REFERENCES_DIR);
+            Path resourcePath = resolveAndValidate(relativePath);
             return Files.exists(resourcePath);
         } catch (SecurityException e) {
             return false;
@@ -147,7 +147,7 @@ public class FileSkill implements Skill {
     public void readAssert(String relativePath, ReadHandler handler) {
         CompletableFuture.runAsync(() -> {
             try {
-                Path resourcePath = resolveAndValidate(relativePath, ASSETS_DIR);
+                Path resourcePath = resolveAndValidate(relativePath);
                 if (!Files.exists(resourcePath)) {
                     throw new IOException("Assert not found: " + relativePath);
                 }
@@ -173,7 +173,7 @@ public class FileSkill implements Skill {
     @Override
     public boolean hasAssert(String relativePath) {
         try {
-            Path resourcePath = resolveAndValidate(relativePath, ASSETS_DIR);
+            Path resourcePath = resolveAndValidate(relativePath);
             return Files.exists(resourcePath);
         } catch (SecurityException e) {
             return false;
@@ -186,7 +186,7 @@ public class FileSkill implements Skill {
     public CompletionStage<String> readScript(String scriptPath) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Path scriptFile = resolveAndValidate(scriptPath, SCRIPTS_DIR);
+                Path scriptFile = resolveAndValidate(scriptPath);
                 if (!Files.exists(scriptFile)) {
                     throw new IOException("Script not found: " + scriptPath);
                 }
@@ -200,7 +200,7 @@ public class FileSkill implements Skill {
     @Override
     public boolean hasScript(String scriptPath) {
         try {
-            Path scriptFile = resolveAndValidate(scriptPath, SCRIPTS_DIR);
+            Path scriptFile = resolveAndValidate(scriptPath);
             return Files.exists(scriptFile);
         } catch (SecurityException e) {
             return false;
@@ -212,18 +212,12 @@ public class FileSkill implements Skill {
     /**
      * 解析并验证路径
      */
-    private Path resolveAndValidate(String relativePath, String expectedDir) {
+    private Path resolveAndValidate(String relativePath) {
         Path resolved = basePath.resolve(relativePath).normalize();
 
         // 安全检查：防止目录穿越
         if (!resolved.startsWith(basePath)) {
             throw new SecurityException("Path escapes skill directory: " + relativePath);
-        }
-
-        // 检查是否在预期的子目录下
-        Path parent = resolved.getParent();
-        if (parent != null && !expectedDir.equals(parent.getFileName().toString())) {
-            throw new SecurityException("Expected path in " + expectedDir + " but got: " + relativePath);
         }
 
         return resolved;

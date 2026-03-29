@@ -31,6 +31,9 @@ import java.util.stream.Collectors;
  */
 public class ToolIndexer implements Repository.Indexer<String, Tool> {
 
+    /**
+     * 工具路由匹配 PromptMessage
+     */
     private static final Message TOOL_ROUTER_MESSAGE = SystemMessage.newBuilder()
             .contents(contents -> {
                 final var prompt = PromptTemplate.newBuilder()
@@ -45,6 +48,10 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
             })
             .build();
 
+
+    /**
+     * 工具元信息提取 PromptMessage
+     */
     private static final Message TOOL_META_EXTRACTOR_MESSAGE = SystemMessage.newBuilder()
             .contents(contents -> {
                 final var prompt = PromptTemplate.newBuilder()
@@ -59,9 +66,21 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
             })
             .build();
 
-    private static final Type routeMatchListType = new TypeReference<List<RouteMatch>>() {}.getType();
+    /**
+     * 路由匹配结果集合类型
+     * <p>用于 Jackson 的反序列化</p>
+     */
+    private static final Type routeMatchListType = new TypeReference<List<RouteMatch>>() {
+    }.getType();
 
+    /**
+     * Dashscope 客户端
+     */
     private final DashscopeClient client;
+
+    /**
+     * 索引集合
+     */
     private final Map<String, Index> indexes = new ConcurrentHashMap<>();
 
     public ToolIndexer(DashscopeClient client) {
@@ -113,7 +132,7 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
         if (!(item instanceof FunctionTool tool)) {
             return CompletableFuture.failedStage(new IllegalArgumentException("Item is not a function tool"));
         }
-    
+
         final var request = AigcRequest.newBuilder(ChatModel.QWEN_FLASH)
                 .input(ChatModel.Input.newBuilder()
                         .messages(messages -> List.of(
@@ -135,7 +154,7 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
                         ))
                         .build())
                 .build();
-    
+
         return client.async(request)
                 .thenApply(response -> response.output().best().message().text())
                 .thenApply(json -> JacksonJsonUtils.toObject(json, Index.Meta.class))

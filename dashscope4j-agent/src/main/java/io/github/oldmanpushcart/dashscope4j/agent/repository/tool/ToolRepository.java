@@ -7,17 +7,26 @@ import io.github.oldmanpushcart.dashscope4j.agent.storage.Storage;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 
+import static io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils.mutableCopy;
+
+/**
+ * 工具仓库
+ */
 public class ToolRepository extends BaseRepository<String, Tool> {
 
     protected ToolRepository(Builder builder) {
         super(
-                builder.name,
+                Objects.requireNonNullElse(builder.name, "tool"),
                 Objects.requireNonNullElseGet(builder.indexer, () -> new ToolIndexer(builder.client)),
                 Objects.requireNonNullElseGet(builder.storage, InMemoryStorage::new),
-                Objects.requireNonNullElseGet(builder.loader, Repository.Loader::empty)
+                CommonUtils.unmodifiableCopy(builder.loaders),
+                true
         );
     }
 
@@ -27,11 +36,11 @@ public class ToolRepository extends BaseRepository<String, Tool> {
 
     public static class Builder implements Buildable<ToolRepository, Builder> {
 
-        private String name = "tool";
+        private String name;
         private DashscopeClient client;
         private Storage<String, Tool> storage;
         private Repository.Indexer<String, Tool> indexer;
-        private Repository.Loader<String, Tool> loader;
+        private List<Repository.Loader<String, Tool>> loaders;
 
         /**
          * 设置仓库名称
@@ -71,14 +80,13 @@ public class ToolRepository extends BaseRepository<String, Tool> {
             return this;
         }
 
-        /**
-         * 设置数据加载器（可选，默认为 empty loader）
-         *
-         * @param loader 加载器
-         * @return Builder
-         */
-        public Builder loader(Repository.Loader<String, Tool> loader) {
-            this.loader = loader;
+        public Builder loaders(List<Repository.Loader<String, Tool>> loaders) {
+            this.loaders = loaders;
+            return this;
+        }
+
+        public Builder loaders(UnaryOperator<List<Repository.Loader<String, Tool>>> operator) {
+            this.loaders = operator.apply(mutableCopy(this.loaders));
             return this;
         }
 

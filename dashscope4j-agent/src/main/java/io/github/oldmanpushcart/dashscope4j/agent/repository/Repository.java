@@ -123,53 +123,6 @@ public interface Repository<K, E> extends AutoCloseable {
          */
         CompletionStage<Void> init(Updater<K, E> updater);
 
-        static <K, E> Loader<K, E> group(List<Loader<K, E>> loaders) {
-            return new Loader<>() {
-
-                @Override
-                public CompletionStage<Void> init(Updater<K, E> updater) {
-                    CompletionStage<Void> stage = CompletableFuture.completedStage(null);
-                    for (final var loader : loaders) {
-                        stage = stage.thenCompose(unused -> loader.init(updater));
-                    }
-                    return stage;
-                }
-
-                @Override
-                public void close() {
-                    loaders.forEach(loader -> {
-                        try {
-                            loader.close();
-                        } catch (Exception e) {
-                            // ignored...
-                        }
-                    });
-                }
-
-            };
-        }
-
-        /**
-         * 空加载器，不加载任何数据
-         *
-         * @param <K> 主键类型
-         * @param <E> 数据类型
-         * @return 空加载器实例
-         */
-        static <K, E> Loader<K, E> empty() {
-            return new Loader<>() {
-                @Override
-                public CompletionStage<Void> init(Updater<K, E> updater) {
-                    return CompletableFuture.completedStage(null);
-                }
-
-                @Override
-                public void close() {
-
-                }
-            };
-        }
-
     }
 
 }

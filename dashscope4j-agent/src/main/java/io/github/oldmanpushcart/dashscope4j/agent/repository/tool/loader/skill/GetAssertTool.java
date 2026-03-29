@@ -46,7 +46,7 @@ class GetAssertTool {
                         
                         【参数说明】
                         - skill_name: Skill 名称，如 "data-processor"
-                        - resource_path: 资源文件相对路径，必须位于 assets/ 目录下，如 "assets/template.xlsx"
+                        - assert_path: 资源文件相对路径，必须位于 assets/ 目录下，如 "assets/template.xlsx"
                         
                         【返回结果】
                         临时文件的 URI (file:///...)，可以直接用于文件读取或其他需要文件路径的场景。
@@ -56,7 +56,7 @@ class GetAssertTool {
                         ```json
                         {
                           "skill_name": "report-generator",
-                          "resource_path": "assets/excel-template.xlsx"
+                          "assert_path": "assets/excel-template.xlsx"
                         }
                         ```
                         """)
@@ -131,7 +131,7 @@ class GetAssertTool {
             @JsonPropertyDescription("Skill 名称")
             String name,
 
-            @JsonProperty("resource_path")
+            @JsonProperty("assert_path")
             @JsonPropertyDescription("资源文件相对路径，如 'assets/template.xlsx'")
             String path
 

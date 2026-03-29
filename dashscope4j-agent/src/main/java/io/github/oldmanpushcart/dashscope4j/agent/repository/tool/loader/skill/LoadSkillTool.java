@@ -17,16 +17,22 @@ public class LoadSkillTool {
         final var toolDescription = """
                 %s
                 
-                【使用方法】
+                【技能说明】
                 调用此工具可以激活`%s`技能。激活后将获得该技能的完整 instructions 和指导。
-                适用于所需场景。
                 
-                【参数说明】
+                【重要提示 - 资源访问规范】
+                本技能相关的所有资源访问必须使用以下三个工具：
+                - 📖 查阅引用文档 (模板、MD 文件等): 使用 `global$skill$get_reference`,指定 skill_name="%s"、reference_path=引用文档相对路径
+                - 📁 获取静态资源 (图片、数据文件等): 使用 `global$skill$get_assert`,指定 skill_name="%s"、assert_path=静态资源相对路径
+                - ⚙️ 执行脚本文件：使用 `global$skill$execute_script`,指定 skill_name="%s"、script_path=脚本相对路径、args=[脚本参数信息]
+                
+                不要使用其他工具 (如 search_tools、文件读写工具等) 来访问本技能的资源！
+                
+                【使用方法】
                 用户意图描述，说明想要完成的任务。Skill 会根据你的意图提供具体的执行步骤和指导。
                 
                 【返回结果】
                 Skill 正文内容 (SKILL.md 的 instructions 部分) 和下一步行动引导。
-                引导提示会告诉你如何使用该技能的其他功能 (如查阅资料、获取资源、执行脚本等)。
                 
                 【典型用途】
                 - 启动一个专门的技能来处理特定任务
@@ -37,8 +43,12 @@ public class LoadSkillTool {
                 用户："我需要写一份周报"
                 → 调用 skill$weekly-report-writer
                 ← 获得周报写作技能的完整 instructions
+                ← 使用 global$skill$get_reference 读取模板文件
                 """.formatted(
                 skill.description(),
+                skill.name(),
+                skill.name(),
+                skill.name(),
                 skill.name()
         );
 

@@ -26,12 +26,12 @@ class GetReferenceTool {
                         获取 Skill 中的引用文本内容。
                         
                         【使用场景】
-                        需要查阅 Skill 提供的技术文档、参考资料、API 说明等文本资源时使用此工具。
+                        需要查阅 Skill 提供的技术文档、参考资料、API 说明、模板文件等文本资源时使用此工具。
                         例如：查看函数的详细参数说明、阅读配置文件的格式要求、获取模板的使用说明等。
                         
                         【参数说明】
                         - skill_name: Skill 名称，如 "weekly-report-writer"
-                        - reference_path: 引用文件相对路径，必须位于 references/ 目录下，如 "references/REFERENCE.md"
+                        - reference_path: 引用文件相对路径，相对于 skill 目录，如 "references/REFERENCE.md" 或 "./template.md"
                         
                         【返回结果】
                         引用文件的完整文本内容，可直接用于阅读或作为其他工具的输入。
@@ -49,7 +49,7 @@ class GetReferenceTool {
 
                     final var skill = skillsMap.get(spec.name());
                     if (null == skill) {
-                        throw new IllegalArgumentException("Unknow skill: %s".formatted(spec.name()));
+                        throw new IllegalArgumentException("Unknown skill: %s. Available skills: %s".formatted(spec.name(), skillsMap.keySet()));
                     }
 
                     return skill.getReference(spec.path());

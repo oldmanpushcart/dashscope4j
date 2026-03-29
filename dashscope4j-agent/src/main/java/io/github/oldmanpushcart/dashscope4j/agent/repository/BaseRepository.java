@@ -2,41 +2,69 @@ package io.github.oldmanpushcart.dashscope4j.agent.repository;
 
 import io.github.oldmanpushcart.dashscope4j.agent.storage.Storage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 仓库实现
+ *
+ * @param <K> 主键类型
+ * @param <E> 数据类型
+ */
 public class BaseRepository<K, E> implements Repository<K, E> {
 
     private final String name;
     private final Repository.Updater<K, E> updater;
     private final Repository.Indexer<K, E> indexer;
     private final Storage<K, E> storage;
-    private final Repository.Loader<K, E> loader;
+    private final List<Repository.Loader<K, E>> loaders;
+    private final boolean blocking;
     private final String _toString;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final CompletableFuture<Void> closeF = new CompletableFuture<>();
+    private final CompletableFuture<Void> initF = new CompletableFuture<>();
 
-    protected BaseRepository(String name, Indexer<K, E> indexer, Storage<K, E> storage, Loader<K, E> loader) {
+    protected BaseRepository(String name, Indexer<K, E> indexer, Storage<K, E> storage, List<Repository.Loader<K, E>> loaders, boolean blocking) {
         this.name = name;
         this.indexer = indexer;
         this.storage = storage;
-        this.loader = loader;
+        this.loaders = loaders;
+        this.blocking = blocking;
         this.updater = new Updater();
-        this._toString = "dashscope4j-agent:/repository/%s".formatted(name);
+        this._toString = "dashscope4j-agent://repository/%s".formatted(name);
     }
 
     @Override
     public CompletionStage<Repository<K, E>> initialize() {
+
+        if (closeF.isDone()) {
+            throw new IllegalStateException("Already closed!");
+        }
+
+        if (!initF.complete(null)) {
+            throw new IllegalStateException("Already initialized");
+        }
+
         return CompletableFuture.<Void>completedStage(null)
                 .thenCompose(u -> storage.init())
                 .thenCompose(u -> indexer.init())
-                .thenCompose(u -> loader.init(updater))
+                .thenCompose(u -> {
+                    final var stages = loaders.stream()
+                            .map(loader -> loader.init(updater))
+                            .toList();
+                    return blocking
+                            ? CompletableFutureUtils.allOf(stages)
+                            : CompletableFuture.completedStage(null);
+                })
                 .thenApply(u -> (Repository<K, E>) this)
                 .whenComplete((u, ex) -> {
                     if (ex != null) {
@@ -103,27 +131,9 @@ public class BaseRepository<K, E> implements Repository<K, E> {
             return;
         }
 
-        try {
-            indexer.close();
-            logger.debug("{} close indexer normally.", this);
-        } catch (Exception ex) {
-            logger.warn("{} close indexer failed!", this, ex);
-        }
-
-        try {
-            storage.close();
-            logger.debug("{} close storage normally.", this);
-        } catch (Exception e) {
-            logger.warn("{} close storage failed!", this, e);
-        }
-
-        try {
-            loader.close();
-            logger.debug("{} close loader normally.", this);
-        } catch (Exception e) {
-            logger.warn("{} close loader failed!", this, e);
-        }
-
+        IOUtils.closeQuietly(indexer);
+        IOUtils.closeQuietly(storage);
+        loaders.forEach(IOUtils::closeQuietly);
         logger.debug("{} closed.", this);
 
     }

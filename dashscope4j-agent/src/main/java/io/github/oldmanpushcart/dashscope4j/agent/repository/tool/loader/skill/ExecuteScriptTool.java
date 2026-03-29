@@ -25,8 +25,6 @@ import java.util.concurrent.TimeoutException;
  */
 class ExecuteScriptTool {
 
-    private static final Logger logger = LoggerFactory.getLogger(ExecuteScriptTool.class);
-
     public static final String TOOL_NAME = "global$skill$execute_script";
 
     private final Map<String, Skill> skillsMap;
