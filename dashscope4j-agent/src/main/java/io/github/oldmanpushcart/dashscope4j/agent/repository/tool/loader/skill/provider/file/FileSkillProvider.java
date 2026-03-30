@@ -20,12 +20,11 @@ import static java.util.Objects.requireNonNull;
 /**
  * 基于文件系统的 Skill 提供者
  *
- * <p>功能特性：</p>
+ * <p>职责划分：</p>
  * <ul>
- *     <li>单个 watcher 线程监听 baseDir 及其子目录变更</li>
- *     <li>支持 Builder 构造模式</li>
- *     <li>支持 blocking/non-blocking 两种加载策略</li>
- *     <li>每个子目录代表一个 Skill，目录名为 Skill 名称</li>
+ *     <li>FileMonitor: 监听文件变化，加载 skill 并更新草稿版本</li>
+ *     <li>FileSyncer: 专心负责草稿版本和发布版本的同步</li>
+ *     <li>FileSkillProvider: 持有共享数据（草稿集合和正式集合），协调 Monitor 和 Syncer 工作</li>
  * </ul>
  *
  * @since 4.0.0
@@ -42,11 +41,13 @@ public class FileSkillProvider implements SkillProvider {
     // === Lifecycle ===
     private final CompletableFuture<Void> closeF = new CompletableFuture<>();
     private final CompletableFuture<Void> initF = new CompletableFuture<>();
-    private final FileMonitor monitor;
-    private final FileSyncer syncer;
+    private final Monitor monitor;
+    private final Syncer syncer;
 
-    // === Synchronization ===
-    private final Map<String, Entry> skillsMap = new HashMap<>();
+    // === Shared Data (Managed by Monitor) ===
+    // 草稿集合由 Monitor 持有，Provider 通过 monitor.getDrafts() 访问
+    // 正式集合：skillName -> Entry (由 Syncer 更新)
+    private final Map<String, Entry> actives = Collections.synchronizedMap(new HashMap<>());
 
     // === Runtime State ===
     private volatile Updater updater;
@@ -58,25 +59,12 @@ public class FileSkillProvider implements SkillProvider {
         this.baseDir = builder.baseDir.toAbsolutePath().normalize();
         this.blocking = builder.blocking;
         this._toString = "dashscope4j-agent:/skill/provider/file/%s".formatted(this.baseDir.getFileName());
-        this.monitor = new FileMonitor(this.baseDir, new FileMonitor.EventHandler() {
 
-            @Override
-            public void onFileCreate(Path path) {
-                handleFileCreate(path);
-            }
+        // 创建 Syncer - 负责草稿和发布版本的同步
+        this.syncer = new Syncer(createSyncHandler(), builder.syncInterval, this.baseDir.getFileName().toString());
 
-            @Override
-            public void onFileDelete(Path path) {
-                handleFileDelete(path);
-            }
-
-            @Override
-            public void onFileModify(Path path) {
-                handleFileModify(path);
-            }
-
-        });
-        this.syncer = new FileSyncer(this.baseDir, createSyncHandler(), builder.syncInterval);
+        // 创建 Monitor - 负责监听文件变化并管理草稿集合
+        this.monitor = new Monitor(this.baseDir, createMonitorChangeHandler());
     }
 
     @Override
@@ -116,13 +104,13 @@ public class FileSkillProvider implements SkillProvider {
                 throw new IOException("Path is not a directory: " + baseDir);
             }
 
-            // 启动监控线程
+            // 启动同步器
+            this.syncer.start();
+
+            // 启动监控器
             this.monitor.start();
 
-            // 启动同步器
-            this.syncer.startSyncing();
-
-            // 扫描并加载所有 Skills
+            // 扫描并加载所有 Skills（初始化草稿版本）
             final var skills = scanAllSkills();
 
             if (blocking) {
@@ -139,6 +127,59 @@ public class FileSkillProvider implements SkillProvider {
             cleanupOnFailure();
             return CompletableFuture.failedFuture(e);
         }
+    }
+
+    /**
+     * 创建变更处理器 - Monitor 使用此处理器通知草稿集合变更（直接传递 Entry）
+     */
+    private Monitor.ChangeHandler createMonitorChangeHandler() {
+        return (entry, delete) -> {
+            String skillName = entry.skill().name();
+            logger.debug("Draft changed: {}, delete={}", skillName, delete);
+            // Monitor 已经管理了 drafts，这里只需要通知 Syncer
+            if (delete) {
+                syncer.notifyDelete(skillName);
+            } else {
+                syncer.notifyChange(entry);  // ✅ 直接传递 Entry 给 Syncer
+            }
+        };
+    }
+
+    /**
+     * 创建同步处理器 - Syncer 使用此处理器执行实际同步
+     */
+    private Syncer.Handler createSyncHandler() {
+        return (skillsToUpsert, skillsToRemove) -> {
+            // Upsert 技能
+            skillsToUpsert.forEach(skillName -> {
+                try {
+                    // 从 Monitor 的草稿集合获取 Entry
+                    Entry entry = monitor.getDrafts().get(skillName);
+                    if (entry != null) {
+                        updater.upsert(entry.skill()).toCompletableFuture().join();
+                        synchronized (actives) {
+                            actives.put(skillName, entry);
+                        }
+                        logger.debug("Syncer upserted skill: {}", skillName);
+                    }
+                } catch (Exception e) {
+                    logger.warn("Syncer failed to upsert skill: {}", skillName, e);
+                }
+            });
+
+            // Remove 技能
+            skillsToRemove.forEach(skillName -> {
+                try {
+                    synchronized (actives) {
+                        actives.remove(skillName);
+                    }
+                    updater.remove(skillName).toCompletableFuture().join();
+                    logger.debug("Syncer removed skill: {}", skillName);
+                } catch (Exception e) {
+                    logger.warn("Syncer failed to remove skill: {}", skillName, e);
+                }
+            });
+        };
     }
 
     /**
@@ -171,43 +212,6 @@ public class FileSkillProvider implements SkillProvider {
     }
 
     /**
-     * 创建同步处理器
-     */
-    private FileSyncer.SyncHandler createSyncHandler() {
-        return (skillsToUpsert, skillsToRemove) -> {
-            // Upsert 技能
-            skillsToUpsert.forEach(skillName -> {
-                try {
-                    var skillHandle = findSkillHandle(skillName);
-                    if (skillHandle.isPresent()) {
-                        var skill = loadSkillSafely(skillHandle.get());
-                        if (skill != null) {
-                            skillsMap.put(skillName, new Entry(skill, skillHandle.get()));
-                            updater.upsert(skill).toCompletableFuture().join();
-                            logger.info("Syncer upserted skill: {}", skillName);
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.warn("Syncer failed to upsert skill: {}", skillName, e);
-                }
-            });
-
-            // Remove 技能
-            skillsToRemove.forEach(skillName -> {
-                try {
-                    if (skillsMap.containsKey(skillName)) {
-                        skillsMap.remove(skillName);
-                        updater.remove(skillName).toCompletableFuture().join();
-                        logger.info("Syncer removed skill: {}", skillName);
-                    }
-                } catch (Exception e) {
-                    logger.warn("Syncer failed to remove skill: {}", skillName, e);
-                }
-            });
-        };
-    }
-
-    /**
      * 初始化失败时清理资源
      */
     private void cleanupOnFailure() {
@@ -216,76 +220,6 @@ public class FileSkillProvider implements SkillProvider {
         }
         if (syncer != null) {
             syncer.close();
-        }
-    }
-
-    /**
-     * 处理文件创建事件
-     */
-    private void handleFileCreate(Path fullPath) {
-
-        // 检查是否为新目录
-        if (Files.isDirectory(fullPath) && Files.exists(fullPath.resolve("SKILL.md"))) {
-            String skillName = fullPath.getFileName().toString();
-
-            synchronized (skillsMap) {
-                if (!skillsMap.containsKey(skillName)) {
-                    Skill skill = loadSkillSafely(fullPath);
-                    if (skill != null) {
-                        skillsMap.put(skillName, new Entry(skill, baseDir.relativize(fullPath)));
-                        updater.upsert(skill).toCompletableFuture().join();
-                        logger.info("Loaded new skill: {}", skillName);
-                    }
-                }
-            }
-
-        }
-
-        // 通知同步器版本变更
-        String skillName = fullPath.getFileName().toString();
-        syncer.notifyChange(skillName);
-    }
-
-    /**
-     * 处理文件删除事件
-     */
-    private void handleFileDelete(Path fullPath) {
-        String skillName = fullPath.getFileName().toString();
-
-        synchronized (skillsMap) {
-            if (skillsMap.containsKey(skillName)) {
-                skillsMap.remove(skillName);
-                updater.remove(skillName).toCompletableFuture().join();
-                logger.info("Removed skill: {}", skillName);
-            }
-        }
-
-        // 通知同步器删除
-        syncer.notifyDelete(skillName);
-    }
-
-    /**
-     * 处理文件修改事件
-     */
-    private void handleFileModify(Path fullPath) {
-        // 检查是否为 SKILL.md 文件修改
-        if (fullPath.getFileName().toString().equals("SKILL.md") && Files.isDirectory(fullPath.getParent())) {
-            Path skillDir = fullPath.getParent();
-            String skillName = skillDir.getFileName().toString();
-
-            synchronized (skillsMap) {
-                Skill skill = loadSkillSafely(skillDir);
-                if (skill != null) {
-                    updater.upsert(skill).toCompletableFuture().join();
-                    logger.info("Updated skill: {}", skillName);
-                }
-            }
-        }
-
-        // 通知同步器版本变更
-        if (Files.isDirectory(fullPath.getParent())) {
-            String skillName = fullPath.getParent().getFileName().toString();
-            syncer.notifyChange(skillName);
         }
     }
 
@@ -301,14 +235,14 @@ public class FileSkillProvider implements SkillProvider {
         for (Skill skill : skills) {
             stages.add(updater.upsert(skill));
         }
-        
+
         return CompletableFutureUtils.allOf(10, stages)
                 .thenRun(() -> {
-                    synchronized (skillsMap) {
+                    synchronized (actives) {
                         skills.forEach(skill ->
                                 findSkillHandle(skill.name())
-                                        .ifPresent(path -> 
-                                                skillsMap.put(skill.name(), new Entry(skill, path))));
+                                        .ifPresent(path ->
+                                                actives.put(skill.name(), new Entry(skill, path))));
                     }
                 });
     }
@@ -331,11 +265,11 @@ public class FileSkillProvider implements SkillProvider {
             }
         }
 
-        // 更新 skillsMap
-        synchronized (skillsMap) {
+        // 更新正式集合
+        synchronized (actives) {
             loadedSkills.forEach(skill ->
-                findSkillHandle(skill.name()).ifPresent(path ->
-                        skillsMap.put(skill.name(), new Entry(skill, path))));
+                    findSkillHandle(skill.name()).ifPresent(path ->
+                            actives.put(skill.name(), new Entry(skill, path))));
         }
 
         return CompletableFuture.completedFuture(null);
@@ -378,27 +312,19 @@ public class FileSkillProvider implements SkillProvider {
 
         // Remove all Skills
         if (updater != null) {
-            List.copyOf(skillsMap.keySet()).forEach(name -> {
+            List.copyOf(actives.keySet()).forEach(name -> {
                 updater.remove(name);
             });
             updater = null;
         }
 
-        // Clear storage
-        synchronized (skillsMap) {
-            skillsMap.clear();
+        // Clear shared data
+        synchronized (actives) {
+            actives.clear();
         }
+        // Monitor 的 drafts 会在 Monitor 关闭时自动清理
 
         logger.debug("{} closed", this);
-    }
-
-    /**
-     * Skill 条目 - 内部记录类
-     */
-    private record Entry(Skill skill, Path path) {
-        String name() {
-            return skill.name();
-        }
     }
 
     /**

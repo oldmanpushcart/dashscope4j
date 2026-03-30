@@ -34,7 +34,6 @@ public class DebugTestCase implements LoadingEnv {
                 .build();
 
         final var toolRepository = ToolRepository.newBuilder()
-                .name("tool")
                 .client(client)
                 .loaders(List.of(
                         FileOpsToolLoader.INSTANCE,
