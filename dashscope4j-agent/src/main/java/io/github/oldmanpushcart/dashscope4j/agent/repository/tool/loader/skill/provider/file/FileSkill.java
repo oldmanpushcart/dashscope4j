@@ -42,9 +42,6 @@ public class FileSkill implements Skill {
     
     // 文件常量
     private static final String SKILL_MD_FILE = "SKILL.md";
-    private static final String REFERENCES_DIR = "references";
-    private static final String ASSETS_DIR = "assets";
-    private static final String SCRIPTS_DIR = "scripts";
 
     private final Path basePath;
     private final String name;

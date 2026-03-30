@@ -89,7 +89,7 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
 
     @Override
     public String toString() {
-        return "dashscope4j-agent:/repository/tool/indexer";
+        return "dashscope4j-agent:/repo/tool/indexer";
     }
 
     @Override
@@ -99,6 +99,14 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
 
     @Override
     public CompletionStage<Set<String>> lookup(UserMessage instant) {
+        return match(instant)
+                .thenApply(matches ->
+                        matches.stream()
+                                .map(RouteMatch::name)
+                                .collect(Collectors.toSet()));
+    }
+
+    private CompletionStage<List<RouteMatch>> match(UserMessage instant) {
         final var request = AigcRequest.newBuilder(ChatModel.QWEN_FLASH)
                 .input(ChatModel.Input.newBuilder()
                         .messages(messages -> List.of(
@@ -120,17 +128,14 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
                 .build();
         return client.async(request)
                 .thenApply(response -> response.output().best().message().text())
-                .thenApply(json -> JacksonJsonUtils.<List<RouteMatch>>toObject(json, routeMatchListType))
-                .thenApply(matches ->
-                        matches.stream()
-                                .map(RouteMatch::name)
-                                .collect(Collectors.toSet()));
+                .thenApply(json -> JacksonJsonUtils.<List<RouteMatch>>toObject(json, routeMatchListType));
     }
 
     @Override
     public CompletionStage<Void> upsert(String key, Tool item) {
+
         if (!(item instanceof FunctionTool tool)) {
-            return CompletableFuture.failedStage(new IllegalArgumentException("Item is not a function tool"));
+            throw new IllegalArgumentException("Item is not a function tool");
         }
 
         final var request = AigcRequest.newBuilder(ChatModel.QWEN_FLASH)
@@ -178,6 +183,14 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
     public void close() {
     }
 
+    /**
+     * 路由匹配结果
+     *
+     * @param rank   排名
+     * @param name   工具名
+     * @param score  匹配得分
+     * @param reason 匹配理由
+     */
     private record RouteMatch(
 
             @JsonProperty("rank")
@@ -195,8 +208,24 @@ public class ToolIndexer implements Repository.Indexer<String, Tool> {
     ) {
     }
 
+    /**
+     * 索引项
+     *
+     * @param key         KEY（工具名）
+     * @param description 工具描述
+     * @param meta        索引元数据信息
+     */
     private record Index(String key, String description, Meta meta) {
 
+        /**
+         * 索引元数据
+         *
+         * @param name         工具名
+         * @param summary      描述摘要
+         * @param keywords     关键词
+         * @param capabilities 能力项：描述工具具有什么能力
+         * @param constraints  约束项：描述工具使用上应受什么约束
+         */
         public record Meta(
 
                 @JsonProperty("name")

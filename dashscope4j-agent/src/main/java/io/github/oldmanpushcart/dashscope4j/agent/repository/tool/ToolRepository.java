@@ -20,13 +20,15 @@ import static io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils.mutab
  */
 public class ToolRepository extends BaseRepository<String, Tool> {
 
+    public static final String NAME = "tool";
+
     protected ToolRepository(Builder builder) {
         super(
-                Objects.requireNonNullElse(builder.name, "tool"),
+                NAME,
                 Objects.requireNonNullElseGet(builder.indexer, () -> new ToolIndexer(builder.client)),
                 Objects.requireNonNullElseGet(builder.storage, InMemoryStorage::new),
                 CommonUtils.unmodifiableCopy(builder.loaders),
-                true
+                builder.blocking
         );
     }
 
@@ -36,19 +38,11 @@ public class ToolRepository extends BaseRepository<String, Tool> {
 
     public static class Builder implements Buildable<ToolRepository, Builder> {
 
-        private String name;
         private DashscopeClient client;
         private Storage<String, Tool> storage;
         private Repository.Indexer<String, Tool> indexer;
         private List<Repository.Loader<String, Tool>> loaders;
-
-        /**
-         * 设置仓库名称
-         */
-        public Builder name(String name) {
-            this.name = name;
-            return this;
-        }
+        private boolean blocking;
 
         /**
          * 设置 Dashscope 客户端（用于创建默认的 ToolIndexer）
@@ -87,6 +81,11 @@ public class ToolRepository extends BaseRepository<String, Tool> {
 
         public Builder loaders(UnaryOperator<List<Repository.Loader<String, Tool>>> operator) {
             this.loaders = operator.apply(mutableCopy(this.loaders));
+            return this;
+        }
+
+        public Builder blocking(boolean blocking) {
+            this.blocking = blocking;
             return this;
         }
 

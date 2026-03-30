@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.agent.repository;
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -122,6 +124,25 @@ public interface Repository<K, E> extends AutoCloseable {
          * @return 初始化完成的异步回调
          */
         CompletionStage<Void> init(Updater<K, E> updater);
+
+        static <K, E> Loader<K, E> group(List<? extends Loader<K, E>> loaders, boolean blocking) {
+            return new Loader<>() {
+                @Override
+                public CompletionStage<Void> init(Updater<K, E> updater) {
+                    final var stages = loaders.stream()
+                            .map(loader -> loader.init(updater))
+                            .toList();
+                    return blocking
+                            ? CompletableFutureUtils.allOf(stages)
+                            : CompletableFuture.completedStage(null);
+                }
+
+                @Override
+                public void close() {
+                    loaders.forEach(IOUtils::closeQuietly);
+                }
+            };
+        }
 
     }
 

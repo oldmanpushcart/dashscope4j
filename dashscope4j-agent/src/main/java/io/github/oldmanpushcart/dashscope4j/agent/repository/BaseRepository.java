@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.agent.repository;
 import io.github.oldmanpushcart.dashscope4j.agent.storage.Storage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +11,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils.unmodifiableCopy;
 
 /**
  * 仓库实现
@@ -25,22 +26,29 @@ public class BaseRepository<K, E> implements Repository<K, E> {
     private final Repository.Updater<K, E> updater;
     private final Repository.Indexer<K, E> indexer;
     private final Storage<K, E> storage;
-    private final List<Repository.Loader<K, E>> loaders;
-    private final boolean blocking;
+    private final Repository.Loader<K, E> loader;
     private final String _toString;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final CompletableFuture<Void> closeF = new CompletableFuture<>();
     private final CompletableFuture<Void> initF = new CompletableFuture<>();
 
+    /**
+     * 构造仓库
+     *
+     * @param name     仓库名
+     * @param indexer  索引
+     * @param storage  存储
+     * @param loaders  数据加载器集
+     * @param blocking 是否阻塞
+     */
     protected BaseRepository(String name, Indexer<K, E> indexer, Storage<K, E> storage, List<Repository.Loader<K, E>> loaders, boolean blocking) {
         this.name = name;
         this.indexer = indexer;
         this.storage = storage;
-        this.loaders = loaders;
-        this.blocking = blocking;
+        this.loader = Repository.Loader.group(loaders, blocking);
         this.updater = new Updater();
-        this._toString = "dashscope4j-agent://repository/%s".formatted(name);
+        this._toString = "dashscope4j-agent:/repo/%s".formatted(name);
     }
 
     @Override
@@ -57,14 +65,7 @@ public class BaseRepository<K, E> implements Repository<K, E> {
         return CompletableFuture.<Void>completedStage(null)
                 .thenCompose(u -> storage.init())
                 .thenCompose(u -> indexer.init())
-                .thenCompose(u -> {
-                    final var stages = loaders.stream()
-                            .map(loader -> loader.init(updater))
-                            .toList();
-                    return blocking
-                            ? CompletableFutureUtils.allOf(stages)
-                            : CompletableFuture.completedStage(null);
-                })
+                .thenCompose(u -> loader.init(updater))
                 .thenApply(u -> (Repository<K, E>) this)
                 .whenComplete((u, ex) -> {
                     if (ex != null) {
@@ -133,7 +134,7 @@ public class BaseRepository<K, E> implements Repository<K, E> {
 
         IOUtils.closeQuietly(indexer);
         IOUtils.closeQuietly(storage);
-        loaders.forEach(IOUtils::closeQuietly);
+        IOUtils.closeQuietly(loader);
         logger.debug("{} closed.", this);
 
     }
