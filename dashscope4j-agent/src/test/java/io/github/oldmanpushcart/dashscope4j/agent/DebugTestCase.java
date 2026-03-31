@@ -48,7 +48,6 @@ public class DebugTestCase implements LoadingEnv {
                                 .providers(List.of(
                                         FileSkillProvider.newBuilder()
                                                 .skillsDir(Path.of("./skills"))
-                                                .blocking(true)
                                                 .syncInterval(Duration.ofSeconds(10))
                                                 .build()
                                 ))
@@ -78,10 +77,7 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(Message.user("""
-                            我叫杜琨，住在杭州。请帮我使用速记模式生成一份当天的周报
-                            
-                            
-                            我今天给汽车加了油，排了好长的队伍啊，油价好高。但不影响我下周去海南玩的心情。
+                            查询一年级（1）班不及格的同学都有谁？
                             """))
                     .toCompletableFuture()
                     .join();

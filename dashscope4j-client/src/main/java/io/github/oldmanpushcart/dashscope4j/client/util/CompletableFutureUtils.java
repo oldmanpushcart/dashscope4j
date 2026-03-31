@@ -89,15 +89,15 @@ public class CompletableFutureUtils {
      */
     public static CompletionStage<Void> allOf(int parallel, List<? extends CompletionStage<?>> stages) {
 
+        // 空列表情况：直接返回已完成的阶段
+        if (stages.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
         // 参数校验
         Objects.requireNonNull(stages, "stages must not be null");
         if (parallel <= 0) {
             throw new IllegalArgumentException("parallel must be greater than 0, but got: " + parallel);
-        }
-
-        // 空列表情况：直接返回已完成的阶段
-        if (stages.isEmpty()) {
-            return CompletableFuture.completedFuture(null);
         }
 
         // 如果并行度大于等于任务数，直接使用 CompletableFuture.allOf()

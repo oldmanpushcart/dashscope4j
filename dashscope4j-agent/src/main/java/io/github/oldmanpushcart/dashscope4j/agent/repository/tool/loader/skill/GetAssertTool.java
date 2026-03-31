@@ -16,8 +16,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.*;
 
 /**
  * 全局工具：获取静态资源
@@ -84,7 +83,7 @@ class GetAssertTool {
         try {
 
             //noinspection resource
-            final var outputC = FileChannel.open(tempFile, CREATE, TRUNCATE_EXISTING);
+            final var outputC = FileChannel.open(tempFile, CREATE, TRUNCATE_EXISTING, WRITE);
             skill.readAssert(resourcePath, new Skill.ReadHandler() {
 
                 @Override

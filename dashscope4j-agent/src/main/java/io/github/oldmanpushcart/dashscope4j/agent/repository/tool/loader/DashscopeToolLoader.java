@@ -65,7 +65,7 @@ public class DashscopeToolLoader implements Repository.Loader<String, Tool> {
         return FunctionTool.newBuilder()
                 .name("dashscope$analyze_document")
                 .description("""
-                        分析和理解文档内容（支持 PDF、Word、TXT 等格式）。
+                        分析和理解文档内容（支持 PDF、Word、TXT、EXCEL 等格式）。
                         
                         【使用场景】
                         - 提取文档关键信息
@@ -90,7 +90,7 @@ public class DashscopeToolLoader implements Repository.Loader<String, Tool> {
                         - 包含从文档中提取的信息
                         
                         【注意事项】
-                        - 支持多种文档格式（PDF、DOCX、TXT 等）
+                        - 支持多种文档格式（PDF、DOCX、TXT、EXCEL 等）
                         - 可以提供多个文档进行交叉分析
                         - 确保 URI 可访问且文件格式正确
                         - 大文档可能需要更长的处理时间
@@ -772,10 +772,14 @@ public class DashscopeToolLoader implements Repository.Loader<String, Tool> {
      */
     private static URI parseUri(String uriOrPath) {
         // 尝试直接解析为 URI
-        final var uri = URI.create(uriOrPath);
-        // 如果有 scheme（如 https://, file://, fileid://），说明已经是 URI 格式
-        if (uri.getScheme() != null && !uri.getScheme().isEmpty()) {
-            return uri;
+        try {
+            final var uri = URI.create(uriOrPath);
+            // 如果有 scheme（如 https://, file://, fileid://），说明已经是 URI 格式
+            if (uri.getScheme() != null && !uri.getScheme().isEmpty()) {
+                return uri;
+            }
+        } catch (IllegalArgumentException e) {
+            // 不是合法的 URI 格式，按本地文件路径处理
         }
         // 否则当作本地文件路径处理
         return Paths.get(uriOrPath).toUri();

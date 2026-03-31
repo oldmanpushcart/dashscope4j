@@ -23,22 +23,25 @@ public class FileSkillProvider implements SkillProvider {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Path skillsDir;
-    private final boolean blocking;
     private final Duration syncInterval;
 
     private final Map<String, FileSkill> skills = new ConcurrentHashMap<>();
     private final CompletableFuture<Void> closeF = new CompletableFuture<>();
-    private final Thread syncer = new Thread(this::sync);
+    private final Thread syncer;
     private final String _toString;
     private volatile Updater updater;
 
     public FileSkillProvider(Builder builder) {
+
         Objects.requireNonNull(builder.skillsDir, "skillsDir must not be null");
         Objects.requireNonNull(builder.syncInterval, "syncInterval must not be null");
         this.skillsDir = builder.skillsDir.normalize();
-        this.blocking = builder.blocking;
         this.syncInterval = builder.syncInterval;
+
         this._toString = "dashscope4j-agent:/skill-provider/file=%s".formatted(skillsDir);
+        this.syncer = new Thread(this::sync, _toString);
+        this.syncer.setDaemon(true);
+
     }
 
     public String toString() {
@@ -48,11 +51,8 @@ public class FileSkillProvider implements SkillProvider {
     @Override
     public CompletionStage<Void> init(Updater updater) {
         this.updater = updater;
-        final var stage = syncSkills();
-        syncer.start();
-        return blocking
-                ? stage
-                : CompletableFuture.completedStage(null);
+        return syncSkills()
+                .thenAccept(unused-> syncer.start());
     }
 
     // 扫描 skills 目录，找出所有符合规范的技能。
@@ -142,7 +142,6 @@ public class FileSkillProvider implements SkillProvider {
         } finally {
             logger.trace("{}/syncer stopped.", this);
         }
-
     }
 
     @Override
@@ -160,16 +159,10 @@ public class FileSkillProvider implements SkillProvider {
     public static class Builder implements Buildable<FileSkillProvider, Builder> {
 
         private Path skillsDir;
-        private boolean blocking;
         private Duration syncInterval = Duration.ofSeconds(30);
 
         public Builder skillsDir(Path skillsDir) {
             this.skillsDir = skillsDir;
-            return this;
-        }
-
-        public Builder blocking(boolean blocking) {
-            this.blocking = blocking;
             return this;
         }
 
