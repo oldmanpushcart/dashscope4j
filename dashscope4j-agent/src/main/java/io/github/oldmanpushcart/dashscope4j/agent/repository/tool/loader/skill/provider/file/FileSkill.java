@@ -10,13 +10,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -36,44 +34,51 @@ public class FileSkill implements Skill {
 
     // Jackson ObjectMapper (线程安全，可复用)
     private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
-    
+
     // 默认缓冲区大小
     private static final int DEFAULT_BUFFER_SIZE = 8192;
-    
+
     // 文件常量
     private static final String SKILL_MD_FILE = "SKILL.md";
 
-    private final Path basePath;
+    private final Path home;
     private final String name;
+    private final String body;
     private final String description;
     private final String license;
     private final String compatibility;
     private final Map<String, String> metadata;
     private final List<String> allowedTools;
-    private final String bodyContent;
+    private final String _toString;
 
-    public FileSkill(Path basePath) throws IOException {
-        this.basePath = basePath.toAbsolutePath().normalize();
+    /**
+     * 包级私有构造函数，通过 valueOf 或同包下直接创建实例
+     */
+    FileSkill(
+            Path home, String name, String body,
+            String description, String license, String compatibility, Map<String, String> metadata, List<String> allowedTools
+    ) {
+        this.home = home.toAbsolutePath().normalize();
+        this.name = name;
+        this.description = description;
+        this.license = license;
+        this.compatibility = compatibility;
+        this.metadata = metadata;
+        this.allowedTools = allowedTools;
+        this.body = body;
+        this._toString = "dashscope4j-agent:/skill/%s".formatted(name);
+    }
 
-        // 解析 SKILL.md
-        final var skillMdFile = basePath.resolve(SKILL_MD_FILE);
-        if (!Files.exists(skillMdFile)) {
-            throw new IOException("SKILL.md not found in: " + basePath);
-        }
+    @Override
+    public String toString() {
+        return _toString;
+    }
 
-        final var content = Files.readString(skillMdFile, UTF_8);
-
-        // 使用正则剥离 YAML frontmatter
-        final var frontmatter = parseFrontmatter(content);
-
-        this.name = validateName(frontmatter.name, basePath);
-        this.description = frontmatter.description;
-        this.license = frontmatter.license;
-        this.compatibility = frontmatter.compatibility;
-        this.metadata = convertMetadataMap(frontmatter.metadata);
-        this.allowedTools = frontmatter.allowedTools != null ? List.copyOf(frontmatter.allowedTools) : List.of();
-        this.bodyContent = extractBody(content);
-
+    /**
+     * @return SKILL 主目录
+     */
+    public Path home() {
+        return home;
     }
 
     @Override
@@ -84,6 +89,11 @@ public class FileSkill implements Skill {
     @Override
     public String description() {
         return description;
+    }
+
+    @Override
+    public String body() {
+        return body;
     }
 
     @Override
@@ -104,11 +114,6 @@ public class FileSkill implements Skill {
     @Override
     public List<String> allowedTools() {
         return allowedTools;
-    }
-
-    @Override
-    public String bodyContent() {
-        return bodyContent;
     }
 
     // === Reference 实现 ===
@@ -210,95 +215,28 @@ public class FileSkill implements Skill {
      * 解析并验证路径
      */
     private Path resolveAndValidate(String relativePath) {
-        Path resolved = basePath.resolve(relativePath).normalize();
+        Path resolved = home.resolve(relativePath).normalize();
 
         // 安全检查：防止目录穿越
-        if (!resolved.startsWith(basePath)) {
+        if (!resolved.startsWith(home)) {
             throw new SecurityException("Path escapes skill directory: " + relativePath);
         }
 
         return resolved;
     }
 
-    /**
-     * 验证 Skill 名称
-     */
-    private String validateName(String name, Path basePath) {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("name is required");
-        }
-
-        // 验证命名规范：小写 + 连字符，1-64 字符
-        if (!name.matches("^[a-z0-9]+(-[a-z0-9]+)*$")) {
-            throw new IllegalArgumentException("Invalid name format: " + name);
-        }
-
-        if (name.length() > 64) {
-            throw new IllegalArgumentException("name too long: " + name);
-        }
-
-        // 检查是否与目录名一致
-        String dirName = basePath.getFileName().toString();
-        if (!name.equals(dirName)) {
-            throw new IllegalArgumentException("name must match directory name: " + dirName);
-        }
-
-        return name;
-    }
-
-    /**
-     * 解析 YAML frontmatter（使用正则 + Jackson）
-     */
-    private YamlFrontmatter parseFrontmatter(String content) throws IOException {
-
-        // 使用正则匹配 frontmatter
-        Matcher matcher = FRONTMATTER_PATTERN.matcher(content);
-
-        if (!matcher.find()) {
-            throw new IOException("Invalid SKILL.md format: missing YAML frontmatter (must start and end with ---)");
-        }
-
-        // 提取 YAML 内容
-        String yamlContent = matcher.group(1);
-
-        // 使用 Jackson 解析 YAML
-        try {
-            return YAML_MAPPER.readValue(yamlContent, YamlFrontmatter.class);
-        } catch (IOException e) {
-            throw new IOException("Failed to parse YAML frontmatter: " + e.getMessage(), e);
-        }
-
-    }
-
-    /**
-     * 提取 Markdowm 正文（使用正则）
-     */
-    private String extractBody(String content) {
-        Matcher matcher = FRONTMATTER_PATTERN.matcher(content);
-        if (!matcher.find()) {
-            return content.trim();
-        }
-
-        // 返回 frontmatter 之后的内容
-        return content.substring(matcher.end()).trim();
-    }
 
     /**
      * 转换 metadata 为 Map<String, String>
      */
-    private Map<String, String> convertMetadataMap(Map<String, Object> metadata) {
+    private static Map<String, String> convertMetadataMapStatic(Map<String, String> metadata) {
         if (metadata == null || metadata.isEmpty()) {
             return Map.of();
         }
-        
-        final var result = new HashMap<String, String>();
-        metadata.forEach((key, value) -> {
-            if (value != null) {
-                result.put(key, value.toString());
-            }
-        });
-        return Map.copyOf(result);
+
+        return Map.copyOf(metadata);
     }
+
 
     /**
      * YAML Frontmatter 数据结构（使用 Jackson 注解）
@@ -319,12 +257,89 @@ public class FileSkill implements Skill {
             String compatibility,
 
             @JsonProperty("metadata")
-            Map<String, Object> metadata,
+            Map<String, String> metadata,
 
             @JsonProperty("allowed-tools")
             List<String> allowedTools
 
     ) {
+    }
+
+    /**
+     * 从目录加载 Skill
+     *
+     * @param skillDir Skill 目录路径
+     * @return FileSkill 实例
+     * @throws IOException 如果加载失败
+     */
+    public static FileSkill valueOf(Path skillDir) throws IOException {
+
+        // SKILL 的 HOME 路径
+        final var home = skillDir.toAbsolutePath().normalize();
+
+        // SKILL 名称
+        final var name = home.getFileName().toString();
+
+        // 验证命名规范：小写 + 连字符
+        if (!name.matches("^[a-z0-9]+(-[a-z0-9]+)*$")) {
+            throw new IllegalArgumentException("Invalid name format: " + name);
+        }
+
+        // 验证命名规范：1-64 字符
+        if (name.length() > 64) {
+            throw new IllegalArgumentException("name too long: " + name);
+        }
+
+        /*
+         * 解析 SKILL.md
+         * ${HOME}/SKILL.md
+         */
+        final var skillMdFile = home.resolve(SKILL_MD_FILE);
+        if (!Files.exists(skillMdFile)) {
+            throw new IOException("SKILL.md not found in: " + home);
+        }
+
+        final var content = Files.readString(skillMdFile, UTF_8);
+
+        // 使用正则匹配 frontmatter
+        final var matcher = FRONTMATTER_PATTERN.matcher(content);
+
+        if (!matcher.find()) {
+            throw new IOException("Invalid SKILL.md format: missing YAML frontmatter (must start and end with ---)");
+        }
+
+        // 提取 YAML 内容
+        final var yamlContent = matcher.group(1);
+
+        // 使用 Jackson 解析 YAML
+        final YamlFrontmatter frontmatter;
+        try {
+            frontmatter = YAML_MAPPER.readValue(yamlContent, YamlFrontmatter.class);
+        } catch (IOException e) {
+            throw new IOException("Failed to parse YAML frontmatter: " + e.getMessage(), e);
+        }
+
+        // 检查 SKILL 目录名是否和配置一样
+        if (!name.equals(frontmatter.name())) {
+            throw new IllegalArgumentException("YAML define name: %s but require: %s".formatted(
+                    frontmatter.name,
+                    name
+            ));
+        }
+
+        // 提取 Markdown 正文
+        final var body = content.substring(matcher.end()).trim();
+
+        return new FileSkill(
+                home,
+                name,
+                body,
+                frontmatter.description(),
+                frontmatter.license(),
+                frontmatter.compatibility(),
+                frontmatter.metadata(),
+                frontmatter.allowedTools()
+        );
     }
 
 }

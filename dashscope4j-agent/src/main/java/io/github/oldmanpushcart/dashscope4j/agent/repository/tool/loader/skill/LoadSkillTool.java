@@ -71,7 +71,7 @@ public class LoadSkillTool {
                         
                         现在请开始执行任务...
                         """.formatted(
-                        skill.bodyContent(),
+                        skill.body(),
                         skill.name()
                 ))
                 .build();

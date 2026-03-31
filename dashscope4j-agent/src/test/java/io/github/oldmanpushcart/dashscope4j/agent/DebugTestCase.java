@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
-import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.ToolRepository;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.DashscopeToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.FileOpsToolLoader;
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.List;
 
 public class DebugTestCase implements LoadingEnv {
@@ -47,8 +47,9 @@ public class DebugTestCase implements LoadingEnv {
                                 .blocking(true)
                                 .providers(List.of(
                                         FileSkillProvider.newBuilder()
-                                                .baseDir("./skills")
+                                                .skillsDir(Path.of("./skills"))
                                                 .blocking(true)
+                                                .syncInterval(Duration.ofSeconds(10))
                                                 .build()
                                 ))
                                 .build()
