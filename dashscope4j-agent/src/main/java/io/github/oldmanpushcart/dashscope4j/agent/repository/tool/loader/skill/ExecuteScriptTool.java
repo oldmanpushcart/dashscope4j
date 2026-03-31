@@ -49,9 +49,23 @@ class ExecuteScriptTool {
                         
                         【参数说明】
                         - skill_name: Skill 名称，如 "image-processor"
-                        - script_path: 脚本相对路径，必须位于 scripts/ 目录下，如 "scripts/process.py"
+                        - script_path: 脚本相对路径
                         - args: 脚本参数列表，如 ["--input", "data.csv", "--output", "result.json"]
                         - interpreter: 解释器，如 "python", "bash", "node" (可选，默认根据扩展名自动判断：.py->python, .sh->bash, .js->node)
+                        
+                        【路径使用严格规范】
+                        ⚠️ 重要：路径参数是**资源的唯一标识符**,必须原样复制：
+                        - 从 SKILL.md、README.md 等文档中看到的路径，必须**逐字复制**到 script_path 参数
+                        - 不要修改、优化或"修正"路径格式（例如：不要去掉前缀，不要转换为绝对路径）
+                        - 不要对路径进行 URL 编码/解码
+                        - 即使路径看起来"奇怪"或"不正确",也要原样保留
+                        
+                        ❌ 错误示例：
+                        - 修改路径的前缀部分
+                        - 将相对路径改为绝对路径
+                        
+                        ✅ 正确示例：
+                        - 文档中怎么写，参数就怎么填，保持完全一致
                         
                         【返回结果】
                         脚本执行的标准输出内容。如果脚本执行失败，将抛出异常。
