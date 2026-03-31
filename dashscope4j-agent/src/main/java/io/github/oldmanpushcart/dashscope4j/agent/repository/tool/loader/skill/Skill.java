@@ -59,7 +59,7 @@ public interface Skill {
     /**
      * @return SKILL.md 的正文内容 (Markdown 格式，不含 frontmatter)
      */
-    String bodyContent();
+    String body();
 
     // === Reference 资源 (文档类) ===
 

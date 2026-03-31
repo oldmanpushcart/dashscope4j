@@ -39,32 +39,46 @@ public class FileSkill implements Skill {
     private static final int DEFAULT_BUFFER_SIZE = 8192;
 
     // 文件常量
-    private static final String SKILL_MD_FILENAME = "SKILL.md";
+    private static final String SKILL_MD_FILE = "SKILL.md";
 
     private final Path home;
     private final String name;
+    private final String body;
     private final String description;
     private final String license;
     private final String compatibility;
     private final Map<String, String> metadata;
     private final List<String> allowedTools;
-    private final String bodyContent;
+    private final String _toString;
 
     /**
-     * 私有构造函数，仅用于赋值
+     * 包级私有构造函数，通过 valueOf 或同包下直接创建实例
      */
-    private FileSkill(
-            Path home, String name, String bodyContent,
+    FileSkill(
+            Path home, String name, String body,
             String description, String license, String compatibility, Map<String, String> metadata, List<String> allowedTools
     ) {
-        this.home = home;
+        this.home = home.toAbsolutePath().normalize();
         this.name = name;
         this.description = description;
         this.license = license;
         this.compatibility = compatibility;
         this.metadata = metadata;
         this.allowedTools = allowedTools;
-        this.bodyContent = bodyContent;
+        this.body = body;
+        this._toString = "dashscope4j-agent:/skill/%s".formatted(name);
+    }
+
+    @Override
+    public String toString() {
+        return _toString;
+    }
+
+    /**
+     * @return SKILL 主目录
+     */
+    public Path home() {
+        return home;
     }
 
     @Override
@@ -75,6 +89,11 @@ public class FileSkill implements Skill {
     @Override
     public String description() {
         return description;
+    }
+
+    @Override
+    public String body() {
+        return body;
     }
 
     @Override
@@ -95,11 +114,6 @@ public class FileSkill implements Skill {
     @Override
     public List<String> allowedTools() {
         return allowedTools;
-    }
-
-    @Override
-    public String bodyContent() {
-        return bodyContent;
     }
 
     // === Reference 实现 ===
@@ -211,6 +225,19 @@ public class FileSkill implements Skill {
         return resolved;
     }
 
+
+    /**
+     * 转换 metadata 为 Map<String, String>
+     */
+    private static Map<String, String> convertMetadataMapStatic(Map<String, String> metadata) {
+        if (metadata == null || metadata.isEmpty()) {
+            return Map.of();
+        }
+
+        return Map.copyOf(metadata);
+    }
+
+
     /**
      * YAML Frontmatter 数据结构（使用 Jackson 注解）
      */
@@ -239,40 +266,44 @@ public class FileSkill implements Skill {
     }
 
     /**
-     * 静态工厂方法：从 File 创建 FileSkill 实例（包含所有解析逻辑）
+     * 从目录加载 Skill
      *
-     * @param skillDir 技能目录文件
+     * @param skillDir Skill 目录路径
      * @return FileSkill 实例
      * @throws IOException 如果加载失败
      */
     public static FileSkill valueOf(Path skillDir) throws IOException {
 
-        // SKILL 主目录
+        // SKILL 的 HOME 路径
         final var home = skillDir.toAbsolutePath().normalize();
 
         // SKILL 名称
         final var name = home.getFileName().toString();
 
-        // 验证命名规范：小写 + 连字符，1-64 字符
+        // 验证命名规范：小写 + 连字符
         if (!name.matches("^[a-z0-9]+(-[a-z0-9]+)*$")) {
             throw new IllegalArgumentException("Invalid name format: " + name);
         }
 
+        // 验证命名规范：1-64 字符
         if (name.length() > 64) {
             throw new IllegalArgumentException("name too long: " + name);
         }
 
-        // 解析 SKILL.md
-        final var skillMdFile = home.resolve(SKILL_MD_FILENAME);
+        /*
+         * 解析 SKILL.md
+         * ${HOME}/SKILL.md
+         */
+        final var skillMdFile = home.resolve(SKILL_MD_FILE);
         if (!Files.exists(skillMdFile)) {
             throw new IOException("SKILL.md not found in: " + home);
         }
 
-        // SKILL.md 内容
         final var content = Files.readString(skillMdFile, UTF_8);
 
-        // 使用正则匹配 frontmatter（只调用一次）
+        // 使用正则匹配 frontmatter
         final var matcher = FRONTMATTER_PATTERN.matcher(content);
+
         if (!matcher.find()) {
             throw new IOException("Invalid SKILL.md format: missing YAML frontmatter (must start and end with ---)");
         }
@@ -285,26 +316,29 @@ public class FileSkill implements Skill {
         try {
             frontmatter = YAML_MAPPER.readValue(yamlContent, YamlFrontmatter.class);
         } catch (IOException e) {
-            throw new IOException("Failed to parse YAML frontmatter!", e);
+            throw new IOException("Failed to parse YAML frontmatter: " + e.getMessage(), e);
         }
 
-        // YAML 中声明的技能名称必须与目录名一致
-        if (!name.equals(frontmatter.name)) {
-            throw new IllegalArgumentException("name must match directory name: " + name);
+        // 检查 SKILL 目录名是否和配置一样
+        if (!name.equals(frontmatter.name())) {
+            throw new IllegalArgumentException("YAML define name: %s but require: %s".formatted(
+                    frontmatter.name,
+                    name
+            ));
         }
 
-        // 提取正文（frontmatter 之后的内容）
-        final var bodyContent = content.substring(matcher.end()).trim();
+        // 提取 Markdown 正文
+        final var body = content.substring(matcher.end()).trim();
 
         return new FileSkill(
                 home,
                 name,
-                bodyContent,
-                frontmatter.description,
-                frontmatter.license,
-                frontmatter.compatibility,
-                frontmatter.metadata,
-                frontmatter.allowedTools
+                body,
+                frontmatter.description(),
+                frontmatter.license(),
+                frontmatter.compatibility(),
+                frontmatter.metadata(),
+                frontmatter.allowedTools()
         );
     }
 
