@@ -8,7 +8,7 @@ import java.nio.file.Path;
  * 技能条目 - 封装 Skill 和 Path
  *
  * @param skill 技能对象
- * @param path  技能目录路径
+ * @param home  技能目录路径
  */
-record Entry(Skill skill, Path path) {
+record Entry(Skill skill, Path home) {
 }

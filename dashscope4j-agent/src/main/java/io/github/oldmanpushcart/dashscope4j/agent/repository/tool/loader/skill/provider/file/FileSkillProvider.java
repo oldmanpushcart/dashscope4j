@@ -187,7 +187,7 @@ public class FileSkillProvider implements SkillProvider {
      */
     private Skill loadSkillSafely(Path skillDir) {
         try {
-            return new FileSkill(skillDir);
+            return FileSkill.valueOf(skillDir);
         } catch (Exception e) {
             logger.warn("Failed to load skill from: {}", skillDir, e);
             return null;

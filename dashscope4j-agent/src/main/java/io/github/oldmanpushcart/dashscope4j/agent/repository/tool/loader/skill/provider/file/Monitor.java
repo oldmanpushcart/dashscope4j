@@ -182,7 +182,7 @@ class Monitor extends Thread implements AutoCloseable {
                     handleFileModify(fullPath);
                 }
             } catch (Exception e) {
-                logger.warn("{} process event:{}, path:{} occur error!", this, event.kind(), fullPath, e);
+                logger.warn("{} process event:{}, home:{} occur error!", this, event.kind(), fullPath, e);
             }
         }
 
@@ -242,7 +242,7 @@ class Monitor extends Thread implements AutoCloseable {
      */
     private void loadAndUpdateDraft(String skillName, Path skillDir) {
         try {
-            Skill skill = new FileSkill(skillDir);
+            Skill skill = FileSkill.valueOf(skillDir);
             Entry entry = new Entry(skill, skillDir);
             drafts.put(skillName, entry);
             logger.debug("Updated draft: {}", skillName);
