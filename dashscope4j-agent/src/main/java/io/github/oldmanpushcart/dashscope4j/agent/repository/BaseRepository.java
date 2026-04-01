@@ -132,9 +132,10 @@ public class BaseRepository<K, E> implements Repository<K, E> {
             return;
         }
 
+        IOUtils.closeQuietly(loader);
         IOUtils.closeQuietly(indexer);
         IOUtils.closeQuietly(storage);
-        IOUtils.closeQuietly(loader);
+
         logger.debug("{} closed.", this);
 
     }
