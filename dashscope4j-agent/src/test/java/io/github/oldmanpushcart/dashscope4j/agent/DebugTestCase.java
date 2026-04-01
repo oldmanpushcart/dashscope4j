@@ -44,7 +44,6 @@ public class DebugTestCase implements LoadingEnv {
                                 .transport(transport)
                                 .build(),
                         SkillToolLoader.newBuilder()
-                                .blocking(true)
                                 .providers(List.of(
                                         FileSkillProvider.newBuilder()
                                                 .skillsDir(Path.of("./skills"))
