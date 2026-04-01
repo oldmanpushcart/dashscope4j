@@ -25,11 +25,11 @@ class GetAssertTool {
 
     public static final String TOOL_NAME = "global$skill$get_assert";
 
-    private final Map<String, Skill> skillsMap;
+    private final Map<String, Skill> skills;
     private final Path tempDir;
 
-    public GetAssertTool(Map<String, Skill> skillsMap, Path tempDir) {
-        this.skillsMap = skillsMap;
+    public GetAssertTool(Map<String, Skill> skills, Path tempDir) {
+        this.skills = skills;
         this.tempDir = tempDir;
     }
 
@@ -75,7 +75,7 @@ class GetAssertTool {
                         """)
                 .parameterType(Spec.class)
                 .<Spec>function((caller, spec) -> {
-                    final var skill = skillsMap.get(spec.name());
+                    final var skill = skills.get(spec.name());
                     if (null == skill) {
                         throw new IllegalArgumentException("Unknow skill: %s".formatted(spec.name()));
                     }

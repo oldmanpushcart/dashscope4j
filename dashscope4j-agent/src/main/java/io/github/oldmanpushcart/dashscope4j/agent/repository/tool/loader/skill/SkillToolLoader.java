@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.skill.p
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,8 +24,6 @@ import java.util.function.UnaryOperator;
 
 import static io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils.mutableCopy;
 import static io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils.unmodifiableCopy;
-import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.allOf;
-import static java.util.concurrent.CompletableFuture.completedStage;
 
 /**
  * Skill Tool Loader - 从 SkillProvider 加载 Skill 并注册为 Tool
@@ -45,10 +44,9 @@ public class SkillToolLoader implements Repository.Loader<String, Tool> {
     private static final Logger logger = LoggerFactory.getLogger(SkillToolLoader.class);
 
     private final List<SkillProvider> providers;
-    private final boolean blocking;
 
     // 存储已加载的 Skill
-    private final Map<String, Skill> skillsMap = new ConcurrentHashMap<>();
+    private final Map<String, Skill> skills = new ConcurrentHashMap<>();
 
     // 生命周期管理
     private final CompletableFuture<Void> initF = new CompletableFuture<>();
@@ -58,7 +56,6 @@ public class SkillToolLoader implements Repository.Loader<String, Tool> {
 
     private SkillToolLoader(Builder builder) {
         this.providers = unmodifiableCopy(builder.providers);
-        this.blocking = builder.blocking;
     }
 
     @Override
@@ -85,13 +82,13 @@ public class SkillToolLoader implements Repository.Loader<String, Tool> {
         }
 
         if (!initF.complete(null)) {
-            throw new IllegalStateException("Already initialized");
+            throw new IllegalStateException("Already initialized!");
         }
 
         // 初始化临时目录
         try {
             this.tempDir = initTempDir();
-            logger.debug("{} temp dir initialized. path={}", this, tempDir);
+            logger.debug("{} create temp dir: {}", this, tempDir);
         } catch (IOException ioEx) {
             return CompletableFuture.failedFuture(ioEx);
         }
@@ -102,9 +99,9 @@ public class SkillToolLoader implements Repository.Loader<String, Tool> {
 
         // 初始化全局工具
         List.of(
-                new GetReferenceTool(skillsMap).toTool(),
-                new GetAssertTool(skillsMap, tempDir).toTool(),
-                new ExecuteScriptTool(skillsMap, tempDir, Duration.ofSeconds(30)).toTool()
+                new GetReferenceTool(skills).toTool(),
+                new GetAssertTool(skills, tempDir).toTool(),
+                new ExecuteScriptTool(skills, tempDir, Duration.ofSeconds(30)).toTool()
         ).forEach(tool -> {
             final var stage = toolUpdater.upsert(tool.meta().name(), tool);
             stages.add(stage);
@@ -112,22 +109,13 @@ public class SkillToolLoader implements Repository.Loader<String, Tool> {
 
 
         // 初始化所有 Provider
-        final var skillUpdater = new SkillUpdater(toolUpdater, skillsMap);
+        final var skillUpdater = new SkillUpdater(toolUpdater, skills);
         providers.forEach(provider -> {
             final var stage = provider.init(skillUpdater);
             stages.add(stage);
         });
 
-        return CompletableFuture.completedFuture(null)
-                .thenCompose(unused -> blocking ? allOf(10, stages) : completedStage(null))
-                .whenComplete((unused, ex) -> {
-                    if (ex != null) {
-                        logger.warn("{} init failure!", this, ex);
-                        close();
-                    } else {
-                        logger.debug("{} initialized.", this);
-                    }
-                });
+        return CompletableFutureUtils.allOf(stages);
     }
 
     @Override
@@ -145,10 +133,14 @@ public class SkillToolLoader implements Repository.Loader<String, Tool> {
             toolUpdater = null;
         }
 
-        // 2. 关闭所有 Provider
+        // 移除所有 SKILL 注册的工具
+        skills.keySet().forEach(name -> toolUpdater.remove(SkillHelper.toToolName(name)));
+        skills.clear();
+
+        // 关闭所有 Provider
         providers.forEach(IOUtils::closeQuietly);
 
-        // 3. 清理临时文件
+        // 清理临时文件
         if (null != tempDir) {
             try (final var walker = Files.walk(tempDir).sorted(Comparator.reverseOrder())) {
                 walker.forEach(path -> {
@@ -165,8 +157,6 @@ public class SkillToolLoader implements Repository.Loader<String, Tool> {
             }
         }
 
-        // 4. 清空缓存
-        skillsMap.clear();
         logger.debug("{} closed.", this);
 
     }
@@ -222,7 +212,6 @@ public class SkillToolLoader implements Repository.Loader<String, Tool> {
      */
     public static class Builder implements Buildable<SkillToolLoader, Builder> {
         private List<SkillProvider> providers;
-        private boolean blocking = true;
 
         public Builder providers(List<SkillProvider> providers) {
             this.providers = providers;
@@ -231,17 +220,6 @@ public class SkillToolLoader implements Repository.Loader<String, Tool> {
 
         public Builder providers(UnaryOperator<List<SkillProvider>> operator) {
             this.providers = operator.apply(mutableCopy(this.providers));
-            return this;
-        }
-
-
-        /**
-         * 设置加载模式
-         *
-         * @param blocking true=非阻塞加载 (不阻塞 init), false=阻塞加载 (等待初始化完成)
-         */
-        public Builder blocking(boolean blocking) {
-            this.blocking = blocking;
             return this;
         }
 

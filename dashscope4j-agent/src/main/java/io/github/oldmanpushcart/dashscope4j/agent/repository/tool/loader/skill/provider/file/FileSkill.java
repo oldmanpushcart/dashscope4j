@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -205,6 +206,26 @@ public class FileSkill implements Skill {
             Path scriptFile = resolveAndValidate(scriptPath);
             return Files.exists(scriptFile);
         } catch (SecurityException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(home, name, description, license, compatibility, metadata, allowedTools);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other instanceof FileSkill otherSkill) {
+            return Objects.equals(home, otherSkill.home())
+                    && Objects.equals(name, otherSkill.name())
+                    && Objects.equals(description, otherSkill.description())
+                    && Objects.equals(license, otherSkill.license())
+                    && Objects.equals(compatibility, otherSkill.compatibility())
+                    && Objects.equals(metadata, otherSkill.metadata())
+                    && Objects.equals(allowedTools, otherSkill.allowedTools());
+        } else {
             return false;
         }
     }

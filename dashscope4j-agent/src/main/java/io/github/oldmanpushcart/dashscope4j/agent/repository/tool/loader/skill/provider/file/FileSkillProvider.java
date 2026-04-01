@@ -26,6 +26,7 @@ public class FileSkillProvider implements SkillProvider {
     private final Duration syncInterval;
 
     private final Map<String, FileSkill> skills = new ConcurrentHashMap<>();
+    private final CompletableFuture<Void> initF = new CompletableFuture<>();
     private final CompletableFuture<Void> closeF = new CompletableFuture<>();
     private final Thread syncer;
     private final String _toString;
@@ -50,28 +51,37 @@ public class FileSkillProvider implements SkillProvider {
 
     @Override
     public CompletionStage<Void> init(Updater updater) {
+
+        if (closeF.isDone()) {
+            throw new IllegalStateException("Already closed!");
+        }
+
+        if (!initF.complete(null)) {
+            throw new IllegalStateException("Already initialized!");
+        }
+
         this.updater = updater;
         return syncSkills()
-                .thenAccept(unused-> syncer.start());
+                .thenAccept(unused -> syncer.start());
     }
 
     // 扫描 skills 目录，找出所有符合规范的技能。
     private Map<String, FileSkill> scanSkills() throws IOException {
         try (var paths = Files.list(skillsDir)) {
-            final var scanSkillMap = new HashMap<String, FileSkill>();
+            final var scanSkills = new HashMap<String, FileSkill>();
             paths.filter(Files::isDirectory)
                     .forEach(skillDir -> {
 
                         // 加载 SKILL
                         try {
                             final var skill = FileSkill.valueOf(skillDir);
-                            scanSkillMap.put(skill.name(), skill);
+                            scanSkills.put(skill.name(), skill);
                         } catch (Throwable t) {
                             logger.warn("{}/scan error, ignore: {}", this, skillDir, t);
                         }
 
                     });
-            return scanSkillMap;
+            return scanSkills;
         }
     }
 

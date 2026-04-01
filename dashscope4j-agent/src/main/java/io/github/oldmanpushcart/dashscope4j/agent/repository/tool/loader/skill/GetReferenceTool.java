@@ -13,10 +13,10 @@ class GetReferenceTool {
 
     public static final String TOOL_NAME = "global$skill$get_reference";
 
-    private final Map<String, Skill> skillsMap;
+    private final Map<String, Skill> skills;
 
-    public GetReferenceTool(Map<String, Skill> skillsMap) {
-        this.skillsMap = skillsMap;
+    public GetReferenceTool(Map<String, Skill> skills) {
+        this.skills = skills;
     }
 
     public FunctionTool toTool() {
@@ -61,9 +61,9 @@ class GetReferenceTool {
                 .parameterType(Spec.class)
                 .<Spec>function((caller, spec) -> {
 
-                    final var skill = skillsMap.get(spec.name());
+                    final var skill = skills.get(spec.name());
                     if (null == skill) {
-                        throw new IllegalArgumentException("Unknown skill: %s. Available skills: %s".formatted(spec.name(), skillsMap.keySet()));
+                        throw new IllegalArgumentException("Unknown skill: %s. Available skills: %s".formatted(spec.name(), skills.keySet()));
                     }
 
                     return skill.getReference(spec.path());

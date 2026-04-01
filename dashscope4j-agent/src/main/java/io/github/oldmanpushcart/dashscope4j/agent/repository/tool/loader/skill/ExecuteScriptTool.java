@@ -3,8 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.agent.repository.tool.loader.skill;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,12 +25,12 @@ class ExecuteScriptTool {
 
     public static final String TOOL_NAME = "global$skill$execute_script";
 
-    private final Map<String, Skill> skillsMap;
+    private final Map<String, Skill> skills;
     private final Path tempDir;
     private final Duration timeout;
 
-    public ExecuteScriptTool(Map<String, Skill> skillsMap, Path tempDir, Duration timeout) {
-        this.skillsMap = skillsMap;
+    public ExecuteScriptTool(Map<String, Skill> skills, Path tempDir, Duration timeout) {
+        this.skills = skills;
         this.tempDir = tempDir;
         this.timeout = timeout;
     }
@@ -83,7 +81,7 @@ class ExecuteScriptTool {
                         """)
                 .parameterType(Spec.class)
                 .<Spec>function((caller, spec) -> {
-                    final var skill = skillsMap.get(spec.name());
+                    final var skill = skills.get(spec.name());
                     if (null == skill) {
                         throw new IllegalArgumentException("Unknow skill: %s".formatted(spec.name()));
                     }

@@ -30,6 +30,7 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
     private final Thread syncer;
     private final Map<String, FunctionTool> tools = new ConcurrentHashMap<>();
     private final CompletableFuture<Void> closeF = new CompletableFuture<>();
+    private final CompletableFuture<Void> initF = new CompletableFuture<>();
 
     private volatile Repository.Updater<String, Tool> updater;
     private volatile McpAsyncClient mcpClient;
@@ -52,6 +53,15 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
 
     @Override
     public CompletionStage<Void> init(Repository.Updater<String, Tool> updater) {
+
+        if (closeF.isDone()) {
+            throw new IllegalStateException("Already closed!");
+        }
+
+        if (!initF.complete(null)) {
+            throw new IllegalStateException("Already initialized!");
+        }
+
         this.updater = updater;
         this.mcpClient = McpClient.async(transport).build();
         return mcpClient.initialize().toFuture()
@@ -174,7 +184,9 @@ public class McpToolLoader implements Repository.Loader<String, Tool> {
         if (!closeF.complete(null)) {
             return;
         }
-        syncer.interrupt();
+        if (!syncer.isInterrupted()) {
+            syncer.interrupt();
+        }
     }
 
     public static Builder newBuilder() {
