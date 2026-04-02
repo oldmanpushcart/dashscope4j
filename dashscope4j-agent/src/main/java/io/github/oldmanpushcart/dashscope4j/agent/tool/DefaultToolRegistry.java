@@ -1,0 +1,140 @@
+package io.github.oldmanpushcart.dashscope4j.agent.tool;
+
+import io.github.oldmanpushcart.dashscope4j.agent.tool.index.ToolIndex;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.ToolLoader;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.UnaryOperator;
+
+public class DefaultToolRegistry implements ToolRegistry {
+
+    private final ToolIndex index;
+    private final List<ToolLoader> loaders;
+
+    private final Map<String, Tool> tools = new ConcurrentHashMap<>();
+    private final AtomicBoolean init = new AtomicBoolean(false);
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+
+
+    private DefaultToolRegistry(Builder builder) {
+        Objects.requireNonNull(builder.index, "index must not be null!");
+        this.index = builder.index;
+        this.loaders = CommonUtils.unmodifiableCopy(builder.loaders);
+    }
+
+    @Override
+    public CompletionStage<Void> init() {
+
+        if (isClosed()) {
+            throw new IllegalStateException("Already closed!");
+        }
+
+        if (!init.compareAndSet(false, true)) {
+            throw new IllegalStateException("Already initialized!");
+        }
+
+        final var stages = new ArrayList<CompletionStage<Void>>();
+        stages.add(index.init());
+        loaders.forEach(loader -> {
+            final var stage = loader.init(this);
+            stages.add(stage);
+        });
+        return CompletableFutureUtils.allOf(stages)
+                .whenComplete((u, ex) -> {
+                    if (null != ex) {
+                        close();
+                    }
+                });
+    }
+
+    @Override
+    public CompletionStage<Map<String, Tool>> lookup(UserMessage instant) {
+        return index.query(instant.text())
+                .thenApply(names -> {
+                    final var result = new HashMap<String, Tool>();
+                    names.forEach(name -> {
+                        final var tool = tools.get(name);
+                        if (null != tool) {
+                            result.put(name, tool);
+                        }
+                    });
+                    return result;
+                });
+    }
+
+    @Override
+    public CompletionStage<Tool> lookupByName(String name) {
+        return CompletableFuture.completedStage(tools.get(name));
+    }
+
+    @Override
+    public CompletionStage<Void> register(String name, Tool tool) {
+        return index.upsert(name, tool)
+                .thenAccept(u -> tools.put(name, tool));
+    }
+
+    @Override
+    public CompletionStage<Void> remove(String name) {
+        return index.remove(name)
+                .thenAccept(u -> tools.remove(name));
+    }
+
+    @Override
+    public boolean isClosed() {
+        return closed.get();
+    }
+
+    @Override
+    public void close() {
+
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
+
+        loaders.forEach(IOUtils::closeQuietly);
+        IOUtils.closeQuietly(index);
+
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static class Builder implements Buildable<DefaultToolRegistry, Builder> {
+
+        private ToolIndex index;
+        private List<ToolLoader> loaders;
+
+        public Builder index(ToolIndex index) {
+            this.index = index;
+            return this;
+        }
+
+        public Builder loaders(List<ToolLoader> loaders) {
+            this.loaders = loaders;
+            return this;
+        }
+
+        public Builder loaders(UnaryOperator<List<ToolLoader>> operator) {
+            this.loaders = operator.apply(CommonUtils.mutableCopy(this.loaders));
+            return this;
+        }
+
+        @Override
+        public DefaultToolRegistry build() {
+            return new DefaultToolRegistry(this);
+        }
+
+    }
+
+}

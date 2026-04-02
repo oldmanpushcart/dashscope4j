@@ -38,14 +38,16 @@
 
 ### Output Schema
 ```code
-[
-  {
-    "rank": <int>,       // 从1开始的排名
-    "name": "<string>",  // 必须与输入中的 tool name 完全一致
-    "score": <float>,    // 0.0 到 1.0 之间
-    "reason": "<string>" // 简短理由 + 证据引用
-  }
-]
+{
+  "items":[
+    {
+      "rank": <int>,       // 从1开始的排名
+      "name": "<string>",  // 必须与输入中的 tool name 完全一致
+      "score": <float>,    // 0.0 到 1.0 之间
+      "reason": "<string>" // 简短理由 + 证据引用
+    }
+  ]
+}
 ```
 ### Execution
 现在，请根据上述规则处理输入，直接输出 JSON 结果：
