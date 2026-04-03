@@ -60,12 +60,14 @@ public class DebugTestCase implements LoadingEnv {
                     ))
                     .build();
 
+            toolRegistry.init()
+                    .toCompletableFuture()
+                    .join();
+
             final var agent = new ReActAgent.Builder()
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
-                    .interceptors(List.of(
-                            new ReActInterceptor(toolRegistry)
-                    ))
+                    .tool(toolRegistry)
                     .build();
 
 //        {

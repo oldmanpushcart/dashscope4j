@@ -1,8 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
-import io.github.oldmanpushcart.dashscope4j.agent.repository.Repository;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolRegistry;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseAgent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
@@ -15,7 +14,7 @@ public class ReActAgent extends BaseAgent {
     protected ReActAgent(Builder builder) {
         super(builder);
         this.reActInterceptor = new ReActInterceptor(
-                builder.toolRepository
+                builder.toolRegistry
         );
     }
 
@@ -32,10 +31,10 @@ public class ReActAgent extends BaseAgent {
 
     public static class Builder extends BaseAgent.Builder<ReActAgent, ReActAgent.Builder> {
 
-        private Repository<String, Tool> toolRepository;
+        private ToolRegistry toolRegistry;
 
-        public Builder tool(Repository<String, Tool> toolRepository) {
-            this.toolRepository = toolRepository;
+        public Builder tool(ToolRegistry toolRegistry) {
+            this.toolRegistry = toolRegistry;
             return this;
         }
 

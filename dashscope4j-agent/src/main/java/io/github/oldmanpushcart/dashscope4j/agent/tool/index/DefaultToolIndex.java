@@ -13,6 +13,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 
 import java.util.List;
@@ -149,10 +150,15 @@ public class DefaultToolIndex implements ToolIndex {
         return client.async(request)
                 .thenApply(response -> response.output().best().message().text())
                 .thenApply(json -> JacksonJsonUtils.toObject(json, QueryResult.class))
-                .thenApply(result -> result.items()
-                        .stream()
-                        .map(QueryResult.Item::name)
-                        .collect(Collectors.toSet()));
+                .thenApply(result -> {
+                    if (null == result || CommonUtils.isEmpty(result.items())) {
+                        return Set.of();
+                    }
+                    return result.items()
+                            .stream()
+                            .map(QueryResult.Item::name)
+                            .collect(Collectors.toSet());
+                });
     }
 
     @Override
