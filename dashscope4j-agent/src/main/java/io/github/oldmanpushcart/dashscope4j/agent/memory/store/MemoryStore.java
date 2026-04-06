@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import org.reactivestreams.Publisher;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -17,27 +18,41 @@ public interface MemoryStore extends AutoCloseable {
 
     /**
      * 流式获取内存片段
+     * <p>
+     * 按 fragmentId 倒序返回（最新的在前）。
+     * </p>
      *
      * @param sessionId 会话 ID
-     * @param offset    偏移量
+     * @param after     起始 fragmentID（返回小于此 ID 的片段，Long.MAX_VALUE 表示从头开始）
      * @return 内存片段流
      */
-    Publisher<Fragment> flow(String sessionId, long offset);
+    Publisher<Fragment> flow(String sessionId, long after);
+
+    /**
+     * 获取所有会话 ID
+     * <p>
+     * 用于初始化时加载窗口缓存。
+     * </p>
+     *
+     * @return 会话 ID 列表
+     */
+    default CompletionStage<List<String>> listSessionIds() {
+        return java.util.concurrent.CompletableFuture.completedFuture(java.util.List.of());
+    }
 
     /**
      * 插入内存片段
      *
      * @param sessionId SESSION ID
-     * @param inbound   用户输入
-     * @param outbound  助手输出
+     * @param messages  消息列表（包含用户输入和助手输出）
      * @return 内存片段ID
      */
-    CompletionStage<Long> upsert(String sessionId, Message inbound, Message outbound);
+    CompletionStage<Fragment> upsert(String sessionId, List<Message> messages);
 
     /**
      * 删除内存片段
      *
-     * @param fragmentId 内存片段ID
+     * @param fragmentId 内存片段 ID
      * @return 删除结果
      */
     CompletionStage<Void> remove(long fragmentId);
@@ -50,8 +65,7 @@ public interface MemoryStore extends AutoCloseable {
      *
      * @param fragmentId ID
      * @param sessionId  SESSION ID
-     * @param inbound    用户输入
-     * @param outbound   助手输出
+     * @param messages   消息列表（包含用户输入和助手输出）
      * @param tokens     TOKENS
      * @param createdAt  创建时间
      */
@@ -63,11 +77,8 @@ public interface MemoryStore extends AutoCloseable {
             @JsonProperty("session_id")
             String sessionId,
 
-            @JsonProperty("inbound")
-            Message inbound,
-
-            @JsonProperty("outbound")
-            Message outbound,
+            @JsonProperty("messages")
+            List<Message> messages,
 
             @JsonProperty("tokens")
             int tokens,
@@ -76,6 +87,7 @@ public interface MemoryStore extends AutoCloseable {
             Instant createdAt
 
     ) {
+
     }
 
 }

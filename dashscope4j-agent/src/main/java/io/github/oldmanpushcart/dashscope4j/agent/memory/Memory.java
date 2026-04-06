@@ -27,11 +27,10 @@ public interface Memory extends AutoCloseable {
      * 记录
      *
      * @param sessionId 会话ID
-     * @param inbound   用户输入
-     * @param outbound  助手输出
+     * @param messages  消息列表（包含用户输入和助手输出）
      * @return 记录结果
      */
-    CompletionStage<Void> remember(String sessionId, Message inbound, Message outbound);
+    CompletionStage<Void> remember(String sessionId, List<Message> messages);
 
     /**
      * 关闭记忆
