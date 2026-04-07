@@ -58,12 +58,14 @@ public class ReActInterceptor implements ChatInterceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain, AigcRequest<Input, Output> request) {
-        final var newRequest = newReActRequest(request);
-        return switch (chain.type()) {
-            case ASYNC -> processAsync(chain, newRequest);
-            case FLOW -> processFlow(chain, newRequest);
-            default -> chain.proceed(newRequest);
-        };
+        return CompletableFuture.completedStage(request)
+
+                // 构造对话请求
+                .thenApply(this::newReActRequest)
+
+                // 执行拦截
+                .thenCompose(r -> processInterceptor(chain, r));
+
     }
 
     /**
@@ -118,6 +120,15 @@ public class ReActInterceptor implements ChatInterceptor {
                 })
                 .build();
     }
+
+    private CompletionStage<?> processInterceptor(Chain chain, AigcRequest<Input, Output> request) {
+        return switch (chain.type()) {
+            case ASYNC -> processAsync(chain, request);
+            case FLOW -> processFlow(chain, request);
+            default -> chain.proceed(request);
+        };
+    }
+
 
     /**
      * 处理异步请求
