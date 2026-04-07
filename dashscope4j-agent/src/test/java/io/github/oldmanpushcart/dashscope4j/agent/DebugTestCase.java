@@ -1,21 +1,18 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
-import io.github.oldmanpushcart.dashscope4j.agent.memory.Memory;
 import io.github.oldmanpushcart.dashscope4j.agent.memory.store.MapMemoryStore;
-import io.github.oldmanpushcart.dashscope4j.agent.memory.store.MemoryStore;
 import io.github.oldmanpushcart.dashscope4j.agent.memory.typical.WorkingMemory;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.DefaultToolRegistry;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolRegistry;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.index.DefaultToolIndex;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.DashscopeToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.FileOpsToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.SystemToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.mcp.McpToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.mcp.RecoverableMcpClientTransport;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.skill.SkillToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.loader.skill.provider.file.FileSkillProvider;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.DefaultToolbox;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.index.DefaultToolIndex;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.DashscopeToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.FileOpsToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.SystemToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.McpToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.RecoverableMcpClientTransport;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.file.FileSkillProvider;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
@@ -42,10 +39,10 @@ public class DebugTestCase implements LoadingEnv {
                 .gcRatio(0.3)
                 .build();
 
-        ToolRegistry toolRegistry = null;
+        Toolbox toolbox = null;
         try {
 
-            toolRegistry = DefaultToolRegistry.newBuilder()
+            toolbox = DefaultToolbox.newBuilder()
                     .index(DefaultToolIndex.newBuilder()
                             .client(client)
                             .model(ChatModel.QWEN_FLASH)
@@ -74,14 +71,14 @@ public class DebugTestCase implements LoadingEnv {
                     ))
                     .build();
 
-            toolRegistry.init()
+            toolbox.init()
                     .toCompletableFuture()
                     .join();
 
             final var agent = new ReActAgent.Builder()
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
-                    .tool(toolRegistry)
+                    .toolbox(toolbox)
                     .sessionId(sessionId)
                     .memory(memory)
                     .build();
@@ -105,7 +102,7 @@ public class DebugTestCase implements LoadingEnv {
             }
 
         } finally {
-            IOUtils.closeQuietly(toolRegistry);
+            IOUtils.closeQuietly(toolbox);
         }
 
     }

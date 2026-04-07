@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolRegistry;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
@@ -38,16 +38,16 @@ public class ReActInterceptor implements ChatInterceptor {
             .build();
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final ToolRegistry toolRegistry;
+    private final Toolbox toolbox;
     private final FunctionTool searchTool;
 
-    public ReActInterceptor(ToolRegistry toolRegistry) {
-        this.toolRegistry = toolRegistry;
+    public ReActInterceptor(Toolbox toolbox) {
+        this.toolbox = toolbox;
         this.searchTool = FunctionTool.newBuilder()
                 .name("search_tools")
                 .description("根据意图搜索工具。当你没有工具可以完成任务时调用。")
                 .parameterType(Search.class)
-                .<Search>function((caller, search) -> toolRegistry.lookup(Message.user(search.intent())))
+                .<Search>function((caller, search) -> toolbox.lookup(Message.user(search.intent())))
                 .build();
     }
 
@@ -375,7 +375,7 @@ public class ReActInterceptor implements ChatInterceptor {
         if (searchTool.meta().name().equals(name)) {
             return CompletableFuture.completedStage(searchTool);
         }
-        return toolRegistry.lookupByName(name)
+        return toolbox.lookupByName(name)
                 .thenCompose(tool -> {
                     if (tool == null) {
                         return CompletableFuture.failedStage(ToolExecutionException.notFound(name));
