@@ -35,53 +35,53 @@ public class DebugTestCase implements LoadingEnv {
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
                 .store(new MapMemoryStore())
-                .maxTokens(25*1000)
+                .maxTokens(25 * 1000)
                 .gcRatio(0.3)
                 .build();
 
-        Toolbox toolbox = null;
+        final var toolbox = DefaultToolbox.newBuilder()
+                .index(DefaultToolIndex.newBuilder()
+                        .client(client)
+                        .model(ChatModel.QWEN_FLASH)
+                        .build())
+                .loaders(List.of(
+                        FileOpsToolLoader.INSTANCE,
+                        DashscopeToolLoader.INSTANCE,
+                        SystemToolLoader.INSTANCE,
+                        McpToolLoader.newBuilder()
+                                .name("amap")
+                                .transport(RecoverableMcpClientTransport.newBuilder()
+                                        .transportFactory(mapper ->
+                                                HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
+                                                        .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+                                                        .build())
+                                        .build())
+                                .build(),
+                        SkillToolLoader.newBuilder()
+                                .providers(List.of(
+                                        FileSkillProvider.newBuilder()
+                                                .skillsDir(Path.of("./skills"))
+                                                .syncInterval(Duration.ofSeconds(10))
+                                                .build()
+                                ))
+                                .build()
+                ))
+                .build();
+
+        Agent agent = null;
+
         try {
 
-            toolbox = DefaultToolbox.newBuilder()
-                    .index(DefaultToolIndex.newBuilder()
-                            .client(client)
-                            .model(ChatModel.QWEN_FLASH)
-                            .build())
-                    .loaders(List.of(
-                            FileOpsToolLoader.INSTANCE,
-                            DashscopeToolLoader.INSTANCE,
-                            SystemToolLoader.INSTANCE,
-                            McpToolLoader.newBuilder()
-                                    .name("amap")
-                                    .transport(RecoverableMcpClientTransport.newBuilder()
-                                            .transportFactory(mapper ->
-                                                    HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
-                                                            .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
-                                                            .build())
-                                            .build())
-                                    .build(),
-                            SkillToolLoader.newBuilder()
-                                    .providers(List.of(
-                                            FileSkillProvider.newBuilder()
-                                                    .skillsDir(Path.of("./skills"))
-                                                    .syncInterval(Duration.ofSeconds(10))
-                                                    .build()
-                                    ))
-                                    .build()
-                    ))
-                    .build();
-
-            toolbox.init()
-                    .toCompletableFuture()
-                    .join();
-
-            final var agent = new ReActAgent.Builder()
+            agent = new ReActAgent.Builder()
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
                     .sessionId(sessionId)
                     .memory(memory)
-                    .build();
+                    .build()
+                    .init()
+                    .toCompletableFuture()
+                    .join();
 
 //        {
 //            final var outbound = Flux.from(agent.flow(Message.user("根据杭州明天天气生成一幅山水画，图片保存为weatcher.jpg")))
@@ -93,8 +93,8 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(Message.user("""
-                            今天杭州天气如何？根据天气情况生成一幅图。
-                            """))
+                                今天杭州天气如何？根据天气情况生成一幅图。
+                                """))
                         .toCompletableFuture()
                         .join();
 
@@ -102,7 +102,7 @@ public class DebugTestCase implements LoadingEnv {
             }
 
         } finally {
-            IOUtils.closeQuietly(toolbox);
+            IOUtils.closeQuietly(agent);
         }
 
     }

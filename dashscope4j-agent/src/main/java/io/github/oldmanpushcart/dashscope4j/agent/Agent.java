@@ -6,16 +6,53 @@ import org.reactivestreams.Publisher;
 
 import java.util.concurrent.CompletionStage;
 
-public interface Agent {
+/**
+ * 智能体
+ */
+public interface Agent extends AutoCloseable {
 
+    /**
+     * @return 名称
+     */
     String name();
 
+    /**
+     * @return 描述
+     */
     String description();
 
+    /**
+     * @return 介绍
+     */
     String introduction();
 
+    /**
+     * 初始化
+     *
+     * @return 初始化完成的回调
+     */
+    CompletionStage<? extends Agent> init();
+
+    /**
+     * 异步处理用户消息
+     *
+     * @param inbound 用户消息
+     * @return 处理结果
+     */
     CompletionStage<AssistantMessage> async(UserMessage inbound);
 
+    /**
+     * 流式处理用户消息
+     *
+     * @param inbound 用户消息
+     * @return 处理结果
+     */
     Publisher<AssistantMessage> flow(UserMessage inbound);
+
+    /**
+     * 关闭智能体
+     */
+    @Override
+    void close();
 
 }

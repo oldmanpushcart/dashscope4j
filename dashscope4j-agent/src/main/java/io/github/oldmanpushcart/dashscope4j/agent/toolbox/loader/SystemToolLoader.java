@@ -440,7 +440,7 @@ public class SystemToolLoader implements ToolLoader {
 
 
     @Override
-    public CompletionStage<Void> init(Toolbox registry) {
+    public CompletionStage<Void> init(Toolbox toolbox) {
         List<FunctionTool> tools = List.of(
                 os(),
                 env(),
@@ -450,7 +450,7 @@ public class SystemToolLoader implements ToolLoader {
 
         // 并行等待所有 upsert 操作完成
         final var stages = tools.stream()
-                .map(tool -> registry.register(tool.meta().name(), tool))
+                .map(tool -> toolbox.register(tool.meta().name(), tool))
                 .toList();
         return CompletableFutureUtils.allOf(10, stages);
     }

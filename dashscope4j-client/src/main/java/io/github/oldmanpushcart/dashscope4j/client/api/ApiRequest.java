@@ -150,6 +150,16 @@ public abstract class ApiRequest<R extends ApiResponse> {
             return self();
         }
 
+        public B context(Map<String, Object> context) {
+            this.context = context;
+            return self();
+        }
+
+        public B context(UnaryOperator<Map<String, Object>> operator) {
+            this.context = operator.apply(CommonUtils.mutableCopy(this.context));
+            return self();
+        }
+
     }
 
 }

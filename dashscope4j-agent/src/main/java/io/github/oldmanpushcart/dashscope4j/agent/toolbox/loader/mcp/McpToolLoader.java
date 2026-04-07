@@ -32,7 +32,7 @@ public class McpToolLoader implements ToolLoader {
     private final CompletableFuture<Void> closeF = new CompletableFuture<>();
     private final CompletableFuture<Void> initF = new CompletableFuture<>();
 
-    private volatile Toolbox registry;
+    private volatile Toolbox toolbox;
     private volatile McpAsyncClient mcpClient;
 
     private McpToolLoader(Builder builder) {
@@ -40,7 +40,7 @@ public class McpToolLoader implements ToolLoader {
         this.transport = builder.transport;
         this.syncInterval = builder.syncInterval;
 
-        this._toString = "dashscope4j-agent:/repo/tool/loader/mcp/%s".formatted(name);
+        this._toString = "dashscope4j-agent:/toolbox/loader/mcp/%s".formatted(name);
         this.syncer = new Thread(this::sync, _toString);
         this.syncer.setDaemon(true);
 
@@ -52,7 +52,7 @@ public class McpToolLoader implements ToolLoader {
     }
 
     @Override
-    public CompletionStage<Void> init(Toolbox registry) {
+    public CompletionStage<Void> init(Toolbox toolbox) {
 
         if (closeF.isDone()) {
             throw new IllegalStateException("Already closed!");
@@ -62,7 +62,7 @@ public class McpToolLoader implements ToolLoader {
             throw new IllegalStateException("Already initialized!");
         }
 
-        this.registry = registry;
+        this.toolbox = toolbox;
         this.mcpClient = McpClient.async(transport).build();
         return mcpClient.initialize().toFuture()
                 .thenCompose(unused -> syncTools())
@@ -139,7 +139,7 @@ public class McpToolLoader implements ToolLoader {
 
             final var stages = new ArrayList<CompletionStage<Void>>();
             removeNames.forEach(name -> {
-                final var stage = registry.remove(name)
+                final var stage = toolbox.remove(name)
                         .thenAccept(unused -> {
                             tools.remove(name);
                             logger.debug("{} remove tool: {}", this, name);
@@ -147,7 +147,7 @@ public class McpToolLoader implements ToolLoader {
                 stages.add(stage);
             });
             updateTools.forEach((name, tool) -> {
-                final var stage = registry.register(name, tool)
+                final var stage = toolbox.register(name, tool)
                         .thenAccept(unused -> {
                             tools.put(name, tool);
                             logger.debug("{} upsert tool: {}", this, name);

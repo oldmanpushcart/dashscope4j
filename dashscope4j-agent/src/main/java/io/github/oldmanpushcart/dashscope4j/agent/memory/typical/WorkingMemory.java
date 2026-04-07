@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -33,6 +34,8 @@ public class WorkingMemory implements Memory {
     private final int maxTokens;
     private final int retainTokens;
 
+    private final CompletableFuture<Void> initF = new CompletableFuture<>();
+
     public WorkingMemory(Builder builder) {
 
         Objects.requireNonNull(builder.client, "client must not be null");
@@ -46,6 +49,21 @@ public class WorkingMemory implements Memory {
         this.model = builder.model;
         this.maxTokens = builder.maxTokens;
         this.retainTokens = (int) (maxTokens * builder.gcRatio);
+    }
+
+    @Override
+    public CompletionStage<Void> init() {
+
+        if (!initF.complete(null)) {
+            throw new IllegalStateException("Already initialized!");
+        }
+
+        return store.init()
+                .whenComplete((unused, ex) -> {
+                    if (null != ex) {
+                        close();
+                    }
+                });
     }
 
     @Override

@@ -75,7 +75,7 @@ public class SkillToolLoader implements ToolLoader {
     }
 
     @Override
-    public CompletionStage<Void> init(Toolbox registry) {
+    public CompletionStage<Void> init(Toolbox toolbox) {
 
         if (closeF.isDone()) {
             throw new IllegalStateException("Already closed!");
@@ -93,7 +93,7 @@ public class SkillToolLoader implements ToolLoader {
             return CompletableFuture.failedFuture(ioEx);
         }
 
-        this.registry = registry;
+        this.registry = toolbox;
 
         final var stages = new ArrayList<CompletionStage<Void>>();
 
@@ -103,13 +103,13 @@ public class SkillToolLoader implements ToolLoader {
                 new GetAssertTool(skills, tempDir).toTool(),
                 new ExecuteScriptTool(skills, tempDir, Duration.ofSeconds(30)).toTool()
         ).forEach(tool -> {
-            final var stage = registry.register(tool.meta().name(), tool);
+            final var stage = toolbox.register(tool.meta().name(), tool);
             stages.add(stage);
         });
 
 
         // 初始化所有 Provider
-        final var skillUpdater = new SkillUpdater(registry, skills);
+        final var skillUpdater = new SkillUpdater(toolbox, skills);
         providers.forEach(provider -> {
             final var stage = provider.init(skillUpdater);
             stages.add(stage);

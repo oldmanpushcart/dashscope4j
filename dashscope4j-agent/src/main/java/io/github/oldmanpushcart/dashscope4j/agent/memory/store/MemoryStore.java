@@ -17,6 +17,13 @@ import java.util.concurrent.CompletionStage;
 public interface MemoryStore extends AutoCloseable {
 
     /**
+     * 初始化
+     *
+     * @return 初始化结果
+     */
+    CompletionStage<Void> init();
+
+    /**
      * 流式获取内存片段
      * <p>
      * 按 fragmentId 倒序返回（最新的在前）。

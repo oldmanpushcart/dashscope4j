@@ -37,7 +37,7 @@ public class FileOpsToolLoader implements ToolLoader {
     private static final Path WORKSPACE_ROOT = Paths.get("").toAbsolutePath().normalize();
 
     @Override
-    public CompletionStage<Void> init(Toolbox registry) {
+    public CompletionStage<Void> init(Toolbox toolbox) {
         List<FunctionTool> tools = List.of(
                 listDirectory(),
                 readFile(),
@@ -54,7 +54,7 @@ public class FileOpsToolLoader implements ToolLoader {
         
         // 并行等待所有 upsert 操作完成
         final var stages = tools.stream()
-                .map(tool -> registry.register(tool.meta().name(), tool))
+                .map(tool -> toolbox.register(tool.meta().name(), tool))
                 .toList();
         return CompletableFutureUtils.allOf(stages);
     }
