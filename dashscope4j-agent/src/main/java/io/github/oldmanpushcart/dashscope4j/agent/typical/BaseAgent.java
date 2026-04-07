@@ -1,8 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
+import io.github.oldmanpushcart.dashscope4j.agent.memory.Memory;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
@@ -14,9 +17,11 @@ import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
 
@@ -25,6 +30,8 @@ public class BaseAgent implements Agent {
     private final String name;
     private final String description;
     private final String introduction;
+    private final String sessionId;
+    private final Memory memory;
 
     private final DashscopeClient client;
     private final ChatModel model;
@@ -35,6 +42,8 @@ public class BaseAgent implements Agent {
         this.name = builder.name;
         this.description = builder.description;
         this.introduction = builder.introduction;
+        this.sessionId = builder.sessionId;
+        this.memory = builder.memory;
         this.client = builder.client;
         this.model = builder.model;
         this.parameters = CommonUtils.unmodifiableCopy(builder.parameters);
@@ -57,9 +66,9 @@ public class BaseAgent implements Agent {
         return introduction;
     }
 
-    private AigcRequest<ChatModel.Input, ChatModel.Output> newRequest(UserMessage inbound) {
+    private AigcRequest<Input, Output> newRequest(UserMessage inbound) {
         return AigcRequest.newBuilder(model())
-                .input(ChatModel.Input.newBuilder()
+                .input(Input.newBuilder()
                         .messages(messages -> {
 
                             // 如果有设置 introduction 则添加
@@ -80,29 +89,41 @@ public class BaseAgent implements Agent {
                         .failOnToolError(false)
                         .build())
                 .parameters(parameters())
+                .interceptors(interceptors -> {
+                    interceptors.add(new MemoryInterceptor(sessionId, memory));
+                    return interceptors;
+                })
                 .build();
     }
 
     @Override
     public CompletionStage<AssistantMessage> async(UserMessage inbound) {
-        final var request = newRequest(inbound);
-        return client().async(request, interceptors())
+        return CompletableFuture.completedStage(newRequest(inbound))
+                .thenCompose(request -> client().async(request, interceptors()))
                 .thenApply(response -> response.output().best().message());
     }
 
     @Override
     public Publisher<AssistantMessage> flow(UserMessage inbound) {
-        final var request = AigcRequest.newBuilder(newRequest(inbound))
-                .parameters(parameters -> {
+        // 使用 Flux.defer 延迟执行，在订阅时才进行记忆召回
+        return Flux.defer(() -> {
+
+            final var stage = CompletableFuture.completedStage(newRequest(inbound))
 
                     // 如果没有制定输出模式，默认为增量输出
-                    parameters.putIfAbsent("incremental_output", true);
+                    .thenApply(request -> AigcRequest.newBuilder(newRequest(inbound))
+                            .parameters(parameters -> {
+                                parameters.putIfAbsent("incremental_output", true);
+                                return parameters;
+                            })
+                            .build());
 
-                    return parameters;
-                })
-                .build();
-        return Flux.from(client().flow(request, interceptors()))
-                .map(response -> response.output().best().message());
+            // 执行记忆召回，然后创建流
+            return Mono.fromCompletionStage(stage)
+                    .flatMapMany(request -> Flux.from(client().flow(request, interceptors())))
+                    .map(response -> response.output().best().message());
+
+        });
     }
 
     protected DashscopeClient client() {
@@ -126,6 +147,9 @@ public class BaseAgent implements Agent {
         private String name;
         private String description;
         private String introduction;
+
+        private String sessionId;
+        private Memory memory;
 
         private DashscopeClient client;
         private ChatModel model;
@@ -161,6 +185,16 @@ public class BaseAgent implements Agent {
 
         public B introduction(String introduction) {
             this.introduction = introduction;
+            return self();
+        }
+
+        public B sessionId(String sessionId) {
+            this.sessionId = sessionId;
+            return self();
+        }
+
+        public B memory(Memory memory) {
+            this.memory = memory;
             return self();
         }
 

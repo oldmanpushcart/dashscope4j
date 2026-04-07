@@ -121,6 +121,7 @@ public class ReActInterceptor implements ChatInterceptor {
                 .build();
     }
 
+
     private CompletionStage<?> processInterceptor(Chain chain, AigcRequest<Input, Output> request) {
         return switch (chain.type()) {
             case ASYNC -> processAsync(chain, request);

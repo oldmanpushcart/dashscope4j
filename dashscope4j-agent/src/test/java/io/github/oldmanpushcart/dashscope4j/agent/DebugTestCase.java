@@ -1,5 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
+import io.github.oldmanpushcart.dashscope4j.agent.memory.Memory;
+import io.github.oldmanpushcart.dashscope4j.agent.memory.store.MapMemoryStore;
+import io.github.oldmanpushcart.dashscope4j.agent.memory.store.MemoryStore;
+import io.github.oldmanpushcart.dashscope4j.agent.memory.typical.WorkingMemory;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.DefaultToolRegistry;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolRegistry;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.index.DefaultToolIndex;
@@ -22,11 +26,21 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 public class DebugTestCase implements LoadingEnv {
 
     @Test
     public void debug$1() {
+
+        final var sessionId = UUID.randomUUID().toString();
+        final var memory = WorkingMemory.newBuilder()
+                .client(client)
+                .model(ChatModel.QWEN_FLASH)
+                .store(new MapMemoryStore())
+                .maxTokens(25*1000)
+                .gcRatio(0.3)
+                .build();
 
         ToolRegistry toolRegistry = null;
         try {
@@ -68,6 +82,8 @@ public class DebugTestCase implements LoadingEnv {
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .tool(toolRegistry)
+                    .sessionId(sessionId)
+                    .memory(memory)
                     .build();
 
 //        {
