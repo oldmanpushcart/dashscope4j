@@ -40,8 +40,7 @@ public class LoadSkillTool {
                 
                 ✅ 正确示例：
                 - 文档中怎么写，参数就怎么填，保持完全一致
-                
-                不要使用其他工具 (如 search_tools、文件读写工具等) 来访问本技能的资源！
+                - 不要使用其他工具 (如 search_tools、文件读写工具等) 来访问本技能的资源！
                 
                 【使用方法】
                 用户意图描述，说明想要完成的任务。Skill 会根据你的意图提供具体的执行步骤和指导。
@@ -67,6 +66,7 @@ public class LoadSkillTool {
         return FunctionTool.newBuilder()
                 .name(toolName)
                 .description(toolDescription)
+                //.description(skill.description())
                 .parameterType(Spec.class)
                 .function((caller, intent) -> """
                         %s
