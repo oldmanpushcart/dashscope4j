@@ -1,9 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.memory.store.MapMemoryStore;
-import io.github.oldmanpushcart.dashscope4j.agent.memory.typical.WorkingMemory;
+import io.github.oldmanpushcart.dashscope4j.agent.memory.WorkingMemory;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.DefaultToolbox;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.index.DefaultToolIndex;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.DashscopeToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.FileOpsToolLoader;
@@ -68,20 +67,15 @@ public class DebugTestCase implements LoadingEnv {
                 ))
                 .build();
 
-        Agent agent = null;
-
         try {
 
-            agent = new ReActAgent.Builder()
+            final var agent = new ReActAgent.Builder()
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
                     .sessionId(sessionId)
                     .memory(memory)
-                    .build()
-                    .init()
-                    .toCompletableFuture()
-                    .join();
+                    .build();
 
 //        {
 //            final var outbound = Flux.from(agent.flow(Message.user("根据杭州明天天气生成一幅山水画，图片保存为weatcher.jpg")))
@@ -102,7 +96,7 @@ public class DebugTestCase implements LoadingEnv {
             }
 
         } finally {
-            IOUtils.closeQuietly(agent);
+            IOUtils.closeQuietly(toolbox);
         }
 
     }

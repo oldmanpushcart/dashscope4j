@@ -15,13 +15,6 @@ import java.util.concurrent.CompletionStage;
 public interface Memory extends AutoCloseable {
 
     /**
-     * 初始化
-     *
-     * @return 初始化回调
-     */
-    CompletionStage<Void> init();
-
-    /**
      * 检索
      *
      * @param sessionId 会话ID

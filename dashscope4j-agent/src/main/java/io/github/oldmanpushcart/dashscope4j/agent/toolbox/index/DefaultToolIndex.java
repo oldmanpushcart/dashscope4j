@@ -74,11 +74,6 @@ public class DefaultToolIndex implements ToolIndex {
     }
 
     @Override
-    public CompletionStage<Void> init() {
-        return CompletableFuture.completedStage(null);
-    }
-
-    @Override
     public CompletionStage<Void> upsert(String name, Tool tool) {
 
         if (!(tool instanceof FunctionTool functionTool)) {
@@ -186,7 +181,7 @@ public class DefaultToolIndex implements ToolIndex {
          * @param score  搜索得分
          * @param reason 得分理由
          */
-        private record Item(
+        public record Item(
 
                 @JsonProperty("rank")
                 int rank,

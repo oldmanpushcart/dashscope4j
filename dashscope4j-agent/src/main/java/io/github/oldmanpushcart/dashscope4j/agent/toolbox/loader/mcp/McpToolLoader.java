@@ -29,13 +29,15 @@ public class McpToolLoader implements ToolLoader {
 
     private final Thread syncer;
     private final Map<String, FunctionTool> tools = new ConcurrentHashMap<>();
-    private final CompletableFuture<Void> closeF = new CompletableFuture<>();
-    private final CompletableFuture<Void> initF = new CompletableFuture<>();
 
+    // --- 生命周期控制 ---
+    private final CompletableFuture<Void> closeF = new CompletableFuture<>();
+    private final CompletableFuture<Void> installF = new CompletableFuture<>();
     private volatile Toolbox toolbox;
     private volatile McpAsyncClient mcpClient;
 
     private McpToolLoader(Builder builder) {
+
         this.name = builder.name;
         this.transport = builder.transport;
         this.syncInterval = builder.syncInterval;
@@ -52,14 +54,14 @@ public class McpToolLoader implements ToolLoader {
     }
 
     @Override
-    public CompletionStage<Void> init(Toolbox toolbox) {
+    public CompletionStage<Void> install(Toolbox toolbox) {
 
         if (closeF.isDone()) {
             throw new IllegalStateException("Already closed!");
         }
 
-        if (!initF.complete(null)) {
-            throw new IllegalStateException("Already initialized!");
+        if (!installF.complete(null)) {
+            throw new IllegalStateException("Already installed!");
         }
 
         this.toolbox = toolbox;

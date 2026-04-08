@@ -16,16 +16,6 @@ import java.util.concurrent.CompletionStage;
 public interface Toolbox extends AutoCloseable {
 
     /**
-     * 初始化工具箱
-     * <p>
-     * 在工具箱初始化时，会自动加载已注册的工具。
-     * </p>
-     *
-     * @return 初始化完成的回调
-     */
-    CompletionStage<Void> init();
-
-    /**
      * 根据用户意图查询匹配的工具
      * <p>
      * 分析用户消息的意图，返回可能需要的工具映射表。

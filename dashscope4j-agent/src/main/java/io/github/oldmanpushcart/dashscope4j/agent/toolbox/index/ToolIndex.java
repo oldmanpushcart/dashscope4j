@@ -11,13 +11,6 @@ import java.util.concurrent.CompletionStage;
 public interface ToolIndex extends AutoCloseable {
 
     /**
-     * 初始化
-     *
-     * @return 初始化回调
-     */
-    CompletionStage<Void> init();
-
-    /**
      * 插入或更新工具索引
      *
      * @param name 工具名称

@@ -13,7 +13,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 /**
  * 基于有序 Map 的内存存储实现
@@ -34,11 +33,6 @@ public class MapMemoryStore implements MemoryStore {
      * Fragment ID 生成器
      */
     private final AtomicLong fragmentIdGenerator = new AtomicLong(0);
-
-    @Override
-    public CompletionStage<Void> init() {
-        return CompletableFuture.completedStage(null);
-    }
 
     @Override
     public Publisher<Fragment> flow(String sessionId, long after) {
@@ -83,17 +77,6 @@ public class MapMemoryStore implements MemoryStore {
     public CompletionStage<Void> remove(long fragmentId) {
         fragmentMap.remove(fragmentId);
         return CompletableFuture.completedFuture(null);
-    }
-
-    @Override
-    public CompletionStage<List<String>> listSessionIds() {
-        // 从所有片段中提取唯一的 sessionId
-        List<String> sessionIds = fragmentMap.values().stream()
-                .map(Fragment::sessionId)
-                .distinct()
-                .collect(Collectors.toList());
-        
-        return CompletableFuture.completedFuture(sessionIds);
     }
 
     @Override

@@ -37,7 +37,7 @@ public class FileOpsToolLoader implements ToolLoader {
     private static final Path WORKSPACE_ROOT = Paths.get("").toAbsolutePath().normalize();
 
     @Override
-    public CompletionStage<Void> init(Toolbox toolbox) {
+    public CompletionStage<Void> install(Toolbox toolbox) {
         List<FunctionTool> tools = List.of(
                 listDirectory(),
                 readFile(),

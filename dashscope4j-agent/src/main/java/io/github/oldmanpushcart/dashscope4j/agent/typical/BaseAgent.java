@@ -22,7 +22,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -86,23 +85,6 @@ public class BaseAgent implements Agent {
     @Override
     public String introduction() {
         return introduction;
-    }
-
-    @Override
-    public CompletionStage<? extends Agent> init() {
-
-        final var stages = List.of(
-                toolbox.init(),
-                memory.init()
-        );
-
-        return CompletableFutureUtils.allOf(stages)
-                .thenApply(unused -> this)
-                .whenComplete((agent, ex) -> {
-                    if (null != ex) {
-                        close();
-                    }
-                });
     }
 
     private AigcRequest<Input, Output> newRequest(UserMessage inbound) {

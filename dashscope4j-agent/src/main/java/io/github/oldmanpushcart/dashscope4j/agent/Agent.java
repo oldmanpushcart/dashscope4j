@@ -9,7 +9,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * 智能体
  */
-public interface Agent extends AutoCloseable {
+public interface Agent {
 
     /**
      * @return 名称
@@ -27,13 +27,6 @@ public interface Agent extends AutoCloseable {
     String introduction();
 
     /**
-     * 初始化
-     *
-     * @return 初始化完成的回调
-     */
-    CompletionStage<? extends Agent> init();
-
-    /**
      * 异步处理用户消息
      *
      * @param inbound 用户消息
@@ -48,11 +41,5 @@ public interface Agent extends AutoCloseable {
      * @return 处理结果
      */
     Publisher<AssistantMessage> flow(UserMessage inbound);
-
-    /**
-     * 关闭智能体
-     */
-    @Override
-    void close();
 
 }

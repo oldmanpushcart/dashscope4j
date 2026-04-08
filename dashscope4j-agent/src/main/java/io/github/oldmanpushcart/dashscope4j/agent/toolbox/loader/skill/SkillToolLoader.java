@@ -49,7 +49,7 @@ public class SkillToolLoader implements ToolLoader {
     private final Map<String, Skill> skills = new ConcurrentHashMap<>();
 
     // 生命周期管理
-    private final CompletableFuture<Void> initF = new CompletableFuture<>();
+    private final CompletableFuture<Void> installF = new CompletableFuture<>();
     private final CompletableFuture<Void> closeF = new CompletableFuture<>();
     private volatile Toolbox registry;
     private volatile Path tempDir;
@@ -75,14 +75,14 @@ public class SkillToolLoader implements ToolLoader {
     }
 
     @Override
-    public CompletionStage<Void> init(Toolbox toolbox) {
+    public CompletionStage<Void> install(Toolbox toolbox) {
 
         if (closeF.isDone()) {
             throw new IllegalStateException("Already closed!");
         }
 
-        if (!initF.complete(null)) {
-            throw new IllegalStateException("Already initialized!");
+        if (!installF.complete(null)) {
+            throw new IllegalStateException("Already installed!");
         }
 
         // 初始化临时目录

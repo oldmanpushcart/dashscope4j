@@ -440,7 +440,7 @@ public class SystemToolLoader implements ToolLoader {
 
 
     @Override
-    public CompletionStage<Void> init(Toolbox toolbox) {
+    public CompletionStage<Void> install(Toolbox toolbox) {
         List<FunctionTool> tools = List.of(
                 os(),
                 env(),

@@ -8,8 +8,13 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +23,7 @@ import java.util.function.UnaryOperator;
 
 public class DefaultToolbox implements Toolbox {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ToolIndex index;
     private final List<ToolLoader> loaders;
 
@@ -31,14 +37,17 @@ public class DefaultToolbox implements Toolbox {
         this.loaders = CommonUtils.unmodifiableCopy(builder.loaders);
     }
 
+    @Override
+    public String toString() {
+        return "dashscope4j-agent:/toolbox";
+    }
 
     /**
      * 初始化
      *
      * @return 初始化回调
      */
-    @Override
-    public CompletionStage<Void> init() {
+    CompletionStage<DefaultToolbox> init() {
 
         if (isClosed()) {
             throw new IllegalStateException("Already closed!");
@@ -48,16 +57,19 @@ public class DefaultToolbox implements Toolbox {
             throw new IllegalStateException("Already initialized!");
         }
 
-        final var stages = new ArrayList<CompletionStage<Void>>();
-        stages.add(index.init());
-        loaders.forEach(loader -> {
-            final var stage = loader.init(this);
-            stages.add(stage);
-        });
+        // 并行安装所有工具加载器
+        final var stages = loaders.stream()
+                .map(loader -> loader.install(this))
+                .toList();
+
         return CompletableFutureUtils.allOf(stages)
+                .thenApply(u -> this)
                 .whenComplete((u, ex) -> {
                     if (null != ex) {
+                        logger.warn("{} init failed!", this, ex);
                         close();
+                    } else {
+                        logger.debug("{} init success.", this);
                     }
                 });
     }
@@ -106,8 +118,10 @@ public class DefaultToolbox implements Toolbox {
             return;
         }
 
+        // 关闭所有安装的加载器
         loaders.forEach(IOUtils::closeQuietly);
-        IOUtils.closeQuietly(index);
+
+        logger.debug("{} closed.", this);
 
     }
 
@@ -137,7 +151,15 @@ public class DefaultToolbox implements Toolbox {
 
         @Override
         public DefaultToolbox build() {
-            return new DefaultToolbox(this);
+            return buildAsync()
+                    .toCompletableFuture()
+                    .join();
+        }
+
+        public CompletionStage<DefaultToolbox> buildAsync() {
+            //noinspection resource
+            return new DefaultToolbox(this)
+                    .init();
         }
 
     }

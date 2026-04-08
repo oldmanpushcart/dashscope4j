@@ -10,12 +10,17 @@ import java.util.concurrent.CompletionStage;
 public interface ToolLoader extends AutoCloseable {
 
     /**
-     * 初始化
+     * 将加载器安装到工具箱中
+     * <p>
+     * 一旦完成安装
+     * <li>该加载器将不能再被安装。</li>
+     * <li>该加载器生命周期由工具集管理。</li>
+     * </p>
      *
      * @param toolbox 工具箱
-     * @return 初始化回调
+     * @return 安装结果
      */
-    CompletionStage<Void> init(Toolbox toolbox);
+    CompletionStage<Void> install(Toolbox toolbox);
 
     /**
      * 关闭加载器

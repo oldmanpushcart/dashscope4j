@@ -17,13 +17,6 @@ import java.util.concurrent.CompletionStage;
 public interface MemoryStore extends AutoCloseable {
 
     /**
-     * 初始化
-     *
-     * @return 初始化结果
-     */
-    CompletionStage<Void> init();
-
-    /**
      * 流式获取内存片段
      * <p>
      * 按 fragmentId 倒序返回（最新的在前）。
@@ -34,18 +27,6 @@ public interface MemoryStore extends AutoCloseable {
      * @return 内存片段流
      */
     Publisher<Fragment> flow(String sessionId, long after);
-
-    /**
-     * 获取所有会话 ID
-     * <p>
-     * 用于初始化时加载窗口缓存。
-     * </p>
-     *
-     * @return 会话 ID 列表
-     */
-    default CompletionStage<List<String>> listSessionIds() {
-        return java.util.concurrent.CompletableFuture.completedFuture(java.util.List.of());
-    }
 
     /**
      * 插入内存片段
