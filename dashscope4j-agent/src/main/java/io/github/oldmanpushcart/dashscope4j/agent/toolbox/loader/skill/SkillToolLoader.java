@@ -51,7 +51,7 @@ public class SkillToolLoader implements ToolLoader {
     // 生命周期管理
     private final CompletableFuture<Void> installF = new CompletableFuture<>();
     private final CompletableFuture<Void> closeF = new CompletableFuture<>();
-    private volatile Toolbox registry;
+    private volatile Toolbox toolbox;
     private volatile Path tempDir;
 
     private SkillToolLoader(Builder builder) {
@@ -60,7 +60,7 @@ public class SkillToolLoader implements ToolLoader {
 
     @Override
     public String toString() {
-        return "dashscope4j-agent:/tool/loader/skill";
+        return "dashscope4j-agent:/toolbox/loader/skill";
     }
 
     /**
@@ -93,7 +93,7 @@ public class SkillToolLoader implements ToolLoader {
             return CompletableFuture.failedFuture(ioEx);
         }
 
-        this.registry = toolbox;
+        this.toolbox = toolbox;
 
         final var stages = new ArrayList<CompletionStage<Void>>();
 
@@ -126,15 +126,15 @@ public class SkillToolLoader implements ToolLoader {
         }
 
         // 移除全局工具
-        if (null != registry) {
-            registry.remove(GetAssertTool.TOOL_NAME);
-            registry.remove(GetReferenceTool.TOOL_NAME);
-            registry.remove(ExecuteScriptTool.TOOL_NAME);
-            registry = null;
+        if (null != toolbox) {
+            toolbox.remove(GetAssertTool.TOOL_NAME);
+            toolbox.remove(GetReferenceTool.TOOL_NAME);
+            toolbox.remove(ExecuteScriptTool.TOOL_NAME);
+            toolbox = null;
         }
 
         // 移除所有 SKILL 注册的工具
-        skills.keySet().forEach(name -> registry.remove(SkillHelper.toToolName(name)));
+        skills.keySet().forEach(name -> toolbox.remove(SkillHelper.toToolName(name)));
         skills.clear();
 
         // 关闭所有 Provider

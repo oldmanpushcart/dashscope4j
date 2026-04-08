@@ -173,7 +173,7 @@ public class McpToolLoader implements ToolLoader {
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Throwable t) {
-                    logger.warn("{}/sync error, will be retry after: {}ms", this, syncInterval.toMillis(), t);
+                    logger.warn("{} sync error, will be retry after: {}ms", this, syncInterval.toMillis(), t);
                 }
             }
         } finally {

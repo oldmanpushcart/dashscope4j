@@ -59,7 +59,7 @@ public class DebugTestCase implements LoadingEnv {
                         SkillToolLoader.newBuilder()
                                 .providers(List.of(
                                         FileSkillProvider.newBuilder()
-                                                .skillsDir(Path.of("./skills"))
+                                                .scanDir(Path.of("./skills"))
                                                 .syncInterval(Duration.ofSeconds(10))
                                                 .build()
                                 ))
@@ -87,7 +87,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(Message.user("""
-                                今天杭州天气如何？根据天气情况生成一幅图。
+                                小紫的语文多少分？
                                 """))
                         .toCompletableFuture()
                         .join();

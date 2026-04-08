@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class FileSkillProvider implements SkillProvider {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Path skillsDir;
+    private final Path scanDir;
     private final Duration syncInterval;
 
     private final Map<String, FileSkill> skills = new ConcurrentHashMap<>();
@@ -34,12 +34,12 @@ public class FileSkillProvider implements SkillProvider {
 
     public FileSkillProvider(Builder builder) {
 
-        Objects.requireNonNull(builder.skillsDir, "skillsDir must not be null");
+        Objects.requireNonNull(builder.scanDir, "scanDir must not be null");
         Objects.requireNonNull(builder.syncInterval, "syncInterval must not be null");
-        this.skillsDir = builder.skillsDir.normalize();
+        this.scanDir = builder.scanDir.normalize();
         this.syncInterval = builder.syncInterval;
 
-        this._toString = "dashscope4j-agent:/skill-provider/file=%s".formatted(skillsDir);
+        this._toString = "dashscope4j-agent:/skill-provider/file=%s".formatted(scanDir);
         this.syncer = new Thread(this::sync, _toString);
         this.syncer.setDaemon(true);
 
@@ -67,7 +67,7 @@ public class FileSkillProvider implements SkillProvider {
 
     // 扫描 skills 目录，找出所有符合规范的技能。
     private Map<String, FileSkill> scanSkills() throws IOException {
-        try (var paths = Files.list(skillsDir)) {
+        try (var paths = Files.list(scanDir)) {
             final var scanSkills = new HashMap<String, FileSkill>();
             paths.filter(Files::isDirectory)
                     .forEach(skillDir -> {
@@ -77,7 +77,7 @@ public class FileSkillProvider implements SkillProvider {
                             final var skill = FileSkill.valueOf(skillDir);
                             scanSkills.put(skill.name(), skill);
                         } catch (Throwable t) {
-                            logger.warn("{}/scan error, ignore: {}", this, skillDir, t);
+                            logger.warn("{} scan error, ignore: {}", this, skillDir, t);
                         }
 
                     });
@@ -146,7 +146,7 @@ public class FileSkillProvider implements SkillProvider {
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Throwable t) {
-                    logger.warn("{}/sync error, will be retry after: {}ms", this, syncInterval.toMillis(), t);
+                    logger.warn("{} sync error, will be retry after: {}ms", this, syncInterval.toMillis(), t);
                 }
             }
         } finally {
@@ -168,11 +168,11 @@ public class FileSkillProvider implements SkillProvider {
 
     public static class Builder implements Buildable<FileSkillProvider, Builder> {
 
-        private Path skillsDir;
+        private Path scanDir;
         private Duration syncInterval = Duration.ofSeconds(30);
 
-        public Builder skillsDir(Path skillsDir) {
-            this.skillsDir = skillsDir;
+        public Builder scanDir(Path scanDir) {
+            this.scanDir = scanDir;
             return this;
         }
 
