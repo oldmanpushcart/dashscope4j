@@ -55,6 +55,29 @@ public class DashscopeToolLoader implements ToolLoader {
             .uploadEnabled(true)
             .build();
 
+    @Override
+    public CompletionStage<Void> install(Toolbox toolbox) {
+        List<FunctionTool> tools = List.of(
+                analyzeDocument(),
+                analyzeVision(),
+                imageEdit(),
+                t2i(),
+                t2v(),
+                tts()
+        );
+
+        // 并行等待所有 upsert 操作完成
+        final var stages = tools.stream()
+                .map(tool -> toolbox.register(tool.meta().name(), tool))
+                .toList();
+        return CompletableFutureUtils.allOf(10, stages);
+    }
+
+    @Override
+    public void close() {
+
+    }
+
     /**
      * 文档分析理解工具
      *
@@ -735,29 +758,6 @@ public class DashscopeToolLoader implements ToolLoader {
             LONGHUHU
 
         }
-
-    }
-
-    @Override
-    public CompletionStage<Void> install(Toolbox toolbox) {
-        List<FunctionTool> tools = List.of(
-                analyzeDocument(),
-                analyzeVision(),
-                imageEdit(),
-                t2i(),
-                t2v(),
-                tts()
-        );
-
-        // 并行等待所有 upsert 操作完成
-        final var stages = tools.stream()
-                .map(tool -> toolbox.register(tool.meta().name(), tool))
-                .toList();
-        return CompletableFutureUtils.allOf(10, stages);
-    }
-
-    @Override
-    public void close() {
 
     }
 

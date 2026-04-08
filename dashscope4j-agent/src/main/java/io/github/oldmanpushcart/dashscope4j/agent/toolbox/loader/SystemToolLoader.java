@@ -55,6 +55,27 @@ public class SystemToolLoader implements ToolLoader {
             "> /dev/sda", ":(){ :|:& };:", "chmod -R 777 /"
     };
 
+    @Override
+    public CompletionStage<Void> install(Toolbox toolbox) {
+        List<FunctionTool> tools = List.of(
+                os(),
+                env(),
+                cmd(),
+                datetime()
+        );
+
+        // 并行等待所有 upsert 操作完成
+        final var stages = tools.stream()
+                .map(tool -> toolbox.register(tool.meta().name(), tool))
+                .toList();
+        return CompletableFutureUtils.allOf(10, stages);
+    }
+
+    @Override
+    public void close() {
+
+    }
+
     public static FunctionTool datetime() {
         final String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS";
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
@@ -438,25 +459,4 @@ public class SystemToolLoader implements ToolLoader {
         return new Result(output, process.exitValue());
     }
 
-
-    @Override
-    public CompletionStage<Void> install(Toolbox toolbox) {
-        List<FunctionTool> tools = List.of(
-                os(),
-                env(),
-                cmd(),
-                datetime()
-        );
-
-        // 并行等待所有 upsert 操作完成
-        final var stages = tools.stream()
-                .map(tool -> toolbox.register(tool.meta().name(), tool))
-                .toList();
-        return CompletableFutureUtils.allOf(10, stages);
-    }
-
-    @Override
-    public void close() {
-
-    }
 }

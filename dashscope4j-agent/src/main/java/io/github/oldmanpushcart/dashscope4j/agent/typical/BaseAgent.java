@@ -19,7 +19,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 import org.reactivestreams.Publisher;
@@ -150,12 +149,6 @@ public class BaseAgent implements Agent {
                     .map(response -> response.output().best().message());
 
         });
-    }
-
-    @Override
-    public void close() {
-        IOUtils.closeQuietly(toolbox);
-        IOUtils.closeQuietly(memory);
     }
 
     protected DashscopeClient client() {
