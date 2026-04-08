@@ -16,7 +16,6 @@ import reactor.core.publisher.Flux;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -24,7 +23,7 @@ import java.util.function.Supplier;
 
 public class WorkingMemory implements Memory {
 
-    private final Map<String, Session> sessionMap = new ConcurrentHashMap<>();
+    private final Map<String, Session> sessionMap;
 
     private final MemoryStore store;
     private final DashscopeClient client;
@@ -39,7 +38,16 @@ public class WorkingMemory implements Memory {
         Objects.requireNonNull(builder.store, "store must not be null");
         CheckUtils.require(builder.maxTokens, t -> t > 0, "maxTokens must be greater than 0");
         CheckUtils.require(builder.gcRatio, t -> t > 0 && t < 1, "gcRatio must in (0,1)");
+        CheckUtils.require(builder.maxSessions, t -> t > 0, "maxSessions must be greater than 0");
 
+        this.sessionMap = Collections.synchronizedMap(
+                new LinkedHashMap<>(16, 0.75f, true) {
+                    @Override
+                    protected boolean removeEldestEntry(Map.Entry<String, Session> eldest) {
+                        return size() > builder.maxSessions;
+                    }
+                }
+        );
         this.store = builder.store;
         this.client = builder.client;
         this.model = builder.model;
@@ -215,6 +223,7 @@ public class WorkingMemory implements Memory {
         private ChatModel model;
         private int maxTokens;
         private double gcRatio;
+        private int maxSessions = 100;
 
         public Builder store(MemoryStore store) {
             this.store = store;
@@ -238,6 +247,11 @@ public class WorkingMemory implements Memory {
 
         public Builder gcRatio(double gcRatio) {
             this.gcRatio = gcRatio;
+            return this;
+        }
+
+        public Builder maxSessions(int maxSessions) {
+            this.maxSessions = maxSessions;
             return this;
         }
 
