@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.toolbox.index;
+package io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer;
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * 工具索引
  */
-public interface ToolIndex extends AutoCloseable {
+public interface ToolIndexer extends AutoCloseable {
 
     /**
      * 插入或更新工具索引

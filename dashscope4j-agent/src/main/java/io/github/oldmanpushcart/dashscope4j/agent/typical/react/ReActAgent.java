@@ -124,6 +124,11 @@ public class ReActAgent extends BaseAgent {
         final var responseText = responseMessage.text();
         final var react = ReAct.valueOf(responseText);
 
+        // 如果没解析出ReAct，说明是普通的问答，直接返回。
+        if(null == react) {
+            return CompletableFuture.completedStage(response);
+        }
+
         // 如果有最终答案了，则直接返回应答
         if (react.hasFinalAnswer()) {
             return CompletableFuture.completedStage(response);
@@ -183,6 +188,11 @@ public class ReActAgent extends BaseAgent {
                 .changeChoice(choice ->
                         choice.changeMessage(message -> {
                             final var reAct = ReAct.valueOf(message.text());
+
+                            // 如果没解析出ReAct，说明是普通问答，直接返回。
+                            if(null == reAct) {
+                                return message;
+                            }
 
                             final var thought = reAct.hasThought()
                                     ? reAct.thought()

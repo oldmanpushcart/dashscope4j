@@ -1,9 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
-import io.github.oldmanpushcart.dashscope4j.agent.memory.store.MapMemoryStore;
+import io.github.oldmanpushcart.dashscope4j.agent.memory.store.HashMapMemoryStore;
 import io.github.oldmanpushcart.dashscope4j.agent.memory.WorkingMemory;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.DefaultToolbox;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.index.DefaultToolIndex;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.HashMapToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.DashscopeToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.FileOpsToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.SystemToolLoader;
@@ -13,10 +13,12 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillTool
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.file.FileSkillProvider;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,13 +35,13 @@ public class DebugTestCase implements LoadingEnv {
         final var memory = WorkingMemory.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
-                .store(new MapMemoryStore())
+                .store(new HashMapMemoryStore())
                 .maxTokens(25 * 1000)
                 .gcRatio(0.3)
                 .build();
 
-        final var toolbox = DefaultToolbox.newBuilder()
-                .index(DefaultToolIndex.newBuilder()
+        final var toolbox = HashMapToolbox.newBuilder()
+                .indexer(HashMapToolIndexer.newBuilder()
                         .client(client)
                         .model(ChatModel.QWEN_FLASH)
                         .build())
@@ -77,23 +79,23 @@ public class DebugTestCase implements LoadingEnv {
                     .memory(memory)
                     .build();
 
-//        {
-//            final var outbound = Flux.from(agent.flow(Message.user("根据杭州明天天气生成一幅山水画，图片保存为weatcher.jpg")))
-//                    .reduce(AssistantMessage::accumulate)
-//                    .toFuture()
-//                    .join();
-//            System.out.println(outbound.text());
-//        }
+        {
+            final var outbound = Flux.from(agent.flow(Message.user("今天天气如何？你需要询问我在那个城市")))
+                    .reduce(AssistantMessage::accumulate)
+                    .toFuture()
+                    .join();
+            System.out.println(outbound.text());
+        }
 
-            {
-                final var outbound = agent.async(Message.user("""
-                                小紫的语文多少分？
-                                """))
-                        .toCompletableFuture()
-                        .join();
-
-                System.out.println(outbound.text());
-            }
+//            {
+//                final var outbound = agent.async(Message.user("""
+//                                你好呀
+//                                """))
+//                        .toCompletableFuture()
+//                        .join();
+//
+//                System.out.println(outbound.text());
+//            }
 
         } finally {
             IOUtils.closeQuietly(toolbox);

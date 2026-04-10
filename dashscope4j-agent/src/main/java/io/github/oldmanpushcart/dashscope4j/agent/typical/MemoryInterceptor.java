@@ -96,7 +96,7 @@ public class MemoryInterceptor implements ChatInterceptor {
 
         // 在流的末尾拼接一个由 memory.remember 构成的空流
         final var wrapFlow = Flux.from(flow)
-                .doOnNext(response -> responseRef.accumulateAndGet(response, AigcResponse::accumulate))
+                .doOnNext(response -> responseRef.updateAndGet(current -> current == null ? response : current.accumulate(response)))
                 .concatWith(Flux.defer(() -> {
                     // 流完成后，执行记忆操作并返回空流
                     final var accumulatedResponse = responseRef.get();

@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * 使用 ConcurrentSkipListMap 提供高性能、有序的内存片段存储和检索能力。
  * </p>
  */
-public class MapMemoryStore implements MemoryStore {
+public class HashMapMemoryStore implements MemoryStore {
 
     /**
      * 内存片段存储（有序、线程安全）

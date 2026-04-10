@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.toolbox.index;
+package io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -25,7 +25,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-public class DefaultToolIndex implements ToolIndex {
+public class HashMapToolIndexer implements ToolIndexer {
 
     private final DashscopeClient client;
     private final ChatModel model;
@@ -38,7 +38,7 @@ public class DefaultToolIndex implements ToolIndex {
     private static final Message TOOL_ROUTER_MESSAGE = SystemMessage.newBuilder()
             .contents(contents -> {
                 final var prompt = PromptTemplate.newBuilder()
-                        .template(DefaultToolIndex.class.getResourceAsStream("/prompt/TOOL_ROUTER.md"))
+                        .template(HashMapToolIndexer.class.getResourceAsStream("/prompt/TOOL_ROUTER.md"))
                         .build()
                         .render();
                 final var content = TextContent.newBuilder()
@@ -55,7 +55,7 @@ public class DefaultToolIndex implements ToolIndex {
     private static final Message TOOL_META_EXTRACTOR_MESSAGE = SystemMessage.newBuilder()
             .contents(contents -> {
                 final var prompt = PromptTemplate.newBuilder()
-                        .template(DefaultToolIndex.class.getResourceAsStream("/prompt/TOOL_META_EXTRACTOR.md"))
+                        .template(HashMapToolIndexer.class.getResourceAsStream("/prompt/TOOL_META_EXTRACTOR.md"))
                         .build()
                         .render();
                 final var content = TextContent.newBuilder()
@@ -66,7 +66,7 @@ public class DefaultToolIndex implements ToolIndex {
             })
             .build();
 
-    private DefaultToolIndex(Builder builder) {
+    private HashMapToolIndexer(Builder builder) {
         Objects.requireNonNull(builder.client, "client must not be null");
         Objects.requireNonNull(builder.model, "model must not be null");
         this.client = builder.client;
@@ -249,7 +249,7 @@ public class DefaultToolIndex implements ToolIndex {
         return new Builder();
     }
 
-    public static class Builder implements Buildable<DefaultToolIndex, Builder> {
+    public static class Builder implements Buildable<HashMapToolIndexer, Builder> {
 
         private DashscopeClient client;
         private ChatModel model;
@@ -265,8 +265,8 @@ public class DefaultToolIndex implements ToolIndex {
         }
 
         @Override
-        public DefaultToolIndex build() {
-            return new DefaultToolIndex(this);
+        public HashMapToolIndexer build() {
+            return new HashMapToolIndexer(this);
         }
 
     }
