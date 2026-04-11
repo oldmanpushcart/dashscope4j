@@ -27,6 +27,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+/**
+ * 基于文件的内存存储实现
+ * <p>
+ * 使用 JSONL 格式存储会话片段，支持并发读写和流式读取。
+ * </p>
+ */
 public class FileMemoryStore implements MemoryStore {
 
     private static final Logger logger = LoggerFactory.getLogger(FileMemoryStore.class);
@@ -35,8 +41,11 @@ public class FileMemoryStore implements MemoryStore {
     private static final int SEQUENCE_STEP = 10;
 
     private final Path directory;
-    private final Sequencer sequencer;
+    private final Sequencer sequencer;  // 全局 ID 生成器
 
+    /**
+     * 构造函数（通过 Builder 调用）
+     */
     private FileMemoryStore(Builder builder) {
         this.directory = builder.directory.toAbsolutePath().normalize();
 
@@ -57,6 +66,9 @@ public class FileMemoryStore implements MemoryStore {
         this.sequencer = new Sequencer(this.directory, SEQUENCE_STEP);
     }
 
+    /**
+     * 流式读取会话片段（倒序，最新的在前）
+     */
     @Override
     public Publisher<Fragment> flow(String sessionId, long after) {
         Objects.requireNonNull(sessionId, "sessionId must not be null");
@@ -100,6 +112,9 @@ public class FileMemoryStore implements MemoryStore {
         );
     }
 
+    /**
+     * 追加会话片段（线程安全）
+     */
     @Override
     public CompletionStage<Fragment> upsert(String sessionId, List<Message> messages) {
         Objects.requireNonNull(sessionId, "sessionId must not be null");
@@ -137,6 +152,9 @@ public class FileMemoryStore implements MemoryStore {
         }
     }
 
+    /**
+     * 不支持物理删除（使用 TTL 或 GC 代替）
+     */
     @Override
     public CompletionStage<Void> remove(long fragmentId) {
         return CompletableFuture.failedFuture(
@@ -149,10 +167,16 @@ public class FileMemoryStore implements MemoryStore {
         logger.info("FileMemoryStore closed");
     }
 
+    /**
+     * 获取会话文件路径
+     */
     private Path getSessionFile(String sessionId) {
         return directory.resolve(FILE_PREFIX + "-" + sessionId + ".jsonl");
     }
 
+    /**
+     * 估算消息 Token 数量
+     */
     private static int estimateTokens(List<Message> messages) {
         return TokenizerUtils.estimateTokens(
                 messages.stream().map(Message::text).toArray(String[]::new)
@@ -178,7 +202,10 @@ public class FileMemoryStore implements MemoryStore {
     }
 
     /**
-     * 序列号生成器（内部类）
+     * 全局序列号生成器
+     * <p>
+     * 使用文件锁保证多进程并发安全，AtomicLong 优化快速路径。
+     * </p>
      */
     private static class Sequencer {
         private final Path sequenceFile;
@@ -186,12 +213,18 @@ public class FileMemoryStore implements MemoryStore {
         private final AtomicLong current = new AtomicLong(0);
         private volatile long end = 0;
 
+        /**
+         * 初始化：读取当前值并预分配一批 ID
+         */
         Sequencer(Path directory, int step) {
             this.sequenceFile = directory.resolve(".sequence");
             this.step = step;
             initialize();
         }
 
+        /**
+         * 初始化序列号文件
+         */
         private void initialize() {
             try (FileChannel channel = openChannel()) {
                 try (FileLock lock = channel.lock()) {
@@ -205,6 +238,9 @@ public class FileMemoryStore implements MemoryStore {
             }
         }
 
+        /**
+         * 获取下一个 ID（无锁快速路径 + 文件锁慢速路径）
+         */
         long nextId() {
             long id = current.incrementAndGet();
             if (id > end) {
@@ -218,6 +254,9 @@ public class FileMemoryStore implements MemoryStore {
             return id;
         }
 
+        /**
+         *  refill：从文件重新加载并预分配下一批 ID
+         */
         private void refill() {
             try (FileChannel channel = openChannel()) {
                 try (FileLock lock = channel.lock()) {
@@ -238,6 +277,9 @@ public class FileMemoryStore implements MemoryStore {
                     StandardOpenOption.WRITE);
         }
 
+        /**
+         * 读取序列号文件中的当前值
+         */
         private long read(FileChannel channel) throws IOException {
             if (Files.size(sequenceFile) == 0) {
                 return 0;
@@ -249,6 +291,9 @@ public class FileMemoryStore implements MemoryStore {
             return content.isEmpty() ? 0 : Long.parseLong(content);
         }
 
+        /**
+         * 写入新值到序列号文件
+         */
         private void write(FileChannel channel, long value) throws IOException {
             final ByteBuffer buffer = UTF_8.encode(String.valueOf(value));
             channel.truncate(0);
@@ -263,7 +308,10 @@ public class FileMemoryStore implements MemoryStore {
     }
 
     /**
-     * 文件游标（支持背压的流式读取）
+     * 文件游标：从后往前流式读取 JSONL 文件
+     * <p>
+     * 支持背压和跨块不完整行处理。
+     * </p>
      */
     private static class FileCursor implements AutoCloseable {
         private final RandomAccessFile raf;
@@ -272,6 +320,9 @@ public class FileMemoryStore implements MemoryStore {
         private final Deque<String> lineBuffer;
         private String leftover = "";  // 缓存跨块的不完整行片段
 
+        /**
+         * 初始化游标：定位到文件末尾
+         */
         FileCursor(Path file, long after) throws IOException {
             this.raf = new RandomAccessFile(file.toFile(), "r");
             this.after = after;
@@ -279,6 +330,9 @@ public class FileMemoryStore implements MemoryStore {
             this.lineBuffer = new ArrayDeque<>();
         }
 
+        /**
+         * 获取下一个片段（倒序）
+         */
         Fragment next() throws IOException {
             while (true) {
                 if (!lineBuffer.isEmpty()) {
@@ -289,7 +343,7 @@ public class FileMemoryStore implements MemoryStore {
                             return f;
                         }
                     } catch (Exception e) {
-                        logger.warn("Skipping corrupted line\n{}", line, e);
+                        logger.warn("Skipping corrupted line", e);
                     }
                     continue;
                 }
@@ -307,6 +361,9 @@ public class FileMemoryStore implements MemoryStore {
             }
         }
 
+        /**
+         * 加载下一个数据块（从后往前扫描）
+         */
         private void loadNextBlock() throws IOException {
             int readSize = (int) Math.min(READ_BUFFER_SIZE, filePos);
             filePos -= readSize;
@@ -339,16 +396,7 @@ public class FileMemoryStore implements MemoryStore {
             if (end > 0) {
                 // 还有未处理的片段，说明这一行跨越了 block 边界
                 leftover = content.substring(0, end);
-            } else if (filePos == 0 && end == 0) {
-                // 已经到文件开头且没有剩余片段，不需要额外处理
-            } else if (filePos == 0) {
-                // 已经到文件开头，处理最后一行
-                String line = content.substring(0, end);
-                if (!line.isBlank()) {
-                    lineBuffer.addLast(line);
-                }
             }
-            // 如果 filePos > 0 且 end == 0，说明当前 block 正好在行边界，leftover 为空
         }
 
         @Override

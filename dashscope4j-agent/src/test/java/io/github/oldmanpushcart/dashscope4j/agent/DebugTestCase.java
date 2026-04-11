@@ -122,7 +122,7 @@ public class DebugTestCase implements LoadingEnv {
                 .join();
 
         fragments.forEach(fragment -> {
-            System.out.println(fragment);
+            System.out.println(fragment.fragmentId());
         });
 
 
