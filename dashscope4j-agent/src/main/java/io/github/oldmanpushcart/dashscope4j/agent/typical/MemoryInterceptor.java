@@ -20,7 +20,13 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-public class MemoryInterceptor implements ChatInterceptor {
+/**
+ * 记忆拦截器
+ * <p>
+ * 在这里完成智能体的记忆召回、存储
+ * </p>
+ */
+class MemoryInterceptor implements ChatInterceptor {
 
     private final String sessionId;
     private final Memory memory;

@@ -27,6 +27,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * ReAct 智能助手
+ */
 public class ReActAgent extends BaseAgent {
 
     private static final PromptTemplate REACT_PROMPT_TEMPLATE = PromptTemplate.newBuilder()
@@ -125,7 +128,7 @@ public class ReActAgent extends BaseAgent {
         final var react = ReAct.valueOf(responseText);
 
         // 如果没解析出ReAct，说明是普通的问答，直接返回。
-        if(null == react) {
+        if (null == react) {
             return CompletableFuture.completedStage(response);
         }
 
@@ -190,7 +193,7 @@ public class ReActAgent extends BaseAgent {
                             final var reAct = ReAct.valueOf(message.text());
 
                             // 如果没解析出ReAct，说明是普通问答，直接返回。
-                            if(null == reAct) {
+                            if (null == reAct) {
                                 return message;
                             }
 

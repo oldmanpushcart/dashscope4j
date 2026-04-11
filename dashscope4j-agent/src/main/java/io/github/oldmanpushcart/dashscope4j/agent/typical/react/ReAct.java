@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * @param observation 观察结果（可选）
  * @param finalAnswer 最终答案（可选）
  */
-public record ReAct(
+record ReAct(
         String thought,
         String action,
         String actionInput,

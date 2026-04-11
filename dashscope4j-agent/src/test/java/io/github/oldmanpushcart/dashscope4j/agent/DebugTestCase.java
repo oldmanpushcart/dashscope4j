@@ -93,7 +93,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(Message.user("""
-                                你可以执行命令查询啊
+                                本机局域网的IP地址是多少？
                                 """))
                         .toCompletableFuture()
                         .join();
