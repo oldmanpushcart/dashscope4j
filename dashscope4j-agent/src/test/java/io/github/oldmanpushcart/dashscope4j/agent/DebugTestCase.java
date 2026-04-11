@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
+import io.github.oldmanpushcart.dashscope4j.agent.memory.store.FileMemoryStore;
 import io.github.oldmanpushcart.dashscope4j.agent.memory.store.HashMapMemoryStore;
 import io.github.oldmanpushcart.dashscope4j.agent.memory.WorkingMemory;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
@@ -31,11 +32,14 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug$1() {
 
-        final var sessionId = UUID.randomUUID().toString();
+        final var sessionId = "SESSION-001";
         final var memory = WorkingMemory.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
-                .store(new HashMapMemoryStore())
+                //.store(new HashMapMemoryStore())
+                .store(FileMemoryStore.newBuilder()
+                        .directory(Paths.get("./memory"))
+                        .build())
                 .maxTokens(25 * 1000)
                 .gcRatio(0.3)
                 .build();
@@ -79,23 +83,23 @@ public class DebugTestCase implements LoadingEnv {
                     .memory(memory)
                     .build();
 
-        {
-            final var outbound = Flux.from(agent.flow(Message.user("今天天气如何？你需要询问我在那个城市")))
-                    .reduce(AssistantMessage::accumulate)
-                    .toFuture()
-                    .join();
-            System.out.println(outbound.text());
-        }
-
 //            {
-//                final var outbound = agent.async(Message.user("""
-//                                你好呀
-//                                """))
-//                        .toCompletableFuture()
+//                final var outbound = Flux.from(agent.flow(Message.user("今天天气如何？你需要询问我在那个城市")))
+//                        .reduce(AssistantMessage::accumulate)
+//                        .toFuture()
 //                        .join();
-//
 //                System.out.println(outbound.text());
 //            }
+
+            {
+                final var outbound = agent.async(Message.user("""
+                                你可以执行命令查询啊
+                                """))
+                        .toCompletableFuture()
+                        .join();
+
+                System.out.println(outbound.text());
+            }
 
         } finally {
             IOUtils.closeQuietly(toolbox);
@@ -106,8 +110,23 @@ public class DebugTestCase implements LoadingEnv {
 
     @Test
     public void debug$2() {
-        final var path = Paths.get("test-data/image/IMG_0942.JPG");
-        System.out.println(path.toFile().getAbsolutePath());
+
+        final var sessionId = "SESSION-001";
+        final var store = FileMemoryStore.newBuilder()
+                .directory(Paths.get("./memory"))
+                .build();
+
+        final var fragments = Flux.from(store.flow(sessionId, Long.MAX_VALUE))
+                .collectList()
+                .toFuture()
+                .join();
+
+        fragments.forEach(fragment -> {
+            System.out.println(fragment);
+        });
+
+
+
     }
 
 }

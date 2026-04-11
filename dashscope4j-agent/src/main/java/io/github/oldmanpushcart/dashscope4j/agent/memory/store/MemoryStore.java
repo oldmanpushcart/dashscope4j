@@ -1,6 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.agent.memory.store;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.InstantAsStringDeserializer;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.InstantAsStringSerializer;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import org.reactivestreams.Publisher;
 
@@ -71,6 +75,8 @@ public interface MemoryStore extends AutoCloseable {
             @JsonProperty("tokens")
             int tokens,
 
+            @JsonSerialize(using = InstantAsStringSerializer.class)
+            @JsonDeserialize(using = InstantAsStringDeserializer.class)
             @JsonProperty("created_at")
             Instant createdAt
 

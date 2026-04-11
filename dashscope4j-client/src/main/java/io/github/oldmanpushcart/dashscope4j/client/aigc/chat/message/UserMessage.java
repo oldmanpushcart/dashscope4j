@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -25,7 +24,6 @@ public record UserMessage(
 
 ) implements Message {
 
-    @JsonCreator
     private UserMessage(Builder builder) {
         this(
                 CommonUtils.unmodifiableCopy(builder.contents),

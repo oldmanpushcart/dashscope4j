@@ -15,7 +15,7 @@ import java.util.TimeZone;
 public class JacksonJsonUtils {
 
     private static final ObjectMapper mapper = new ObjectMapper()
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
             .setPropertyNamingStrategy(new PropertyNamingStrategies.SnakeCaseStrategy())
             .setTimeZone(TimeZone.getTimeZone("GMT+8"))
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
