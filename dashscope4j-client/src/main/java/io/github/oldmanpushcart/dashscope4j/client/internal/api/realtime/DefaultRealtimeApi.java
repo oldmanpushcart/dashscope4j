@@ -1,9 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.realtime;
 
+import io.github.oldmanpushcart.dashscope4j.client.Constants;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.EndpointUtils;
-import io.github.oldmanpushcart.dashscope4j.client.Constants;
 import io.github.oldmanpushcart.dashscope4j.client.util.UUIDUtils;
 import okhttp3.*;
 import okio.ByteString;

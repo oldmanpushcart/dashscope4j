@@ -2,8 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.SchemaUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 
 import java.lang.reflect.Type;
 import java.util.Objects;

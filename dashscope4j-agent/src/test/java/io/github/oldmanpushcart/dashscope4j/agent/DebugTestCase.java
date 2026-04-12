@@ -1,8 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
-import io.github.oldmanpushcart.dashscope4j.agent.memory.store.FileMemoryStore;
-import io.github.oldmanpushcart.dashscope4j.agent.memory.store.HashMapMemoryStore;
 import io.github.oldmanpushcart.dashscope4j.agent.memory.WorkingMemory;
+import io.github.oldmanpushcart.dashscope4j.agent.memory.store.FileMemoryStore;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.HashMapToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.DashscopeToolLoader;
@@ -14,7 +13,6 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillTool
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.file.FileSkillProvider;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
@@ -25,7 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
-import java.util.UUID;
 
 public class DebugTestCase implements LoadingEnv {
 
@@ -79,12 +76,11 @@ public class DebugTestCase implements LoadingEnv {
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
-                    .sessionId(sessionId)
                     .memory(memory)
                     .build();
 
 //            {
-//                final var outbound = Flux.from(agent.flow(Message.user("今天天气如何？你需要询问我在那个城市")))
+//                final var outbound = Flux.from(agent.flow(sessionId, Message.user("今天天气如何？你需要询问我在那个城市")))
 //                        .reduce(AssistantMessage::accumulate)
 //                        .toFuture()
 //                        .join();
@@ -92,7 +88,7 @@ public class DebugTestCase implements LoadingEnv {
 //            }
 
             {
-                final var outbound = agent.async(Message.user("""
+                final var outbound = agent.async(sessionId, Message.user("""
                                 本机局域网的IP地址是多少？
                                 """))
                         .toCompletableFuture()

@@ -2,8 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.client.util;
 
 import io.github.oldmanpushcart.dashscope4j.client.internal.base.tokenizer.local.LocalTokenizer;
 
-import java.util.Arrays;
-
 /**
  * 词元工具
  */

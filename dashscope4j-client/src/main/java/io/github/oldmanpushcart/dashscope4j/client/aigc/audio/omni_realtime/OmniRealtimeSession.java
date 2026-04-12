@@ -10,11 +10,11 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.inte
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.omni_realtime.internal.handler.SessionHandshakeHandler;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.HandlerChain;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.DurationMsJsonDeserializer;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.DurationMsJsonSerializer;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
-import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
 
 import java.time.Duration;
 import java.util.HashSet;

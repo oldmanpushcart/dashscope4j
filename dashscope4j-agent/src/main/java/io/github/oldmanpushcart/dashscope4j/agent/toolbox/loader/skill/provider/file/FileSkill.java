@@ -25,7 +25,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  *
  * @since 4.0.0
  */
-public class FileSkill implements Skill {
+class FileSkill implements Skill {
 
     // YAML Frontmatter 正则表达式
     private static final Pattern FRONTMATTER_PATTERN = Pattern.compile(

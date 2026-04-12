@@ -411,11 +411,11 @@ public class ReActAgent extends BaseAgent {
 
     /**
      * 调用者
+     *
+     * @param request 请求
+     * @param client  客户端
      */
-    private record Caller(
-            AigcRequest<?, ?> request,
-            DashscopeClient client
-    ) implements Tool.Caller {
+    private record Caller(AigcRequest<?, ?> request, DashscopeClient client) implements Tool.Caller {
     }
 
     public static Builder newBuilder() {

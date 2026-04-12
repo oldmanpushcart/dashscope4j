@@ -1,10 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.gummy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.oldmanpushcart.dashscope4j.client.Constants;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.gummy.timespan.Transcription;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.asr.gummy.timespan.Translation;
 import io.github.oldmanpushcart.dashscope4j.client.api.Model;
-import io.github.oldmanpushcart.dashscope4j.client.Constants;
 
 import java.util.List;
 

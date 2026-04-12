@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 
-public class LoadSkillTool {
+class LoadSkillTool {
 
     private final Skill skill;
 
@@ -51,7 +51,6 @@ public class LoadSkillTool {
         return FunctionTool.newBuilder()
                 .name(toolName)
                 .description(toolDescription)
-                //.description(skill.description())
                 .parameterType(Spec.class)
                 .function((caller, intent) -> """
                         %s
@@ -83,4 +82,5 @@ public class LoadSkillTool {
             String intent
     ) {
     }
+
 }

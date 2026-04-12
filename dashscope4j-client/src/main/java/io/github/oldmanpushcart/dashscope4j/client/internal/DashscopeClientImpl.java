@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal;
 
+import io.github.oldmanpushcart.dashscope4j.client.Constants;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
@@ -23,10 +24,8 @@ import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.BridgeIn
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.GeneralAigcInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.IncrementalOutputOnlyInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.internal.interceptor.OpenTelemetryContextInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.Constants;
 import okhttp3.OkHttpClient;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
 
 import java.util.*;
 import java.util.concurrent.CompletionStage;

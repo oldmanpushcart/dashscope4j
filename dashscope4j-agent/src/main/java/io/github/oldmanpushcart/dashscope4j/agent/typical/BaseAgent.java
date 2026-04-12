@@ -1,9 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.memory.Memory;
+import io.github.oldmanpushcart.dashscope4j.agent.memory.WorkingMemory;
+import io.github.oldmanpushcart.dashscope4j.agent.memory.store.HashMapMemoryStore;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
@@ -14,7 +14,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.TextContent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
@@ -25,51 +24,113 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
 
+
+/**
+ * Agent 基础实现类
+ * <p>
+ * 提供 Agent 的核心功能实现，包括：
+ * <ul>
+ *     <li>会话管理：支持通过 sessionId 区分不同会话</li>
+ *     <li>记忆管理：自动集成 MemoryInterceptor 实现对话历史管理</li>
+ *     <li>工具搜索：内置 search_tools 工具，用于动态查找可用工具</li>
+ *     <li>请求构建：统一处理消息、参数和拦截器的组装</li>
+ * </ul>
+ * </p>
+ * <p>
+ * 子类可以通过重写 {@link #baseAsync(AigcRequest)} 和 {@link #baseFlow(AigcRequest)} 方法
+ * 来扩展或修改基础的异步和流式请求处理逻辑。
+ * </p>
+ *
+ * @see Agent
+ * @see MemoryInterceptor
+ */
 public class BaseAgent implements Agent {
 
+    /**
+     * Agent 名称
+     */
     private final String name;
+    
+    /**
+     * Agent 描述
+     */
     private final String description;
+    
+    /**
+     * Agent 介绍（系统提示词）
+     */
     private final String introduction;
 
+    /**
+     * 工具箱，用于管理和查找工具
+     */
     private final Toolbox toolbox;
+    
+    /**
+     * 搜索工具，用于根据意图动态查找可用工具
+     */
     private final Tool searchTools;
 
-    private final String sessionId;
+    /**
+     * 记忆管理器，负责会话历史的存储和检索
+     */
     private final Memory memory;
 
+    /**
+     * DashScope 客户端
+     */
     private final DashscopeClient client;
+    
+    /**
+     * 使用的对话模型
+     */
     private final ChatModel model;
+    
+    /**
+     * 模型参数配置
+     */
     private final Map<String, Object> parameters;
+    
+    /**
+     * 请求拦截器列表
+     */
     private final List<Interceptor> interceptors;
 
+    /**
+     * 构造 BaseAgent
+     *
+     * @param builder 构建器
+     */
     protected BaseAgent(Builder<?, ?> builder) {
         this.name = builder.name;
         this.description = builder.description;
         this.introduction = builder.introduction;
 
         this.toolbox = builder.toolbox;
-        this.searchTools = FunctionTool.newBuilder()
-                .name("search_tools")
-                .description("根据意图搜索工具。当你没有工具可以完成任务时调用。")
-                .parameterType(Search.class)
-                .<Search>function((caller, search) -> this.toolbox.lookup(Message.user(search.intent())))
-                .build();
+        this.searchTools = Optional.of(builder.toolbox)
+                .map(toolbox -> new SearchToolsFunction(toolbox).asTool())
+                .orElse(null);
 
-        this.sessionId = builder.sessionId;
-        this.memory = builder.memory;
+        // 如果没有指定记忆管理，则默认创建内存记忆，这个实现不需要关闭
+        this.memory = Optional.of(builder.memory)
+                .orElseGet(() -> WorkingMemory.newBuilder()
+                        .store(new HashMapMemoryStore())
+                        .build());
 
         this.client = builder.client;
         this.model = builder.model;
+        // 创建不可变副本，防止外部修改
         this.parameters = CommonUtils.unmodifiableCopy(builder.parameters);
         this.interceptors = CommonUtils.unmodifiableCopy(builder.interceptors);
     }
-
 
     @Override
     public String name() {
@@ -86,8 +147,26 @@ public class BaseAgent implements Agent {
         return introduction;
     }
 
-    private AigcRequest<Input, Output> newRequest(UserMessage inbound) {
+    /**
+     * 构建 AIGC 请求
+     * <p>
+     * 组装完整的请求对象，包括：
+     * <ul>
+     *     <li>系统提示词（如果设置了 introduction）</li>
+     *     <li>用户输入消息</li>
+     *     <li>搜索工具（search_tools）</li>
+     *     <li>记忆拦截器（MemoryInterceptor）</li>
+     * </ul>
+     * </p>
+     *
+     * @param sessionId 会话ID，用于区分不同的对话会话
+     * @param inbound   用户输入消息
+     * @return 构建好的 AIGC 请求
+     */
+    private AigcRequest<Input, Output> newRequest(String sessionId, UserMessage inbound) {
         return AigcRequest.newBuilder(model())
+
+                // 组装对话输入
                 .input(Input.newBuilder()
                         .messages(messages -> {
 
@@ -108,11 +187,22 @@ public class BaseAgent implements Agent {
                         })
                         .failOnToolError(false)
                         .build())
+
+                // 组装算法参数
                 .parameters(parameters -> {
-                    parameters.put("tools", List.of(searchTools));
                     parameters.putAll(parameters());
+
+                    // 添加 search_tools 工具
+                    if (null != searchTools) {
+                        //noinspection unchecked
+                        final var tools = (List<Tool>) parameters.computeIfAbsent("tools", k -> new ArrayList<>());
+                        tools.add(searchTools);
+                    }
+
                     return parameters;
                 })
+
+                // 组装拦截器
                 .interceptors(interceptors -> {
                     interceptors.addAll(interceptors());
                     interceptors.add(new MemoryInterceptor(sessionId, memory));
@@ -122,21 +212,21 @@ public class BaseAgent implements Agent {
     }
 
     @Override
-    public CompletionStage<AssistantMessage> async(UserMessage inbound) {
-        return CompletableFuture.completedStage(newRequest(inbound))
+    public CompletionStage<AssistantMessage> async(String sessionId, UserMessage inbound) {
+        return CompletableFuture.completedStage(newRequest(sessionId, inbound))
                 .thenCompose(this::baseAsync)
                 .thenApply(response -> response.output().best().message());
     }
 
     @Override
-    public Publisher<AssistantMessage> flow(UserMessage inbound) {
+    public Publisher<AssistantMessage> flow(String sessionId, UserMessage inbound) {
         // 使用 Flux.defer 延迟执行，在订阅时才进行记忆召回
         return Flux.defer(() -> {
 
-            final var stage = CompletableFuture.completedStage(newRequest(inbound))
+            final var stage = CompletableFuture.completedStage(newRequest(sessionId, inbound))
 
                     // 如果没有制定输出模式，默认为增量输出
-                    .thenApply(request -> AigcRequest.newBuilder(newRequest(inbound))
+                    .thenApply(request -> AigcRequest.newBuilder(request)
                             .parameters(parameters -> {
                                 parameters.putIfAbsent("incremental_output", true);
                                 return parameters;
@@ -151,18 +241,38 @@ public class BaseAgent implements Agent {
         });
     }
 
+    /**
+     * 获取 DashScope 客户端
+     *
+     * @return DashScope 客户端实例
+     */
     protected DashscopeClient client() {
         return client;
     }
 
+    /**
+     * 获取对话模型
+     *
+     * @return 对话模型实例
+     */
     protected ChatModel model() {
         return model;
     }
 
+    /**
+     * 获取模型参数配置
+     *
+     * @return 参数映射表
+     */
     protected Map<String, Object> parameters() {
         return parameters;
     }
 
+    /**
+     * 获取拦截器列表
+     *
+     * @return 拦截器列表
+     */
     protected List<Interceptor> interceptors() {
         return interceptors;
     }
@@ -182,32 +292,40 @@ public class BaseAgent implements Agent {
     }
 
     /**
-     * 基础异步请求
+     * 执行基础异步请求
+     * <p>
+     * 子类可以重写此方法来扩展或修改异步请求的处理逻辑。
+     * </p>
+     *
+     * @param request AIGC 请求对象
+     * @return 异步响应结果
      */
     protected CompletionStage<AigcResponse<Output>> baseAsync(AigcRequest<Input, Output> request) {
         return client().async(request);
     }
 
     /**
-     * 基础流式请求
+     * 执行基础流式请求
+     * <p>
+     * 子类可以重写此方法来扩展或修改流式请求的处理逻辑。
+     * </p>
+     *
+     * @param request AIGC 请求对象
+     * @return 流式响应发布者
      */
     protected Publisher<AigcResponse<Output>> baseFlow(AigcRequest<Input, Output> request) {
         return client().flow(request);
     }
 
     /**
-     * 搜索工具
+     * BaseAgent 构建器
+     * <p>
+     * 使用 Builder 模式构建 BaseAgent 实例，支持链式调用。
+     * </p>
+     *
+     * @param <T> Agent 类型
+     * @param <B> Builder 类型
      */
-    private record Search(
-
-            @JsonPropertyDescription("意图")
-            @JsonProperty("intent")
-            String intent
-
-    ) {
-
-    }
-
     public static abstract class Builder<T extends BaseAgent, B extends Builder<T, B>> implements Buildable<T, B> {
 
         private String name;
@@ -215,7 +333,6 @@ public class BaseAgent implements Agent {
         private String introduction;
 
         private Toolbox toolbox;
-        private String sessionId;
         private Memory memory;
 
         private DashscopeClient client;
@@ -257,11 +374,6 @@ public class BaseAgent implements Agent {
 
         public B toolbox(Toolbox toolbox) {
             this.toolbox = toolbox;
-            return self();
-        }
-
-        public B sessionId(String sessionId) {
-            this.sessionId = sessionId;
             return self();
         }
 

@@ -1,10 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.client.internal.api.async;
 
+import io.github.oldmanpushcart.dashscope4j.client.Constants;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents;
-import io.github.oldmanpushcart.dashscope4j.client.Constants;
 import okhttp3.*;
 import org.jspecify.annotations.NonNull;
 

@@ -29,17 +29,19 @@ public interface Agent {
     /**
      * 异步处理用户消息
      *
-     * @param inbound 用户消息
+     * @param sessionId 会话ID
+     * @param inbound   用户消息
      * @return 处理结果
      */
-    CompletionStage<AssistantMessage> async(UserMessage inbound);
+    CompletionStage<AssistantMessage> async(String sessionId, UserMessage inbound);
 
     /**
      * 流式处理用户消息
      *
-     * @param inbound 用户消息
+     * @param sessionId 会话ID
+     * @param inbound   用户消息
      * @return 处理结果
      */
-    Publisher<AssistantMessage> flow(UserMessage inbound);
+    Publisher<AssistantMessage> flow(String sessionId, UserMessage inbound);
 
 }
