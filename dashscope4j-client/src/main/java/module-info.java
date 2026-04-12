@@ -12,7 +12,7 @@ open module dashscope4j.client {
     requires okhttp3.sse;
     requires org.reactivestreams;
     requires reactor.core;
-    
+
     requires static org.jspecify;
     requires static io.opentelemetry.api;
     requires static io.opentelemetry.context;
@@ -33,6 +33,7 @@ open module dashscope4j.client {
 
     exports io.github.oldmanpushcart.dashscope4j.client.util;
     exports io.github.oldmanpushcart.dashscope4j.client.util.jackson;
+    exports io.github.oldmanpushcart.dashscope4j.client.util.retry;
 
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.chat;
     exports io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message;

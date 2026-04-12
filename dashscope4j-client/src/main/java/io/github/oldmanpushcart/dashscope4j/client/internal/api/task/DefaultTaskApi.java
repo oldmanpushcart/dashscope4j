@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import static java.util.concurrent.CompletableFuture.completedStage;
@@ -29,12 +30,14 @@ public class DefaultTaskApi implements TaskApi, InternalContents {
     private final String ak;
     private final OkHttpClient http;
     private final AsyncApi asyncApi;
+    private final ExecutorService executor;
 
-    public DefaultTaskApi(String host, String ak, OkHttpClient http, AsyncApi asyncApi) {
+    public DefaultTaskApi(String host, String ak, OkHttpClient http, AsyncApi asyncApi, ExecutorService executor) {
         this.host = host;
         this.ak = ak;
         this.http = http;
         this.asyncApi = asyncApi;
+        this.executor = executor;
     }
 
     @Override
@@ -48,53 +51,48 @@ public class DefaultTaskApi implements TaskApi, InternalContents {
                 .addHeader(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
                 .build();
 
-        return CompletableFuture.completedStage(null)
+        // 第1步：OkHttp 内部线程执行网络请求
+        final var completeF = new CompletableFuture<Response>();
+        http.newCall(httpRequest).enqueue(new Callback() {
 
-                // 执行 HTTP 请求
-                .thenCompose(unused -> {
-                    final var completeF = new CompletableFuture<Response>();
-                    http.newCall(httpRequest).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                completeF.completeExceptionally(e);
+            }
 
-                        @Override
-                        public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                            completeF.completeExceptionally(e);
-                        }
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response httpResponse) {
+                completeF.complete(httpResponse);
+            }
 
-                        @Override
-                        public void onResponse(@NonNull Call call, @NonNull Response httpResponse) {
-                            completeF.complete(httpResponse);
-                        }
+        });
 
-                    });
-                    return completeF;
-                })
+        // 第2步：收到响应后切换到自定义 executor 处理业务逻辑
+        return completeF.thenComposeAsync(httpResponse -> {
+            try {
+                final var stringResponseBody = httpResponse.body().string();
+                final var halfResponse = JacksonJsonUtils.<TaskHalfResponse>toApiResponse(stringResponseBody, TaskHalfResponse.class, request, httpResponse);
+                if (!halfResponse.isSuccess()) {
+                    throw new ApiException(halfResponse);
+                }
+                final var taskId = halfResponse.output().taskId();
+                final var half = new Task.Half<R>() {
 
-                // 获取 HALF
-                .thenCompose(httpResponse -> {
-                    try {
-                        final var stringResponseBody = httpResponse.body().string();
-                        final var halfResponse = JacksonJsonUtils.<TaskHalfResponse>toApiResponse(stringResponseBody, TaskHalfResponse.class, request, httpResponse);
-                        if (!halfResponse.isSuccess()) {
-                            throw new ApiException(halfResponse);
-                        }
-                        final var taskId = halfResponse.output().taskId();
-                        final var half = new Task.Half<R>() {
-
-                            @Override
-                            public CompletionStage<R> waitingFor(Task.WaitStrategy strategy) {
-                                return rolling(
-                                        new TaskGetRequest(taskId),
-                                        strategy,
-                                        responseBody -> request.responseDecoder().apply(httpResponse, responseBody)
-                                );
-                            }
-
-                        };
-                        return CompletableFuture.completedStage(half);
-                    } catch (Throwable ex) {
-                        return CompletableFuture.<Task.Half<R>>failedStage(ex);
+                    @Override
+                    public CompletionStage<R> waitingFor(Task.WaitStrategy strategy) {
+                        return rolling(
+                                new TaskGetRequest(taskId),
+                                strategy,
+                                responseBody -> request.responseDecoder().apply(httpResponse, responseBody)
+                        );
                     }
-                });
+
+                };
+                return CompletableFuture.completedStage(half);
+            } catch (Throwable ex) {
+                return CompletableFuture.<Task.Half<R>>failedStage(ex);
+            }
+        }, executor);
     }
 
 

@@ -42,7 +42,7 @@ public class OmniRealtimeTestCase implements LoadingEnv {
         try (final var baos = new ByteArrayOutputStream()) {
 
             RealtimeConnector.newBuilder()
-                    .reconnectStrategy((attempt, ex) -> Duration.ofSeconds(1L))
+                    .retryStrategy((attempt, ex) -> Duration.ofSeconds(1L))
                     .connectionFactory(() ->
                             client.realtime(session, new SimpleOmniRealtimeHandler() {
 

@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.realtime;
 
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.retry.RetryStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,11 +22,11 @@ import static java.util.Objects.requireNonNull;
  */
 public class RealtimeConnector {
 
-    private static final int ATTEMPT_BEGIN = 1;
+    private static final int ATTEMPT_BEGIN = 0;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Supplier<CompletionStage<? extends Realtime.Connection>> connectionFactory;
-    private final ReconnectStrategy reconnectStrategy;
+    private final RetryStrategy retryStrategy;
 
     private final String _toString;
     private final Timer timer = new Timer();
@@ -33,9 +34,9 @@ public class RealtimeConnector {
 
     private RealtimeConnector(Builder builder) {
         requireNonNull(builder.connectionFactory, "connectionFactory must not be null!");
-        requireNonNull(builder.reconnectStrategy, "reconnectStrategy must not be null!");
+        requireNonNull(builder.retryStrategy, "retryStrategy must not be null!");
         this.connectionFactory = builder.connectionFactory;
-        this.reconnectStrategy = builder.reconnectStrategy;
+        this.retryStrategy = builder.retryStrategy;
         this._toString = "dashscope4j-client://exchange/connector/%s".formatted(System.identityHashCode(this));
     }
 
@@ -60,19 +61,19 @@ public class RealtimeConnector {
     }
 
     /**
-     * 启动连接（从第 1 次尝试开始）
+     * 启动连接（从第 0 次尝试开始）
      */
     public CompletionStage<Void> connect() {
         if (isShutdown()) {
             throw new IllegalStateException("Connector is shutdown!");
         }
-        return reconnect(ATTEMPT_BEGIN, reconnectStrategy);
+        return reconnect(ATTEMPT_BEGIN, retryStrategy);
     }
 
     /**
      * 执行第 {@code attempt} 次连接尝试
      */
-    private CompletionStage<Void> reconnect(int attempt, ReconnectStrategy strategy) {
+    private CompletionStage<Void> reconnect(int attempt, RetryStrategy strategy) {
 
         if (isShutdown()) {
             return CompletableFuture.failedStage(
@@ -108,7 +109,7 @@ public class RealtimeConnector {
     /**
      * 根据策略决定是否重试，并执行相应动作
      */
-    private CompletionStage<Void> scheduleRetry(int attempt, Throwable cause, ReconnectStrategy strategy) {
+    private CompletionStage<Void> scheduleRetry(int attempt, Throwable cause, RetryStrategy strategy) {
 
         /*
          * 尝试执行策略，
@@ -146,7 +147,7 @@ public class RealtimeConnector {
                         return;
                     }
                     reconnect(attempt + 1, strategy)
-                            .whenComplete((exchange, reconnectEx) -> {
+                            .whenComplete((v, reconnectEx) -> {
                                 if (reconnectEx != null) {
                                     completeF.completeExceptionally(reconnectEx);
                                 } else {
@@ -164,8 +165,6 @@ public class RealtimeConnector {
 
     }
 
-    // —————————————— 公共接口 ——————————————
-
     /**
      * 表示重连被策略拒绝或策略执行失败
      */
@@ -175,63 +174,6 @@ public class RealtimeConnector {
             super(message, cause);
         }
 
-    }
-
-    /**
-     * 重连策略：根据尝试次数和异常决定延迟时间
-     */
-    @FunctionalInterface
-    public interface ReconnectStrategy {
-
-        /**
-         * 根据尝试次数和异常决定延迟时间
-         *
-         * @param attempt 尝试次数
-         * @param ex      异常
-         * @return <p>
-         * - {@code null}：停止重连；
-         * - {@code Duration <= 0}：立即重连；
-         * - {@code Duration > 0}：延迟重连
-         */
-        Duration decide(int attempt, Throwable ex);
-
-    }
-
-    /**
-     * 重连策略工厂
-     */
-    public interface ReconnectStrategies {
-
-        /**
-         * 永不重连
-         */
-        static ReconnectStrategy never() {
-            return (attempt, ex) -> null;
-        }
-
-        /**
-         * 立即重连，并持续重连
-         */
-        static ReconnectStrategy immediateForever() {
-            return (attempt, ex) -> Duration.ZERO;
-        }
-
-        /**
-         * 固定延迟重连
-         */
-        static ReconnectStrategy fixedDelay(Duration delay) {
-            return (attempt, ex) -> delay;
-        }
-
-        /**
-         * 指数退避重连
-         */
-        static ReconnectStrategy exponentialBackoff(Duration initialDelay, Duration maxDelay) {
-            return (attempt, ex) -> {
-                final var delay = initialDelay.multipliedBy(2).multipliedBy(attempt);
-                return delay.compareTo(maxDelay) > 0 ? maxDelay : delay;
-            };
-        }
     }
 
     /**
@@ -247,7 +189,7 @@ public class RealtimeConnector {
     public static class Builder implements Buildable<RealtimeConnector, Builder> {
 
         private Supplier<CompletionStage<? extends Realtime.Connection>> connectionFactory;
-        private ReconnectStrategy reconnectStrategy;
+        private RetryStrategy retryStrategy;
 
         /**
          * 设置连接工厂
@@ -261,13 +203,13 @@ public class RealtimeConnector {
         }
 
         /**
-         * 设置重连策略
+         * 设置重试策略
          *
-         * @param reconnectStrategy 重连策略
+         * @param retryStrategy 重试策略
          * @return this
          */
-        public Builder reconnectStrategy(ReconnectStrategy reconnectStrategy) {
-            this.reconnectStrategy = reconnectStrategy;
+        public Builder retryStrategy(RetryStrategy retryStrategy) {
+            this.retryStrategy = retryStrategy;
             return this;
         }
 

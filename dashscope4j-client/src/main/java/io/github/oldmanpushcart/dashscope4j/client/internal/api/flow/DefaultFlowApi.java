@@ -16,23 +16,30 @@ import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+
+import java.util.concurrent.ExecutorService;
 
 public class DefaultFlowApi implements FlowApi, InternalContents {
 
     private final String host;
     private final String ak;
     private final OkHttpClient http;
+    private final Scheduler scheduler;
 
-    public DefaultFlowApi(String host, String ak, OkHttpClient http) {
+    public DefaultFlowApi(String host, String ak, OkHttpClient http, ExecutorService executor) {
         this.host = host;
         this.ak = ak;
         this.http = http;
+        // 将 Executor 转换为 Reactor Scheduler
+        this.scheduler = Schedulers.fromExecutor(executor);
     }
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> Publisher<R> execute(T request) {
 
-        return Flux.create(sink -> {
+        Flux<R> flux = Flux.create(sink -> {
 
             final var httpRequest = new Request.Builder(request.toHttpRequest(host))
                     .addHeader(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
@@ -128,6 +135,9 @@ public class DefaultFlowApi implements FlowApi, InternalContents {
                     .newEventSource(httpRequest, listener);
 
         }, FluxSink.OverflowStrategy.ERROR);
+        
+        // 在接收到数据后切换到自定义 scheduler
+        return flux.publishOn(scheduler);
 
 
     }

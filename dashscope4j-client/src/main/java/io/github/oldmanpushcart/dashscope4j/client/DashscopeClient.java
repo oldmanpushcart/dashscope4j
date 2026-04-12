@@ -13,6 +13,8 @@ import org.reactivestreams.Publisher;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * Dashscope 客户端
@@ -145,6 +147,15 @@ public interface DashscopeClient {
          * @return 构建器
          */
         Builder interceptors(List<Interceptor> interceptors);
+
+        /**
+         * 设置自定义 Executor
+         * <p>如果未设置或设置为 null，将使用 {@link ForkJoinPool#commonPool()}</p>
+         *
+         * @param executor 自定义执行器，可为 null
+         * @return 构建器
+         */
+        Builder executor(ExecutorService executor);
 
     }
 

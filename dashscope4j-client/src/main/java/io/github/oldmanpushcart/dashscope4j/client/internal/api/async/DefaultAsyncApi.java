@@ -11,6 +11,7 @@ import org.jspecify.annotations.NonNull;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
 
 
 public class DefaultAsyncApi implements AsyncApi, InternalContents {
@@ -18,11 +19,13 @@ public class DefaultAsyncApi implements AsyncApi, InternalContents {
     private final String host;
     private final String ak;
     private final OkHttpClient http;
+    private final ExecutorService executor;
 
-    public DefaultAsyncApi(String host, String ak, OkHttpClient http) {
+    public DefaultAsyncApi(String host, String ak, OkHttpClient http, ExecutorService executor) {
         this.host = host;
         this.ak = ak;
         this.http = http;
+        this.executor = executor;
     }
 
     @Override
@@ -35,40 +38,35 @@ public class DefaultAsyncApi implements AsyncApi, InternalContents {
                 .addHeader(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
                 .build();
 
-        return CompletableFuture.completedStage(null)
+        // 第1步：OkHttp 内部线程执行网络请求
+        final var httpResponseF = new CompletableFuture<Response>();
+        http.newCall(httpRequest).enqueue(new Callback() {
 
-                // 执行 HTTP 请求
-                .thenCompose(unused -> {
-                    final var completeF = new CompletableFuture<Response>();
-                    http.newCall(httpRequest).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                httpResponseF.completeExceptionally(e);
+            }
 
-                        @Override
-                        public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                            completeF.completeExceptionally(e);
-                        }
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response httpResponse) {
+                httpResponseF.complete(httpResponse);
+            }
 
-                        @Override
-                        public void onResponse(@NonNull Call call, @NonNull Response httpResponse) {
-                            completeF.complete(httpResponse);
-                        }
+        });
 
-                    });
-                    return completeF;
-                })
-
-                // 解码 HTTP-RESPONSE
-                .thenCompose(httpResponse -> {
-                    try {
-                        final var stringResponseBody = httpResponse.body().string();
-                        final var response = request.responseDecoder().apply(httpResponse, stringResponseBody);
-                        if (!response.isSuccess()) {
-                            throw new ApiException(response);
-                        }
-                        return CompletableFuture.completedFuture(response);
-                    } catch (Throwable ex) {
-                        return CompletableFuture.failedFuture(ex);
-                    }
-                });
+        // 第2步：收到响应后切换到自定义 executor 处理业务逻辑
+        return httpResponseF.thenComposeAsync(httpResponse -> {
+            try {
+                final var stringResponseBody = httpResponse.body().string();
+                final var response = request.responseDecoder().apply(httpResponse, stringResponseBody);
+                if (!response.isSuccess()) {
+                    throw new ApiException(response);
+                }
+                return CompletableFuture.completedFuture(response);
+            } catch (Throwable ex) {
+                return CompletableFuture.failedFuture(ex);
+            }
+        }, executor);
     }
 
 }

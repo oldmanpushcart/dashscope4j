@@ -30,6 +30,8 @@ import reactor.core.publisher.Flux;
 
 import java.util.*;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
 
 public class DashscopeClientImpl implements DashscopeClient {
@@ -52,9 +54,14 @@ public class DashscopeClientImpl implements DashscopeClient {
         final var ak = builder.ak;
         final var http = builder.http;
 
-        final var asyncApi = new DefaultAsyncApi(host, ak, http);
-        final var flowApi = new DefaultFlowApi(host, ak, http);
-        final var taskApi = new DefaultTaskApi(host, ak, http, asyncApi);
+        // 确定实际使用的 executor：用户自定义 或 ForkJoinPool.commonPool()
+        final var executor = Optional
+                .ofNullable(builder.executor)
+                .orElseGet(ForkJoinPool::commonPool);
+
+        final var asyncApi = new DefaultAsyncApi(host, ak, http, executor);
+        final var flowApi = new DefaultFlowApi(host, ak, http, executor);
+        final var taskApi = new DefaultTaskApi(host, ak, http, asyncApi, executor);
         final var realtimeApi = new DefaultRealtimeApi(host, ak, http);
 
         this.asyncApi = asyncApi;
@@ -86,7 +93,7 @@ public class DashscopeClientImpl implements DashscopeClient {
                 new IncrementalOutputOnlyInterceptor(),
                 new GeneralAigcInterceptor()
         ));
-        
+
         return Collections.unmodifiableList(newInterceptors);
     }
 
@@ -164,6 +171,7 @@ public class DashscopeClientImpl implements DashscopeClient {
         private OkHttpClient http;
         private boolean traceable;
         private List<Interceptor> interceptors;
+        private ExecutorService executor;
 
         @Override
         public DashscopeClient.Builder host(String host) {
@@ -192,6 +200,12 @@ public class DashscopeClientImpl implements DashscopeClient {
         @Override
         public DashscopeClient.Builder interceptors(List<Interceptor> interceptors) {
             this.interceptors = interceptors;
+            return this;
+        }
+
+        @Override
+        public DashscopeClient.Builder executor(ExecutorService executor) {
+            this.executor = executor;
             return this;
         }
 
