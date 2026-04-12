@@ -35,6 +35,15 @@ public interface Interceptor {
          *
          * @param request 请求
          * @return 处理回调
+         * <p>
+         * 对于不同的调用方式，约定的返回值也不同
+         * <ul>
+         *     <li>{@link Type#ASYNC}类型的请求, 返回值必为{@code CompletionStage<? extends ApiResponse>}</li>
+         *     <li>{@link Type#FLOW}类型的请求, 返回值必为{@code Publisher<? extends ApiResponse>}</li>
+         *     <li>{@link Type#TASK}类型的请求, 返回值必为{@code CompletionStage<? extends Task.Half<? extends ApiResponse>>}</li>
+         * </ul>
+         * 可以在实际使用中根据{@link Chain#type()}的类型进行判断和转换
+         * </p>
          */
         public CompletionStage<?> proceed(ApiRequest<?> request) {
             return operator.apply(request);
