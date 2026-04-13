@@ -21,14 +21,14 @@ import static java.nio.file.StandardOpenOption.*;
 /**
  * 全局工具：获取静态资源
  */
-class GetAssertTool {
+class GetAssetTool {
 
-    public static final String TOOL_NAME = "global$skill$get_assert";
+    public static final String TOOL_NAME = "global$skill$get_asset";
 
     private final Map<String, Skill> skills;
     private final Path tempDir;
 
-    public GetAssertTool(Map<String, Skill> skills, Path tempDir) {
+    public GetAssetTool(Map<String, Skill> skills, Path tempDir) {
         this.skills = skills;
         this.tempDir = tempDir;
     }
@@ -45,11 +45,11 @@ class GetAssertTool {
                         
                         【参数说明】
                         - skill_name: Skill 名称，如 "data-processor"
-                        - assert_path: 资源文件相对路径
+                        - asset_path: 资源文件相对路径
                         
                         【路径使用严格规范】
                         ⚠️ 重要：路径参数是**资源的唯一标识符**,必须原样复制：
-                        - 从 SKILL.md、README.md 等文档中看到的路径，必须**逐字复制**到 assert_path 参数
+                        - 从 SKILL.md、README.md 等文档中看到的路径，必须**逐字复制**到 asset_path 参数
                         - 不要修改、优化或"修正"路径格式（例如：不要去掉前缀，不要转换为绝对路径）
                         - 不要对路径进行 URL 编码/解码
                         - 即使路径看起来"奇怪"或"不正确",也要原样保留
@@ -98,7 +98,7 @@ class GetAssertTool {
 
             //noinspection resource
             final var outputC = FileChannel.open(tempFile, CREATE, TRUNCATE_EXISTING, WRITE);
-            skill.readAssert(resourcePath, new Skill.ReadHandler() {
+            skill.asset(resourcePath, new Skill.AssetHandler() {
 
                 @Override
                 public void onRead(ByteBuffer buffer) {
@@ -144,7 +144,7 @@ class GetAssertTool {
             @JsonPropertyDescription("Skill 名称")
             String name,
 
-            @JsonProperty("assert_path")
+            @JsonProperty("asset_path")
             @JsonPropertyDescription("资源文件相对路径，如 'assets/template.xlsx'")
             String path
 

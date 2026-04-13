@@ -17,11 +17,9 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Flux;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.List;
 
 public class DebugTestCase implements LoadingEnv {
@@ -61,10 +59,7 @@ public class DebugTestCase implements LoadingEnv {
                                 .build(),
                         SkillToolLoader.newBuilder()
                                 .providers(List.of(
-                                        FileSkillProvider.newBuilder()
-                                                .scanDir(Path.of("./skills"))
-                                                .syncInterval(Duration.ofSeconds(10))
-                                                .build()
+                                        FileSkillProvider.ofPath(Path.of("./skills/school-score"))
                                 ))
                                 .build()
                 ))
@@ -89,7 +84,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(sessionId, Message.user("""
-                                本机局域网的IP地址是多少？
+                                小红数学多少分？
                                 """))
                         .toCompletableFuture()
                         .join();

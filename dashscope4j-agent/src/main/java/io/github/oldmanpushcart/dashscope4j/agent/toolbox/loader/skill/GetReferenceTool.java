@@ -66,7 +66,7 @@ class GetReferenceTool {
                         throw new IllegalArgumentException("Unknown skill: %s. Available skills: %s".formatted(spec.name(), skills.keySet()));
                     }
 
-                    return skill.getReference(spec.path());
+                    return skill.reference(spec.path());
                 })
                 .build();
     }

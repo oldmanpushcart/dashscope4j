@@ -13,7 +13,7 @@ class LoadSkillTool {
     }
 
     public FunctionTool toTool() {
-        final var toolName = SkillHelper.toToolName(skill.name());
+        final var toolName = SkillHelper.toToolName(skill.header().name());
         final var toolDescription = """
                 %s
                 
@@ -28,8 +28,8 @@ class LoadSkillTool {
                 - 参数: skill_name (技能名), reference_path (文档相对路径)
                 
                 ### 获取静态资源 (如图片、数据文件):
-                - 工具: global$skill$get_assert
-                - 参数: skill_name (技能名), assert_path (资源相对路径)
+                - 工具: global$skill$get_asset
+                - 参数: skill_name (技能名), asset_path (资源相对路径)
                 
                 ### 执行脚本文件:
                 - 工具: global$skill$execute_script
@@ -44,8 +44,8 @@ class LoadSkillTool {
                 ## 使用方法
                 请向模型描述您希望完成的任务。模型将激活相应技能，并根据您的意图提供具体的执行步骤和指导。
                 """.formatted(
-                skill.description(),
-                skill.name()
+                skill.header().description(),
+                skill.header().name()
         );
 
         return FunctionTool.newBuilder()
@@ -62,13 +62,13 @@ class LoadSkillTool {
                         
                         请根据上述 instructions 执行任务。如果需要：
                         - 📖 查阅参考资料，使用 `global$skill$get_reference`
-                        - 📁 获取资源文件，使用 `global$skill$get_assert`
+                        - 📁 获取资源文件，使用 `global$skill$get_asset`
                         - ⚙️ 执行脚本，使用 `global$skill$execute_script`
                         
                         现在请开始执行任务...
                         """.formatted(
                         skill.body(),
-                        skill.name()
+                        skill.header().name()
                 ))
                 .build();
     }

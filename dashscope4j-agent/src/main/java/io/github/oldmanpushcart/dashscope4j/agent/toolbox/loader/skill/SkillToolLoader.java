@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.ToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.SkillProvider;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.slf4j.Logger;
@@ -31,7 +30,7 @@ import static io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils.unmod
  * <p>特性:</p>
  * <ul>
  *   <li>支持 lazy/eager 两种加载模式</li>
- *   <li>提供三个全局工具：get_reference, get_assert, execute_script</li>
+ *   <li>提供三个全局工具：get_reference, get_asset, execute_script</li>
  *   <li>为每个 Skill 创建对应的 tool: skill$&lt;skill_name&gt;</li>
  *   <li>自动管理临时文件和资源清理</li>
  *   <li>init 失败时自动 close 防止资源泄漏</li>
@@ -46,7 +45,7 @@ public class SkillToolLoader implements ToolLoader {
     private final List<SkillProvider> providers;
 
     // 存储已加载的 Skill
-    private final Map<String, Skill> skills = new ConcurrentHashMap<>();
+    private final Map<String, Skill> skillMap = new ConcurrentHashMap<>();
 
     // 生命周期管理
     private final CompletableFuture<Void> installF = new CompletableFuture<>();
@@ -99,19 +98,32 @@ public class SkillToolLoader implements ToolLoader {
 
         // 初始化全局工具
         List.of(
-                new GetReferenceTool(skills).toTool(),
-                new GetAssertTool(skills, tempDir).toTool(),
-                new ExecuteScriptTool(skills, tempDir, Duration.ofSeconds(30)).toTool()
+                new GetReferenceTool(skillMap).toTool(),
+                new GetAssetTool(skillMap, tempDir).toTool(),
+                new ExecuteScriptTool(skillMap, tempDir, Duration.ofSeconds(30)).toTool()
         ).forEach(tool -> {
             final var stage = toolbox.register(tool.meta().name(), tool);
             stages.add(stage);
         });
 
-
-        // 初始化所有 Provider
-        final var skillUpdater = new SkillUpdater(toolbox, skills);
+        // 加载所有 Provider 提供的 Skills
         providers.forEach(provider -> {
-            final var stage = provider.init(skillUpdater);
+            final var stage = provider.provide()
+                    .thenCompose(skills -> {
+
+                        // 为每个 Skill 注册工具
+                        final var regStages = skills.stream()
+                                .map(skill -> {
+                                    final var tool = new LoadSkillTool(skill).toTool();
+                                    return toolbox.register(tool.meta().name(), tool)
+                                            .thenAccept(unused -> skillMap.put(skill.header().name(), skill));
+                                })
+                                .toList();
+
+                        // 等待所有注册完成
+                        return CompletableFutureUtils.allOf(regStages);
+
+                    });
             stages.add(stage);
         });
 
@@ -127,18 +139,17 @@ public class SkillToolLoader implements ToolLoader {
 
         // 移除全局工具
         if (null != toolbox) {
-            toolbox.remove(GetAssertTool.TOOL_NAME);
+            toolbox.remove(GetAssetTool.TOOL_NAME);
             toolbox.remove(GetReferenceTool.TOOL_NAME);
             toolbox.remove(ExecuteScriptTool.TOOL_NAME);
             toolbox = null;
         }
 
         // 移除所有 SKILL 注册的工具
-        skills.keySet().forEach(name -> toolbox.remove(SkillHelper.toToolName(name)));
-        skills.clear();
+        skillMap.keySet().forEach(name -> toolbox.remove(SkillHelper.toToolName(name)));
+        skillMap.clear();
 
-        // 关闭所有 Provider
-        providers.forEach(IOUtils::closeQuietly);
+        // Provider 不再需要 close，直接清理临时文件
 
         // 清理临时文件
         if (null != tempDir) {
@@ -161,35 +172,6 @@ public class SkillToolLoader implements ToolLoader {
 
     }
 
-
-    /**
-     * SkillProvider.Updater 实现
-     *
-     * @param registry  Tool 注册器
-     * @param skillsMap Skill 缓存
-     */
-    private record SkillUpdater(Toolbox registry, Map<String, Skill> skillsMap)
-            implements SkillProvider.Updater {
-
-        @Override
-        public CompletionStage<Void> upsert(Skill skill) {
-            final var tool = new LoadSkillTool(skill).toTool();
-            skillsMap.put(skill.name(), skill);
-            return registry.register(tool.meta().name(), tool)
-                    .whenComplete((unused, ex) -> {
-                        if (null != ex) {
-                            skillsMap.remove(skill.name());
-                        }
-                    });
-        }
-
-        @Override
-        public CompletionStage<Void> remove(String name) {
-            return registry.remove(SkillHelper.toToolName(name))
-                    .thenAccept(unused -> skillsMap.remove(name));
-        }
-
-    }
 
     // === Builder ===
 

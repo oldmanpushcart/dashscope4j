@@ -94,7 +94,7 @@ class ExecuteScriptTool {
      * 执行脚本
      */
     private CompletionStage<String> executeScript(Skill skill, String path, List<String> args, String interpreter) {
-        return skill.readScript(path)
+        return skill.script(path)
                 .thenCompose(scriptContent -> {
                     try {
 
