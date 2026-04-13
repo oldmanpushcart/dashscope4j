@@ -1,9 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
-import io.github.oldmanpushcart.dashscope4j.agent.memory.Memory;
-import io.github.oldmanpushcart.dashscope4j.agent.memory.WorkingMemory;
-import io.github.oldmanpushcart.dashscope4j.agent.memory.store.HashMapMemoryStore;
+import io.github.oldmanpushcart.dashscope4j.agent.session.SessionManager;
+import io.github.oldmanpushcart.dashscope4j.agent.session.WorkingSessionManager;
+import io.github.oldmanpushcart.dashscope4j.agent.session.store.HashMapSessionStore;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
@@ -50,7 +50,7 @@ import java.util.function.UnaryOperator;
  * </p>
  *
  * @see Agent
- * @see MemoryInterceptor
+ * @see SessionInterceptor
  */
 public class BaseAgent implements Agent {
 
@@ -80,9 +80,9 @@ public class BaseAgent implements Agent {
     private final Tool searchTools;
 
     /**
-     * 记忆管理器，负责会话历史的存储和检索
+     * 会话管理器，负责会话的生命周期管理
      */
-    private final Memory memory;
+    private final SessionManager sessionManager;
 
     /**
      * DashScope 客户端
@@ -119,10 +119,10 @@ public class BaseAgent implements Agent {
                 .map(toolbox -> new SearchToolsFunction(toolbox).asTool())
                 .orElse(null);
 
-        // 如果没有指定记忆管理，则默认创建内存记忆，这个实现不需要关闭
-        this.memory = Optional.of(builder.memory)
-                .orElseGet(() -> WorkingMemory.newBuilder()
-                        .store(new HashMapMemoryStore())
+        // 如果没有指定会话管理器，则默认创建工作会话管理器
+        this.sessionManager = Optional.of(builder.sessionManager)
+                .orElseGet(() -> WorkingSessionManager.newBuilder()
+                        .store(new HashMapSessionStore())
                         .build());
 
         this.client = builder.client;
@@ -155,7 +155,7 @@ public class BaseAgent implements Agent {
      *     <li>系统提示词（如果设置了 introduction）</li>
      *     <li>用户输入消息</li>
      *     <li>搜索工具（search_tools）</li>
-     *     <li>记忆拦截器（MemoryInterceptor）</li>
+     *     <li>会话拦截器（SessionInterceptor）</li>
      * </ul>
      * </p>
      *
@@ -164,6 +164,8 @@ public class BaseAgent implements Agent {
      * @return 构建好的 AIGC 请求
      */
     private AigcRequest<Input, Output> newRequest(String sessionId, UserMessage inbound) {
+        // 打开会话
+        final var session = sessionManager.open(sessionId);
         return AigcRequest.newBuilder(model())
 
                 // 组装对话输入
@@ -205,7 +207,7 @@ public class BaseAgent implements Agent {
                 // 组装拦截器
                 .interceptors(interceptors -> {
                     interceptors.addAll(interceptors());
-                    interceptors.add(new MemoryInterceptor(sessionId, memory));
+                    interceptors.add(new SessionInterceptor(session));
                     return interceptors;
                 })
                 .build();
@@ -285,10 +287,10 @@ public class BaseAgent implements Agent {
     }
 
     /**
-     * 内存
+     * 获取会话管理器
      */
-    protected Memory memory() {
-        return memory;
+    protected SessionManager sessionManager() {
+        return sessionManager;
     }
 
     /**
@@ -333,7 +335,7 @@ public class BaseAgent implements Agent {
         private String introduction;
 
         private Toolbox toolbox;
-        private Memory memory;
+        private SessionManager sessionManager;
 
         private DashscopeClient client;
         private ChatModel model;
@@ -377,8 +379,8 @@ public class BaseAgent implements Agent {
             return self();
         }
 
-        public B memory(Memory memory) {
-            this.memory = memory;
+        public B sessionManager(SessionManager sessionManager) {
+            this.sessionManager = sessionManager;
             return self();
         }
 

@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.memory.store;
+package io.github.oldmanpushcart.dashscope4j.agent.session.store;
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.util.TokenizerUtils;
@@ -28,15 +28,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * 基于文件的内存存储实现
+ * 基于文件的会话存储实现
  * <p>
  * 使用 JSONL 格式存储会话片段，支持并发读写和流式读取。
  * </p>
  */
-public class FileMemoryStore implements MemoryStore {
+public class FileSessionStore implements SessionStore {
 
-    private static final Logger logger = LoggerFactory.getLogger(FileMemoryStore.class);
-    private static final String FILE_PREFIX = "memory";
+    private static final Logger logger = LoggerFactory.getLogger(FileSessionStore.class);
+    private static final String FILE_PREFIX = "session";
     private static final int READ_BUFFER_SIZE = 8192;
     private static final int SEQUENCE_STEP = 10;
 
@@ -46,7 +46,7 @@ public class FileMemoryStore implements MemoryStore {
     /**
      * 构造函数（通过 Builder 调用）
      */
-    private FileMemoryStore(Builder builder) {
+    private FileSessionStore(Builder builder) {
         this.directory = builder.directory.toAbsolutePath().normalize();
 
         try {
@@ -164,7 +164,7 @@ public class FileMemoryStore implements MemoryStore {
 
     @Override
     public void close() {
-        logger.info("FileMemoryStore closed");
+        logger.info("FileSessionStore closed");
     }
 
     /**
@@ -195,9 +195,9 @@ public class FileMemoryStore implements MemoryStore {
             return this;
         }
 
-        public FileMemoryStore build() {
+        public FileSessionStore build() {
             Objects.requireNonNull(directory, "directory must not be null");
-            return new FileMemoryStore(this);
+            return new FileSessionStore(this);
         }
     }
 

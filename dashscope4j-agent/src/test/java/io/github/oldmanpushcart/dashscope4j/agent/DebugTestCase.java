@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
-import io.github.oldmanpushcart.dashscope4j.agent.memory.WorkingMemory;
-import io.github.oldmanpushcart.dashscope4j.agent.memory.store.FileMemoryStore;
+import io.github.oldmanpushcart.dashscope4j.agent.session.WorkingSessionManager;
+import io.github.oldmanpushcart.dashscope4j.agent.session.store.FileSessionStore;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.HashMapToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.DashscopeToolLoader;
@@ -30,12 +30,12 @@ public class DebugTestCase implements LoadingEnv {
     public void debug$1() {
 
         final var sessionId = "SESSION-001";
-        final var memory = WorkingMemory.newBuilder()
+        final var sessionManager = WorkingSessionManager.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
-                //.store(new HashMapMemoryStore())
-                .store(FileMemoryStore.newBuilder()
-                        .directory(Paths.get("./memory"))
+                //.store(new HashMapSessionStore())
+                .store(FileSessionStore.newBuilder()
+                        .directory(Paths.get("./session"))
                         .build())
                 .maxTokens(25 * 1000)
                 .gcRatio(0.3)
@@ -76,7 +76,7 @@ public class DebugTestCase implements LoadingEnv {
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
-                    .memory(memory)
+                    .sessionManager(sessionManager)
                     .build();
 
 //            {
@@ -100,28 +100,6 @@ public class DebugTestCase implements LoadingEnv {
         } finally {
             IOUtils.closeQuietly(toolbox);
         }
-
-    }
-
-
-    @Test
-    public void debug$2() {
-
-        final var sessionId = "SESSION-001";
-        final var store = FileMemoryStore.newBuilder()
-                .directory(Paths.get("./memory"))
-                .build();
-
-        final var fragments = Flux.from(store.flow(sessionId, Long.MAX_VALUE))
-                .collectList()
-                .toFuture()
-                .join();
-
-        fragments.forEach(fragment -> {
-            System.out.println(fragment.fragmentId());
-        });
-
-
 
     }
 

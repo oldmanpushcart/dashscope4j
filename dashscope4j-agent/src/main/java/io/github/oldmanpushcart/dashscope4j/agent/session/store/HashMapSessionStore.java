@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.memory.store;
+package io.github.oldmanpushcart.dashscope4j.agent.session.store;
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.util.TokenizerUtils;
@@ -15,12 +15,12 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 基于有序 Map 的内存存储实现
+ * 基于有序 Map 的会话存储实现
  * <p>
- * 使用 ConcurrentSkipListMap 提供高性能、有序的内存片段存储和检索能力。
+ * 使用 ConcurrentSkipListMap 提供高性能、有序的会话片段存储和检索能力。
  * </p>
  */
-public class HashMapMemoryStore implements MemoryStore {
+public class HashMapSessionStore implements SessionStore {
 
     /**
      * 内存片段存储（有序、线程安全）

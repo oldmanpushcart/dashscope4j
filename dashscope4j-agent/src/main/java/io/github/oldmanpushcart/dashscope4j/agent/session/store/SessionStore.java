@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.memory.store;
+package io.github.oldmanpushcart.dashscope4j.agent.session.store;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -13,50 +13,50 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
- * 内存存储
+ * 会话存储
  * <p>
- * 用于存储和检索多个内存片段。
+ * 用于存储和检索会话片段。
  * </p>
  */
-public interface MemoryStore extends AutoCloseable {
+public interface SessionStore extends AutoCloseable {
 
     /**
-     * 流式获取内存片段
+     * 流式获取会话片段
      * <p>
      * 按 fragmentId 倒序返回（最新的在前）。
      * </p>
      *
      * @param sessionId 会话 ID
      * @param after     起始 fragmentID（返回小于此 ID 的片段，Long.MAX_VALUE 表示从头开始）
-     * @return 内存片段流
+     * @return 会话片段流
      */
     Publisher<Fragment> flow(String sessionId, long after);
 
     /**
-     * 插入内存片段
+     * 插入会话片段
      *
-     * @param sessionId SESSION ID
+     * @param sessionId 会话 ID
      * @param messages  消息列表（包含用户输入和助手输出）
-     * @return 内存片段ID
+     * @return 会话片段
      */
     CompletionStage<Fragment> upsert(String sessionId, List<Message> messages);
 
     /**
-     * 删除内存片段
+     * 删除会话片段
      *
-     * @param fragmentId 内存片段 ID
+     * @param fragmentId 会话片段 ID
      * @return 删除结果
      */
     CompletionStage<Void> remove(long fragmentId);
 
     /**
-     * 记忆片段
+     * 会话片段
      * <p>
-     * 用于存储和检索单个内存片段。
+     * 用于存储和检索单个会话片段。
      * </p>
      *
      * @param fragmentId ID
-     * @param sessionId  SESSION ID
+     * @param sessionId  会话 ID
      * @param messages   消息列表（包含用户输入和助手输出）
      * @param tokens     TOKENS
      * @param createdAt  创建时间

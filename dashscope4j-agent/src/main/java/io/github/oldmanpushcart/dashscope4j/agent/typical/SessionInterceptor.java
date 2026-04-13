@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
-import io.github.oldmanpushcart.dashscope4j.agent.memory.Memory;
+import io.github.oldmanpushcart.dashscope4j.agent.session.Session;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
@@ -21,12 +21,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 /**
- * 记忆拦截器
+ * 会话拦截器
  * <p>
- * 负责在 AIGC 请求的生命周期中自动管理对话记忆，包括：
+ * 负责在 AIGC 请求的生命周期中自动管理会话记忆，包括：
  * <ul>
- *     <li><b>记忆召回（Recall）</b>：在请求发送前，从记忆中检索历史对话并注入到消息列表</li>
- *     <li><b>记忆存储（Remember）</b>：在响应完成后，将用户输入和助手输出保存到记忆中</li>
+ *     <li><b>记忆召回（Recall）</b>：在请求发送前，从会话中检索历史对话并注入到消息列表</li>
+ *     <li><b>记忆存储（Remember）</b>：在响应完成后，将用户输入和助手输出保存到会话中</li>
  * </ul>
  * </p>
  * <p>
@@ -38,29 +38,22 @@ import java.util.function.Function;
  * </ul>
  * </p>
  *
- * @see Memory
+ * @see Session
  */
-class MemoryInterceptor implements ChatInterceptor {
+class SessionInterceptor implements ChatInterceptor {
 
     /**
-     * 会话ID，用于区分不同的对话会话
+     * 会话实例
      */
-    private final String sessionId;
-    
-    /**
-     * 记忆管理器实例
-     */
-    private final Memory memory;
+    private final Session session;
 
     /**
-     * 构造记忆拦截器
+     * 构造会话拦截器
      *
-     * @param sessionId 会话ID
-     * @param memory    记忆管理器
+     * @param session 会话实例
      */
-    public MemoryInterceptor(String sessionId, Memory memory) {
-        this.sessionId = sessionId;
-        this.memory = memory;
+    public SessionInterceptor(Session session) {
+        this.session = session;
     }
 
     /**
@@ -110,7 +103,7 @@ class MemoryInterceptor implements ChatInterceptor {
     /**
      * 召回历史记忆并注入到请求中
      * <p>
-     * 从记忆中检索与当前会话相关的历史消息，并将其插入到系统消息之后、
+     * 从会话中检索历史消息，并将其插入到系统消息之后、
      * 用户输入之前的位置，确保 LLM 能够看到完整的对话上下文。
      * </p>
      *
@@ -119,7 +112,7 @@ class MemoryInterceptor implements ChatInterceptor {
      */
     private CompletionStage<AigcRequest<Input, Output>> recall(AigcRequest<Input, Output> request) {
         final var instant = request.input().userInputMessage();
-        return memory.recall(sessionId, instant)
+        return session.recall(instant)
                 .thenApply(recallMessages -> AigcRequest.newBuilder(request)
                         .input(input -> Input.newBuilder(input)
                                 .messages(message -> {
@@ -138,7 +131,7 @@ class MemoryInterceptor implements ChatInterceptor {
                                 })
                                 .build())
                         .interceptors(interceptors -> {
-                            interceptors.add(new MemoryInterceptor(sessionId, memory));
+                            interceptors.add(new SessionInterceptor(session));
                             return interceptors;
                         })
                         .build());
@@ -147,7 +140,7 @@ class MemoryInterceptor implements ChatInterceptor {
     /**
      * 异步模式下的记忆存储
      * <p>
-     * 在异步响应完成后，将用户输入和助手输出保存到记忆中。
+     * 在异步响应完成后，将用户输入和助手输出保存到会话中。
      * </p>
      *
      * @param request  原始请求
@@ -157,14 +150,14 @@ class MemoryInterceptor implements ChatInterceptor {
     private CompletionStage<AigcResponse<Output>> rememberAsync(AigcRequest<Input, Output> request, AigcResponse<Output> response) {
         final var inbound = request.input().userInputMessage();
         final var outbound = response.output().best().message();
-        return memory.remember(sessionId, List.of(inbound, outbound))
+        return session.remember(List.of(inbound, outbound))
                 .thenApply(unused -> response);
     }
 
     /**
      * 流式模式下的记忆存储
      * <p>
-     * 在流式响应中累积所有响应片段，待流结束后将完整的用户输入和助手输出保存到记忆中。
+     * 在流式响应中累积所有响应片段，待流结束后将完整的用户输入和助手输出保存到会话中。
      * 通过 {@code concatWith} 在流末尾拼接一个空的 Publisher，确保记忆操作在流完成后执行。
      * </p>
      *
@@ -175,7 +168,7 @@ class MemoryInterceptor implements ChatInterceptor {
     private CompletionStage<Publisher<AigcResponse<Output>>> rememberFlow(AigcRequest<Input, Output> request, Publisher<AigcResponse<Output>> flow) {
         final var responseRef = new AtomicReference<AigcResponse<Output>>();
 
-        // 在流的末尾拼接一个由 memory.remember 构成的空流
+        // 在流的末尾拼接一个由 session.remember 构成的空流
         final var wrapFlow = Flux.from(flow)
                 // 累积流式响应片段
                 .doOnNext(response -> responseRef.updateAndGet(current -> current == null ? response : current.accumulate(response)))
@@ -187,7 +180,7 @@ class MemoryInterceptor implements ChatInterceptor {
                         final var outbound = accumulatedResponse.output().best().message();
                         // 将异步的记忆操作转换为 Mono，记忆完成后返回空流
                         return Mono
-                                .fromCompletionStage(memory.remember(sessionId, List.of(inbound, outbound)))
+                                .fromCompletionStage(session.remember(List.of(inbound, outbound)))
                                 .thenMany(Flux.empty());
                     } else {
                         return Flux.empty();
@@ -199,7 +192,7 @@ class MemoryInterceptor implements ChatInterceptor {
     /**
      * 任务模式下的记忆存储
      * <p>
-     * 在异步任务完成后，将用户输入和助手输出保存到记忆中。
+     * 在异步任务完成后，将用户输入和助手输出保存到会话中。
      * 通过包装 {@code Task.Half} 来延迟记忆存储，直到任务真正完成。
      * </p>
      *
@@ -212,7 +205,7 @@ class MemoryInterceptor implements ChatInterceptor {
                 .thenCompose(response -> {
                     final var inbound = request.input().userInputMessage();
                     final var outbound = response.output().best().message();
-                    return memory.remember(sessionId, List.of(inbound, outbound))
+                    return session.remember(List.of(inbound, outbound))
                             .thenApply(unused -> response);
                 });
         return CompletableFuture.completedStage(wrapHalf);
