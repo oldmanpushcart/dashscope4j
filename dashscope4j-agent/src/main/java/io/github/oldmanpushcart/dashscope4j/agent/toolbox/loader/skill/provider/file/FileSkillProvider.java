@@ -3,6 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.Skill;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.SkillProvider;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -37,9 +39,29 @@ public class FileSkillProvider implements SkillProvider {
     @Override
     public CompletionStage<List<Skill>> provide() {
         try {
-            var skill = FileSkill.valueOf(skillDir);
+            final var skill = FileSkill.valueOf(skillDir, this);
             return CompletableFuture.completedFuture(List.of(skill));
         } catch (Exception e) {
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    @Override
+    public CompletionStage<String> signature() {
+        try {
+
+            // 策略：基于 SKILL.md 的最后修改时间
+            final var skillMdPath = skillDir.resolve("SKILL.md");
+            if (Files.exists(skillMdPath)) {
+                final var modTime = Files.getLastModifiedTime(skillMdPath).toMillis();
+                return CompletableFuture.completedFuture(String.valueOf(modTime));
+            }
+
+            // 降级：返回目录的修改时间
+            final var dirModTime = Files.getLastModifiedTime(skillDir).toMillis();
+            return CompletableFuture.completedFuture(String.valueOf(dirModTime));
+
+        } catch (IOException e) {
             return CompletableFuture.failedFuture(e);
         }
     }

@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider
 
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.Skill;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillHelper;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.SkillProvider;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,6 +29,7 @@ class FileSkill implements Skill {
     private static final String SKILL_MD_FILE = "SKILL.md";
 
     private final Path home;
+    private final SkillProvider provider;
     private final Header header;
     private final String body;
     private final String _toString;
@@ -35,8 +37,9 @@ class FileSkill implements Skill {
     /**
      * 包级私有构造函数
      */
-    FileSkill(Path home, Header header, String body) {
+    FileSkill(Path home, SkillProvider provider, Header header, String body) {
         this.home = home.toAbsolutePath().normalize();
+        this.provider = provider;
         this.header = header;
         this.body = body;
         this._toString = "dashscope4j-agent:/skill/%s".formatted(header.name());
@@ -62,6 +65,11 @@ class FileSkill implements Skill {
     @Override
     public String body() {
         return body;
+    }
+
+    @Override
+    public SkillProvider from() {
+        return provider;
     }
 
     // === Reference 实现 ===
@@ -129,13 +137,14 @@ class FileSkill implements Skill {
 
     @Override
     public int hashCode() {
-        return Objects.hash(home, header, body);
+        return Objects.hash(home, provider, header, body);
     }
 
     @Override
     public boolean equals(Object other) {
         if (other instanceof FileSkill otherSkill) {
             return Objects.equals(home, otherSkill.home())
+                    && Objects.equals(provider, otherSkill.provider)
                     && Objects.equals(header, otherSkill.header())
                     && Objects.equals(body, otherSkill.body());
         } else {
@@ -164,10 +173,12 @@ class FileSkill implements Skill {
      * 从目录加载 Skill
      *
      * @param skillDir Skill 目录路径
+     * @param provider 提供此 Skill 的 Provider
      * @return FileSkill 实例
      * @throws IOException 如果加载失败
      */
-    public static FileSkill valueOf(Path skillDir) throws IOException {
+    public static FileSkill valueOf(Path skillDir, SkillProvider provider) throws IOException {
+
         final var home = skillDir.toAbsolutePath().normalize();
         final var name = home.getFileName().toString();
 
@@ -183,7 +194,7 @@ class FileSkill implements Skill {
         final var content = Files.readString(skillMdFile, UTF_8);
         final var parsed = SkillHelper.parse(content);
 
-        return new FileSkill(home, parsed.header(), parsed.body());
+        return new FileSkill(home, provider, parsed.header(), parsed.body());
     }
 
 }

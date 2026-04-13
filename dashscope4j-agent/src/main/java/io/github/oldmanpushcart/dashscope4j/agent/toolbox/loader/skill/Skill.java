@@ -1,5 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill;
 
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.SkillProvider;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -42,6 +44,11 @@ public interface Skill {
      * @return SKILL.md 的正文内容 (Markdown 格式，不含 frontmatter)
      */
     String body();
+
+    /**
+     * @return 提供此 Skill 的 Provider
+     */
+    SkillProvider from();
 
     // === Reference 资源 (文档类) ===
 
