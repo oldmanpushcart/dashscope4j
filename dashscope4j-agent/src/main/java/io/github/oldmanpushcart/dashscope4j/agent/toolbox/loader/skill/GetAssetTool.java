@@ -69,7 +69,7 @@ class GetAssetTool {
                         ```json
                         {
                           "skill_name": "report-generator",
-                          "assert_path": "assets/excel-template.xlsx"
+                          "asset_path": "assets/excel-template.xlsx"
                         }
                         ```
                         """)

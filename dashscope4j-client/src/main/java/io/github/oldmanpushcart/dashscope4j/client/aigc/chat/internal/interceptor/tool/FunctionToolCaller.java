@@ -160,9 +160,7 @@ class FunctionToolCaller implements Tool.Caller {
                 .handle((r, ex) -> {
 
                     if (null == ex) {
-                        final var result = ToolResult.success(r);
-                        final var successJson = JacksonJsonUtils.toJson(result);
-                        return CompletableFuture.completedStage(successJson);
+                        return CompletableFuture.completedStage(r);
                     }
 
                     if (!request.input().failOnToolError()) {
