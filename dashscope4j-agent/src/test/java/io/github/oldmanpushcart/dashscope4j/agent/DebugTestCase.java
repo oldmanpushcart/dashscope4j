@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.HashMapToolInd
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.DashscopeToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.FileOpsToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.SystemToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.TextFileOpsToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.McpToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.RecoverableMcpClientTransport;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillToolLoader;
@@ -45,9 +46,14 @@ public class DebugTestCase implements LoadingEnv {
                         .model(ChatModel.QWEN_FLASH)
                         .build())
                 .loaders(List.of(
-                        FileOpsToolLoader.INSTANCE,
                         DashscopeToolLoader.INSTANCE,
                         SystemToolLoader.INSTANCE,
+                        FileOpsToolLoader.newBuilder()
+                                .workspace(Path.of("./"))
+                                .build(),
+                        TextFileOpsToolLoader.newBuilder()
+                                .workspace(Path.of("./"))
+                                .build(),
                         McpToolLoader.newBuilder()
                                 .name("amap")
                                 .transport(RecoverableMcpClientTransport.newBuilder()
@@ -84,7 +90,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(sessionId, Message.user("""
-                                小红数学多少分？
+                                写一个Java的HelloWorld程序，编译通过并运行。
                                 """))
                         .toCompletableFuture()
                         .join();
