@@ -53,21 +53,21 @@ public class DebugTestCase implements LoadingEnv {
                                 .build(),
                         TextFileOpsToolLoader.newBuilder()
                                 .workspace(Path.of("./"))
-                                .build(),
-                        McpToolLoader.newBuilder()
-                                .name("amap")
-                                .transport(RecoverableMcpClientTransport.newBuilder()
-                                        .transportFactory(mapper ->
-                                                HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
-                                                        .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
-                                                        .build())
-                                        .build())
-                                .build(),
-                        SkillToolLoader.newBuilder()
-                                .providers(List.of(
-                                        FileSkillProvider.ofPath(Path.of("./skills/school-score"))
-                                ))
                                 .build()
+//                        McpToolLoader.newBuilder()
+//                                .name("amap")
+//                                .transport(RecoverableMcpClientTransport.newBuilder()
+//                                        .transportFactory(mapper ->
+//                                                HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
+//                                                        .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+//                                                        .build())
+//                                        .build())
+//                                .build(),
+//                        SkillToolLoader.newBuilder()
+//                                .providers(List.of(
+//                                        FileSkillProvider.ofPath(Path.of("./skills/school-score"))
+//                                ))
+//                                .build()
                 ))
                 .build();
 
@@ -90,7 +90,8 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(sessionId, Message.user("""
-                                写一个Java的HelloWorld程序，编译通过并运行。
+                                修改你的HelloWorld程序，输出内容改成：“世界，你好！”
+                                编译通过并运行。
                                 """))
                         .toCompletableFuture()
                         .join();
