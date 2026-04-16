@@ -51,6 +51,10 @@ public class DashscopeToolKit implements ToolKit {
             .uploadEnabled(true)
             .build();
 
+    private DashscopeToolKit() {
+        // 无状态工具包，无需配置
+    }
+
     @Override
     public List<Tool> tools() {
         return List.of(
@@ -741,6 +745,15 @@ public class DashscopeToolKit implements ToolKit {
         }
         // 否则当作本地文件路径处理
         return Paths.get(uriOrPath).toUri();
+    }
+
+    /**
+     * 创建 DashscopeToolKit 实例
+     *
+     * @return DashscopeToolKit 实例
+     */
+    public static DashscopeToolKit create() {
+        return new DashscopeToolKit();
     }
 
 }
