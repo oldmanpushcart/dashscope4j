@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.SystemMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
@@ -189,21 +190,29 @@ public class HashMapToolIndexer implements ToolIndexer {
     public CompletionStage<Set<String>> query(String instant) {
         final var request = AigcRequest.newBuilder(ChatModel.QWEN_FLASH)
                 .input(ChatModel.Input.newBuilder()
-                        .messages(messages -> List.of(
-                                TOOL_ROUTER_MESSAGE,
-                                Message.user(PromptTemplate.newBuilder()
-                                        .template("""
-                                                # Input Data
-                                                - **用户意图**: ${INTENT}
-                                                - **候选工具列表**:
-                                                  ${TOOL_METAS}
-                                                  (注意：每个工具包含 name, summary, capabilities, constraints 字段)
-                                                """)
-                                        .variable("INTENT", instant)
-                                        .variable("TOOL_METAS", JacksonJsonUtils.toJson(entities.values()))
-                                        .build()
-                                        .render())
-                        ))
+                        .messages(messages -> {
+
+                            // 候选工具集合消息
+                            final var candidateToolsMessage = Message.assistant(TextContent.newBuilder()
+                                    .cacheControl(Content.CacheControl.EPHEMERAL)
+                                    .text("""
+                                            ### 候选工具列表
+                                            %s
+                                            """.formatted(JacksonJsonUtils.toJson(entities.values())))
+                                    .build());
+
+                            // 用户意图消息
+                            final var userInputMessage = Message.user("""
+                                    ### 用户意图
+                                    %s
+                                    """.formatted(instant));
+
+                            return List.of(
+                                    TOOL_ROUTER_MESSAGE,
+                                    candidateToolsMessage,
+                                    userInputMessage
+                            );
+                        })
                         .build())
                 .parameters(parameters -> {
                     parameters.put("response_format", Map.of(

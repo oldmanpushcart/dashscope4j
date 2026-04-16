@@ -15,6 +15,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolExecutionE
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolResult;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -38,6 +40,9 @@ public class ReActAgent extends BaseAgent {
             .build();
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final List<Interceptor> interceptors = List.of(
+            new CompactMessagesInterceptor()
+    );
 
     protected ReActAgent(Builder builder) {
         super(builder);
@@ -80,6 +85,10 @@ public class ReActAgent extends BaseAgent {
 
                         })
                         .build())
+                .interceptors(interceptors -> {
+                    interceptors.addAll(this.interceptors);
+                    return interceptors;
+                })
                 .parameters(parameters -> {
 
                     // 清除工具列表，完全交由 REACT 动态注入

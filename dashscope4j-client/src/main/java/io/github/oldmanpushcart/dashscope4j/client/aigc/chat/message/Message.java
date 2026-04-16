@@ -138,5 +138,14 @@ public sealed interface Message permits SystemMessage, AssistantMessage, UserMes
                 .build();
     }
 
+    static AssistantMessage assistant(Content content) {
+        return AssistantMessage.newBuilder()
+                .contents(contents -> {
+                    contents.add(content);
+                    return contents;
+                })
+                .build();
+    }
+
 
 }

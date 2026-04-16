@@ -9,10 +9,15 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.ToolKitLoader;
 
 import java.time.Duration;
 
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.McpToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.RecoverableMcpClientTransport;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.file.FileSkillProvider;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
+import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -53,21 +58,21 @@ public class DebugTestCase implements LoadingEnv {
                                 .build()),
                         ToolKitLoader.of(TextFileOpsToolKit.newBuilder()
                                 .workspace(Path.of("./"))
-                                .build())
-//                        McpToolLoader.newBuilder()
-//                                .name("amap")
-//                                .transport(RecoverableMcpClientTransport.newBuilder()
-//                                        .transportFactory(mapper ->
-//                                                HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
-//                                                        .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
-//                                                        .build())
-//                                        .build())
-//                                .build(),
-//                        SkillToolLoader.newBuilder()
-//                                .providers(List.of(
-//                                        FileSkillProvider.ofPath(Path.of("./skills/school-score"))
-//                                ))
-//                                .build()
+                                .build()),
+                        McpToolLoader.newBuilder()
+                                .name("amap")
+                                .transport(RecoverableMcpClientTransport.newBuilder()
+                                        .transportFactory(mapper ->
+                                                HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
+                                                        .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+                                                        .build())
+                                        .build())
+                                .build(),
+                        SkillToolLoader.newBuilder()
+                                .providers(List.of(
+                                        FileSkillProvider.ofPath(Path.of("./skills/school-score"))
+                                ))
+                                .build()
                 ))
                 .build();
 
@@ -90,7 +95,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(sessionId, Message.user("""
-                                杭州明天天气如何？
+                                根据杭州明天天气，画一幅山水画。
                                 """))
                         .toCompletableFuture()
                         .join();
