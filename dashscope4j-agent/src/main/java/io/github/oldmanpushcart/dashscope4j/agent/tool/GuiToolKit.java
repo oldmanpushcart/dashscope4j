@@ -8,20 +8,16 @@ import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
-import java.util.Base64;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 /**
  * GUI 自动化工具包
@@ -93,7 +89,7 @@ public class GuiToolKit implements ToolKit {
 
     @Override
     public List<Tool> tools() {
-        var tools = new java.util.ArrayList<Tool>();
+        final var tools = new ArrayList<Tool>();
 
         if (enableScreenshot) {
             tools.add(screenshot());
@@ -117,7 +113,7 @@ public class GuiToolKit implements ToolKit {
             tools.add(clipboardSet());
         }
 
-        return List.copyOf(tools);
+        return Collections.unmodifiableList(tools);
     }
 
     // ==================== 屏幕截图工具 ====================
@@ -153,62 +149,86 @@ public class GuiToolKit implements ToolKit {
                         - 大尺寸截图会消耗较多 token，建议只截取需要的区域
                         """)
                 .parameterType(ScreenshotSpec.class)
-                .<ScreenshotSpec>function((caller, spec) -> {
-                    try {
-                        Rectangle captureRect;
+                .<ScreenshotSpec>function(new BiFunction<>() {
 
+                    @Override
+                    public Object apply(Tool.Caller caller, ScreenshotSpec spec) {
+                        try {
+
+                            // 截取区域
+                            final var captureRect = getCaptureRect(spec);
+
+                            // 检查截图尺寸限制
+                            final long pixelCount = (long) captureRect.width * captureRect.height;
+                            if (pixelCount > MAX_SCREENSHOT_SIZE) {
+                                return Result.error("SCREENSHOT_TOO_LARGE",
+                                        "截图尺寸过大：%dx%d，最大支持 %d 像素".formatted(
+                                                captureRect.width,
+                                                captureRect.height,
+                                                MAX_SCREENSHOT_SIZE
+                                        ));
+                            }
+
+                            // 执行截图
+                            final var screenCapture = robot.createScreenCapture(captureRect);
+
+                            // 创建临时文件
+                            final var tempFile = Files.createTempFile("screenshot-", ".png").toFile();
+                            tempFile.deleteOnExit(); // JVM 退出时自动删除
+
+                            // 保存图片到临时文件
+                            ImageIO.write(screenCapture, DEFAULT_IMAGE_FORMAT, tempFile);
+
+                            // 生成文件 URI
+                            final var fileUri = tempFile.toURI();
+
+                            // 返回结果
+                            final var result = Map.of(
+                                    "file_uri", fileUri.toString(),
+                                    "file_path", tempFile.getAbsolutePath(),
+                                    "width", screenCapture.getWidth(),
+                                    "height", screenCapture.getHeight(),
+                                    "format", DEFAULT_IMAGE_FORMAT,
+                                    "timestamp", System.currentTimeMillis(),
+                                    "region", Map.of(
+                                            "x", captureRect.x,
+                                            "y", captureRect.y,
+                                            "width", captureRect.width,
+                                            "height", captureRect.height
+                                    )
+                            );
+
+                            return Result.success(result);
+
+                        } catch (Exception ex) {
+                            return Result.error("SCREENSHOT_FAILED", "截图失败：" + ex.getMessage());
+                        }
+                    }
+
+                    /**
+                     * 获取截图区域
+                     *
+                     * @param spec 截屏请求
+                     * @return 截图区域
+                     */
+                    private static Rectangle getCaptureRect(ScreenshotSpec spec) {
+
+                        final Rectangle captureRect;
+
+                        // 截取指定区域
                         if (spec.x() != null && spec.y() != null && spec.width() != null && spec.height() != null) {
-                            // 截取指定区域
                             captureRect = new Rectangle(spec.x(), spec.y(), spec.width(), spec.height());
-                        } else {
-                            // 截取整个屏幕
-                            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-                            GraphicsDevice gd = ge.getDefaultScreenDevice();
+                        }
+
+                        // 截取整个屏幕
+                        else {
+                            final var ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+                            final var gd = ge.getDefaultScreenDevice();
                             captureRect = gd.getDefaultConfiguration().getBounds();
                         }
-
-                        // 检查截图尺寸限制
-                        long pixelCount = (long) captureRect.width * captureRect.height;
-                        if (pixelCount > MAX_SCREENSHOT_SIZE) {
-                            return Result.error("SCREENSHOT_TOO_LARGE",
-                                    String.format("截图尺寸过大：%dx%d，最大支持 %d 像素",
-                                            captureRect.width, captureRect.height, MAX_SCREENSHOT_SIZE));
-                        }
-
-                        // 执行截图
-                        BufferedImage screenCapture = robot.createScreenCapture(captureRect);
-
-                        // 创建临时文件
-                        File tempFile = Files.createTempFile("screenshot-", ".png").toFile();
-                        tempFile.deleteOnExit(); // JVM 退出时自动删除
-
-                        // 保存图片到临时文件
-                        ImageIO.write(screenCapture, DEFAULT_IMAGE_FORMAT, tempFile);
-
-                        // 生成文件 URI
-                        URI fileUri = tempFile.toURI();
-
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("file_uri", fileUri.toString());
-                        result.put("file_path", tempFile.getAbsolutePath());
-                        result.put("width", screenCapture.getWidth());
-                        result.put("height", screenCapture.getHeight());
-                        result.put("format", DEFAULT_IMAGE_FORMAT);
-                        result.put("timestamp", System.currentTimeMillis());
-                        result.put("region", Map.of(
-                                "x", captureRect.x,
-                                "y", captureRect.y,
-                                "width", captureRect.width,
-                                "height", captureRect.height
-                        ));
-
-                        return Result.success(result);
-
-                    } catch (IOException ex) {
-                        return Result.error("SCREENSHOT_FAILED", "截图失败：" + ex.getMessage());
-                    } catch (Exception ex) {
-                        return Result.error("SCREENSHOT_FAILED", "截图失败：" + ex.getMessage());
+                        return captureRect;
                     }
+
                 })
                 .build();
     }
@@ -248,13 +268,14 @@ public class GuiToolKit implements ToolKit {
                     try {
                         robot.mouseMove(spec.x(), spec.y());
 
-                        Point location = MouseInfo.getPointerInfo().getLocation();
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("success", true);
-                        result.put("current_position", Map.of(
-                                "x", location.x,
-                                "y", location.y
-                        ));
+                        final var location = MouseInfo.getPointerInfo().getLocation();
+                        final var result = Map.of(
+                                "success", true,
+                                "current_position", Map.of(
+                                        "x", location.x,
+                                        "y", location.y
+                                )
+                        );
 
                         return Result.success(result);
 
@@ -298,7 +319,7 @@ public class GuiToolKit implements ToolKit {
                 .parameterType(MouseClickSpec.class)
                 .<MouseClickSpec>function((caller, spec) -> {
                     try {
-                        String button = spec.button() != null ? spec.button().toLowerCase() : "left";
+                        final String button = spec.button() != null ? spec.button().toLowerCase() : "left";
                         int clickCount = 1;
 
                         switch (button) {
@@ -332,10 +353,11 @@ public class GuiToolKit implements ToolKit {
                                         "无效的按键类型：" + button + "，支持：left, right, middle, double_left");
                         }
 
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("success", true);
-                        result.put("button", button);
-                        result.put("click_count", clickCount);
+                        final var result = Map.of(
+                                "success", true,
+                                "button", button,
+                                "click_count", clickCount
+                        );
 
                         return Result.success(result);
 
@@ -390,10 +412,17 @@ public class GuiToolKit implements ToolKit {
                         // 释放左键
                         robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
 
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("success", true);
-                        result.put("from", Map.of("x", spec.fromX(), "y", spec.fromY()));
-                        result.put("to", Map.of("x", spec.toX(), "y", spec.toY()));
+                        final var result = Map.of(
+                                "success", true,
+                                "from", Map.of(
+                                        "x", spec.fromX(),
+                                        "y", spec.fromY()
+                                ),
+                                "to", Map.of(
+                                        "x", spec.toX(),
+                                        "y", spec.toY()
+                                )
+                        );
 
                         return Result.success(result);
 
@@ -437,9 +466,10 @@ public class GuiToolKit implements ToolKit {
                     try {
                         robot.mouseWheel(spec.amount());
 
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("success", true);
-                        result.put("amount", spec.amount());
+                        final var result = Map.of(
+                                "success", true,
+                                "amount", spec.amount()
+                        );
 
                         return Result.success(result);
 
@@ -493,9 +523,10 @@ public class GuiToolKit implements ToolKit {
                         robot.delay(50);
                         robot.keyRelease(keyCode);
 
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("success", true);
-                        result.put("key", spec.key());
+                        final var result = Map.of(
+                                "success", true,
+                                "key", spec.key()
+                        );
 
                         return Result.success(result);
 
@@ -543,16 +574,17 @@ public class GuiToolKit implements ToolKit {
                 .parameterType(KeyTypeSpec.class)
                 .<KeyTypeSpec>function((caller, spec) -> {
                     try {
-                        String text = spec.text();
+                        final String text = spec.text();
                         if (text == null || text.isEmpty()) {
                             return Result.error("EMPTY_TEXT", "输入文本不能为空");
                         }
 
                         typeString(text);
 
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("success", true);
-                        result.put("text_length", text.length());
+                        final var result = Map.of(
+                                "success", true,
+                                "text_length", text.length()
+                        );
 
                         return Result.success(result);
 
@@ -601,7 +633,7 @@ public class GuiToolKit implements ToolKit {
                 .parameterType(KeyComboSpec.class)
                 .<KeyComboSpec>function((caller, spec) -> {
                     try {
-                        List<String> keys = spec.keys();
+                        final List<String> keys = spec.keys();
                         if (keys == null || keys.isEmpty()) {
                             return Result.error("EMPTY_KEYS", "按键列表不能为空");
                         }
@@ -612,7 +644,7 @@ public class GuiToolKit implements ToolKit {
                         }
 
                         // 解析所有按键
-                        int[] keyCodes = new int[keys.size()];
+                        final int[] keyCodes = new int[keys.size()];
                         for (int i = 0; i < keys.size(); i++) {
                             keyCodes[i] = parseKeyCode(keys.get(i));
                         }
@@ -629,9 +661,10 @@ public class GuiToolKit implements ToolKit {
                             robot.delay(30);
                         }
 
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("success", true);
-                        result.put("keys", keys);
+                        final var result = Map.of(
+                                "success", true,
+                                "keys", keys
+                        );
 
                         return Result.success(result);
 
@@ -672,27 +705,26 @@ public class GuiToolKit implements ToolKit {
                         """)
                 .supplier(() -> {
                     try {
-                        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                        final var clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
                         String content = "";
 
                         if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
                             content = (String) clipboard.getData(DataFlavor.stringFlavor);
                         }
 
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("content", content);
-                        result.put("length", content.length());
-                        result.put("has_content", !content.isEmpty());
-
-                        return result;
+                        return Map.of(
+                                "content", content,
+                                "length", content.length(),
+                                "has_content", !content.isEmpty()
+                        );
 
                     } catch (Exception ex) {
-                        Map<String, Object> error = new HashMap<>();
-                        error.put("content", "");
-                        error.put("length", 0);
-                        error.put("has_content", false);
-                        error.put("error", "获取剪贴板失败：" + ex.getMessage());
-                        return error;
+                        return Map.of(
+                                "content", "",
+                                "length", 0,
+                                "has_content", false,
+                                "error", "获取剪贴板失败：" + ex.getMessage()
+                        );
                     }
                 })
                 .build();
@@ -730,15 +762,16 @@ public class GuiToolKit implements ToolKit {
                 .parameterType(ClipboardSetSpec.class)
                 .<ClipboardSetSpec>function((caller, spec) -> {
                     try {
-                        String text = spec.text() != null ? spec.text() : "";
+                        final var text = spec.text() != null ? spec.text() : "";
 
-                        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-                        StringSelection selection = new StringSelection(text);
+                        final var clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                        final var selection = new StringSelection(text);
                         clipboard.setContents(selection, selection);
 
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("success", true);
-                        result.put("length", text.length());
+                        final var result = Map.of(
+                                "success", true,
+                                "length", text.length()
+                        );
 
                         return Result.success(result);
 
@@ -759,11 +792,11 @@ public class GuiToolKit implements ToolKit {
             throw new IllegalArgumentException("按键名称不能为空");
         }
 
-        String upperKey = keyName.toUpperCase().trim();
+        final String upperKey = keyName.toUpperCase().trim();
 
         // 单字符按键
         if (upperKey.length() == 1) {
-            char c = upperKey.charAt(0);
+            final char c = upperKey.charAt(0);
             if (c >= 'A' && c <= 'Z') {
                 return KeyEvent.VK_A + (c - 'A');
             }
@@ -825,7 +858,7 @@ public class GuiToolKit implements ToolKit {
                 robot.keyPress(KeyEvent.VK_SHIFT);
                 robot.delay(10);
 
-                int keyCode = getUpperCaseKeyCode(c);
+                final int keyCode = getUpperCaseKeyCode(c);
                 robot.keyPress(keyCode);
                 robot.delay(50);
                 robot.keyRelease(keyCode);
@@ -834,7 +867,7 @@ public class GuiToolKit implements ToolKit {
                 robot.keyRelease(KeyEvent.VK_SHIFT);
             } else {
                 // 普通字符
-                int keyCode = getLowerCaseKeyCode(c);
+                final int keyCode = getLowerCaseKeyCode(c);
                 if (keyCode != -1) {
                     robot.keyPress(keyCode);
                     robot.delay(50);
