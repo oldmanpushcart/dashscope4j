@@ -267,7 +267,7 @@ var mcpLoader = McpToolLoader.newBuilder()
 - 📝 **Prompts** - 预定义的提示词模板
 - 📦 **Resources** - 可访问的资源文件
 
-#### **③ 自定义工具加载器**
+### ③ 自定义工具加载器
 
 实现自己的 ToolLoader：
 
@@ -300,6 +300,73 @@ var toolbox = HashMapToolbox.newBuilder()
     .loaders(List.of(new MyToolLoader()))
     .build();
 ```
+
+#### GUI 自动化工具 (GuiToolKit)
+
+GuiToolKit 提供了屏幕截图和桌面自动化能力，让 Agent 能够操作计算机界面：
+
+```java
+// 创建 GUI 工具包
+var guiToolKit = GuiToolKit.newBuilder()
+    .enableScreenshot(true)    // 启用截图功能
+    .enableMouse(true)         // 启用鼠标操作
+    .enableKeyboard(true)      // 启用键盘操作
+    .enableClipboard(true)     // 启用剪贴板操作
+    .build();
+
+// 或者使用选择性功能
+var readOnlyGuiToolKit = GuiToolKit.newBuilder()
+    .enableScreenshot(true)    // 只启用截图
+    .enableMouse(false)        // 禁用鼠标操作
+    .enableKeyboard(false)     // 禁用键盘操作
+    .enableClipboard(false)    // 禁用剪贴板
+    .build();
+
+// 集成到工具箱
+var toolbox = HashMapToolbox.newBuilder()
+    .indexer(HashMapToolIndexer.newBuilder()
+        .client(client)
+        .model(ChatModel.QWEN_FLASH)
+        .build())
+    .loaders(List.of(
+        ToolKitLoader.of(guiToolKit),           // GUI 自动化工具
+        ToolKitLoader.of(SystemToolKit.create()),  // 系统工具
+        ToolKitLoader.of(FileOpsToolKit.newBuilder()
+            .workspace(Path.of("./"))
+            .build())
+    ))
+    .build();
+```
+
+**可用的 GUI 工具：**
+
+| 工具名称 | 功能 | 使用场景 |
+|---------|------|----------|
+| `gui$screenshot` | 屏幕截图 | 获取屏幕内容、UI 分析、视觉识别 |
+| `gui$mouse$move` | 鼠标移动 | 将鼠标移动到指定位置 |
+| `gui$mouse$click` | 鼠标点击 | 左键/右键/双击等点击操作 |
+| `gui$mouse$drag` | 鼠标拖拽 | 从一个位置拖拽到另一个位置 |
+| `gui$mouse$scroll` | 鼠标滚轮 | 上下滚动页面 |
+| `gui$key$press` | 按键操作 | 按下指定的单个按键 |
+| `gui$key$type` | 文本输入 | 输入文本字符串 |
+| `gui$key$combo` | 组合键 | 执行 Ctrl+C、Alt+Tab 等组合键 |
+| `gui$clipboard$get` | 获取剪贴板 | 读取系统剪贴板内容 |
+| `gui$clipboard$set` | 设置剪贴板 | 设置系统剪贴板内容 |
+
+**典型应用场景：**
+
+1. **桌面自动化** - 操作应用程序、填写表单、执行重复性任务
+2. **UI 测试辅助** - 截图分析界面、自动化点击测试
+3. **远程协助** - 帮助用户执行桌面操作
+4. **数据录入** - 自动填写表格、输入数据
+5. **界面监控** - 定期截图监控应用程序状态
+
+**注意事项：**
+
+- 需要运行在有图形界面的环境中（不能在纯服务器环境）
+- 需要用户授权才能访问屏幕和执行桌面操作
+- 某些安全软件可能会阻止自动化操作
+- 大尺寸截图会消耗较多 token，建议只截取必要区域
 
 ---
 

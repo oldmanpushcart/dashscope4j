@@ -2,14 +2,10 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.session.WorkingSessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.FileSessionStore;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.*;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.HashMapToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.ToolKitLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.SystemToolKit;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ShellToolKit;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.DashscopeToolKit;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.FileOpsToolKit;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.TextFileOpsToolKit;
 
 import java.time.Duration;
 
@@ -48,6 +44,7 @@ public class DebugTestCase implements LoadingEnv {
                 .loaders(List.of(
                         ToolKitLoader.of(DashscopeToolKit.create()),
                         ToolKitLoader.of(SystemToolKit.create()),
+                        ToolKitLoader.of(GuiToolKit.newBuilder().build()),
                         ToolKitLoader.of(ShellToolKit.newBuilder()
                                 .timeout(Duration.ofSeconds(60))
                                 .build()),
@@ -93,8 +90,9 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(sessionId, Message.user("""
-                                用Java给我写GUI程序，打开后输出一个弹窗，上边是一个时钟的倒计时。有一个关闭按钮可以停止程序。
-                                编译通过并运行。
+                                你已经可以操纵这台电脑，也可以看到这台电脑的屏幕。
+                                现在你需要用浏览器打开百度网站，搜索刘亦菲。
+                                你的每一步都需要通过观察屏幕来确认操作是否生效。
                                 """))
                         .toCompletableFuture()
                         .join();
