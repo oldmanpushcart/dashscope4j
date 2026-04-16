@@ -1,18 +1,16 @@
-package io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader;
+package io.github.oldmanpushcart.dashscope4j.agent.tool;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.util.FileUtils;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
-import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -20,7 +18,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
 /**
- * 文件操作工具加载器
+ * 文件操作工具包
  * <p>
  * 提供基础文件操作工具给 LLM 使用：
  * - info: 获取文件/目录信息
@@ -34,7 +32,7 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
  * 所有路径操作都限制在 workspace 范围内，防止目录穿越攻击。
  * </p>
  */
-public class FileOpsToolLoader implements ToolLoader {
+public class FileOpsToolKit implements ToolKit {
 
     /**
      * 默认最大返回条目数
@@ -51,32 +49,26 @@ public class FileOpsToolLoader implements ToolLoader {
      */
     private final int maxResults;
 
-    private FileOpsToolLoader(Builder builder) {
+    /**
+     * 是否只读模式
+     */
+    private final boolean readOnly;
+
+    private FileOpsToolKit(Builder builder) {
         this.workspace = builder.workspace;
         this.maxResults = builder.maxResults;
+        this.readOnly = builder.readOnly;
     }
 
     @Override
-    public CompletionStage<Void> install(Toolbox toolbox) {
-        final List<FunctionTool> tools = List.of(
-                info(),
-                delete(),
-                move(),
-                create(),
-                list(),
-                search()
-        );
-
-        final var stages = tools.stream()
-                .map(tool -> toolbox.register(tool.meta().name(), tool))
-                .toList();
-
-        return CompletableFutureUtils.allOf(stages);
-    }
-
-    @Override
-    public void close() {
-        // 无资源需要释放
+    public List<Tool> tools() {
+        if (readOnly) {
+            // 只读模式：仅返回读取相关工具
+            return List.of(info(), list(), search());
+        } else {
+            // 读写模式：返回所有工具
+            return List.of(info(), delete(), move(), create(), list(), search());
+        }
     }
 
     // ==================== 工具方法 ====================
@@ -746,9 +738,10 @@ public class FileOpsToolLoader implements ToolLoader {
         return new Builder();
     }
 
-    public static class Builder implements Buildable<FileOpsToolLoader, Builder> {
+    public static class Builder implements Buildable<FileOpsToolKit, Builder> {
         private Path workspace;
         private int maxResults = DEFAULT_MAX_RESULTS;
+        private boolean readOnly = false;
 
         /**
          * 设置工作区根路径
@@ -791,10 +784,24 @@ public class FileOpsToolLoader implements ToolLoader {
             return this;
         }
 
+        /**
+         * 设置是否为只读模式
+         * <p>
+         * 当设置为 true 时，只会安装读取相关的工具（file$info、file$list、file$search），
+         * 不会安装写入、删除和移动工具（file$delete、file$move、file$create）。
+         *
+         * @param readOnly 是否只读
+         * @return this
+         */
+        public Builder readOnly(boolean readOnly) {
+            this.readOnly = readOnly;
+            return this;
+        }
+
         @Override
-        public FileOpsToolLoader build() {
+        public FileOpsToolKit build() {
             Objects.requireNonNull(workspace, "workspace must be set before building");
-            return new FileOpsToolLoader(this);
+            return new FileOpsToolKit(this);
         }
     }
 

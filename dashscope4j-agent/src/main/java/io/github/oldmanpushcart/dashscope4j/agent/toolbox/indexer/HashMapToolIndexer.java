@@ -44,7 +44,7 @@ public class HashMapToolIndexer implements ToolIndexer {
      * DashScope 客户端
      */
     private final DashscopeClient client;
-    
+
     /**
      * 用于索引的聊天模型
      */
@@ -141,6 +141,12 @@ public class HashMapToolIndexer implements ToolIndexer {
                                         .render())
                         ))
                         .build())
+                .parameters(parameters -> {
+                    parameters.put("response_format", Map.of(
+                            "type", "json_object"
+                    ));
+                    return parameters;
+                })
                 .build();
 
         return client.async(request)
@@ -199,6 +205,12 @@ public class HashMapToolIndexer implements ToolIndexer {
                                         .render())
                         ))
                         .build())
+                .parameters(parameters -> {
+                    parameters.put("response_format", Map.of(
+                            "type", "json_object"
+                    ));
+                    return parameters;
+                })
                 .build();
         return client.async(request)
                 .thenApply(response -> response.output().best().message().text())
@@ -332,7 +344,7 @@ public class HashMapToolIndexer implements ToolIndexer {
          * DashScope 客户端
          */
         private DashscopeClient client;
-        
+
         /**
          * 聊天模型
          */

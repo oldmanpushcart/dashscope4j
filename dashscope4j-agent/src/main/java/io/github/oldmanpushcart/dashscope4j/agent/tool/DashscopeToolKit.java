@@ -1,8 +1,7 @@
-package io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader;
+package io.github.oldmanpushcart.dashscope4j.agent.tool;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceEmitter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceSession;
@@ -11,13 +10,13 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.ImageContent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.GeneralAigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.BinaryFileSink;
 import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
-import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,12 +28,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 /**
- * Dashscope AI 工具加载器
+ * DashScope AI 工具包
  * <p>
- * 提供通义千问系列 AI 能力工具：
+ * 提供通义千问系列 AI 能力：
  * - analyze_document: 文档分析理解（PDF、Word 等）
  * - analyze_vision: 图片/视频内容理解
  * - edit_image: 图像编辑
@@ -42,9 +40,7 @@ import java.util.concurrent.CompletionStage;
  * - t2v: 文生视频
  * - tts: 文本转语音
  */
-public class DashscopeToolLoader implements ToolLoader {
-
-    public static final ToolLoader INSTANCE = new DashscopeToolLoader();
+public class DashscopeToolKit implements ToolKit {
 
     /**
      * 文档理解模型配置
@@ -56,8 +52,8 @@ public class DashscopeToolLoader implements ToolLoader {
             .build();
 
     @Override
-    public CompletionStage<Void> install(Toolbox toolbox) {
-        List<FunctionTool> tools = List.of(
+    public List<Tool> tools() {
+        return List.of(
                 analyzeDocument(),
                 analyzeVision(),
                 imageEdit(),
@@ -65,25 +61,12 @@ public class DashscopeToolLoader implements ToolLoader {
                 t2v(),
                 tts()
         );
-
-        // 并行等待所有 upsert 操作完成
-        final var stages = tools.stream()
-                .map(tool -> toolbox.register(tool.meta().name(), tool))
-                .toList();
-        return CompletableFutureUtils.allOf(10, stages);
-    }
-
-    @Override
-    public void close() {
-
     }
 
     /**
      * 文档分析理解工具
-     *
-     * @return FunctionTool 实例
      */
-    public static FunctionTool analyzeDocument() {
+    private FunctionTool analyzeDocument() {
         return FunctionTool.newBuilder()
                 .name("dashscope$analyze_document")
                 .description("""
@@ -101,9 +84,7 @@ public class DashscopeToolLoader implements ToolLoader {
                           * "提取文档中的所有日期和事件"
                           * "这份文档的核心观点是什么"
                         - files: 文档路径列表（必需），支持：
-                          * 本地文件路径（绝对路径或相对路径）：
-                            - Windows: C:/Users/Name/Documents/doc.pdf 或 ./doc.pdf
-                            - Linux/Mac: /home/user/doc.pdf 或 ./doc.pdf
+                          * 本地文件路径（绝对路径或相对路径）
                           * 网络 URL: https://example.com/doc.pdf
                           * 已上传的文件 URI
                         
@@ -168,17 +149,15 @@ public class DashscopeToolLoader implements ToolLoader {
 
         List<URI> toUris() {
             return files.stream()
-                    .map(DashscopeToolLoader::parseUri)
+                    .map(DashscopeToolKit::parseUri)
                     .toList();
         }
     }
 
     /**
      * 图片和视频理解工具
-     *
-     * @return FunctionTool 实例
      */
-    public static FunctionTool analyzeVision() {
+    private FunctionTool analyzeVision() {
         return FunctionTool.newBuilder()
                 .name("dashscope$analyze_vision")
                 .description("""
@@ -197,13 +176,7 @@ public class DashscopeToolLoader implements ToolLoader {
                           * "图片中有哪些人？他们在做什么"
                           * "提取图片中的所有文字"
                         - images: 图片路径列表（可选）
-                          * 本地文件路径（绝对路径或相对路径）：
-                            - Windows: C:/Users/Name/Pictures/image.jpg 或 ./image.jpg
-                            - Linux/Mac: /home/user/pictures/image.jpg 或 ./image.jpg
-                          * 网络图片 URL: https://example.com/image.jpg
                         - videos: 视频路径列表（可选）
-                          * 本地文件路径（绝对路径或相对路径）：C:/path/to/video.mp4 或 ./video.mp4
-                          * 网络视频 URL: https://example.com/video.mp4
                         
                         【返回结果】
                         - 对图片/视频内容的文本描述
@@ -251,13 +224,13 @@ public class DashscopeToolLoader implements ToolLoader {
 
         List<URI> toImageUris() {
             return images != null ? images.stream()
-                                    .map(DashscopeToolLoader::parseUri)
+                                    .map(DashscopeToolKit::parseUri)
                                     .toList() : List.of();
         }
 
         List<URI> toVideoUris() {
             return videos != null ? videos.stream()
-                                    .map(DashscopeToolLoader::parseUri)
+                                    .map(DashscopeToolKit::parseUri)
                                     .toList() : List.of();
         }
 
@@ -277,10 +250,8 @@ public class DashscopeToolLoader implements ToolLoader {
 
     /**
      * 图像编辑工具
-     *
-     * @return FunctionTool 实例
      */
-    public static FunctionTool imageEdit() {
+    private FunctionTool imageEdit() {
         final ChatModel IMAGE_EDIT_MODEL = new ChatModel("qwen-image-edit-max", "/api/v1/services/aigc/multimodal-generation/generation");
 
         return FunctionTool.newBuilder()
@@ -300,11 +271,7 @@ public class DashscopeToolLoader implements ToolLoader {
                           * "让图片更明亮一些"
                           * "添加一只猫在桌子上"
                         - negative: 负面提示词（可选），描述不想要的内容
-                        - images: 原图路径列表（必需），支持：
-                          * 本地文件路径（绝对路径或相对路径）：
-                            - Windows: C:/Users/Name/Pictures/image.jpg 或 ./image.jpg
-                            - Linux/Mac: /home/user/pictures/image.jpg 或 ./image.jpg
-                          * 网络图片 URL: https://example.com/image.jpg
+                        - images: 原图路径列表（必需）
                         - size: 输出图片尺寸（可选）
                         - number: 生成数量（可选）
                         
@@ -382,7 +349,7 @@ public class DashscopeToolLoader implements ToolLoader {
 
         List<URI> toImageUris() {
             return images != null ? images.stream()
-                                    .map(DashscopeToolLoader::parseUri)
+                                    .map(DashscopeToolKit::parseUri)
                                     .toList() : List.of();
         }
 
@@ -404,10 +371,8 @@ public class DashscopeToolLoader implements ToolLoader {
 
     /**
      * 文生图工具
-     *
-     * @return FunctionTool 实例
      */
-    public static FunctionTool t2i() {
+    private FunctionTool t2i() {
         return FunctionTool.newBuilder()
                 .name("dashscope$t2i")
                 .description("""
@@ -482,10 +447,8 @@ public class DashscopeToolLoader implements ToolLoader {
 
     /**
      * 文生视频工具
-     *
-     * @return FunctionTool 实例
      */
-    public static FunctionTool t2v() {
+    private FunctionTool t2v() {
         final GeneralAigcModel VIDEO_MODEL = GeneralAigcModel.newBuilder()
                 .name("wan2.6-t2v")
                 .path("/api/v1/services/aigc/video-generation/video-synthesis")
@@ -508,17 +471,15 @@ public class DashscopeToolLoader implements ToolLoader {
                           * "海浪拍打沙滩的慢动作"
                           * "城市街道的车水马龙延时摄影"
                         - audio: 音频路径（可选），用于配音视频
-                          * 本地文件路径（绝对路径或相对路径）：C:/path/to/audio.mp3 或 ./audio.mp3
-                          * 网络音频 URL: https://example.com/audio.mp3
                         - size: 视频尺寸（可选），默认 720P
                         - duration: 时长秒数（可选），范围 [2,15]
                         - shot_type: 镜头类型（可选）
                           * single: 单镜头
                           * multi: 多镜头
-                        \n
+                        
                         【返回结果】
                         - 生成的视频任务结果（包含视频 URL）
-                        \n
+                        
                         【注意事项】
                         - prompt 应该清晰描述画面内容和动作
                         - 支持 2-15 秒时长
@@ -634,10 +595,8 @@ public class DashscopeToolLoader implements ToolLoader {
 
     /**
      * 文本转语音工具
-     *
-     * @return FunctionTool 实例
      */
-    public static FunctionTool tts() {
+    private FunctionTool tts() {
         return FunctionTool.newBuilder()
                 .name("dashscope$tts")
                 .description("""
@@ -659,10 +618,10 @@ public class DashscopeToolLoader implements ToolLoader {
                           * mp3: 压缩格式，体积小
                           * wav: 无损格式，音质好
                           * pcm: 原始音频数据
-                        \n
+                        
                         【返回结果】
                         - 生成音频文件的临时路径 URI
-                        \n
+                        
                         【注意事项】
                         - 支持中英文混合
                         - 音频文件存储在临时目录，请及时处理

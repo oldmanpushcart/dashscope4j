@@ -4,19 +4,19 @@ import io.github.oldmanpushcart.dashscope4j.agent.session.WorkingSessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.FileSessionStore;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.HashMapToolIndexer;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.DashscopeToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.FileOpsToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.SystemToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.TextFileOpsToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.McpToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.RecoverableMcpClientTransport;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.file.FileSkillProvider;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.ToolKitLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.SystemToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.ShellToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.DashscopeToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.FileOpsToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.TextFileOpsToolKit;
+
+import java.time.Duration;
+
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
-import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -46,14 +46,17 @@ public class DebugTestCase implements LoadingEnv {
                         .model(ChatModel.QWEN_FLASH)
                         .build())
                 .loaders(List.of(
-                        DashscopeToolLoader.INSTANCE,
-                        SystemToolLoader.INSTANCE,
-                        FileOpsToolLoader.newBuilder()
+                        ToolKitLoader.of(DashscopeToolKit.create()),
+                        ToolKitLoader.of(SystemToolKit.create()),
+                        ToolKitLoader.of(ShellToolKit.newBuilder()
+                                .timeout(Duration.ofSeconds(60))
+                                .build()),
+                        ToolKitLoader.of(FileOpsToolKit.newBuilder()
                                 .workspace(Path.of("./"))
-                                .build(),
-                        TextFileOpsToolLoader.newBuilder()
+                                .build()),
+                        ToolKitLoader.of(TextFileOpsToolKit.newBuilder()
                                 .workspace(Path.of("./"))
-                                .build()
+                                .build())
 //                        McpToolLoader.newBuilder()
 //                                .name("amap")
 //                                .transport(RecoverableMcpClientTransport.newBuilder()
@@ -90,7 +93,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(sessionId, Message.user("""
-                                修改你的HelloWorld程序，输出内容改成：“世界，你好！”
+                                用Java给我写GUI程序，打开后输出一个弹窗，上边是一个时钟的倒计时。有一个关闭按钮可以停止程序。
                                 编译通过并运行。
                                 """))
                         .toCompletableFuture()

@@ -1,12 +1,11 @@
-package io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader;
+package io.github.oldmanpushcart.dashscope4j.agent.tool;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.util.FileUtils;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
-import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -19,7 +18,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -28,7 +26,7 @@ import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 
 /**
- * 文本文件操作工具加载器
+ * 文本文件操作工具包
  * <p>
  * 提供文本文件的精细化编辑能力：
  * - read: 读取文本文件（支持分页、编码检测）
@@ -37,7 +35,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
  * - replace: 搜索并替换文本内容
  * </p>
  */
-public class TextFileOpsToolLoader implements ToolLoader {
+public class TextFileOpsToolKit implements ToolKit {
 
     // ==================== 常量定义 ====================
 
@@ -78,31 +76,28 @@ public class TextFileOpsToolLoader implements ToolLoader {
      */
     private final Charset charset;
 
-    private TextFileOpsToolLoader(Builder builder) {
+    /**
+     * 是否只读模式
+     */
+    private final boolean readOnly;
+
+    private TextFileOpsToolKit(Builder builder) {
         this.workspace = builder.workspace;
         this.maxLines = builder.maxLines;
         this.maxFileSize = builder.maxFileSize;
         this.charset = builder.charset;
+        this.readOnly = builder.readOnly;
     }
 
     @Override
-    public CompletionStage<Void> install(Toolbox toolbox) {
-        List<FunctionTool> tools = List.of(
-                read(),
-                write(),
-                append(),
-                replace()
-        );
-
-        final var stages = tools.stream()
-                .map(tool -> toolbox.register(tool.meta().name(), tool))
-                .toList();
-        return CompletableFutureUtils.allOf(stages);
-    }
-
-    @Override
-    public void close() {
-        // 无资源需要关闭
+    public List<Tool> tools() {
+        if (readOnly) {
+            // 只读模式：仅返回读取工具
+            return List.of(read());
+        } else {
+            // 读写模式：返回所有工具
+            return List.of(read(), write(), append(), replace());
+        }
     }
 
     // ==================== 工具方法 ====================
@@ -379,7 +374,7 @@ public class TextFileOpsToolLoader implements ToolLoader {
      */
     public FunctionTool replace() {
         return FunctionTool.newBuilder()
-                .name("text_file$replace_text")
+                .name("text_file$replace")
                 .description("""
                         在文件中搜索并替换文本内容。
                         
@@ -393,14 +388,14 @@ public class TextFileOpsToolLoader implements ToolLoader {
                         - 正则匹配：use_regex=true, search_text="old\\w+"
                         
                         【返回结果】
-                        - operation: 操作类型（replace_text）
+                        - operation: 操作类型（replace）
                         - replacements_count: 替换次数
                         - last_modified: 修改后的时间戳
                         
                         【典型工作流】
                         1. read(path="Main.java", offset_lines=20, limit_lines=10)
                            → 查看上下文，确认要替换的内容
-                        2. replaceText(path="Main.java", search_text="oldMethod",
+                        2. replace(path="Main.java", search_text="oldMethod",
                                       replacement="newMethod", replace_all=true)
                         
                         【注意事项】
@@ -478,7 +473,7 @@ public class TextFileOpsToolLoader implements ToolLoader {
                                     // 未找到匹配项，返回成功但替换次数为0
                                     final long lastModified = Files.getLastModifiedTime(resolved).toMillis();
                                     return Result.success(Map.of(
-                                            "operation", "replace_text",
+                                            "operation", "replace",
                                             "replacements_count", 0,
                                             "last_modified", lastModified
                                     ));
@@ -492,7 +487,7 @@ public class TextFileOpsToolLoader implements ToolLoader {
                         if (newContent.equals(content)) {
                             final long lastModified = Files.getLastModifiedTime(resolved).toMillis();
                             return Result.success(Map.of(
-                                    "operation", "replace_text",
+                                    "operation", "replace",
                                     "replacements_count", 0,
                                     "last_modified", lastModified
                             ));
@@ -503,7 +498,7 @@ public class TextFileOpsToolLoader implements ToolLoader {
                         final long lastModified = Files.getLastModifiedTime(resolved).toMillis();
 
                         return Result.success(Map.of(
-                                "operation", "replace_text",
+                                "operation", "replace",
                                 "replacements_count", replacementsCount,
                                 "last_modified", lastModified
                         ));
@@ -527,12 +522,13 @@ public class TextFileOpsToolLoader implements ToolLoader {
         return new Builder();
     }
 
-    public static class Builder implements Buildable<TextFileOpsToolLoader, Builder> {
+    public static class Builder implements Buildable<TextFileOpsToolKit, Builder> {
 
         private Path workspace;
         private int maxLines = DEFAULT_MAX_READ_LINES;
         private long maxFileSize = DEFAULT_MAX_FILE_SIZE_BYTES;
         private Charset charset = StandardCharsets.UTF_8;
+        private boolean readOnly = false;
 
         /**
          * 设置工作区根路径
@@ -578,13 +574,27 @@ public class TextFileOpsToolLoader implements ToolLoader {
             return this;
         }
 
+        /**
+         * 设置是否为只读模式
+         * <p>
+         * 当设置为 true 时，只会安装读取相关的工具（text_file$read），
+         * 不会安装写入、追加和替换工具。
+         *
+         * @param readOnly 是否只读
+         * @return 当前构建器
+         */
+        public Builder readOnly(boolean readOnly) {
+            this.readOnly = readOnly;
+            return this;
+        }
+
         @Override
-        public TextFileOpsToolLoader build() {
+        public TextFileOpsToolKit build() {
             // 如果未设置工作区，使用当前目录
             if (workspace == null) {
                 workspace = Paths.get("").toAbsolutePath().normalize();
             }
-            return new TextFileOpsToolLoader(this);
+            return new TextFileOpsToolKit(this);
         }
     }
 

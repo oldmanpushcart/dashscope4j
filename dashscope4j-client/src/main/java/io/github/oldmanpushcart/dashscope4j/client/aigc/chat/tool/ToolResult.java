@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.ThrowableAsStringDeserializer;
 
 /**
  * 工具调用结果
@@ -20,6 +22,7 @@ public record ToolResult<T>(
         T data,
 
         @JsonProperty("error")
+        @JsonDeserialize(using = ThrowableAsStringDeserializer.class)
         Throwable error,
 
         @JsonProperty("suggestion")

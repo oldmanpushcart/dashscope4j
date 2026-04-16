@@ -1,177 +1,68 @@
-package io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader;
+package io.github.oldmanpushcart.dashscope4j.agent.tool;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
-import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
-import java.time.format.DateTimeFormatter;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
-import static java.time.LocalDateTime.now;
-
 /**
- * 系统工具加载器
+ * Shell 命令执行工具包
  * <p>
- * 提供系统级工具给 LLM 使用：
- * - datetime: 获取当前日期时间
- * - os: 获取操作系统信息
- * - env: 获取环境变量
- * - cmd: 执行系统命令（需谨慎使用）
+ * 提供在本地环境中执行 Shell 命令的能力（⚠️ 需谨慎使用）
  */
-public class SystemToolLoader implements ToolLoader {
-
-    public static final ToolLoader INSTANCE = new SystemToolLoader();
+public class ShellToolKit implements ToolKit {
 
     /**
-     * 命令执行超时时间（秒）
+     * 默认命令执行超时时间
      */
-    private static final int CMD_TIMEOUT_SECONDS = 30;
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
 
     /**
-     * Windows 危险命令黑名单（部分）
+     * 默认安全等级：STRICT（严格）
      */
-    private static final String[] WIN_DANGEROUS_COMMANDS = {
-            "format", "diskpart", "del /s", "del /q", "rmdir /s",
-            "shutdown", "taskkill /f", "net stop", "sc delete"
-    };
+    private static final SecurityLevel DEFAULT_SECURITY_LEVEL = SecurityLevel.STRICT;
 
     /**
-     * Unix/Linux 危险命令黑名单（部分）
+     * 命令执行超时时间
      */
-    private static final String[] UNIX_DANGEROUS_COMMANDS = {
-            "rm -rf /", "mkfs", "dd if=/dev/zero",
-            "> /dev/sda", ":(){ :|:& };:", "chmod -R 777 /"
-    };
+    private final Duration timeout;
 
-    @Override
-    public CompletionStage<Void> install(Toolbox toolbox) {
-        List<FunctionTool> tools = List.of(
-                os(),
-                env(),
-                cmd(),
-                datetime()
-        );
+    /**
+     * 安全等级
+     */
+    private final SecurityLevel securityLevel;
 
-        // 并行等待所有 upsert 操作完成
-        final var stages = tools.stream()
-                .map(tool -> toolbox.register(tool.meta().name(), tool))
-                .toList();
-        return CompletableFutureUtils.allOf(10, stages);
+    private ShellToolKit(Builder builder) {
+        this.timeout = builder.timeout;
+        this.securityLevel = builder.securityLevel;
     }
 
     @Override
-    public void close() {
-
-    }
-
-    public static FunctionTool datetime() {
-        final String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS";
-        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
-        return FunctionTool.newBuilder()
-                .name("system$datetime")
-                .description("""
-                        获取当前系统的日期和时间。
-                        
-                        【使用场景】
-                        - 回答关于当前时间的问题
-                        - 为日志添加时间戳
-                        - 计算时间相关的推理
-                        
-                        【返回结果】
-                        - ISO 8601 格式的日期时间字符串
-                        - 示例：2024-03-24T20:30:15.123
-                        
-                        【注意事项】
-                        - 无需参数
-                        - 返回服务器本地时间
-                        """)
-                .supplier(() -> formatter.format(now()))
-                .build();
-    }
-
-    public static FunctionTool os() {
-        return FunctionTool.newBuilder()
-                .name("system$os")
-                .description("""
-                        获取当前操作系统的详细信息。
-                        
-                        【使用场景】
-                        - 判断运行平台（Windows/Linux/Mac）
-                        - 获取系统架构（x86_64/aarch64）
-                        - 了解 Java 运行时环境
-                        
-                        【返回结果】
-                        - 包含多个系统属性的 Map：
-                          * os.name: 操作系统名称
-                          * os.version: 操作系统版本
-                          * os.arch: 系统架构
-                          * java.version: Java 版本
-                          * user.dir: 工作目录
-                          * 等等...
-                        
-                        【注意事项】
-                        - 无需参数
-                        - 返回完整的系统属性列表
-                        """)
-                .supplier(System::getProperties)
-                .build();
-    }
-
-    public static FunctionTool env() {
-        return FunctionTool.newBuilder()
-                .name("system$env")
-                .description("""
-                        获取当前进程的环境变量列表。
-                        
-                        【使用场景】
-                        - 查看配置的环境变量
-                        - 调试环境问题
-                        - 获取 PATH、HOME 等关键变量
-                        
-                        【返回结果】
-                        - 包含所有环境变量的 Map
-                        - Key: 环境变量名
-                        - Value: 环境变量值
-                        
-                        【注意事项】
-                        - 无需参数
-                        - 敏感变量（如密码）也会被返回，请注意安全
-                        - 不同操作系统环境变量名大小写敏感性不同
-                        """)
-                .supplier(() -> System.getenv())
-                .build();
+    public List<Tool> tools() {
+        return List.of(createShellTool());
     }
 
     /**
-     * 命令执行规格
+     * 创建 shell$exec 工具
      */
-    record CmdSpec(
-
-            @JsonPropertyDescription("要执行的命令（字符串数组形式）")
-            @JsonProperty(value = "command", required = true)
-            List<String> command
-
-    ) {
-
-    }
-
-    public static FunctionTool cmd() {
+    private FunctionTool createShellTool() {
         return FunctionTool.newBuilder()
-                .name("system$cmd")
+                .name("shell$exec")
                 .description("""
-                        在本地环境中执行系统命令、脚本或程序（⚠️ 需谨慎使用）。
+                        在本地环境中执行 Shell 命令或脚本（⚠️ 需谨慎使用）。
                         
                         【使用场景】
                         - 执行系统管理任务（查看文件、进程等）
@@ -180,9 +71,9 @@ public class SystemToolLoader implements ToolLoader {
                         - 自动化运维任务
                         
                         【参数说明】
-                        - command: 命令及其参数（必需），使用字符串数组格式
+                        - command: 要执行的命令（必需），使用字符串数组格式
                           * Windows 示例：["cmd.exe", "/c", "dir"]
-                          * Linux 示例：["bash", "-c", "ls -la"]
+                          * Linux/Mac 示例：["bash", "-c", "ls -la"]
                           * 直接执行程序：["python", "--version"]
                         
                         【返回结果】
@@ -194,16 +85,16 @@ public class SystemToolLoader implements ToolLoader {
                         【⚠️ 安全注意事项】
                         - ⛔ 禁止执行危险命令（如格式化磁盘、删除系统文件等）
                         - ⛔ 禁止执行可能危害系统安全的命令
-                        - ⏱️ 命令执行有 30 秒超时限制，防止长时间挂起
+                        - ⏱️ 命令执行有 %s 超时限制，防止长时间挂起
                         - 🔒 建议优先使用只读命令（查询类）
                         - 📝 生产环境使用时请确保有足够的权限控制
                         
                         【常见用法示例】
-                        - Windows 查看目录：["cmd.exe", "/c", "dir C:\\Users"]
+                        - Windows 查看目录：["cmd.exe", "/c", "dir C:\\\\Users"]
                         - Linux 查看进程：["ps", "aux"]
                         - 查看 Python 版本：["python", "--version"]
                         - Git 状态检查：["git", "status"]
-                        """)
+                        """.formatted(timeout))
                 .parameterType(CmdSpec.class)
                 .<CmdSpec>function((caller, spec) -> {
                     try {
@@ -235,75 +126,26 @@ public class SystemToolLoader implements ToolLoader {
     }
 
     /**
-     * 命令执行结果
-     */
-    record Result(
-
-            @JsonProperty("output")
-            String output,
-
-            @JsonProperty("exit_code")
-            int code
-
-    ) {
-
-        @JsonProperty("is_success")
-        public boolean isSuccess() {
-            return code == 0;
-        }
-
-        @JsonProperty("prompt")
-        public String prompt() {
-
-            if (isSuccess()) {
-                return "执行成功";
-            }
-
-            return """
-                    ⚠️ 命令执行失败，请检查以下可能的问题：
-                    
-                    【常见问题排查】
-                    1. 命令语法是否正确
-                       - Windows: 使用 cmd.exe /c 或 PowerShell -Command
-                       - Linux/Mac: 使用 bash -c 或直接执行
-                    
-                    2. 命令是否存在
-                       - 检查命令是否已安装
-                       - 检查 PATH 环境变量配置
-                    
-                    3. 权限是否足够
-                       - 是否需要管理员/root 权限
-                       - 文件是否有执行权限
-                    
-                    4. 参数是否正确
-                       - 路径是否存在
-                       - 参数格式是否匹配操作系统
-                    
-                    【调试建议】
-                    - 尝试简化命令，逐步排查
-                    - 使用 echo 测试环境变量
-                    - 查看完整错误信息定位问题
-                    """;
-        }
-
-    }
-
-    /**
      * 验证命令安全性
      *
      * @param command 命令列表
      * @throws SecurityException 如果命令在黑名单中
      */
-    private static void validateCommand(List<String> command) {
+    private void validateCommand(List<String> command) {
         if (command == null || command.isEmpty()) {
             throw new SecurityException("命令不能为空");
+        }
+
+        // 根据安全等级决定是否进行验证
+        if (securityLevel == SecurityLevel.NONE) {
+            return;
         }
 
         String cmdStr = String.join(" ", command).toLowerCase();
 
         // 检查 Windows 危险命令
         if (isWindows()) {
-            for (String dangerous : WIN_DANGEROUS_COMMANDS) {
+            for (String dangerous : WinDangerousCommands.ALL) {
                 if (cmdStr.contains(dangerous.toLowerCase())) {
                     throw new SecurityException("检测到危险命令：" + dangerous);
                 }
@@ -311,7 +153,7 @@ public class SystemToolLoader implements ToolLoader {
         }
         // 检查 Unix/Linux 危险命令
         else {
-            for (String dangerous : UNIX_DANGEROUS_COMMANDS) {
+            for (String dangerous : UnixDangerousCommands.ALL) {
                 if (cmdStr.contains(dangerous.toLowerCase())) {
                     throw new SecurityException("检测到危险命令：" + dangerous);
                 }
@@ -329,13 +171,12 @@ public class SystemToolLoader implements ToolLoader {
     /**
      * 检测终端字符集
      */
-    private static Charset detectTerminalCharset() {
+    private Charset detectTerminalCharset() {
         final Pattern activeCodePagePattern = Pattern.compile(".*?(\\d+).*?");
 
         // windows
         if (isWindows()) {
             try {
-
                 // 执行 chcp 获取活动代码页
                 final var result = executeCmdWithTimeout(List.of("cmd.exe", "/c", "chcp"), Charset.defaultCharset());
                 if (!result.isSuccess()) {
@@ -403,7 +244,6 @@ public class SystemToolLoader implements ToolLoader {
                     // 其他情况直接返回默认字符
                     .orElse(Charset.defaultCharset());
         }
-
     }
 
     /**
@@ -415,7 +255,7 @@ public class SystemToolLoader implements ToolLoader {
      * @throws IOException          IO 异常
      * @throws InterruptedException 中断异常
      */
-    private static Result executeCmdWithTimeout(List<String> command, Charset charset) throws IOException, InterruptedException {
+    private Result executeCmdWithTimeout(List<String> command, Charset charset) throws IOException, InterruptedException {
         final var process = new ProcessBuilder()
                 .redirectErrorStream(true)
                 .command(command)
@@ -436,13 +276,13 @@ public class SystemToolLoader implements ToolLoader {
         });
 
         // 等待进程完成（带超时）
-        boolean completed = process.waitFor(CMD_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS);
+        boolean completed = process.waitFor(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
 
         if (!completed) {
             // 超时，销毁进程
             process.destroyForcibly();
             return new Result(
-                    "⏱️ 命令执行超时（超过 " + CMD_TIMEOUT_SECONDS + " 秒），已被强制终止",
+                    "⏱️ 命令执行超时（超过 " + timeout + "），已被强制终止",
                     -2
             );
         }
@@ -450,13 +290,155 @@ public class SystemToolLoader implements ToolLoader {
         // 获取输出（已考虑超时）
         String output;
         try {
-            output = outputFuture.get(CMD_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS);
+            output = outputFuture.get(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
         } catch (ExecutionException e) {
             output = "获取输出失败：" + e.getCause().getMessage();
         } catch (TimeoutException e) {
             output = "读取输出超时";
         }
         return new Result(output, process.exitValue());
+    }
+
+    // ==================== 内部类 ====================
+
+    /**
+     * 命令执行规格
+     */
+    record CmdSpec(
+            @JsonPropertyDescription("要执行的命令（字符串数组形式）")
+            @JsonProperty(value = "command", required = true)
+            List<String> command
+    ) {
+    }
+
+    /**
+     * 命令执行结果
+     */
+    record Result(
+            @JsonProperty("output")
+            String output,
+
+            @JsonProperty("exit_code")
+            int code
+    ) {
+        @JsonProperty("is_success")
+        public boolean isSuccess() {
+            return code == 0;
+        }
+
+        @JsonProperty("prompt")
+        public String prompt() {
+            if (isSuccess()) {
+                return "执行成功";
+            }
+
+            return """
+                    ⚠️ 命令执行失败，请检查以下可能的问题：
+                    
+                    【常见问题排查】
+                    1. 命令语法是否正确
+                       - Windows: 使用 cmd.exe /c 或 PowerShell -Command
+                       - Linux/Mac: 使用 bash -c 或直接执行
+                    
+                    2. 命令是否存在
+                       - 检查命令是否已安装
+                       - 检查 PATH 环境变量配置
+                    
+                    3. 权限是否足够
+                       - 是否需要管理员/root 权限
+                       - 文件是否有执行权限
+                    
+                    4. 参数是否正确
+                       - 路径是否存在
+                       - 参数格式是否匹配操作系统
+                    
+                    【调试建议】
+                    - 尝试简化命令，逐步排查
+                    - 使用 echo 测试环境变量
+                    - 查看完整错误信息定位问题
+                    """;
+        }
+    }
+
+    /**
+     * 安全等级枚举
+     */
+    public enum SecurityLevel {
+        /**
+         * 无安全检查（不推荐）
+         */
+        NONE,
+
+        /**
+         * 严格模式（默认）：阻止所有已知危险命令
+         */
+        STRICT
+    }
+
+    /**
+     * Windows 危险命令
+     */
+    private static class WinDangerousCommands {
+        static final String[] ALL = {
+                "format", "diskpart", "del /s", "del /q", "rmdir /s",
+                "shutdown", "taskkill /f", "net stop", "sc delete"
+        };
+    }
+
+    /**
+     * Unix/Linux 危险命令
+     */
+    private static class UnixDangerousCommands {
+        static final String[] ALL = {
+                "rm -rf /", "mkfs", "dd if=/dev/zero",
+                "> /dev/sda", ":(){ :|:& };:", "chmod -R 777 /"
+        };
+    }
+
+    // ==================== Builder ====================
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static class Builder implements Buildable<ShellToolKit, Builder> {
+        private Duration timeout = DEFAULT_TIMEOUT;
+        private SecurityLevel securityLevel = DEFAULT_SECURITY_LEVEL;
+
+        /**
+         * 设置命令执行超时时间
+         *
+         * @param timeout 超时时间（建议 1-300 秒）
+         * @return this
+         */
+        public Builder timeout(Duration timeout) {
+            if (timeout == null || timeout.isNegative() || timeout.isZero()) {
+                throw new IllegalArgumentException("timeout must be positive");
+            }
+            if (timeout.getSeconds() > 300) {
+                throw new IllegalArgumentException(
+                        "timeout must not exceed 300 seconds, got: " + timeout.getSeconds() + "s"
+                );
+            }
+            this.timeout = timeout;
+            return this;
+        }
+
+        /**
+         * 设置安全等级
+         *
+         * @param securityLevel 安全等级
+         * @return this
+         */
+        public Builder securityLevel(SecurityLevel securityLevel) {
+            this.securityLevel = securityLevel;
+            return this;
+        }
+
+        @Override
+        public ShellToolKit build() {
+            return new ShellToolKit(this);
+        }
     }
 
 }
