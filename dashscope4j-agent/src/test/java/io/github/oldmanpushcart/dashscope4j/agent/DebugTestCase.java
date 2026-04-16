@@ -45,6 +45,7 @@ public class DebugTestCase implements LoadingEnv {
                 .indexer(HashMapToolIndexer.newBuilder()
                         .client(client)
                         .model(ChatModel.QWEN_FLASH)
+                        .cacheFile(Path.of("./toolbox-index-cache.jsonl"))
                         .build())
                 .loaders(List.of(
                         ToolKitLoader.of(DashscopeToolKit.create()),
