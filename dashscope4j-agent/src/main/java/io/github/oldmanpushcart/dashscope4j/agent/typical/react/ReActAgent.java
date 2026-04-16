@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.TextContent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolExecutionException;
@@ -67,8 +68,14 @@ public class ReActAgent extends BaseAgent {
                             final var prompt = REACT_PROMPT_TEMPLATE
                                     .render(Map.of("tools", JacksonJsonUtils.toJson(tools)));
 
+                            // ReAct 内容（加缓存）
+                            final var content = TextContent.newBuilder()
+                                    .text(prompt)
+                                    .cacheControl(Content.CacheControl.EPHEMERAL)
+                                    .build();
+
                             // 添加到 SystemMessage
-                            messages.add(0, Message.system(prompt));
+                            messages.add(0, Message.system(content));
                             return messages;
 
                         })

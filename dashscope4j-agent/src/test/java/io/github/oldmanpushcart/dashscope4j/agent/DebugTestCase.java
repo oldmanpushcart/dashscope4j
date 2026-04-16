@@ -90,9 +90,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(sessionId, Message.user("""
-                                你已经可以操纵这台电脑，也可以看到这台电脑的屏幕。
-                                现在你需要用浏览器打开百度网站，搜索刘亦菲。
-                                你的每一步都需要通过观察屏幕来确认操作是否生效。
+                                杭州明天天气如何？
                                 """))
                         .toCompletableFuture()
                         .join();
