@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.session.SessionManager;
-import io.github.oldmanpushcart.dashscope4j.agent.session.WorkingSessionManager;
+import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.HashMapSessionStore;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
@@ -119,9 +119,9 @@ public class BaseAgent implements Agent {
                 .map(toolbox -> new SearchToolsFunction(toolbox).asTool())
                 .orElse(null);
 
-        // 如果没有指定会话管理器，则默认创建工作会话管理器
+        // 如果没有指定会话管理器，则默认创建压缩会话管理器
         this.sessionManager = Optional.of(builder.sessionManager)
-                .orElseGet(() -> WorkingSessionManager.newBuilder()
+                .orElseGet(() -> CompressSessionManager.newBuilder()
                         .store(new HashMapSessionStore())
                         .build());
 

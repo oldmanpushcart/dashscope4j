@@ -22,19 +22,21 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * 工作会话实现
+ * 压缩会话实现
  * <p>
- * 提供单个会话的记忆管理功能，核心特性包括：
+ * 提供带智能压缩功能的会话记忆管理，核心特性包括：
  * <ul>
  *     <li><b>懒加载</b>：首次访问时从存储中加载会话历史</li>
  *     <li><b>Token 限制</b>：自动管理记忆大小，不超过最大 Token 数</li>
  *     <li><b>智能压缩</b>：当记忆超出限制时，使用 LLM 生成摘要并压缩历史</li>
+ *     <li><b>LRU 缓存友好</b>：与 CompressSessionManager 配合实现最近最少使用策略</li>
  * </ul>
  * </p>
  *
  * @see Session
+ * @see CompressSessionManager
  */
-class WorkingSession implements Session {
+class CompressSession implements Session {
 
     /**
      * 会话 ID
@@ -67,12 +69,15 @@ class WorkingSession implements Session {
     private final int retainTokens;
 
     /**
-     * 片段列表（最新的在前）
+     * 片段列表（按时间倒序排列，最新的在前）
      */
     private final List<Fragment> fragments = new ArrayList<>();
 
     /**
-     * 摘要消息引用
+     * 摘要消息的原子引用
+     * <p>
+     * 用于线程安全地读写压缩后生成的历史摘要消息。
+     * </p>
      */
     private final AtomicReference<Message> summaryRef = new AtomicReference<>();
 
@@ -87,16 +92,16 @@ class WorkingSession implements Session {
     private volatile boolean closed = false;
 
     /**
-     * 构造工作会话
+     * 构造压缩会话
      *
      * @param sessionId    会话 ID
      * @param store        会话存储器
      * @param client       DashScope 客户端
-     * @param model        聊天模型
-     * @param maxTokens    最大 Token 数
-     * @param retainTokens 保留的 Token 数
+     * @param model        聊天模型（用于生成摘要）
+     * @param maxTokens    最大 Token 数（触发压缩的阈值）
+     * @param retainTokens 保留的 Token 数（压缩后保留的上下文大小）
      */
-    WorkingSession(String sessionId, SessionStore store, DashscopeClient client, ChatModel model, int maxTokens, int retainTokens) {
+    CompressSession(String sessionId, SessionStore store, DashscopeClient client, ChatModel model, int maxTokens, int retainTokens) {
         this.sessionId = sessionId;
         this.store = store;
         this.client = client;
@@ -109,7 +114,7 @@ class WorkingSession implements Session {
     public CompletionStage<List<Message>> recall(UserMessage instant) {
         return cacheGet(() -> {
             final var tokensRef = new AtomicInteger();
-            // 从存储中流式读取片段，直到达到最大 Token 数
+            // 从存储中流式读取片段，累加 Token 数直到达到最大限制
             return Flux.from(store.flow(sessionId, Long.MAX_VALUE))
                     .takeWhile(fragment -> tokensRef.addAndGet(fragment.tokens()) <= maxTokens)
                     .collectList()
@@ -119,6 +124,7 @@ class WorkingSession implements Session {
 
     @Override
     public CompletionStage<Void> remember(List<Message> messages) {
+        // 将消息持久化到存储，然后推送到内存缓存并检查是否需要压缩
         return store.upsert(sessionId, messages)
                 .thenCompose(fragment -> push(maxTokens, fragment, this::compressHistory));
     }
@@ -126,12 +132,16 @@ class WorkingSession implements Session {
     /**
      * 从缓存获取消息列表
      * <p>
-     * 如果缓存未加载，则调用 loader 异步加载数据。
-     * 加载完成后，将片段拼接为消息列表（先添加摘要，再倒序添加片段）。
+     * 采用懒加载策略：如果缓存未加载，则调用 loader 异步加载数据。
+     * 加载完成后，将片段拼接为完整的消息列表：
+     * <ol>
+     *     <li>先添加历史摘要消息（如果存在）</li>
+     *     <li>再按时间正序添加所有片段中的消息（从旧到新）</li>
+     * </ol>
      * </p>
      *
-     * @param loader 数据加载器
-     * @return 消息列表的 CompletionStage
+     * @param loader 数据加载器，返回片段列表的 CompletionStage
+     * @return 完整消息列表的 CompletionStage（不可变列表）
      */
     public CompletionStage<List<Message>> cacheGet(Supplier<CompletionStage<List<Fragment>>> loader) {
         if (closed) {
@@ -140,12 +150,13 @@ class WorkingSession implements Session {
 
         final var getF = new CompletableFuture<List<Fragment>>();
 
-        // 先从缓存中获取，若缓存没有则调用loader进行加载
+        // 先从缓存中获取，若缓存未加载则调用 loader 进行异步加载
         synchronized (this) {
             if (!loaded) {
                 Objects.requireNonNull(loader.get())
                         .whenComplete((fragments, ex) -> {
                             if (ex == null) {
+                                // 双重检查锁定，避免重复加载
                                 synchronized (this) {
                                     if (!loaded) {
                                         loaded = true;
@@ -162,18 +173,18 @@ class WorkingSession implements Session {
             }
         }
 
-        // 获取到数据后拼接为消息列表
+        // 获取到片段数据后，拼接为完整的消息列表
         return getF
                 .thenApply(fragments -> {
                     final var messages = new ArrayList<Message>();
 
-                    // 先添加摘要
+                    // 先添加历史摘要（如果存在）
                     final var summary = summaryRef.get();
                     if (null != summary) {
                         messages.add(summary);
                     }
 
-                    // 倒序添加片段
+                    // 按时间正序添加片段中的消息（从最旧的片段开始）
                     for (int i = fragments.size() - 1; i >= 0; i--) {
                         messages.addAll(fragments.get(i).messages());
                     }
@@ -186,12 +197,16 @@ class WorkingSession implements Session {
     /**
      * 推送新片段到会话缓存
      * <p>
-     * 将新片段添加到缓存头部，如果总 Token 数超过限制，则触发压缩操作。
+     * 将新片段添加到缓存头部（最新位置），然后检查总 Token 数：
+     * <ul>
+     *     <li>如果未超过 maxTokens，直接返回</li>
+     *     <li>如果超过 maxTokens，触发压缩操作，生成摘要并清理旧片段</li>
+     * </ul>
      * </p>
      *
-     * @param maxTokens 最大 Token 数
+     * @param maxTokens 最大 Token 数（压缩触发阈值）
      * @param fragment  新片段
-     * @param compress  压缩函数
+     * @param compress  压缩函数，接收片段列表，返回压缩结果
      * @return 完成时的 CompletionStage
      */
     public CompletionStage<Void> push(int maxTokens, Fragment fragment, Function<List<Fragment>, CompletionStage<CompressResult>> compress) {
@@ -199,24 +214,28 @@ class WorkingSession implements Session {
             return CompletableFuture.failedFuture(new IllegalStateException("Session is closed"));
         }
 
+        // 将新片段添加到头部（最新位置）
         fragments.add(0, fragment);
 
-        // 计算缓存中的tokens
+        // 计算当前缓存中的总 Token 数
         final var tokens = fragments.stream()
                 .map(Fragment::tokens)
                 .reduce(Integer::sum)
                 .orElse(0);
 
+        // 未超过限制，无需压缩
         if (tokens <= maxTokens) {
             return CompletableFuture.completedStage(null);
         }
 
-        // 超出限制，执行压缩
+        // 超出限制，执行压缩操作
         return compress.apply(fragments)
                 .thenAccept(result -> {
                     synchronized (this) {
+                        // 清空旧片段，替换为压缩后的结果
                         fragments.clear();
                         fragments.addAll(result.compacts());
+                        // 更新摘要消息
                         summaryRef.set(result.summary());
                     }
                 });
@@ -226,19 +245,24 @@ class WorkingSession implements Session {
     /**
      * 压缩历史对话
      * <p>
-     * 当会话记忆超出 Token 限制时，调用 LLM 对旧的历史对话进行摘要，
-     * 生成简洁的摘要消息以替代原始对话内容。
+     * 当会话记忆超出 Token 限制时，执行以下操作：
+     * <ol>
+     *     <li>根据 retainTokens 分离出需要压缩的旧片段</li>
+     *     <li>将旧片段按时间正序排列为历史对话</li>
+     *     <li>调用 LLM 生成简洁的历史摘要</li>
+     *     <li>返回保留的新片段和生成的摘要</li>
+     * </ol>
      * </p>
      *
-     * @param _fragments 待压缩的片段列表
+     * @param allFragments 待处理的完整片段列表
      * @return 压缩结果（包含保留的片段和生成的摘要）
      */
-    private CompletionStage<CompressResult> compressHistory(List<Fragment> _fragments) {
-        final var fragments = new ArrayList<>(_fragments);
-        // 执行紧凑化，分离出需要压缩的片段
+    private CompletionStage<CompressResult> compressHistory(List<Fragment> allFragments) {
+        final var fragments = new ArrayList<>(allFragments);
+        // 执行紧凑化，分离出需要压缩的旧片段
         final var evictions = compact(retainTokens, fragments);
 
-        // 按时间倒序排列被驱逐的片段，拼接为历史对话
+        // 按时间正序排列被驱逐的片段（从旧到新），拼接为历史对话
         final var history = evictions.stream()
                 .sorted((o1, o2) -> Long.compare(o2.fragmentId(), o1.fragmentId()))
                 .flatMap(f -> f.messages().stream())
@@ -267,13 +291,13 @@ class WorkingSession implements Session {
     /**
      * 紧凑化片段列表
      * <p>
-     * 从片段列表中移除超出保留 Token 数的旧片段，
-     * 返回被移除的片段列表（按插入顺序）。
+     * 从片段列表中移除超出保留 Token 数的旧片段，保留最近的片段。
+     * 片段列表按时间倒序排列（最新的在前），因此从尾部开始移除旧片段。
      * </p>
      *
      * @param retainTokens 保留的 Token 数
-     * @param fragments    片段列表（会被修改）
-     * @return 被移除的片段列表
+     * @param fragments    片段列表（会被修改，移除旧片段）
+     * @return 被移除的片段列表（按时间正序排列，从旧到新）
      */
     private static List<Fragment> compact(int retainTokens, List<Fragment> fragments) {
         final var evictions = new ArrayList<Fragment>();
@@ -286,9 +310,9 @@ class WorkingSession implements Session {
             if (!evictFlag && !(evictFlag = !(tokens + fragment.tokens() <= retainTokens))) {
                 tokens += fragment.tokens();
             } else {
-                // 超出限制，移除该片段
+                // 超出限制，移除该片段并记录到驱逐列表
                 removeIt.remove();
-                evictions.add(0, fragment);
+                evictions.add(0, fragment);  // 插入到头部，保持从旧到新的顺序
             }
         }
         return evictions;
@@ -303,10 +327,13 @@ class WorkingSession implements Session {
     }
 
     /**
-     * 压缩结果
+     * 压缩结果记录
+     * <p>
+     * 封装压缩操作的结果，包含保留的新片段和生成的历史摘要。
+     * </p>
      *
-     * @param compacts 保留的片段列表
-     * @param summary  生成的摘要消息
+     * @param compacts 保留的片段列表（较新的片段）
+     * @param summary  生成的历史摘要消息
      */
     public record CompressResult(List<Fragment> compacts, Message summary) {
 

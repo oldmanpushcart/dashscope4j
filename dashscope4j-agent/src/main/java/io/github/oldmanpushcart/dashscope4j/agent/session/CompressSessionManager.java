@@ -1,25 +1,16 @@
 package io.github.oldmanpushcart.dashscope4j.agent.session;
 
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.SessionStore;
-import io.github.oldmanpushcart.dashscope4j.agent.session.store.SessionStore.Fragment;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
-import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
-import reactor.core.publisher.Flux;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 工作会话管理器实现
+ * 压缩会话管理器实现
  * <p>
  * 提供基于会话的记忆管理功能，核心特性包括：
  * <ul>
@@ -32,13 +23,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @see SessionManager
  */
-public class WorkingSessionManager implements SessionManager {
+public class CompressSessionManager implements SessionManager {
 
     /**
-     * 会话映射表：sessionId -> WorkingSession
-     * 使用 LinkedHashMap 实现 LRU 策略
+     * 会话映射表：sessionId -> CompressSession
+     * <p>
+     * 使用 LinkedHashMap 实现 LRU（最近最少使用）策略，
+     * 当会话数量超过 maxSessions 时，自动淘汰最久未访问的会话。
+     * </p>
      */
-    private final Map<String, WorkingSession> sessionMap;
+    private final Map<String, CompressSession> sessionMap;
 
     /**
      * 会话存储器
@@ -66,11 +60,11 @@ public class WorkingSessionManager implements SessionManager {
     private final int retainTokens;
 
     /**
-     * 构造工作会话管理器
+     * 构造压缩会话管理器
      *
      * @param builder 构建器
      */
-    public WorkingSessionManager(Builder builder) {
+    public CompressSessionManager(Builder builder) {
 
         Objects.requireNonNull(builder.client, "client must not be null");
         Objects.requireNonNull(builder.model, "model must not be null");
@@ -83,7 +77,7 @@ public class WorkingSessionManager implements SessionManager {
         this.sessionMap = Collections.synchronizedMap(
                 new LinkedHashMap<>(16, 0.75f, true) {
                     @Override
-                    protected boolean removeEldestEntry(Map.Entry<String, WorkingSession> eldest) {
+                    protected boolean removeEldestEntry(Map.Entry<String, CompressSession> eldest) {
                         return size() > builder.maxSessions;
                     }
                 }
@@ -110,7 +104,7 @@ public class WorkingSessionManager implements SessionManager {
     @Override
     public Session open(String sessionId) {
         return sessionMap.computeIfAbsent(sessionId, k -> 
-            new WorkingSession(sessionId, store, client, model, maxTokens, retainTokens)
+            new CompressSession(sessionId, store, client, model, maxTokens, retainTokens)
         );
     }
 
@@ -124,7 +118,7 @@ public class WorkingSessionManager implements SessionManager {
     public void close() {
         // 关闭所有会话
         synchronized (sessionMap) {
-            sessionMap.values().forEach(WorkingSession::close);
+            sessionMap.values().forEach(CompressSession::close);
             sessionMap.clear();
         }
         // 释放存储资源
@@ -143,12 +137,12 @@ public class WorkingSessionManager implements SessionManager {
     }
 
     /**
-     * WorkingSessionManager 构建器
+     * CompressSessionManager 构建器
      * <p>
-     * 使用 Builder 模式配置工作会话管理器。
+     * 使用 Builder 模式配置压缩会话管理器。
      * </p>
      */
-    public static class Builder implements Buildable<WorkingSessionManager, Builder> {
+    public static class Builder implements Buildable<CompressSessionManager, Builder> {
 
         /**
          * 会话存储器
@@ -247,13 +241,13 @@ public class WorkingSessionManager implements SessionManager {
         }
 
         /**
-         * 构建工作会话管理器
+         * 构建压缩会话管理器
          *
-         * @return 新创建的工作会话管理器实例
+         * @return 新创建的压缩会话管理器实例
          */
         @Override
-        public WorkingSessionManager build() {
-            return new WorkingSessionManager(this);
+        public CompressSessionManager build() {
+            return new CompressSessionManager(this);
         }
 
     }

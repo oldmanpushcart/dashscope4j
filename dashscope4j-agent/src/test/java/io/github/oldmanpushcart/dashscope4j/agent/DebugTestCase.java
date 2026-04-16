@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
-import io.github.oldmanpushcart.dashscope4j.agent.session.WorkingSessionManager;
+import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.FileSessionStore;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.*;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
@@ -25,7 +25,7 @@ public class DebugTestCase implements LoadingEnv {
     public void debug$1() {
 
         final var sessionId = "SESSION-001";
-        final var sessionManager = WorkingSessionManager.newBuilder()
+        final var sessionManager = CompressSessionManager.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
                 //.store(new HashMapSessionStore())
