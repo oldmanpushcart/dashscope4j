@@ -14,6 +14,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.TextContent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
@@ -24,10 +25,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
@@ -58,22 +56,27 @@ public class BaseAgent implements Agent {
      * Agent 名称
      */
     private final String name;
-    
+
     /**
      * Agent 描述
      */
     private final String description;
-    
+
     /**
      * Agent 介绍（系统提示词）
      */
     private final String introduction;
 
     /**
+     * 会话ID
+     */
+    private final String sessionId;
+
+    /**
      * 工具箱，用于管理和查找工具
      */
     private final Toolbox toolbox;
-    
+
     /**
      * 搜索工具，用于根据意图动态查找可用工具
      */
@@ -88,17 +91,17 @@ public class BaseAgent implements Agent {
      * DashScope 客户端
      */
     private final DashscopeClient client;
-    
+
     /**
      * 使用的对话模型
      */
     private final ChatModel model;
-    
+
     /**
      * 模型参数配置
      */
     private final Map<String, Object> parameters;
-    
+
     /**
      * 请求拦截器列表
      */
@@ -113,6 +116,7 @@ public class BaseAgent implements Agent {
         this.name = builder.name;
         this.description = builder.description;
         this.introduction = builder.introduction;
+        this.sessionId = Objects.requireNonNullElseGet(builder.sessionId, () -> UUID.randomUUID().toString());
 
         this.toolbox = builder.toolbox;
         this.searchTools = Optional.of(builder.toolbox)
@@ -145,6 +149,16 @@ public class BaseAgent implements Agent {
     @Override
     public String introduction() {
         return introduction;
+    }
+
+    @Override
+    public String sessionId() {
+        return sessionId;
+    }
+
+    @Override
+    public FunctionTool asTool() {
+        return new AgentAsFunction(this).asTool();
     }
 
     /**
@@ -214,14 +228,14 @@ public class BaseAgent implements Agent {
     }
 
     @Override
-    public CompletionStage<AssistantMessage> async(String sessionId, UserMessage inbound) {
+    public CompletionStage<AssistantMessage> async(UserMessage inbound) {
         return CompletableFuture.completedStage(newRequest(sessionId, inbound))
                 .thenCompose(this::baseAsync)
                 .thenApply(response -> response.output().best().message());
     }
 
     @Override
-    public Publisher<AssistantMessage> flow(String sessionId, UserMessage inbound) {
+    public Publisher<AssistantMessage> flow(UserMessage inbound) {
         // 使用 Flux.defer 延迟执行，在订阅时才进行记忆召回
         return Flux.defer(() -> {
 
@@ -333,6 +347,7 @@ public class BaseAgent implements Agent {
         private String name;
         private String description;
         private String introduction;
+        private String sessionId;
 
         private Toolbox toolbox;
         private SessionManager sessionManager;
@@ -351,6 +366,7 @@ public class BaseAgent implements Agent {
             this.name = agent.name;
             this.description = agent.description;
             this.introduction = agent.introduction;
+            this.sessionId = agent.sessionId;
 
             this.client = agent.client;
             this.model = agent.model;
@@ -371,6 +387,11 @@ public class BaseAgent implements Agent {
 
         public B introduction(String introduction) {
             this.introduction = introduction;
+            return self();
+        }
+
+        public B sessionId(String sessionId) {
+            this.sessionId = sessionId;
             return self();
         }
 

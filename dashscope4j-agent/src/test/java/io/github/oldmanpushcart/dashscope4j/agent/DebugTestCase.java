@@ -84,10 +84,11 @@ public class DebugTestCase implements LoadingEnv {
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
                     .sessionManager(sessionManager)
+                    .sessionId(sessionId)
                     .build();
 
 //            {
-//                final var outbound = Flux.from(agent.flow(sessionId, Message.user("今天天气如何？你需要询问我在那个城市")))
+//                final var outbound = Flux.from(agent.flow(Message.user("今天天气如何？你需要询问我在那个城市")))
 //                        .reduce(AssistantMessage::accumulate)
 //                        .toFuture()
 //                        .join();
@@ -95,7 +96,7 @@ public class DebugTestCase implements LoadingEnv {
 //            }
 
             {
-                final var outbound = agent.async(sessionId, Message.user("""
+                final var outbound = agent.async(Message.user("""
                                 根据杭州明天天气，画一幅山水画。
                                 """))
                         .toCompletableFuture()
