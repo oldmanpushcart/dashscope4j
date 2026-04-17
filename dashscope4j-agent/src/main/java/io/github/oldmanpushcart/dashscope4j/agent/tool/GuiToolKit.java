@@ -22,21 +22,32 @@ import java.util.function.BiFunction;
 /**
  * GUI 自动化工具包
  * <p>
- * 提供图形界面自动化能力给 LLM 使用：
- * - screenshot: 截取屏幕并返回 Base64 编码的图片
- * - mouse$move: 移动鼠标到指定坐标
- * - mouse$click: 执行鼠标点击（左键/右键/中键）
- * - mouse$drag: 拖拽鼠标从一个位置到另一个位置
- * - mouse$scroll: 滚动鼠标滚轮
- * - key$press: 按下指定按键
- * - key$type: 输入文本字符串
- * - key$combo: 执行组合键（如 Ctrl+C）
- * - clipboard$get: 获取剪贴板内容
- * - clipboard$set: 设置剪贴板内容
+ * 提供图形界面自动化能力给 LLM 使用，包括：
  * </p>
+ * <ul>
+ *   <li><b>screenshot</b>: 截取屏幕并保存为临时文件，返回文件 URI</li>
+ *   <li><b>mouse$move</b>: 移动鼠标到指定坐标</li>
+ *   <li><b>mouse$click</b>: 执行鼠标点击（左键/右键/中键）</li>
+ *   <li><b>mouse$drag</b>: 拖拽鼠标从一个位置到另一个位置</li>
+ *   <li><b>mouse$scroll</b>: 滚动鼠标滚轮</li>
+ *   <li><b>key$press</b>: 按下指定按键</li>
+ *   <li><b>key$type</b>: 输入文本字符串</li>
+ *   <li><b>key$combo</b>: 执行组合键（如 Ctrl+C）</li>
+ *   <li><b>clipboard$get</b>: 获取剪贴板内容</li>
+ *   <li><b>clipboard$set</b>: 设置剪贴板内容</li>
+ * </ul>
  * <p>
- * 注意：所有操作都需要 AWT 权限，在某些无头环境可能无法使用。
+ * <b>注意事项：</b>
  * </p>
+ * <ul>
+ *   <li>所有操作都需要 AWT 权限，在某些无头环境（headless）可能无法使用</li>
+ *   <li>截图功能会将图片保存为临时文件，JVM 退出时自动清理</li>
+ *   <li>键盘输入不支持中文等非 ASCII 字符，建议使用剪贴板方案</li>
+ *   <li>可通过 Builder 选择性启用/禁用各项功能</li>
+ * </ul>
+ *
+ * @see #newBuilder() 创建构建器实例
+ * @see ToolKit 工具包接口
  */
 public class GuiToolKit implements ToolKit {
 
@@ -75,26 +86,48 @@ public class GuiToolKit implements ToolKit {
      */
     private final boolean enableClipboard;
 
+    /**
+     * 构造函数
+     * <p>
+     * 初始化 AWT Robot 实例并根据配置启用相应的工具功能。
+     * </p>
+     *
+     * @param builder 构建器，包含各项功能的启用配置
+     * @throws RuntimeException 当 AWT Robot 初始化失败时抛出（通常在无头环境下）
+     */
     private GuiToolKit(Builder builder) {
         try {
+            // 创建 AWT Robot 实例，用于模拟鼠标和键盘操作
             this.robot = new Robot();
         } catch (AWTException e) {
             throw new RuntimeException("Failed to initialize AWT Robot", e);
         }
+        // 从构建器中读取各项功能的启用状态
         this.enableScreenshot = builder.enableScreenshot;
         this.enableMouse = builder.enableMouse;
         this.enableKeyboard = builder.enableKeyboard;
         this.enableClipboard = builder.enableClipboard;
     }
 
+    /**
+     * 获取此工具包提供的所有工具列表
+     * <p>
+     * 根据构建时配置的启用标志，动态组装可用的工具集合。
+     * 返回的列表是不可变的，防止外部修改。
+     * </p>
+     *
+     * @return 不可变的工具列表，包含所有启用的 GUI 自动化工具
+     */
     @Override
     public List<Tool> tools() {
         final var tools = new ArrayList<Tool>();
 
+        // 根据配置添加截图工具
         if (enableScreenshot) {
             tools.add(screenshot());
         }
 
+        // 根据配置添加鼠标操作工具
         if (enableMouse) {
             tools.add(mouseMove());
             tools.add(mouseClick());
@@ -102,17 +135,20 @@ public class GuiToolKit implements ToolKit {
             tools.add(mouseScroll());
         }
 
+        // 根据配置添加键盘操作工具
         if (enableKeyboard) {
             tools.add(keyPress());
             tools.add(keyType());
             tools.add(keyCombo());
         }
 
+        // 根据配置添加剪贴板操作工具
         if (enableClipboard) {
             tools.add(clipboardGet());
             tools.add(clipboardSet());
         }
 
+        // 返回不可变列表，确保工具集合的安全性
         return Collections.unmodifiableList(tools);
     }
 
@@ -206,22 +242,26 @@ public class GuiToolKit implements ToolKit {
                     }
 
                     /**
-                     * 获取截图区域
+                     * 计算并返回截图区域
+                     * <p>
+                     * 如果提供了完整的区域参数（x, y, width, height），则使用指定区域；
+                     * 否则截取整个屏幕。
+                     * </p>
                      *
-                     * @param spec 截屏请求
-                     * @return 截图区域
+                     * @param spec 截图请求参数，包含可选的区域坐标和尺寸
+                     * @return 截图区域的矩形对象，单位为像素
                      */
                     private static Rectangle getCaptureRect(ScreenshotSpec spec) {
 
                         final Rectangle captureRect;
 
-                        // 截取指定区域
+                        // 情况1：用户提供完整的区域参数，截取指定区域
                         if (spec.x() != null && spec.y() != null && spec.width() != null && spec.height() != null) {
                             captureRect = new Rectangle(spec.x(), spec.y(), spec.width(), spec.height());
                         }
-
-                        // 截取整个屏幕
+                        // 情况2：未提供区域参数，截取整个屏幕
                         else {
+                            // 获取默认屏幕设备的边界
                             final var ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
                             final var gd = ge.getDefaultScreenDevice();
                             captureRect = gd.getDefaultConfiguration().getBounds();
@@ -236,7 +276,12 @@ public class GuiToolKit implements ToolKit {
     // ==================== 鼠标操作工具 ====================
 
     /**
-     * gui$mouse$move 工具
+     * 创建鼠标移动工具
+     * <p>
+     * 将鼠标指针移动到指定的屏幕坐标位置。
+     * </p>
+     *
+     * @return 鼠标移动功能工具对象
      */
     private FunctionTool mouseMove() {
         return FunctionTool.newBuilder()
@@ -287,7 +332,12 @@ public class GuiToolKit implements ToolKit {
     }
 
     /**
-     * gui$mouse$click 工具
+     * 创建鼠标点击工具
+     * <p>
+     * 在当前位置执行鼠标点击操作，支持左键、右键、中键和双击。
+     * </p>
+     *
+     * @return 鼠标点击功能工具对象
      */
     private FunctionTool mouseClick() {
         return FunctionTool.newBuilder()
@@ -369,7 +419,12 @@ public class GuiToolKit implements ToolKit {
     }
 
     /**
-     * gui$mouse$drag 工具
+     * 创建鼠标拖拽工具
+     * <p>
+     * 执行鼠标拖拽操作，从起始位置按住左键拖拽到目标位置后释放。
+     * </p>
+     *
+     * @return 鼠标拖拽功能工具对象
      */
     private FunctionTool mouseDrag() {
         return FunctionTool.newBuilder()
@@ -434,7 +489,12 @@ public class GuiToolKit implements ToolKit {
     }
 
     /**
-     * gui$mouse$scroll 工具
+     * 创建鼠标滚动工具
+     * <p>
+     * 模拟鼠标滚轮滚动，支持向上和向下滚动。
+     * </p>
+     *
+     * @return 鼠标滚动功能工具对象
      */
     private FunctionTool mouseScroll() {
         return FunctionTool.newBuilder()
@@ -483,7 +543,12 @@ public class GuiToolKit implements ToolKit {
     // ==================== 键盘操作工具 ====================
 
     /**
-     * gui$key$press 工具
+     * 创建按键按下工具
+     * <p>
+     * 模拟按下并释放单个键盘按键，支持字母、数字、功能键、方向键等。
+     * </p>
+     *
+     * @return 按键按下功能工具对象
      */
     private FunctionTool keyPress() {
         return FunctionTool.newBuilder()
@@ -540,7 +605,12 @@ public class GuiToolKit implements ToolKit {
     }
 
     /**
-     * gui$key$type 工具
+     * 创建文本输入工具
+     * <p>
+     * 模拟键盘逐个字符地输入文本字符串，支持英文字母、数字和常见标点符号。
+     * </p>
+     *
+     * @return 文本输入功能工具对象
      */
     private FunctionTool keyType() {
         return FunctionTool.newBuilder()
@@ -596,7 +666,12 @@ public class GuiToolKit implements ToolKit {
     }
 
     /**
-     * gui$key$combo 工具
+     * 创建组合键工具
+     * <p>
+     * 同时按下多个按键并逆序释放，用于执行快捷键操作（如 Ctrl+C、Alt+F4 等）。
+     * </p>
+     *
+     * @return 组合键功能工具对象
      */
     private FunctionTool keyCombo() {
         return FunctionTool.newBuilder()
@@ -680,7 +755,12 @@ public class GuiToolKit implements ToolKit {
     // ==================== 剪贴板工具 ====================
 
     /**
-     * gui$clipboard$get 工具
+     * 创建获取剪贴板内容工具
+     * <p>
+     * 读取系统剪贴板中的文本内容，如果剪贴板为空或包含非文本内容则返回空字符串。
+     * </p>
+     *
+     * @return 获取剪贴板内容功能工具对象
      */
     private FunctionTool clipboardGet() {
         return FunctionTool.newBuilder()
@@ -731,7 +811,12 @@ public class GuiToolKit implements ToolKit {
     }
 
     /**
-     * gui$clipboard$set 工具
+     * 创建设置剪贴板内容工具
+     * <p>
+     * 将指定文本设置到系统剪贴板中，可用于跨应用传递文本或输入非 ASCII 字符。
+     * </p>
+     *
+     * @return 设置剪贴板内容功能工具对象
      */
     private FunctionTool clipboardSet() {
         return FunctionTool.newBuilder()
@@ -785,27 +870,43 @@ public class GuiToolKit implements ToolKit {
     // ==================== 辅助方法 ====================
 
     /**
-     * 解析按键名称为 KeyEvent 常量
+     * 将按键名称字符串解析为 AWT KeyEvent 常量值
+     * <p>
+     * 支持以下类型的按键：
+     * - 单字符：A-Z（字母）、0-9（数字）
+     * - 功能键：F1-F12
+     * - 特殊键：ENTER、ESCAPE、TAB、SPACE、BACK_SPACE、DELETE 等
+     * - 方向键：UP、DOWN、LEFT、RIGHT
+     * - 修饰键：CONTROL、ALT、SHIFT、META（Windows/Command 键）
+     * - 其他：HOME、END、PAGE_UP、PAGE_DOWN、INSERT、CAPS_LOCK
+     * </p>
+     *
+     * @param keyName 按键名称字符串，不区分大小写（如 "enter"、"CTRL"、"A"）
+     * @return 对应的 KeyEvent 常量值（如 KeyEvent.VK_ENTER）
+     * @throws IllegalArgumentException 当按键名称不支持或为空时抛出
      */
     private int parseKeyCode(String keyName) {
         if (keyName == null || keyName.isEmpty()) {
             throw new IllegalArgumentException("按键名称不能为空");
         }
 
+        // 转换为大写并去除首尾空格，统一处理
         final String upperKey = keyName.toUpperCase().trim();
 
-        // 单字符按键
+        // 处理单字符按键（字母 A-Z 和数字 0-9）
         if (upperKey.length() == 1) {
             final char c = upperKey.charAt(0);
+            // 字母：通过 VK_A + 偏移量计算
             if (c >= 'A' && c <= 'Z') {
                 return KeyEvent.VK_A + (c - 'A');
             }
+            // 数字：通过 VK_0 + 偏移量计算
             if (c >= '0' && c <= '9') {
                 return KeyEvent.VK_0 + (c - '0');
             }
         }
 
-        // 特殊按键映射
+        // 处理特殊按键名称映射
         return switch (upperKey) {
             case "ENTER", "RETURN" -> KeyEvent.VK_ENTER;
             case "ESCAPE", "ESC" -> KeyEvent.VK_ESCAPE;
@@ -844,29 +945,45 @@ public class GuiToolKit implements ToolKit {
     }
 
     /**
-     * 输入字符串（支持大小写和特殊字符）
+     * 模拟键盘输入文本字符串
+     * <p>
+     * 逐个字符地模拟键盘按键，支持：
+     * - 小写字母：直接按下对应键
+     * - 大写字母：按住 Shift + 对应字母键
+     * - 特殊符号：按住 Shift + 对应符号键（如 !@#$% 等）
+     * - 换行符：按下 Enter 键
+     * </p>
+     * <p>
+     * 注意：不支持中文等非 ASCII 字符，如需输入中文应使用剪贴板方案。
+     * </p>
+     *
+     * @param text 要输入的文本字符串
      */
     private void typeString(String text) {
+        // 遍历每个字符并模拟按键
         for (char c : text.toCharArray()) {
             if (c == '\n') {
-                // 换行符
+                // 情况1：换行符，按下 Enter 键
                 robot.keyPress(KeyEvent.VK_ENTER);
                 robot.delay(50);
                 robot.keyRelease(KeyEvent.VK_ENTER);
             } else if (Character.isUpperCase(c) || isShiftRequired(c)) {
-                // 需要 Shift 的字符
+                // 情况2：需要 Shift 键的字符（大写字母或特殊符号）
+                // 步骤1：按下 Shift 键
                 robot.keyPress(KeyEvent.VK_SHIFT);
                 robot.delay(10);
 
+                // 步骤2：按下对应的字符键
                 final int keyCode = getUpperCaseKeyCode(c);
                 robot.keyPress(keyCode);
                 robot.delay(50);
                 robot.keyRelease(keyCode);
 
+                // 步骤3：释放 Shift 键
                 robot.delay(10);
                 robot.keyRelease(KeyEvent.VK_SHIFT);
             } else {
-                // 普通字符
+                // 情况3：普通字符（小写字母、数字、简单符号），直接按下
                 final int keyCode = getLowerCaseKeyCode(c);
                 if (keyCode != -1) {
                     robot.keyPress(keyCode);
@@ -874,48 +991,71 @@ public class GuiToolKit implements ToolKit {
                     robot.keyRelease(keyCode);
                 }
             }
-            robot.delay(20); // 字符间延迟
+            // 字符之间的延迟，模拟真实打字速度
+            robot.delay(20);
         }
     }
 
     /**
-     * 判断字符是否需要 Shift 键
+     * 判断字符是否需要按住 Shift 键才能输入
+     * <p>
+     * 需要 Shift 的字符包括：
+     * - 特殊符号：!@#$%^&*()_+{}|:"<>?~
+     * </p>
+     *
+     * @param c 待判断的字符
+     * @return true 如果需要 Shift 键，false 否则
      */
     private boolean isShiftRequired(char c) {
         return "!@#$%^&*()_+{}|:\"<>?~".indexOf(c) != -1;
     }
 
     /**
-     * 获取大写字母或符号的按键码
+     * 获取大写字母或需要 Shift 键的符号对应的按键码
+     * <p>
+     * 此方法只返回基础按键码，不包含 Shift 键状态。
+     * 调用者需要配合 Shift 键一起使用。
+     * </p>
+     * <p>
+     * 示例：
+     * - 'A' -> VK_A（需配合 Shift）
+     * - '!' -> VK_1（需配合 Shift）
+     * - '@' -> VK_2（需配合 Shift）
+     * </p>
+     *
+     * @param c 大写字符或特殊符号
+     * @return 对应的 KeyEvent 按键码，如果不支持则返回 -1
      */
     private int getUpperCaseKeyCode(char c) {
+        // 大写字母：通过 VK_A + 偏移量计算
         if (c >= 'A' && c <= 'Z') {
             return KeyEvent.VK_A + (c - 'A');
         }
 
+        // 特殊符号映射到对应的数字键或符号键
         return switch (c) {
-            case '!' -> KeyEvent.VK_1;
-            case '@' -> KeyEvent.VK_2;
-            case '#' -> KeyEvent.VK_3;
-            case '$' -> KeyEvent.VK_4;
-            case '%' -> KeyEvent.VK_5;
-            case '^' -> KeyEvent.VK_6;
-            case '&' -> KeyEvent.VK_7;
-            case '*' -> KeyEvent.VK_8;
-            case '(' -> KeyEvent.VK_9;
-            case ')' -> KeyEvent.VK_0;
-            case '_' -> KeyEvent.VK_MINUS;
-            case '+' -> KeyEvent.VK_EQUALS;
-            case '{' -> KeyEvent.VK_OPEN_BRACKET;
-            case '}' -> KeyEvent.VK_CLOSE_BRACKET;
-            case '|' -> KeyEvent.VK_BACK_SLASH;
-            case ':' -> KeyEvent.VK_SEMICOLON;
-            case '"' -> KeyEvent.VK_QUOTE;
-            case '<' -> KeyEvent.VK_COMMA;
-            case '>' -> KeyEvent.VK_PERIOD;
-            case '?' -> KeyEvent.VK_SLASH;
-            case '~' -> KeyEvent.VK_BACK_QUOTE;
-            default -> -1;
+            case '!' -> KeyEvent.VK_1;      // Shift + 1
+            case '@' -> KeyEvent.VK_2;      // Shift + 2
+            case '#' -> KeyEvent.VK_3;      // Shift + 3
+            case '$' -> KeyEvent.VK_4;      // Shift + 4
+            case '%' -> KeyEvent.VK_5;      // Shift + 5
+            case '^' -> KeyEvent.VK_6;      // Shift + 6
+            case '&' -> KeyEvent.VK_7;      // Shift + 7
+            case '*' -> KeyEvent.VK_8;      // Shift + 8
+            case '(' -> KeyEvent.VK_9;      // Shift + 9
+            case ')' -> KeyEvent.VK_0;      // Shift + 0
+            case '_' -> KeyEvent.VK_MINUS;  // Shift + -
+            case '+' -> KeyEvent.VK_EQUALS; // Shift + =
+            case '{' -> KeyEvent.VK_OPEN_BRACKET;   // Shift + [
+            case '}' -> KeyEvent.VK_CLOSE_BRACKET;  // Shift + ]
+            case '|' -> KeyEvent.VK_BACK_SLASH;     // Shift + \
+            case ':' -> KeyEvent.VK_SEMICOLON;      // Shift + ;
+            case '"' -> KeyEvent.VK_QUOTE;          // Shift + '
+            case '<' -> KeyEvent.VK_COMMA;          // Shift + ,
+            case '>' -> KeyEvent.VK_PERIOD;         // Shift + .
+            case '?' -> KeyEvent.VK_SLASH;          // Shift + /
+            case '~' -> KeyEvent.VK_BACK_QUOTE;     // Shift + `
+            default -> -1;  // 不支持的字符
         };
     }
 
@@ -1070,7 +1210,16 @@ public class GuiToolKit implements ToolKit {
     // ==================== 结果数据结构 ====================
 
     /**
-     * 统一的结果封装
+     * 工具执行的统一结果封装
+     * <p>
+     * 所有工具方法的返回值都使用此结构，包含三种状态：
+     * - 成功：error 和 message 为 null，data 包含实际数据
+     * - 失败：error 包含错误码，message 包含错误描述，data 为 null
+     * </p>
+     *
+     * @param error   错误码，成功时为 null，失败时为非空字符串（如 "SCREENSHOT_FAILED"）
+     * @param message 错误消息，成功时为 null，失败时为详细的错误描述
+     * @param data    成功时的返回数据，失败时为 null
      */
     record Result(
             @JsonProperty("error")
@@ -1082,10 +1231,23 @@ public class GuiToolKit implements ToolKit {
             @JsonProperty("data")
             Object data
     ) {
+        /**
+         * 创建成功结果
+         *
+         * @param data 返回的业务数据
+         * @return 成功结果对象
+         */
         static Result success(Object data) {
             return new Result(null, null, data);
         }
 
+        /**
+         * 创建失败结果
+         *
+         * @param error   错误码，用于程序化判断错误类型
+         * @param message 错误消息，用于人类阅读的错误描述
+         * @return 失败结果对象
+         */
         static Result error(String error, String message) {
             return new Result(error, message, null);
         }
@@ -1093,18 +1255,49 @@ public class GuiToolKit implements ToolKit {
 
     // ==================== Builder ====================
 
+    /**
+     * 创建构建器实例
+     * <p>
+     * 使用示例：
+     * <pre>{@code
+     * GuiToolKit kit = GuiToolKit.newBuilder()
+     *     .enableScreenshot(true)
+     *     .enableMouse(true)
+     *     .enableKeyboard(false)  // 禁用键盘操作
+     *     .enableClipboard(true)
+     *     .build();
+     * }</pre>
+     * </p>
+     *
+     * @return 新的构建器实例，默认启用所有功能
+     */
     public static Builder newBuilder() {
         return new Builder();
     }
 
+    /**
+     * GUI 工具包构建器
+     * <p>
+     * 采用建造者模式，允许灵活配置各项功能的启用状态。
+     * 所有功能默认启用，可根据需要选择性禁用。
+     * </p>
+     */
     public static class Builder implements Buildable<GuiToolKit, Builder> {
+        // 各项功能的启用标志，默认全部启用
         private boolean enableScreenshot = true;
         private boolean enableMouse = true;
         private boolean enableKeyboard = true;
         private boolean enableClipboard = true;
 
         /**
-         * 启用/禁用截图功能
+         * 配置是否启用截图功能
+         * <p>
+         * 禁用后将不提供 gui$screenshot 工具。
+         * 适用于不需要屏幕识别能力的场景，可减少工具数量。
+         * </p>
+         *
+         * @param enable true 启用，false 禁用
+         * @return 当前构建器实例，支持链式调用
          */
         public Builder enableScreenshot(boolean enable) {
             this.enableScreenshot = enable;
@@ -1112,7 +1305,20 @@ public class GuiToolKit implements ToolKit {
         }
 
         /**
-         * 启用/禁用鼠标操作
+         * 配置是否启用鼠标操作功能
+         * <p>
+         * 禁用后将不提供以下工具：
+         * - gui$mouse$move（移动鼠标）
+         * - gui$mouse$click（点击鼠标）
+         * - gui$mouse$drag（拖拽鼠标）
+         * - gui$mouse$scroll（滚动滚轮）
+         * </p>
+         * <p>
+         * 适用于只需要键盘操作或截图的场景。
+         * </p>
+         *
+         * @param enable true 启用，false 禁用
+         * @return 当前构建器实例，支持链式调用
          */
         public Builder enableMouse(boolean enable) {
             this.enableMouse = enable;
@@ -1120,7 +1326,19 @@ public class GuiToolKit implements ToolKit {
         }
 
         /**
-         * 启用/禁用键盘操作
+         * 配置是否启用键盘操作功能
+         * <p>
+         * 禁用后将不提供以下工具：
+         * - gui$key$press（按下按键）
+         * - gui$key$type（输入文本）
+         * - gui$key$combo（组合键）
+         * </p>
+         * <p>
+         * 适用于只需要鼠标操作或截图的场景。
+         * </p>
+         *
+         * @param enable true 启用，false 禁用
+         * @return 当前构建器实例，支持链式调用
          */
         public Builder enableKeyboard(boolean enable) {
             this.enableKeyboard = enable;
@@ -1128,13 +1346,35 @@ public class GuiToolKit implements ToolKit {
         }
 
         /**
-         * 启用/禁用剪贴板操作
+         * 配置是否启用剪贴板操作功能
+         * <p>
+         * 禁用后将不提供以下工具：
+         * - gui$clipboard$get（获取剪贴板内容）
+         * - gui$clipboard$set（设置剪贴板内容）
+         * </p>
+         * <p>
+         * 适用于不需要跨应用传递文本的场景。
+         * 注意：如需输入中文等非 ASCII 字符，建议启用剪贴板功能。
+         * </p>
+         *
+         * @param enable true 启用，false 禁用
+         * @return 当前构建器实例，支持链式调用
          */
         public Builder enableClipboard(boolean enable) {
             this.enableClipboard = enable;
             return this;
         }
 
+        /**
+         * 根据当前配置构建 GuiToolKit 实例
+         * <p>
+         * 此方法会初始化 AWT Robot，如果在不支持图形界面的环境
+         * （如无头服务器）中调用，将抛出 RuntimeException。
+         * </p>
+         *
+         * @return 配置好的 GuiToolKit 实例
+         * @throws RuntimeException 当 AWT Robot 初始化失败时抛出
+         */
         @Override
         public GuiToolKit build() {
             return new GuiToolKit(this);
