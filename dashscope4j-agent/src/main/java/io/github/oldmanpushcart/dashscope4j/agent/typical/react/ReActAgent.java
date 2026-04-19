@@ -369,6 +369,7 @@ public class ReActAgent extends BaseAgent {
                 .filter(tool -> tool.meta().name().equals(name))
                 .findFirst();
 
+        // 再从toolbox中找
         //noinspection OptionalIsPresent
         if (findOpt.isPresent()) {
             return CompletableFuture.completedStage(findOpt.get());
@@ -397,9 +398,8 @@ public class ReActAgent extends BaseAgent {
     private CompletionStage<String> callingTool(AigcRequest<Input, Output> request, String name, Tool.Caller caller, String argumentJson) {
         logger.debug("{}/function/{} >>> {}", this, name, argumentJson);
         return CompletableFuture.completedStage(null)
-                .thenCompose(unused ->
-                        requireTool(request, name)
-                                .thenCompose(tool -> tool.call(caller, argumentJson)))
+                .thenCompose(unused -> requireTool(request, name))
+                .thenCompose(tool -> tool.call(caller, argumentJson))
                 .whenComplete((resultJson, ex) -> {
                     if (null != ex) {
                         logger.warn("{}/function/{} <<< ERROR!", this, name, ex);
@@ -408,18 +408,22 @@ public class ReActAgent extends BaseAgent {
                     }
                 })
                 .handle((r, ex) -> {
-                    // 情况 1: 发生异常 (ex != null)
-                    if (ex != null) {
-                        if (request.input().failOnToolError()) {
-                            return CompletableFuture.<String>failedStage(ex);
-                        } else {
-                            var result = ToolResult.error(ex);
-                            var resultJson = JacksonJsonUtils.toJson(result);
-                            return CompletableFuture.completedStage(resultJson);
-                        }
+
+                    // 无异常，正常返回
+                    if (null == ex) {
+                        return CompletableFuture.completedStage(r);
                     }
-                    // 情况 2: 无异常 (ex == null)，直接返回成功结果
-                    return CompletableFuture.completedStage(r);
+
+                    /*
+                     * 发生异常，需要根据情况进行封装
+                     */
+                    if (request.input().failOnToolError()) {
+                        return CompletableFuture.<String>failedStage(ex);
+                    } else {
+                        final var result = ToolResult.error(ex);
+                        final var resultJson = JacksonJsonUtils.toJson(result);
+                        return CompletableFuture.completedStage(resultJson);
+                    }
                 })
                 .thenCompose(v -> v);
     }

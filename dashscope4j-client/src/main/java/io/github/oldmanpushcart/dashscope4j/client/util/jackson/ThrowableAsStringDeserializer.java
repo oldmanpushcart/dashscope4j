@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * 从字符串数组反序列化为 Throwable
@@ -37,7 +38,7 @@ public class ThrowableAsStringDeserializer extends JsonDeserializer<Throwable> {
         }
         
         // 读取数组中的所有字符串
-        final var messages = new java.util.ArrayList<String>();
+        final var messages = new ArrayList<String>();
         while (parser.nextToken() != JsonToken.END_ARRAY) {
             final var message = parser.getValueAsString();
             if (message != null && !message.isEmpty()) {

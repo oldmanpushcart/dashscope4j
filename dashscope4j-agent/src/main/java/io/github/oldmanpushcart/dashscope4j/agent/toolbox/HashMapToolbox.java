@@ -43,12 +43,12 @@ public class HashMapToolbox implements Toolbox {
      * 日志记录器
      */
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    
+
     /**
      * 工具索引器，用于根据意图智能检索工具
      */
     private final ToolIndexer indexer;
-    
+
     /**
      * 工具加载器组，负责从不同来源加载工具
      */
@@ -60,12 +60,12 @@ public class HashMapToolbox implements Toolbox {
      * value: 工具实例
      */
     private final Map<String, Tool> tools = new ConcurrentHashMap<>();
-    
+
     /**
      * 初始化标志
      */
     private final AtomicBoolean init = new AtomicBoolean(false);
-    
+
     /**
      * 关闭标志
      */
@@ -136,13 +136,18 @@ public class HashMapToolbox implements Toolbox {
         return indexer.query(instant.text())
                 .thenApply(names -> {
                     final var result = new HashMap<String, Tool>();
-                    // 过滤掉已删除的工具
+
+                    // 过滤并清理无效的索引数据
                     names.forEach(name -> {
                         final var tool = tools.get(name);
                         if (null != tool) {
                             result.put(name, tool);
+                        } else {
+                            indexer.remove(name);
+                            logger.debug("{} cleanup invalid index: {}", this, name);
                         }
                     });
+
                     return result;
                 });
     }
@@ -293,7 +298,7 @@ public class HashMapToolbox implements Toolbox {
          * 工具索引器
          */
         private ToolIndexer indexer;
-        
+
         /**
          * 工具加载器列表
          */
