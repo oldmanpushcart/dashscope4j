@@ -6,9 +6,6 @@ import io.github.oldmanpushcart.dashscope4j.agent.tool.*;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.HashMapToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.ToolKitLoader;
-
-import java.time.Duration;
-
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.McpToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.RecoverableMcpClientTransport;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillToolLoader;
@@ -22,14 +19,16 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 public class DebugTestCase implements LoadingEnv {
 
     @Test
     public void debug$1() {
 
-        final var sessionId = "SESSION-001";
+        final var sessionId = UUID.randomUUID().toString();
         final var sessionManager = CompressSessionManager.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
@@ -88,7 +87,8 @@ public class DebugTestCase implements LoadingEnv {
                     .build();
 
 //            {
-//                final var outbound = Flux.from(agent.flow(Message.user("今天天气如何？你需要询问我在那个城市")))
+//                final var outbound = Flux.from(agent.flow(Message.user(" 根据杭州明天天气，画一幅山水画。")))
+//                        .doOnNext(message-> System.out.println(message.text()))
 //                        .reduce(AssistantMessage::accumulate)
 //                        .toFuture()
 //                        .join();
@@ -97,7 +97,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(Message.user("""
-                                根据杭州明天天气，画一幅山水画。
+                                查询小红的语文成绩
                                 """))
                         .toCompletableFuture()
                         .join();

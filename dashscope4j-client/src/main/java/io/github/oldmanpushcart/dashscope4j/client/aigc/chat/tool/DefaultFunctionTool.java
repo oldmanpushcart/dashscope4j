@@ -77,7 +77,6 @@ class DefaultFunctionTool implements FunctionTool {
                             ? (CompletionStage<Object>) rawResult
                             : CompletableFuture.completedFuture(rawResult);
                 })
-                .thenApply(JacksonJsonUtils::toJson)
                 .handle((r, ex) -> {
 
                     if (null == ex) {
@@ -91,7 +90,8 @@ class DefaultFunctionTool implements FunctionTool {
                     return CompletableFuture.<String>failedStage(toolEx);
 
                 })
-                .thenCompose(v -> v);
+                .thenCompose(v -> v)
+                .thenApply(JacksonJsonUtils::toJson);
     }
 
     public static class Builder implements FunctionTool.Builder {
