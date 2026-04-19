@@ -337,31 +337,26 @@ public class HashMapToolIndexer implements ToolIndexer {
      */
     @Override
     public CompletionStage<Set<String>> query(String instant) {
-        final var request = AigcRequest.newBuilder(ChatModel.QWEN_FLASH)
+        // 候选工具集合消息
+        final var candidateToolsMessage = Message.assistant(TextContent.newBuilder()
+                .cacheControl(Content.CacheControl.EPHEMERAL)
+                .text("""
+                        ### 候选工具列表
+                        %s
+                        """.formatted(JacksonJsonUtils.toJson(entities.values())))
+                .build());
+
+        // 用户意图消息
+        final var userInputMessage = Message.user("""
+                ### 用户意图
+                %s
+                """.formatted(instant));
+
+        final var request = AigcRequest.newBuilder(model)
                 .input(ChatModel.Input.newBuilder()
-                        .messages(messages -> {
-
-                            // 候选工具集合消息
-                            final var candidateToolsMessage = Message.assistant(TextContent.newBuilder()
-                                    .cacheControl(Content.CacheControl.EPHEMERAL)
-                                    .text("""
-                                            ### 候选工具列表
-                                            %s
-                                            """.formatted(JacksonJsonUtils.toJson(entities.values())))
-                                    .build());
-
-                            // 用户意图消息
-                            final var userInputMessage = Message.user("""
-                                    ### 用户意图
-                                    %s
-                                    """.formatted(instant));
-
-                            return List.of(
-                                    TOOL_ROUTER_MESSAGE,
-                                    candidateToolsMessage,
-                                    userInputMessage
-                            );
-                        })
+                        .addMessage(TOOL_ROUTER_MESSAGE)
+                        .addMessage(candidateToolsMessage)
+                        .addMessage(userInputMessage)
                         .build())
                 .parameters(parameters -> {
                     parameters.put("response_format", Map.of(

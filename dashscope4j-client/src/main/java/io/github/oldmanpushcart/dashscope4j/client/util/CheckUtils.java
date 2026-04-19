@@ -44,7 +44,7 @@ public class CheckUtils {
      */
     public static <T extends Collection<?>> T requireNonEmptyCollection(T collection, Supplier<String> messageSupplier) {
         requireNonNull(messageSupplier);
-        return require(collection, CommonUtils::isNotEmptyCollection, messageSupplier);
+        return require(collection, CommonUtils::isNotEmpty, messageSupplier);
     }
 
     /**

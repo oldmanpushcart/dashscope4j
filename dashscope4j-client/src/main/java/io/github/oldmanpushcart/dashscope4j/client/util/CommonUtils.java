@@ -33,7 +33,7 @@ public class CommonUtils {
         return collection == null || collection.isEmpty();
     }
 
-    public static boolean isNotEmptyCollection(Collection<?> collection) {
+    public static boolean isNotEmpty(Collection<?> collection) {
         return !isEmpty(collection);
     }
 
