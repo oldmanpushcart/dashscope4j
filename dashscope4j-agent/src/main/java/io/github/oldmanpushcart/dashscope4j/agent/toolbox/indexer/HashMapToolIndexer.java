@@ -142,16 +142,24 @@ public class HashMapToolIndexer implements ToolIndexer {
     @Override
     public CompletionStage<Void> upsert(String name, Tool tool) {
 
+        // 必须是 FunctionTool
         if (!(tool instanceof FunctionTool functionTool)) {
             throw new IllegalArgumentException("tool must be FunctionTool");
         }
 
+        // NAME 必须和 工具名称一致
+        if (!Objects.equals(name, functionTool.meta().name())) {
+            throw new IllegalArgumentException("name must be equal to Tool.name");
+        }
+
         // 使用缓存包装器执行
-        return cacheUpsert(
-                functionTool.meta().name(),
-                functionTool.meta().description(),
-                () -> extractMetaFromLLM(functionTool)
-        );
+        final var fnName = functionTool.meta().name();
+        final var fnDesc = functionTool.meta().description();
+        return cacheUpsert(fnName, fnDesc, () -> extractMetaFromLLM(functionTool))
+                .exceptionallyCompose(ex -> {
+                    final var cause = new IllegalStateException("Failed to upsert tool: %s".formatted(name));
+                    return CompletableFuture.failedStage(cause);
+                });
     }
 
     /**
@@ -167,12 +175,15 @@ public class HashMapToolIndexer implements ToolIndexer {
             String description,
             Supplier<CompletionStage<Entity>> metaExtractor
     ) {
+
+        // 生成缓存 key
         final var cacheKey = generateCacheKey(name, description);
 
         // 检查内存缓存
         final var cachedEntity = cache.get(cacheKey);
+
+        // 缓存命中，直接使用
         if (cachedEntity != null) {
-            // 缓存命中，直接使用
             entities.put(name, cachedEntity);
             return CompletableFuture.completedStage(null);
         }
@@ -261,7 +272,7 @@ public class HashMapToolIndexer implements ToolIndexer {
             return;
         }
 
-        logger.debug("{} cache enabled. file={}", this, cacheFile);
+        logger.debug("{} cache enabled. file: {}", this, cacheFile);
 
         try (var reader = Files.newBufferedReader(cacheFile)) {
             String line;
@@ -279,7 +290,7 @@ public class HashMapToolIndexer implements ToolIndexer {
             }
 
         } catch (IOException e) {
-            logger.warn("{} failed to load cache from file:{}", this, cacheFile, e);
+            logger.warn("{} failed to load cache from file: {}", this, cacheFile, e);
         }
     }
 
@@ -291,8 +302,8 @@ public class HashMapToolIndexer implements ToolIndexer {
      */
     private void appendToCacheFile(String key, Entity entity) {
         try {
-            var entry = new CacheEntry(key, entity);
-            var jsonLine = JacksonJsonUtils.toJson(entry);
+            final var entry = new CacheEntry(key, entity);
+            final var jsonLine = JacksonJsonUtils.toJson(entry);
 
             // 确保父目录存在
             if (cacheFile.getParent() != null) {
@@ -302,7 +313,7 @@ public class HashMapToolIndexer implements ToolIndexer {
             // 追加写入
             Files.writeString(cacheFile, jsonLine + "\n", CREATE, APPEND);
         } catch (IOException e) {
-            logger.warn("{} failed to append to cache file:{}", this, cacheFile, e);
+            logger.warn("{} failed to append to cache file: {}", this, cacheFile, e);
         }
     }
 

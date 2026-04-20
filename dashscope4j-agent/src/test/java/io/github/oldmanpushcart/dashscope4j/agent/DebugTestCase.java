@@ -2,7 +2,12 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.FileSessionStore;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.*;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.dashscope.DashscopeToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.file.FileOpsToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.file.TextFileOpsToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.system.GuiToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.system.RuntimeToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.system.ShellToolKit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.HashMapToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.ToolKitLoader;
@@ -48,7 +53,7 @@ public class DebugTestCase implements LoadingEnv {
                         .build())
                 .loaders(List.of(
                         ToolKitLoader.of(DashscopeToolKit.create()),
-                        ToolKitLoader.of(SystemToolKit.create()),
+                        ToolKitLoader.of(RuntimeToolKit.create()),
                         ToolKitLoader.of(GuiToolKit.newBuilder().build()),
                         ToolKitLoader.of(ShellToolKit.newBuilder()
                                 .timeout(Duration.ofSeconds(60))
@@ -99,7 +104,10 @@ public class DebugTestCase implements LoadingEnv {
                 final var outbound = agent.async(Message.user("""
                                 给我用Java写一个闹钟，用户可以选择唤醒的时间。时间到之后就BE-BE-BE的闹起来。
                                 - 有用户界面。
-                                - 用Swing开发，界面和执行代码分离
+                                - 用Swing开发，界面和控制代码分离
+                                - 倒计时结束可以重新开始设置，用户也可以主动停止倒计时并且重新设置
+                                - 界面要有个模拟的液晶显示屏显示倒计时的时间
+                                - 时间选择要有时间选择控件方便用户进行选择
                                 - 编译通过并运行
                                 """))
                         .toCompletableFuture()

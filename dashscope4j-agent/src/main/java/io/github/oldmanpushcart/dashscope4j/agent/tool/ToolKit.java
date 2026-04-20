@@ -1,5 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.agent.tool;
 
+import io.github.oldmanpushcart.dashscope4j.agent.tool.file.FileOpsToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.system.GuiToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.system.RuntimeToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.system.ShellToolKit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
@@ -15,7 +19,7 @@ import java.util.List;
  *   <li>{@link GuiToolKit} - GUI 自动化工具包（截图、鼠标、键盘、剪贴板）</li>
  *   <li>{@link FileOpsToolKit} - 文件操作工具包</li>
  *   <li>{@link ShellToolKit} - Shell 命令执行工具包</li>
- *   <li>{@link SystemToolKit} - 系统信息查询工具包</li>
+ *   <li>{@link RuntimeToolKit} - 运行时环境信息查询工具包</li>
  * </ul>
  * <p>
  * <b>设计目的：</b>

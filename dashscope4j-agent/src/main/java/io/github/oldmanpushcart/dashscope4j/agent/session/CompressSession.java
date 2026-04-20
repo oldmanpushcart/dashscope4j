@@ -78,6 +78,9 @@ class CompressSession implements Session {
      */
     private final List<Fragment> fragments = new ArrayList<>();
 
+    /**
+     * {@link #toString()} 字符串
+     */
     private final String _toString;
 
     /**
@@ -139,7 +142,10 @@ class CompressSession implements Session {
     public CompletionStage<Void> remember(List<Message> messages) {
         // 将消息持久化到存储，然后推送到内存缓存并检查是否需要压缩
         return store.upsert(sessionId, messages)
-                .thenCompose(fragment -> push(maxTokens, fragment, this::compressHistory));
+                .thenCompose(fragment -> push(maxTokens, fragment, this::compressHistory))
+                .thenAccept(u -> {
+
+                });
     }
 
     /**
@@ -178,7 +184,10 @@ class CompressSession implements Session {
                                 }
                                 getF.complete(this.fragments);
                             } else {
-                                getF.completeExceptionally(ex);
+                                getF.completeExceptionally(new IllegalStateException(
+                                        "session[%s] load fragment failed!".formatted(sessionId),
+                                        ex
+                                ));
                             }
                         });
             } else {
@@ -217,12 +226,12 @@ class CompressSession implements Session {
      * </ul>
      * </p>
      *
-     * @param maxTokens 最大 Token 数（压缩触发阈值）
-     * @param fragment  新片段
-     * @param compress  压缩函数，接收片段列表，返回压缩结果
+     * @param maxTokens  最大 Token 数（压缩触发阈值）
+     * @param fragment   新片段
+     * @param compressor 压缩函数，接收片段列表，返回压缩结果
      * @return 完成时的 CompletionStage
      */
-    public CompletionStage<Void> push(int maxTokens, Fragment fragment, Function<List<Fragment>, CompletionStage<CompressResult>> compress) {
+    public CompletionStage<Void> push(int maxTokens, Fragment fragment, Function<List<Fragment>, CompletionStage<CompressResult>> compressor) {
         if (closed) {
             return CompletableFuture.failedFuture(new IllegalStateException("Session is closed"));
         }
@@ -232,9 +241,8 @@ class CompressSession implements Session {
 
         // 计算当前缓存中的总 Token 数
         final var tokens = fragments.stream()
-                .map(Fragment::tokens)
-                .reduce(Integer::sum)
-                .orElse(0);
+                .mapToInt(Fragment::tokens)
+                .sum();
 
         // 未超过限制，无需压缩
         if (tokens <= maxTokens) {
@@ -242,20 +250,36 @@ class CompressSession implements Session {
         }
 
         // 超出限制，执行压缩操作
-        return compress.apply(fragments)
-                .thenAccept(result -> {
-                    synchronized (this) {
-                        // 清空旧片段，替换为压缩后的结果
-                        fragments.clear();
-                        fragments.addAll(result.compacts());
-                        // 更新摘要消息
-                        summaryRef.set(result.summary());
-                    }
-                })
-                .whenComplete((v, ex) -> {
+        return compressor.apply(fragments)
+                .handle((result, ex) -> {
+
+                    // 压缩失败，使用非压缩结果
                     if (ex != null) {
                         logger.warn("{}/compress failed. non-compress used.", this, ex);
+                        return null;
                     }
+
+                    // 压缩成功，使用压缩结果
+                    else {
+                        synchronized (this) {
+                            // 清空旧片段，替换为压缩后的结果
+                            fragments.clear();
+                            fragments.addAll(result.compacts());
+                            // 更新摘要消息
+                            summaryRef.set(result.summary());
+                        }
+
+                        // 压缩后的TOKENS
+                        final var after
+                                = result.compacts().stream().mapToInt(Fragment::tokens).sum()
+                                + TokenizerUtils.estimateTokens(result.summary().text());
+
+                        // 压缩率
+                        final var rate = String.format("%.2f", after * 100.0f / tokens );
+                        logger.debug("{}/compress {} -> {} tokens, rate={}%", this, tokens, after, rate);
+                        return null;
+                    }
+
                 });
 
     }
@@ -309,18 +333,7 @@ class CompressSession implements Session {
 
         return client.async(request)
                 .thenApply(response -> response.output().best().message())
-                .thenApply(message -> new CompressResult(fragments, message))
-                .whenComplete((result, ex) -> {
-                    if (null == ex) {
-                        final var beforeTokens = evictions.stream()
-                                .map(Fragment::tokens)
-                                .mapToInt(Integer::intValue)
-                                .sum();
-                        final var afterTokens = TokenizerUtils.estimateTokens(result.summary().text());
-                        final var rate = String.format("%.2f", (double) afterTokens / beforeTokens);
-                        logger.debug("{}/compress ({} -> {}) tokens, rate={}%", this, beforeTokens, afterTokens, rate);
-                    }
-                });
+                .thenApply(message -> new CompressResult(fragments, message));
     }
 
     /**

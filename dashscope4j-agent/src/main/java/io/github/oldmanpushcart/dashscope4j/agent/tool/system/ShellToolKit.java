@@ -1,7 +1,8 @@
-package io.github.oldmanpushcart.dashscope4j.agent.tool;
+package io.github.oldmanpushcart.dashscope4j.agent.tool.system;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;

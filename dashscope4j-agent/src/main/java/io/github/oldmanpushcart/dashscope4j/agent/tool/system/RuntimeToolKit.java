@@ -1,5 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.agent.tool;
+package io.github.oldmanpushcart.dashscope4j.agent.tool.system;
 
+import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
@@ -11,16 +12,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 系统工具包
+ * 运行时工具包
  * <p>
- * 提供系统级工具给 LLM 使用：
+ * 提供运行时环境信息给 LLM 使用：
  * - datetime: 获取当前日期时间
  * - os: 获取操作系统信息
  * - env: 获取环境变量
- * - cmd: 执行系统命令（需谨慎使用）
  * </p>
  */
-public class SystemToolKit implements ToolKit {
+public class RuntimeToolKit implements ToolKit {
 
     @Override
     public List<Tool> tools() {
@@ -32,11 +32,11 @@ public class SystemToolKit implements ToolKit {
     }
 
     /**
-     * 创建 system$os 工具
+     * 创建 runtime$os 工具
      */
     private FunctionTool os() {
         return FunctionTool.newBuilder()
-                .name("system$os")
+                .name("runtime$os")
                 .description("""
                         获取当前操作系统的详细信息。
                         
@@ -63,11 +63,11 @@ public class SystemToolKit implements ToolKit {
     }
 
     /**
-     * 创建 system$env 工具
+     * 创建 runtime$env 工具
      */
     private FunctionTool env() {
         return FunctionTool.newBuilder()
-                .name("system$env")
+                .name("runtime$env")
                 .description("""
                         获取当前进程的环境变量列表。
                         
@@ -91,11 +91,11 @@ public class SystemToolKit implements ToolKit {
     }
 
     /**
-     * 创建 system$datetime 工具
+     * 创建 runtime$datetime 工具
      */
     private FunctionTool datetime() {
         return FunctionTool.newBuilder()
-                .name("system$datetime")
+                .name("runtime$datetime")
                 .description("""
                         获取当前系统的完整日期和时间信息。
                         
@@ -172,8 +172,8 @@ public class SystemToolKit implements ToolKit {
                 .build();
     }
 
-    public static SystemToolKit create() {
-        return new SystemToolKit();
+    public static RuntimeToolKit create() {
+        return new RuntimeToolKit();
     }
 
 }

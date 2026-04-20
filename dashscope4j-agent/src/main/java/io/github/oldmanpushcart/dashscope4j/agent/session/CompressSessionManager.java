@@ -103,9 +103,16 @@ public class CompressSessionManager implements SessionManager {
      */
     @Override
     public Session open(String sessionId) {
-        return sessionMap.computeIfAbsent(sessionId, k -> 
-            new CompressSession(sessionId, store, client, model, maxTokens, retainTokens)
-        );
+        return sessionMap
+                .computeIfAbsent(sessionId, k ->
+                        new CompressSession(
+                                sessionId,
+                                store,
+                                client,
+                                model,
+                                maxTokens,
+                                retainTokens
+                        ));
     }
 
     /**
