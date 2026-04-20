@@ -99,7 +99,7 @@ public class DebugTestCase implements LoadingEnv {
                 final var outbound = agent.async(Message.user("""
                                 给我用Java写一个闹钟，用户可以选择唤醒的时间。时间到之后就BE-BE-BE的闹起来。
                                 - 有用户界面。
-                                - 用JavaFx开发，界面和执行代码分离
+                                - 用Swing开发，界面和执行代码分离
                                 - 编译通过并运行
                                 """))
                         .toCompletableFuture()
