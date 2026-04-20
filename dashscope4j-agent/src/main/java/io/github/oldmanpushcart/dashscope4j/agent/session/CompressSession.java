@@ -8,6 +8,9 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.util.TokenizerUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
@@ -37,6 +40,8 @@ import java.util.function.Supplier;
  * @see CompressSessionManager
  */
 class CompressSession implements Session {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * 会话 ID
@@ -73,6 +78,8 @@ class CompressSession implements Session {
      */
     private final List<Fragment> fragments = new ArrayList<>();
 
+    private final String _toString;
+
     /**
      * 摘要消息的原子引用
      * <p>
@@ -108,6 +115,12 @@ class CompressSession implements Session {
         this.model = model;
         this.maxTokens = maxTokens;
         this.retainTokens = retainTokens;
+        this._toString = "dashscope4j-agent:/session/%s".formatted(sessionId);
+    }
+
+    @Override
+    public String toString() {
+        return _toString;
     }
 
     @Override
@@ -238,6 +251,11 @@ class CompressSession implements Session {
                         // 更新摘要消息
                         summaryRef.set(result.summary());
                     }
+                })
+                .whenComplete((v, ex) -> {
+                    if (ex != null) {
+                        logger.warn("{}/compress failed. non-compress used.", this, ex);
+                    }
                 });
 
     }
@@ -258,7 +276,13 @@ class CompressSession implements Session {
      * @return 压缩结果（包含保留的片段和生成的摘要）
      */
     private CompletionStage<CompressResult> compressHistory(List<Fragment> allFragments) {
+
+        /*
+         * 完整的片段快照
+         * 之所以要进行快照，是因为接下来要对这个集合进行修改操作
+         */
         final var fragments = new ArrayList<>(allFragments);
+
         // 执行紧凑化，分离出需要压缩的旧片段
         final var evictions = compact(retainTokens, fragments);
 
@@ -285,7 +309,18 @@ class CompressSession implements Session {
 
         return client.async(request)
                 .thenApply(response -> response.output().best().message())
-                .thenApply(message -> new CompressResult(fragments, message));
+                .thenApply(message -> new CompressResult(fragments, message))
+                .whenComplete((result, ex) -> {
+                    if (null == ex) {
+                        final var beforeTokens = evictions.stream()
+                                .map(Fragment::tokens)
+                                .mapToInt(Integer::intValue)
+                                .sum();
+                        final var afterTokens = TokenizerUtils.estimateTokens(result.summary().text());
+                        final var rate = String.format("%.2f", (double) afterTokens / beforeTokens);
+                        logger.debug("{}/compress ({} -> {}) tokens, rate={}%", this, beforeTokens, afterTokens, rate);
+                    }
+                });
     }
 
     /**

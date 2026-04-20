@@ -38,6 +38,13 @@ public final class AudioContent implements Content {
         return cacheControl;
     }
 
+    @Override
+    public AudioContent withCache(CacheControl cacheControl) {
+        return AudioContent.newBuilder(this)
+                .cacheControl(cacheControl)
+                .build();
+    }
+
     // --- 构造器 ---
 
     public static Builder newBuilder() {

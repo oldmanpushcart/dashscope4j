@@ -85,6 +85,13 @@ public final class VideoContent implements Content {
         return cacheControl;
     }
 
+    @Override
+    public VideoContent withCache(CacheControl cacheControl) {
+        return VideoContent.newBuilder(this)
+                .cacheControl(cacheControl)
+                .build();
+    }
+
     public static Builder newBuilder() {
         return new Builder();
     }

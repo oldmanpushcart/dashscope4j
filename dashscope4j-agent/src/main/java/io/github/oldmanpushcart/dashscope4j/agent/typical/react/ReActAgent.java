@@ -8,7 +8,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.TextContent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolExecutionException;
@@ -73,10 +72,7 @@ public class ReActAgent extends BaseAgent {
                                     .render(Map.of("tools", JacksonJsonUtils.toJson(tools)));
 
                             // ReAct 内容（加缓存）
-                            final var content = TextContent.newBuilder()
-                                    .text(prompt)
-                                    .cacheControl(Content.CacheControl.EPHEMERAL)
-                                    .build();
+                            final var content = Content.text(prompt).withCache();
 
                             // 添加到 SystemMessage
                             messages.add(0, Message.system(content));
@@ -420,7 +416,7 @@ public class ReActAgent extends BaseAgent {
                     if (request.input().failOnToolError()) {
                         return CompletableFuture.<String>failedStage(ex);
                     } else {
-                        final var result = ToolResult.error(ex);
+                        final var result = ToolResult.ofError(ex);
                         final var resultJson = JacksonJsonUtils.toJson(result);
                         return CompletableFuture.completedStage(resultJson);
                     }

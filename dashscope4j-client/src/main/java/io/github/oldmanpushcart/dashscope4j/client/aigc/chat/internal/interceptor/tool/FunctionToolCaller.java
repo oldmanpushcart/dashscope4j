@@ -165,7 +165,7 @@ class FunctionToolCaller implements Tool.Caller {
 
                     if (!request.input().failOnToolError()) {
                         final var cause = CompletableFutureUtils.unwrapEx(ex);
-                        final var result = ToolResult.error(cause);
+                        final var result = ToolResult.ofError(cause);
                         final var errorJson = JacksonJsonUtils.toJson(result);
                         return CompletableFuture.completedStage(errorJson);
                     } else {

@@ -8,7 +8,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.SystemMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.TextContent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
@@ -86,10 +85,7 @@ public class HashMapToolIndexer implements ToolIndexer {
                         .template(HashMapToolIndexer.class.getResourceAsStream("/prompt/TOOL_ROUTER.md"))
                         .build()
                         .render();
-                final var content = TextContent.newBuilder()
-                        .cacheControl(Content.CacheControl.EPHEMERAL)
-                        .text(prompt)
-                        .build();
+                final var content = Content.text(prompt).withCache();
                 return List.of(content);
             })
             .build();
@@ -103,10 +99,7 @@ public class HashMapToolIndexer implements ToolIndexer {
                         .template(HashMapToolIndexer.class.getResourceAsStream("/prompt/TOOL_META_EXTRACTOR.md"))
                         .build()
                         .render();
-                final var content = TextContent.newBuilder()
-                        .cacheControl(Content.CacheControl.EPHEMERAL)
-                        .text(prompt)
-                        .build();
+                final var content = Content.text(prompt).withCache();
                 return List.of(content);
             })
             .build();
@@ -337,14 +330,14 @@ public class HashMapToolIndexer implements ToolIndexer {
      */
     @Override
     public CompletionStage<Set<String>> query(String instant) {
+
         // 候选工具集合消息
-        final var candidateToolsMessage = Message.assistant(TextContent.newBuilder()
-                .cacheControl(Content.CacheControl.EPHEMERAL)
+        final var candidateToolsMessage = Message.assistant(Content
                 .text("""
                         ### 候选工具列表
                         %s
                         """.formatted(JacksonJsonUtils.toJson(entities.values())))
-                .build());
+                .withCache());
 
         // 用户意图消息
         final var userInputMessage = Message.user("""
@@ -399,8 +392,13 @@ public class HashMapToolIndexer implements ToolIndexer {
      * @param entity 索引实体
      */
     private record CacheEntry(
-            @JsonProperty("key") String key,
-            @JsonProperty("entity") Entity entity
+
+            @JsonProperty("key")
+            String key,
+
+            @JsonProperty("entity")
+            Entity entity
+
     ) {
     }
 

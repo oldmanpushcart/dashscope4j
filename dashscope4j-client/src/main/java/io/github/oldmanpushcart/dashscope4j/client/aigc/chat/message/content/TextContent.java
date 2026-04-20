@@ -33,6 +33,13 @@ public final class TextContent implements Content {
         return cacheControl;
     }
 
+    @Override
+    public TextContent withCache(CacheControl cacheControl) {
+        return TextContent.newBuilder(this)
+                .cacheControl(cacheControl)
+                .build();
+    }
+
     public static Builder newBuilder() {
         return new Builder();
     }

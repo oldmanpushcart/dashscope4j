@@ -15,11 +15,15 @@ class LoadSkillTool {
     public FunctionTool toTool() {
         final var toolName = SkillHelper.toToolName(skill.header().name());
         final var toolDescription = """
+                > 技能名：%s
+                
                 %s
                 
                 ## 激活说明
-                调用此工具将激活 %s 技能，并获取其完整的操作指南与指令。
-                技能的主说明是SKILL.md
+                - 调用此工具将激活技能，并获取其完整的操作指南与指令。
+                - 技能的主说明是SKILL.md
+                - **技能会被封装为一个工具，以`skill$`开头，请不要将工具名作为技能名传入！**
+                
                 
                 ## 资源调用规范（至关重要）
                 激活技能后，所有相关资源的访问必须且只能通过以下三个专用工具完成：
@@ -45,8 +49,8 @@ class LoadSkillTool {
                 ## 使用方法
                 请向模型描述您希望完成的任务。模型将激活相应技能，并根据您的意图提供具体的执行步骤和指导。
                 """.formatted(
-                skill.header().description(),
-                skill.header().name()
+                skill.header().name(),
+                skill.header().description()
         );
 
         return FunctionTool.newBuilder()

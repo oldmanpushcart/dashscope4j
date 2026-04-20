@@ -43,6 +43,13 @@ public final class ImageContent implements Content {
         return cacheControl;
     }
 
+    @Override
+    public ImageContent withCache(CacheControl cacheControl) {
+        return ImageContent.newBuilder(this)
+                .cacheControl(cacheControl)
+                .build();
+    }
+
     public static Builder newBuilder() {
         return new Builder();
     }

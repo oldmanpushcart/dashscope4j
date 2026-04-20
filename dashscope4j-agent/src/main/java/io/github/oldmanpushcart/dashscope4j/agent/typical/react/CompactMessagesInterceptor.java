@@ -5,7 +5,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.TextContent;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
 
@@ -143,13 +142,10 @@ public class CompactMessagesInterceptor implements ChatInterceptor {
 
         // 使用双换行符分隔每条消息，保持清晰的边界
         final var mergedText = String.join("\n\n", textParts);
-        
+
         // 创建带缓存控制的文本内容
-        final var textContent = TextContent.newBuilder()
-                .text(mergedText)
-                .cacheControl(Content.CacheControl.EPHEMERAL)
-                .build();
-        
+        final var textContent = Content.text(mergedText).withCache();
+
         return AssistantMessage.newBuilder()
                 .contents(contents -> {
                     contents.add(textContent);

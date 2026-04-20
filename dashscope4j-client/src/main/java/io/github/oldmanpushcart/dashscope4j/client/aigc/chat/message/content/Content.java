@@ -17,6 +17,23 @@ public sealed interface Content permits AudioContent, ImageContent, TextContent,
     CacheControl cacheControl();
 
     /**
+     * 设置上下文缓存控制策略。
+     *
+     * @param cacheControl 缓存控制策略
+     * @return 新的消息内容
+     */
+    Content withCache(CacheControl cacheControl);
+
+    /**
+     * 创建新的消息内容，并设置默认的缓存控制策略。
+     *
+     * @return 新的消息内容
+     */
+    default Content withCache() {
+        return withCache(CacheControl.EPHEMERAL);
+    }
+
+    /**
      * 上下文缓存控制策略
      * <p>
      * <a hreef="https://help.aliyun.com/zh/model-studio/context-cache">上下文缓存</a>
