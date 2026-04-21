@@ -33,7 +33,9 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug$1() {
 
-        final var sessionId = UUID.randomUUID().toString();
+        final var sessionId = "SESSION-004"
+                // UUID.randomUUID().toString()
+                ;
         final var sessionManager = CompressSessionManager.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
@@ -83,7 +85,7 @@ public class DebugTestCase implements LoadingEnv {
 
         try {
 
-            final var agent = new ReActAgent.Builder()
+            final var agent = ReActAgent.newBuilder()
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
@@ -102,13 +104,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(Message.user("""
-                                给我用Java写一个闹钟，用户可以选择唤醒的时间。时间到之后就BE-BE-BE的闹起来。
-                                - 有用户界面。
-                                - 用Swing开发，界面和控制代码分离
-                                - 倒计时结束可以重新开始设置，用户也可以主动停止倒计时并且重新设置
-                                - 界面要有个模拟的液晶显示屏显示倒计时的时间
-                                - 时间选择要有时间选择控件方便用户进行选择
-                                - 编译通过并运行
+                                请你编译通过并成功运行
                                 """))
                         .toCompletableFuture()
                         .join();
