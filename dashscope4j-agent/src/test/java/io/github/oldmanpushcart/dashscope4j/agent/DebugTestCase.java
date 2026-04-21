@@ -35,7 +35,8 @@ public class DebugTestCase implements LoadingEnv {
     public void debug$1() {
 
         final var sessionId =
-                UUID.randomUUID().toString()
+                "SESSION-xxx"
+                // UUID.randomUUID().toString()
                 ;
         final var sessionManager = CompressSessionManager.newBuilder()
                 .client(client)
@@ -105,7 +106,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(Message.user("""
-                                根据杭州明天的天气画一幅山水画
+                                请完成编译并运行
                                 """))
                         .toCompletableFuture()
                         .join();

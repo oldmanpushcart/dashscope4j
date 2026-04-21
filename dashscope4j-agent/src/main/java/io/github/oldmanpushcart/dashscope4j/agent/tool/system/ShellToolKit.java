@@ -109,7 +109,8 @@ public class ShellToolKit implements ToolKit {
                         // 安全拦截的危险命令
                         final var result = new Result(
                                 "⛔ 命令被拒绝：" + ex.getMessage(),
-                                -1
+                                -1,
+                                false  // Shell 执行失败
                         );
                         return CompletableFuture.completedStage(result);
                     } catch (IOException | InterruptedException ex) {
@@ -118,7 +119,8 @@ public class ShellToolKit implements ToolKit {
                         }
                         final var result = new Result(
                                 "命令执行失败：" + ex.getMessage(),
-                                -1
+                                -1,
+                                false  // Shell 执行失败
                         );
                         return CompletableFuture.completedStage(result);
                     }
@@ -180,7 +182,7 @@ public class ShellToolKit implements ToolKit {
             try {
                 // 执行 chcp 获取活动代码页
                 final var result = executeCmdWithTimeout(List.of("cmd.exe", "/c", "chcp"), Charset.defaultCharset());
-                if (!result.isSuccess()) {
+                if (!result.shellExecutionSuccess()) {
                     throw new IOException(result.toString());
                 }
 
@@ -284,7 +286,8 @@ public class ShellToolKit implements ToolKit {
             process.destroyForcibly();
             return new Result(
                     "⏱️ 命令执行超时（超过 " + timeout + "），已被强制终止",
-                    -2
+                    -2,
+                    false  // Shell 执行失败
             );
         }
 
@@ -297,7 +300,7 @@ public class ShellToolKit implements ToolKit {
         } catch (TimeoutException e) {
             output = "读取输出超时";
         }
-        return new Result(output, process.exitValue());
+        return new Result(output, process.exitValue(), true);  // Shell 执行成功
     }
 
     // ==================== 内部类 ====================
@@ -320,44 +323,86 @@ public class ShellToolKit implements ToolKit {
             String output,
 
             @JsonProperty("exit_code")
-            int code
+            int exitCode,
+
+            @JsonProperty("shell_execution_success")
+            boolean shellExecutionSuccess
     ) {
-        @JsonProperty("is_success")
-        public boolean isSuccess() {
-            return code == 0;
+        /**
+         * 命令是否执行成功(退出码为0)
+         *
+         * @return 命令是否成功
+         */
+        @JsonProperty("is_command_success")
+        public boolean isCommandSuccess() {
+            return exitCode == 0;
         }
 
-        @JsonProperty("prompt")
-        public String prompt() {
-            if (isSuccess()) {
-                return "执行成功";
+        /**
+         * 获取提示信息
+         *
+         * @param timeout 超时时间
+         * @return 提示信息
+         */
+        public String prompt(Duration timeout) {
+            // Shell 执行失败(超时、异常等)
+            if (!shellExecutionSuccess) {
+                return """
+                        ⚠️ Shell 执行失败，命令未能正常运行：
+                        
+                        【可能原因】
+                        - 命令执行超时(超过 %s)
+                        - 命令被安全策略拦截
+                        - 系统资源不足或 IO 错误
+                        
+                        【建议】
+                        - 检查命令是否过于耗时
+                        - 确认命令不在危险命令黑名单中
+                        - 简化命令后重试
+                        """.formatted(timeout);
             }
 
-            return """
-                    ⚠️ 命令执行失败，请检查以下可能的问题：
-                    
-                    【常见问题排查】
-                    1. 命令语法是否正确
-                       - Windows: 使用 cmd.exe /c 或 PowerShell -Command
-                       - Linux/Mac: 使用 bash -c 或直接执行
-                    
-                    2. 命令是否存在
-                       - 检查命令是否已安装
-                       - 检查 PATH 环境变量配置
-                    
-                    3. 权限是否足够
-                       - 是否需要管理员/root 权限
-                       - 文件是否有执行权限
-                    
-                    4. 参数是否正确
-                       - 路径是否存在
-                       - 参数格式是否匹配操作系统
-                    
-                    【调试建议】
-                    - 尝试简化命令，逐步排查
-                    - 使用 echo 测试环境变量
-                    - 查看完整错误信息定位问题
-                    """;
+            // Shell 执行成功，但命令返回非零退出码
+            if (exitCode != 0) {
+                return """
+                        ⚠️ 命令执行失败(退出码: %d)，请检查以下可能的问题：
+                        
+                        【常见问题排查】
+                        1. 命令语法是否正确
+                           - Windows: 使用 cmd.exe /c 或 PowerShell -Command
+                           - Linux/Mac: 使用 bash -c 或直接执行
+                        
+                        2. 命令是否存在
+                           - 检查命令是否已安装
+                           - 检查 PATH 环境变量配置
+                        
+                        3. 权限是否足够
+                           - 是否需要管理员/root 权限
+                           - 文件是否有执行权限
+                        
+                        4. 参数是否正确
+                           - 路径是否存在
+                           - 参数格式是否匹配操作系统
+                        
+                        【调试建议】
+                        - 尝试简化命令，逐步排查
+                        - 使用 echo 测试环境变量
+                        - 查看完整错误信息定位问题
+                        """.formatted(exitCode);
+            }
+
+            // 完全成功
+            return "执行成功";
+        }
+
+        /**
+         * 获取提示信息(使用默认超时时间)
+         *
+         * @return 提示信息
+         */
+        @JsonProperty("prompt")
+        public String prompt() {
+            return prompt(DEFAULT_TIMEOUT);
         }
     }
 
