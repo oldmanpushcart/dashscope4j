@@ -15,6 +15,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.McpToolLoad
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.RecoverableMcpClientTransport;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.file.FileSkillProvider;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.plan.PlanAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
@@ -33,8 +34,8 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug$1() {
 
-        final var sessionId = "SESSION-004"
-                // UUID.randomUUID().toString()
+        final var sessionId =
+                UUID.randomUUID().toString()
                 ;
         final var sessionManager = CompressSessionManager.newBuilder()
                 .client(client)
@@ -85,7 +86,7 @@ public class DebugTestCase implements LoadingEnv {
 
         try {
 
-            final var agent = ReActAgent.newBuilder()
+            final var agent = PlanAgent.newBuilder()
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
@@ -104,7 +105,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(Message.user("""
-                                请你编译通过并成功运行
+                                根据杭州明天的天气画一幅山水画
                                 """))
                         .toCompletableFuture()
                         .join();

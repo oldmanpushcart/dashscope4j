@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.plan;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
@@ -13,6 +14,7 @@ import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -82,7 +84,7 @@ public class PlanAgent extends BaseAgent {
     public CompletionStage<AssistantMessage> async(UserMessage inbound) {
         logger.info("{} start executing task: {}", this, inbound.text());
 
-        return generatePlanAsync(inbound)
+        return generatePlan(inbound)
                 .thenCompose(plan -> {
                     logger.info("{} plan generated with {} steps", this, plan.steps().size());
                     return executePlanAsync(plan, inbound);
@@ -103,7 +105,7 @@ public class PlanAgent extends BaseAgent {
      * @param inbound 用户输入消息
      * @return 执行计划
      */
-    private CompletionStage<Plan> generatePlanAsync(UserMessage inbound) {
+    private CompletionStage<Plan> generatePlan(UserMessage inbound) {
         final var prompt = PLAN_PROMPT_TEMPLATE.render(Map.of(
                 "task", inbound.text()
         ));
@@ -112,32 +114,35 @@ public class PlanAgent extends BaseAgent {
                 .input(Input.newBuilder()
                         .addMessage(Message.user(prompt))
                         .build())
+                .parameters(parameters-> {
+                    parameters.put("response_format", Map.of(
+                            "type", "json_object"
+                    ));
+                    return parameters;
+                })
                 .build();
 
         return client().async(request)
                 .thenApply(response -> response.output().best().message().text())
-                .thenApply(this::parsePlanFromJson);
-    }
-
-    /**
-     * 从 JSON 字符串解析 Plan
-     *
-     * @param json JSON 字符串
-     * @return Plan 对象
-     */
-    private Plan parsePlanFromJson(String json) {
-        try {
-            final var plan = JacksonJsonUtils.toObject(json, Plan.class);
-            // 填充 planId
-            return new Plan(
-                    this.sessionId(),
-                    plan.originalTask(),
-                    plan.steps(),
-                    plan.context() != null ? plan.context() : new HashMap<>()
-            );
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to parse plan JSON: " + json, e);
-        }
+                .thenApply(json -> {
+                    logger.debug("{}/plan <<< {}", this, json);
+                    try {
+                        // 直接解析为 List<Step>
+                        final Type listType = new TypeReference<List<Step>>() {}.getType();
+                        @SuppressWarnings("unchecked")
+                        final var steps = (List<Step>) JacksonJsonUtils.toObject(json, listType);
+                        
+                        // 构建完整的 Plan 对象
+                        return new Plan(
+                            this.sessionId(),       // planId: 使用当前 sessionId
+                            inbound.text(),         // originalTask: 使用用户输入
+                            steps,                  // steps: 从 JSON 解析
+                            new HashMap<>()         // context: 初始化为空 Map
+                        );
+                    } catch (Exception e) {
+                        throw new IllegalArgumentException("Failed to parse plan JSON: " + json, e);
+                    }
+                });
     }
 
 
