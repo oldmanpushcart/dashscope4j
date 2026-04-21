@@ -35,7 +35,7 @@ public interface Agent {
     /**
      * 异步处理用户消息
      *
-     * @param inbound   用户消息
+     * @param inbound 用户消息
      * @return 处理结果
      */
     CompletionStage<AssistantMessage> async(UserMessage inbound);
@@ -43,7 +43,7 @@ public interface Agent {
     /**
      * 流式处理用户消息
      *
-     * @param inbound   用户消息
+     * @param inbound 用户消息
      * @return 处理结果
      */
     Publisher<AssistantMessage> flow(UserMessage inbound);
@@ -54,5 +54,13 @@ public interface Agent {
      * @return FunctionTool 实例
      */
     FunctionTool asTool();
+
+    /**
+     * 创建新的会话
+     *
+     * @param sessionId 会话ID
+     * @return 新的会话
+     */
+    Agent newSession(String sessionId);
 
 }

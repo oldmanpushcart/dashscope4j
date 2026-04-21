@@ -50,7 +50,7 @@ import java.util.function.UnaryOperator;
  * @see Agent
  * @see SessionInterceptor
  */
-public class BaseAgent implements Agent {
+public abstract class BaseAgent implements Agent {
 
     /**
      * Agent 名称
@@ -367,6 +367,9 @@ public class BaseAgent implements Agent {
             this.description = agent.description;
             this.introduction = agent.introduction;
             this.sessionId = agent.sessionId;
+
+            this.toolbox = agent.toolbox;
+            this.sessionManager = agent.sessionManager;
 
             this.client = agent.client;
             this.model = agent.model;

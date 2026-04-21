@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
+import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
@@ -424,6 +425,13 @@ public class ReActAgent extends BaseAgent {
                 .thenCompose(v -> v);
     }
 
+    @Override
+    public Agent newSession(String sessionId) {
+        return ReActAgent.newBuilder(this)
+                .sessionId(sessionId)
+                .build();
+    }
+
     /**
      * 调用者
      *
@@ -437,7 +445,19 @@ public class ReActAgent extends BaseAgent {
         return new Builder();
     }
 
+    public static Builder newBuilder(ReActAgent agent) {
+        return new Builder(agent);
+    }
+
     public static class Builder extends BaseAgent.Builder<ReActAgent, ReActAgent.Builder> {
+
+        protected Builder() {
+
+        }
+
+        protected Builder(ReActAgent agent) {
+            super(agent);
+        }
 
         @Override
         public ReActAgent build() {
