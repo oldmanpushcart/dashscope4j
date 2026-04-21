@@ -157,7 +157,7 @@ public class HashMapToolIndexer implements ToolIndexer {
         final var fnDesc = functionTool.meta().description();
         return cacheUpsert(fnName, fnDesc, () -> extractMetaFromLLM(functionTool))
                 .exceptionallyCompose(ex -> {
-                    final var cause = new IllegalStateException("Failed to upsert tool: %s".formatted(name));
+                    final var cause = new IllegalStateException("Failed to upsert tool: %s".formatted(name), ex);
                     return CompletableFuture.failedStage(cause);
                 });
     }
