@@ -93,11 +93,11 @@ public class TextFileOpsToolKit implements ToolKit {
     @Override
     public List<Tool> tools() {
         if (readOnly) {
-            // 只读模式：仅返回读取工具
-            return List.of(read());
+            // 只读模式：仅返回读取和搜索工具
+            return List.of(read(), search());
         } else {
             // 读写模式：返回所有工具
-            return List.of(read(), write(), append(), replace());
+            return List.of(read(), write(), append(), replace(), search());
         }
     }
 
@@ -517,6 +517,163 @@ public class TextFileOpsToolKit implements ToolKit {
                 .build();
     }
 
+    /**
+     * 使用正则表达式搜索文件内容
+     */
+    public FunctionTool search() {
+        return FunctionTool.newBuilder()
+                .name("text_file$search")
+                .description("""
+                        使用正则表达式在文件中搜索匹配的文本内容，类似 grep 命令。
+                        
+                        【使用场景】
+                        - 查找代码中的特定模式（如方法定义、TODO注释等）
+                        - 搜索日志中的错误或警告信息
+                        - 定位配置文件中的特定配置项
+                        - 分析文档中的关键词出现位置
+                        
+                        【功能特性】
+                        - 支持正则表达式搜索
+                        - 可选择显示/隐藏行号
+                        - 支持上下文展示（匹配行的前后N行）
+                        - 限制最大返回匹配数，避免输出过多
+                        
+                        【返回结果】
+                        - count: 总匹配数
+                        - returned: 实际返回的匹配数
+                        - has_more: 是否还有更多匹配未返回
+                        - results: 匹配结果列表，每项包含：
+                          * line_number: 行号（如果 show_line_numbers=true）
+                          * line: 匹配的完整行内容
+                          * text: 实际匹配的文本片段
+                          * before: 前N行内容（如果 context_lines > 0）
+                          * after: 后N行内容（如果 context_lines > 0）
+                        
+                        【典型工作流】
+                        1. 查找所有TODO注释：
+                           search(path="src/Main.java", pattern="TODO.*", context_lines=2)
+                        2. 查找方法定义并显示行号：
+                           search(path="src/Main.java", pattern="public void \\w+", show_line_numbers=true)
+                        3. 搜索错误日志：
+                           search(path="logs/app.log", pattern="ERROR.*timeout", max_results=50)
+                        
+                        【注意事项】
+                        - 正则表达式语法错误会返回详细错误信息
+                        - 大文件搜索可能较慢，建议先用 read 了解文件大小
+                        - 默认最多返回100个匹配结果，可通过 max_results 调整
+                        - 上下文行数过大会增加输出体积
+                        """)
+                .parameterType(SearchSpec.class)
+                .<SearchSpec>function((caller, spec) -> {
+                    try {
+                        // 验证正则表达式
+                        if (spec.pattern() == null || spec.pattern().isEmpty()) {
+                            return Result.error("INVALID_PATTERN", "搜索模式不能为空");
+                        }
+
+                        final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
+
+                        if (!Files.exists(resolved)) {
+                            return Result.error("FILE_NOT_FOUND", "文件不存在：" + spec.path());
+                        }
+
+                        if (Files.isDirectory(resolved)) {
+                            return Result.error("IS_DIRECTORY", "路径是目录而非文件：" + spec.path());
+                        }
+
+                        // 检查文件大小
+                        final long fileSize = Files.size(resolved);
+                        if (fileSize > maxFileSize) {
+                            return Result.error("SIZE_EXCEEDED",
+                                    "文件大小 %.2f MB 超过限制 %.2f MB".formatted(
+                                            fileSize / 1024.0 / 1024.0,
+                                            maxFileSize / 1024.0 / 1024.0));
+                        }
+
+                        // 检测是否为二进制文件
+                        if (FileUtils.isBinaryFile(resolved)) {
+                            return Result.error("BINARY_FILE", "无法搜索二进制文件：" + spec.path());
+                        }
+
+                        // 编译正则表达式
+                        final Pattern pattern;
+                        try {
+                            pattern = Pattern.compile(spec.pattern());
+                        } catch (PatternSyntaxException e) {
+                            return Result.error("INVALID_REGEX", "正则表达式语法错误：" + e.getDescription());
+                        }
+
+                        // 读取文件所有行
+                        final List<String> allLines = Files.readAllLines(resolved, charset);
+                        final int totalLines = allLines.size();
+
+                        // 执行搜索
+                        final List<Map<String, Object>> results = new ArrayList<>();
+                        final int maxResults = spec.maxResults() > 0 ? Math.min(spec.maxResults(), 1000) : 100;
+                        final int contextLines = Math.max(0, spec.contextLines());
+                        final boolean showLineNumbers = spec.showLineNumbers();
+
+                        int totalMatches = 0;
+                        boolean hasMore = false;
+
+                        for (int i = 0; i < totalLines; i++) {
+                            final String line = allLines.get(i);
+                            final Matcher matcher = pattern.matcher(line);
+
+                            if (matcher.find()) {
+                                totalMatches++;
+
+                                // 如果已达到最大返回数，标记有更多结果
+                                if (results.size() >= maxResults) {
+                                    hasMore = true;
+                                    break;
+                                }
+
+                                // 构建结果项
+                                final Map<String, Object> resultItem = new java.util.HashMap<>();
+
+                                // 添加行号（如果需要）
+                                if (showLineNumbers) {
+                                    resultItem.put("line_number", i + 1); // 行号从1开始
+                                }
+
+                                // 添加匹配的完整行
+                                resultItem.put("line", line);
+
+                                // 添加实际匹配的文本
+                                resultItem.put("text", matcher.group());
+
+                                // 添加上下文
+                                if (contextLines > 0) {
+                                    // 前N行
+                                    final int startIdx = Math.max(0, i - contextLines);
+                                    final List<String> beforeLines = allLines.subList(startIdx, i);
+                                    resultItem.put("before", beforeLines);
+
+                                    // 后N行
+                                    final int endIdx = Math.min(totalLines, i + contextLines + 1);
+                                    final List<String> afterLines = allLines.subList(i + 1, endIdx);
+                                    resultItem.put("after", afterLines);
+                                }
+
+                                results.add(resultItem);
+                            }
+                        }
+
+                        return Result.success(Map.of(
+                                "count", totalMatches,
+                                "returned", results.size(),
+                                "has_more", hasMore,
+                                "results", results
+                        ));
+
+                    } catch (IOException e) {
+                        return Result.error("IO_ERROR", "搜索文件失败：" + e.getMessage());
+                    }
+                })
+                .build();
+    }
+
     // ==================== Builder ====================
 
     public static Builder newBuilder() {
@@ -682,6 +839,33 @@ public class TextFileOpsToolKit implements ToolKit {
             @JsonPropertyDescription("最后修改时间戳（从read获取）")
             @JsonProperty(value = "last_modified", required = true)
             long lastModified,
+
+            @JsonPropertyDescription("文件编码（可选，默认UTF-8）")
+            @JsonProperty("encoding")
+            String encoding
+    ) {
+    }
+
+    record SearchSpec(
+            @JsonPropertyDescription("文件的相对路径")
+            @JsonProperty(value = "path", required = true)
+            String path,
+
+            @JsonPropertyDescription("正则表达式搜索模式")
+            @JsonProperty(value = "pattern", required = true)
+            String pattern,
+
+            @JsonPropertyDescription("是否显示行号（可选，默认true）")
+            @JsonProperty("show_line_numbers")
+            boolean showLineNumbers,
+
+            @JsonPropertyDescription("上下文行数，返回匹配行的前后N行（可选，默认0）")
+            @JsonProperty("context_lines")
+            int contextLines,
+
+            @JsonPropertyDescription("最大返回匹配数（可选，默认100，最大1000）")
+            @JsonProperty("max_results")
+            int maxResults,
 
             @JsonPropertyDescription("文件编码（可选，默认UTF-8）")
             @JsonProperty("encoding")

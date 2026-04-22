@@ -28,7 +28,7 @@ public class RetryInterceptor implements Interceptor {
      *
      * @return 构建器实例
      */
-    public static Builder builder() {
+    public static Builder newBuilder() {
         return new Builder();
     }
 

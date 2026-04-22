@@ -64,7 +64,8 @@ public class DashscopeToolKit implements ToolKit {
                 imageEdit(),
                 t2i(),
                 t2v(),
-                tts()
+                tts(),
+                rewritePrompt()
         );
     }
 
@@ -720,6 +721,137 @@ public class DashscopeToolKit implements ToolKit {
             @JsonPropertyDescription("可爱童声")
             @JsonProperty("longhuhu_v3")
             LONGHUHU
+
+        }
+
+    }
+
+    /**
+     * 提示词生成与重写工具
+     */
+    private FunctionTool rewritePrompt() {
+        return FunctionTool.newBuilder()
+                .name("dashscope$rewrite_prompt")
+                .description("""
+                        根据用户意图、输入和要求，生成或重写提示词/文本内容。
+                        
+                        【使用场景】
+                        - 输入重写：优化用户原始输入，使其更清晰明确
+                        - 提示词生成：为文生图、文生视频等任务生成高质量提示词
+                        - 内容提取：从复杂文本中提取关键信息并结构化
+                        - 风格转换：将文本转换为特定风格或格式
+                        - 语言优化：改进表达方式，提升专业性或可读性
+                        
+                        【参数说明】
+                        - intent: 用户意图描述（必需），例如：
+                          * "生成一幅中国山水画"
+                          * "提取文档中的关键日期和事件"
+                          * "将技术文档改写为通俗易懂的版本"
+                        - input: 原始输入内容（必需），可以是：
+                          * 简单的想法或关键词
+                          * 需要优化的文本
+                          * 待处理的原始数据
+                        - requirements: 具体要求（可选），例如：
+                          * "使用专业术语，保持简洁"
+                          * "输出 JSON 格式，包含 title、summary、tags 字段"
+                          * "强调色彩和构图细节"
+                        - output_format: 期望输出格式（可选）：
+                          * text: 普通文本（默认）
+                          * json: JSON 格式
+                          * markdown: Markdown 格式
+                          * list: 列表格式
+                        
+                        【返回结果】
+                        - 优化后的文本内容
+                        - 符合要求的结构化输出
+                        
+                        【注意事项】
+                        - intent 应该清晰描述最终目标
+                        - input 提供原始素材或想法
+                        - requirements 越具体，输出质量越高
+                        - 适合用于提升后续 AI 任务的输入质量
+                        """)
+                .parameterType(RewritePromptSpec.class)
+                .<RewritePromptSpec>function((caller, spec) -> {
+                    final var client = caller.client();
+                    
+                    // 构建系统消息，定义角色和任务
+                    final var systemPrompt = """
+                            你是专业的提示词工程师和内容优化专家。
+                            你的任务是根据用户意图、输入内容和要求，生成高质量的文本输出。
+                            
+                            请遵循以下原则：
+                            1. 准确理解用户意图
+                            2. 充分利用输入内容
+                            3. 严格遵守输出要求
+                            4. 保持输出清晰、专业、有用
+                            """;
+                    
+                    // 构建用户消息
+                    final var userContent = new StringBuilder();
+                    userContent.append("## 用户意图\n").append(spec.intent()).append("\n\n");
+                    userContent.append("## 原始输入\n").append(spec.input()).append("\n\n");
+                    if (spec.requirements() != null && !spec.requirements().isEmpty()) {
+                        userContent.append("## 具体要求\n").append(spec.requirements()).append("\n\n");
+                    }
+                    if (spec.outputFormat() != null) {
+                        userContent.append("## 输出格式\n").append(spec.outputFormat()).append("\n\n");
+                    }
+                    userContent.append("请根据以上信息生成优化后的内容。");
+                    
+                    final var request = AigcRequest.newBuilder(ChatModel.QWEN_PLUS)
+                            .input(ChatModel.Input.newBuilder()
+                                    .addMessage(Message.system(systemPrompt))
+                                    .addMessage(Message.user(userContent.toString()))
+                                    .build())
+                            .build();
+                    
+                    return client.async(request)
+                            .thenApply(response -> response.output().best().message().text());
+                })
+                .build();
+    }
+
+    /**
+     * 提示词重写规格
+     */
+    record RewritePromptSpec(
+
+            @JsonPropertyDescription("用户意图描述")
+            @JsonProperty(value = "intent", required = true)
+            String intent,
+
+            @JsonPropertyDescription("原始输入内容")
+            @JsonProperty(value = "input", required = true)
+            String input,
+
+            @JsonPropertyDescription("具体要求")
+            @JsonProperty("requirements")
+            String requirements,
+
+            @JsonPropertyDescription("期望输出格式")
+            @JsonProperty("output_format")
+            OutputFormat outputFormat
+
+    ) {
+
+        enum OutputFormat {
+
+            @JsonPropertyDescription("普通文本")
+            @JsonProperty("text")
+            TEXT,
+
+            @JsonPropertyDescription("JSON 格式")
+            @JsonProperty("json")
+            JSON,
+
+            @JsonPropertyDescription("Markdown 格式")
+            @JsonProperty("markdown")
+            MARKDOWN,
+
+            @JsonPropertyDescription("列表格式")
+            @JsonProperty("list")
+            LIST
 
         }
 

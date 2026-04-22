@@ -35,8 +35,8 @@ public class DebugTestCase implements LoadingEnv {
     public void debug$1() {
 
         final var sessionId =
-                "SESSION-xxx"
-                // UUID.randomUUID().toString()
+                "SESSION-snake"
+                //UUID.randomUUID().toString()
                 ;
         final var sessionManager = CompressSessionManager.newBuilder()
                 .client(client)
@@ -45,7 +45,7 @@ public class DebugTestCase implements LoadingEnv {
                 .store(FileSessionStore.newBuilder()
                         .directory(Paths.get("./session"))
                         .build())
-                .maxTokens(5 * 1000)
+                .maxTokens(50 * 10000)
                 .gcRatio(0.3)
                 .build();
 
@@ -87,7 +87,7 @@ public class DebugTestCase implements LoadingEnv {
 
         try {
 
-            final var agent = PlanAgent.newBuilder()
+            final var agent = ReActAgent.newBuilder()
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
@@ -106,7 +106,8 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(Message.user("""
-                                请完成编译并运行
+                                我要你执行编译这些代码并运行起来，如果编译失败你需要解决编译或运行失败的问题，直到成功！
+                                你有环境的，你动动你的脑子去search_tool工具找找
                                 """))
                         .toCompletableFuture()
                         .join();
