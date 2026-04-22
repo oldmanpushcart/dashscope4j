@@ -13,6 +13,7 @@ import org.reactivestreams.Publisher;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
@@ -20,6 +21,11 @@ import java.util.concurrent.ForkJoinPool;
  * Dashscope 客户端
  */
 public interface DashscopeClient {
+
+    /**
+     * @return Executor
+     */
+    Executor executor();
 
     /**
      * 异步请求

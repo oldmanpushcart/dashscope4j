@@ -48,18 +48,13 @@ class DefaultFunctionTool implements FunctionTool {
     }
 
     private <T> T toArgument(String argumentJson) {
+        if (null == argumentJson) {
+            return null;
+        }
         try {
             return JacksonJsonUtils.toObject(argumentJson, parameterType);
         } catch (Throwable cause) {
             throw ToolExecutionException.marshalFailed(meta.name(), cause);
-        }
-    }
-
-    private String toResultJson(Object result) {
-        try {
-            return JacksonJsonUtils.toJson(result);
-        } catch (Throwable cause) {
-            throw ToolExecutionException.unmarshalFailed(meta.name(), cause);
         }
     }
 

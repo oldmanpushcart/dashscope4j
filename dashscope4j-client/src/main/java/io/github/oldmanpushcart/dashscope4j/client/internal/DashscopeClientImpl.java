@@ -29,6 +29,7 @@ import org.reactivestreams.Publisher;
 
 import java.util.*;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
@@ -41,6 +42,7 @@ public class DashscopeClientImpl implements DashscopeClient {
     private final RealtimeApi realtimeApi;
     private final BaseOp baseOp;
     private final List<Interceptor> interceptors;
+    private final Executor executor;
 
     private DashscopeClientImpl(Builder builder) {
 
@@ -69,6 +71,7 @@ public class DashscopeClientImpl implements DashscopeClient {
         this.realtimeApi = realtimeApi;
         this.baseOp = new BaseOpImpl(this);
         this.interceptors = newInterceptors(builder);
+        this.executor = executor;
 
     }
 
@@ -118,6 +121,11 @@ public class DashscopeClientImpl implements DashscopeClient {
                 .map(v -> Optional.ofNullable(v).orElseGet(List::of))
                 .flatMap(List::stream)
                 .toList();
+    }
+
+    @Override
+    public Executor executor() {
+        return executor;
     }
 
     @Override

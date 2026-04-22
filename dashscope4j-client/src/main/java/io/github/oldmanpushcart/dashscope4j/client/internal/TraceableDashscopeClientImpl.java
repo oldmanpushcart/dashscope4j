@@ -17,6 +17,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 /**
@@ -48,6 +49,11 @@ public class TraceableDashscopeClientImpl implements DashscopeClient {
      */
     public TraceableDashscopeClientImpl(DashscopeClient delegate) {
         this.delegate = delegate;
+    }
+
+    @Override
+    public Executor executor() {
+        return delegate.executor();
     }
 
     @Override

@@ -2,6 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.client.api.interceptor;
 
 import io.github.oldmanpushcart.dashscope4j.client.util.retry.RetryStrategies;
 import io.github.oldmanpushcart.dashscope4j.client.util.retry.RetryStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -17,10 +19,16 @@ import java.util.concurrent.TimeUnit;
  */
 public class RetryInterceptor implements Interceptor {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final RetryStrategy strategy;
 
     private RetryInterceptor(RetryStrategy strategy) {
         this.strategy = strategy;
+    }
+
+    @Override
+    public String toString() {
+        return "dashscope4j-client:/retry";
     }
 
     /**
@@ -53,17 +61,24 @@ public class RetryInterceptor implements Interceptor {
 
                     // null 表示不重试，直接返回失败
                     if (delay == null) {
+                        if (attempt > 0) {
+                            logger.warn("{} retry exhausted after {} attempts: {}", this, attempt + 1, ex.getMessage());
+                        } else {
+                            logger.debug("{} initial request failed without retry: {}", this, ex.getMessage());
+                        }
                         return CompletableFuture.failedFuture(ex);
                     }
 
-                    // 延迟时间为 0 或负数，表示立即重试
+                    // 记录重试决策
                     if (delay.isZero() || delay.isNegative()) {
+                        logger.debug("{} attempt {} failed, retrying immediately (attempt={})", this, attempt + 1, attempt);
                         return (CompletionStage) doRetry(chain, attempt + 1);
+                    } else {
+                        logger.debug("{} attempt {} failed, retrying in {}ms (attempt={})", this, attempt + 1, delay.toMillis(), attempt);
+                        // 延迟后重试
+                        return CompletableFuture.supplyAsync(() -> null, CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS, chain.client().executor()))
+                                .thenCompose(v -> (CompletionStage) doRetry(chain, attempt + 1));
                     }
-
-                    // 延迟后重试
-                    return CompletableFuture.supplyAsync(() -> null, CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS))
-                            .thenCompose(v -> (CompletionStage) doRetry(chain, attempt + 1));
                 });
     }
 

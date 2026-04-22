@@ -39,8 +39,9 @@ public class DebugTestCase implements LoadingEnv {
     public void debug$1() {
 
         final var sessionId =
-                //"SESSION-snake"
-                UUID.randomUUID().toString();
+                "SESSION-snake"
+                //UUID.randomUUID().toString()
+        ;
         final var sessionManager = CompressSessionManager.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
@@ -109,7 +110,8 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = Flux.from(agent.flow(Message.user("""
-                                根据杭州明天的天气，画一幅山水画。
+                                贪吃蛇吃了红点后应该变长1格，移动速度增加100ms
+                                编译并运行
                                 """)))
                         .reduce(AssistantMessage::accumulate)
                         .toFuture()
