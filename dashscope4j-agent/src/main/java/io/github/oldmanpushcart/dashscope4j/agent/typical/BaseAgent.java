@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.session.SessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.HashMapSessionStore;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
@@ -108,6 +109,11 @@ public abstract class BaseAgent implements Agent {
     private final List<Interceptor> interceptors;
 
     /**
+     * 工具包列表
+     */
+    private final List<ToolKit> toolKits;
+
+    /**
      * 构造 BaseAgent
      *
      * @param builder 构建器
@@ -134,6 +140,7 @@ public abstract class BaseAgent implements Agent {
         // 创建不可变副本，防止外部修改
         this.parameters = CommonUtils.unmodifiableCopy(builder.parameters);
         this.interceptors = CommonUtils.unmodifiableCopy(builder.interceptors);
+        this.toolKits = CommonUtils.unmodifiableCopy(builder.toolKits);
     }
 
     @Override
@@ -208,11 +215,17 @@ public abstract class BaseAgent implements Agent {
                 .parameters(parameters -> {
                     parameters.putAll(parameters());
 
+                    //noinspection unchecked
+                    final var tools = (List<Tool>) parameters.computeIfAbsent("tools", k -> new ArrayList<>());
+
                     // 添加 search_tools 工具
                     if (null != searchTools) {
-                        //noinspection unchecked
-                        final var tools = (List<Tool>) parameters.computeIfAbsent("tools", k -> new ArrayList<>());
                         tools.add(searchTools);
+                    }
+
+                    // 添加 toolkits 工具包
+                    if (CommonUtils.isNotEmpty(toolKits)) {
+                        toolKits.forEach(kit -> tools.addAll(kit.tools()));
                     }
 
                     return parameters;
@@ -356,6 +369,7 @@ public abstract class BaseAgent implements Agent {
         private ChatModel model;
         private Map<String, Object> parameters;
         private List<Interceptor> interceptors;
+        private List<ToolKit> toolKits;
 
         protected Builder() {
 
@@ -375,6 +389,7 @@ public abstract class BaseAgent implements Agent {
             this.model = agent.model;
             this.parameters = CommonUtils.unmodifiableCopy(agent.parameters);
             this.interceptors = CommonUtils.unmodifiableCopy(agent.interceptors);
+            this.toolKits = CommonUtils.unmodifiableCopy(agent.toolKits);
 
         }
 
@@ -435,6 +450,16 @@ public abstract class BaseAgent implements Agent {
 
         public B interceptors(UnaryOperator<List<Interceptor>> operator) {
             this.interceptors = operator.apply(CommonUtils.mutableCopy(this.interceptors));
+            return self();
+        }
+
+        public B toolKits(List<ToolKit> toolKits) {
+            this.toolKits = toolKits;
+            return self();
+        }
+
+        public B toolKits(UnaryOperator<List<ToolKit>> operator) {
+            this.toolKits = operator.apply(CommonUtils.mutableCopy(this.toolKits));
             return self();
         }
 

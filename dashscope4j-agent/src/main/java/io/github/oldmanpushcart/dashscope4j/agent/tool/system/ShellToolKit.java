@@ -19,6 +19,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
+import static java.util.concurrent.TimeUnit.*;
+
 /**
  * Shell 命令执行工具包
  * <p>
@@ -103,7 +105,7 @@ public class ShellToolKit implements ToolKit {
                         validateCommand(spec.command());
 
                         final var charset = detectTerminalCharset();
-                        final var result = executeCmdWithTimeout(spec.command(), charset);
+                        final var result = executeWithTimeout(spec.command(), charset);
                         return CompletableFuture.completedStage(result);
                     } catch (SecurityException ex) {
                         // 安全拦截的危险命令
@@ -181,7 +183,7 @@ public class ShellToolKit implements ToolKit {
         if (isWindows()) {
             try {
                 // 执行 chcp 获取活动代码页
-                final var result = executeCmdWithTimeout(List.of("cmd.exe", "/c", "chcp"), Charset.defaultCharset());
+                final var result = executeWithTimeout(List.of("cmd.exe", "/c", "chcp"), Charset.defaultCharset());
                 if (!result.shellExecutionSuccess()) {
                     throw new IOException(result.toString());
                 }
@@ -258,7 +260,7 @@ public class ShellToolKit implements ToolKit {
      * @throws IOException          IO 异常
      * @throws InterruptedException 中断异常
      */
-    private Result executeCmdWithTimeout(List<String> command, Charset charset) throws IOException, InterruptedException {
+    private Result executeWithTimeout(List<String> command, Charset charset) throws IOException, InterruptedException {
         final var process = new ProcessBuilder()
                 .redirectErrorStream(true)
                 .command(command)
@@ -279,7 +281,7 @@ public class ShellToolKit implements ToolKit {
         });
 
         // 等待进程完成（带超时）
-        boolean completed = process.waitFor(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
+        final var completed = process.waitFor(timeout.toMillis(), MILLISECONDS);
 
         if (!completed) {
             // 超时，销毁进程
@@ -294,7 +296,7 @@ public class ShellToolKit implements ToolKit {
         // 获取输出（已考虑超时）
         String output;
         try {
-            output = outputFuture.get(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
+            output = outputFuture.get(timeout.toMillis(), MILLISECONDS);
         } catch (ExecutionException e) {
             output = "获取输出失败：" + e.getCause().getMessage();
         } catch (TimeoutException e) {
@@ -309,9 +311,11 @@ public class ShellToolKit implements ToolKit {
      * 命令执行规格
      */
     record CmdSpec(
+
             @JsonPropertyDescription("要执行的命令（字符串数组形式）")
             @JsonProperty(value = "command", required = true)
             List<String> command
+
     ) {
     }
 
@@ -319,6 +323,7 @@ public class ShellToolKit implements ToolKit {
      * 命令执行结果
      */
     record Result(
+
             @JsonProperty("output")
             String output,
 
@@ -327,6 +332,7 @@ public class ShellToolKit implements ToolKit {
 
             @JsonProperty("shell_execution_success")
             boolean shellExecutionSuccess
+
     ) {
         /**
          * 命令是否执行成功(退出码为0)

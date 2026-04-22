@@ -8,8 +8,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -19,36 +17,21 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-
-import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.CREATE;
 
 /**
  * 文本文件操作工具包
  * <p>
- * 提供文本文件的精细化编辑能力：
- * - read: 读取文本文件（支持分页、编码检测）
- * - write: 覆盖写入文本文件（防误覆盖、并发控制）
- * - append: 末尾追加文本内容
- * - replace: 搜索并替换文本内容
+ * 提供智能体友好的文本文件编辑能力：
+ * - view: 查看文件内容（支持行范围）
+ * - search: 关键词搜索（返回匹配行及上下文）
+ * - str_replace: 字符串精确替换（要求唯一匹配）
+ * - insert_line: 在指定行插入内容
+ * - create: 创建新文件（可选覆盖）
  * </p>
  */
 public class TextFileOpsToolKit implements ToolKit {
 
     // ==================== 常量定义 ====================
-
-    /**
-     * 默认单次最大读取行数
-     */
-    private static final int DEFAULT_MAX_READ_LINES = 5000;
-
-    /**
-     * 默认读取行数
-     */
-    private static final int DEFAULT_READ_LINES = 200;
 
     /**
      * 默认最大文件大小（10MB）
@@ -61,11 +44,6 @@ public class TextFileOpsToolKit implements ToolKit {
      * 工作区根路径
      */
     private final Path workspace;
-
-    /**
-     * 单次最大读取行数
-     */
-    private final int maxLines;
 
     /**
      * 最大文件大小（字节）
@@ -84,7 +62,6 @@ public class TextFileOpsToolKit implements ToolKit {
 
     private TextFileOpsToolKit(Builder builder) {
         this.workspace = builder.workspace;
-        this.maxLines = builder.maxLines;
         this.maxFileSize = builder.maxFileSize;
         this.charset = builder.charset;
         this.readOnly = builder.readOnly;
@@ -93,44 +70,44 @@ public class TextFileOpsToolKit implements ToolKit {
     @Override
     public List<Tool> tools() {
         if (readOnly) {
-            // 只读模式：仅返回读取和搜索工具
-            return List.of(read(), search());
+            // 只读模式：仅返回查看和搜索工具
+            return List.of(view(), search());
         } else {
             // 读写模式：返回所有工具
-            return List.of(read(), write(), append(), replace(), search());
+            return List.of(view(), search(), strReplace(), insertLine(), create());
         }
     }
 
     // ==================== 工具方法 ====================
 
     /**
-     * 读取文本文件
+     * 查看文件内容
      */
-    public FunctionTool read() {
+    public FunctionTool view() {
         return FunctionTool.newBuilder()
-                .name("text_file$read")
+                .name("file$view")
                 .description("""
-                        读取文本文件的内容，支持分页读取和编码自动检测。
+                        查看文件内容，支持指定行范围。
                         
                         【使用场景】
                         - 查看源代码文件内容
-                        - 读取配置文件
-                        - 检查日志文件
-                        - 阅读文本文档
+                        - 阅读配置文件
+                        - 检查日志片段
                         
                         【返回结果】
-                        - content: 实际读取的文本内容
-                        - lines_returned: 本次返回的行数
-                        - has_more: 是否还有更多内容
-                        - last_modified: 最后修改时间戳（毫秒），用于并发控制
+                        - content: 带行号的文件内容（格式："1: line1\\n2: line2"）
+                        - total_lines: 文件总行数
+                        - lines_returned: 实际返回的行数
+                        - last_modified: 最后修改时间戳（毫秒），用于后续编辑的并发控制
                         
                         【注意事项】
+                        - viewRange 从1开始计数，如 [10, 20] 表示第10-20行
+                        - 不指定 viewRange 时返回全部内容
+                        - 超出范围的行号会自动截断
                         - 仅支持文本文件，二进制文件会被拒绝
-                        - 大文件建议分批读取（使用 offset_lines 和 limit_lines）
-                        - last_modified 字段在写操作时必须传入，确保并发安全
                         """)
-                .parameterType(ReadSpec.class)
-                .<ReadSpec>function((caller, spec) -> {
+                .parameterType(ViewSpec.class)
+                .<ViewSpec>function((caller, spec) -> {
                     try {
                         final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
 
@@ -153,422 +130,95 @@ public class TextFileOpsToolKit implements ToolKit {
 
                         // 检测是否为二进制文件
                         if (FileUtils.isBinaryFile(resolved)) {
-                            return Result.error("BINARY_FILE", "无法读取二进制文件：" + spec.path());
+                            return Result.error("BINARY_FILE", "无法查看二进制文件：" + spec.path());
                         }
 
-                        final int offset = Math.max(0, spec.offsetLines());
-                        final int limit = spec.limitLines() > 0 ? Math.min(spec.limitLines(), maxLines) : DEFAULT_READ_LINES;
+                        // 确定编码
+                        final Charset fileCharset = spec.encoding() != null && !spec.encoding().isEmpty()
+                                ? Charset.forName(spec.encoding())
+                                : charset;
 
-                        // 读取文件内容
-                        final List<String> content = new ArrayList<>();
-                        boolean hasMore = false;
+                        // 读取所有行
+                        final List<String> allLines = Files.readAllLines(resolved, fileCharset);
+                        final int totalLines = allLines.size();
 
-                        try (BufferedReader reader = Files.newBufferedReader(resolved, charset)) {
+                        // 确定查看范围
+                        int startLine = 1;
+                        int endLine = totalLines;
 
-                            // 跳过 offset 行并读取 limit 行
-                            String line;
-                            int current = 0;
-                            while ((line = reader.readLine()) != null) {
-                                current++;
+                        if (spec.viewRange() != null && spec.viewRange().length == 2) {
+                            startLine = Math.max(1, spec.viewRange()[0]);
+                            endLine = Math.min(totalLines, spec.viewRange()[1]);
+                        }
 
-                                // 跳过 offset 行
-                                if (current <= offset) {
-                                    continue;
-                                }
+                        // 提取指定范围的行
+                        final List<String> selectedLines = allLines.subList(
+                                Math.max(0, startLine - 1),
+                                Math.min(totalLines, endLine)
+                        );
 
-                                // 还有更多内容
-                                if (current > offset + limit) {
-                                    hasMore = true;
-                                    break;
-                                }
-
-                                // 添加行到内容
-                                content.add(line);
-
+                        // 构建带行号的内容
+                        final StringBuilder contentBuilder = new StringBuilder();
+                        for (int i = 0; i < selectedLines.size(); i++) {
+                            if (i > 0) {
+                                contentBuilder.append("\n");
                             }
-
+                            contentBuilder.append(startLine + i).append(": ").append(selectedLines.get(i));
                         }
 
-                        final String text = String.join("\n", content);
                         final long lastModified = Files.getLastModifiedTime(resolved).toMillis();
 
                         return Result.success(Map.of(
-                                "content", text,
-                                "lines_returned", content.size(),
-                                "has_more", hasMore,
+                                "content", contentBuilder.toString(),
+                                "total_lines", totalLines,
+                                "lines_returned", selectedLines.size(),
                                 "last_modified", lastModified
                         ));
 
                     } catch (IOException e) {
-                        return Result.error("IO_ERROR", "读取文件失败：" + e.getMessage());
+                        return Result.error("IO_ERROR", "查看文件失败：" + e.getMessage());
                     }
                 })
                 .build();
     }
 
     /**
-     * 覆盖写入文本文件
-     */
-    public FunctionTool write() {
-        return FunctionTool.newBuilder()
-                .name("text_file$write")
-                .description("""
-                        创建新文件或覆盖现有文件（需显式声明覆盖）。
-                        
-                        【使用场景】
-                        - 创建新的源代码文件
-                        - 生成配置文件
-                        - 完全重写文件内容
-                        
-                        【返回结果】
-                        - operation: 操作类型（created 或 overwritten）
-                        - bytes_written: 写入的字节数
-                        - lines_count: 写入的行数
-                        
-                        【注意事项】
-                        - 默认禁止覆盖现有文件，防止误操作
-                        - last_modified 用于并发控制，必须与文件当前时间戳一致
-                        - 新文件创建时 last_modified 传 0
-                        - 如果父目录不存在会自动创建
-                        """)
-                .parameterType(WriteSpec.class)
-                .<WriteSpec>function((caller, spec) -> {
-                    try {
-
-                        // 验证内容
-                        if (spec.content() == null || spec.content().isEmpty()) {
-                            return Result.error("INVALID_CONTENT", "文件内容不能为空");
-                        }
-
-                        final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
-
-                        // 如果文件已经存在
-                        if (Files.exists(resolved)) {
-
-                            // 检查并发修改
-                            FileUtils.checkFileUnmodified(resolved, spec.lastModified());
-
-                            // 如果文件已经存在则检查是否设置了覆盖改写
-                            if (!spec.overwrite()) {
-                                return Result.error("FILE_EXISTS", "文件已存在，设置 overwrite=true 以覆盖：" + spec.path());
-                            }
-
-                        }
-
-                        // 如果文件不存在，则按照新文件处理
-                        // 新文件的last_modified = 0
-                        else {
-                            if (spec.lastModified() != 0) {
-                                return Result.error("INVALID_TIMESTAMP", "新文件的 last_modified 应为 0，当前值：" + spec.lastModified());
-                            }
-                        }
-
-                        // 确保父目录存在
-                        final Path parent = resolved.getParent();
-                        if (parent != null && !Files.exists(parent)) {
-                            Files.createDirectories(parent);
-                        }
-
-                        // 确定编码
-                        final Charset fileCharset = spec.encoding() != null && !spec.encoding().isEmpty()
-                                ? Charset.forName(spec.encoding())
-                                : charset;
-
-                        // 写入文件
-                        Files.writeString(resolved, spec.content(), fileCharset);
-
-                        final long bytesWritten = Files.size(resolved);
-                        final long linesCount = spec.content().split("\\n", -1).length;
-                        final String operation = Files.exists(resolved) ? "overwritten" : "created";
-
-                        return Result.success(Map.of(
-                                "operation", operation,
-                                "bytes_written", bytesWritten,
-                                "lines_count_written", linesCount
-                        ));
-
-                    } catch (SecurityException e) {
-                        return Result.error("SECURITY_VIOLATION", e.getMessage());
-                    } catch (IOException e) {
-                        return Result.error("IO_ERROR", "写入文件失败：" + e.getMessage());
-                    }
-
-                })
-                .build();
-    }
-
-    /**
-     * 末尾追加文本内容
-     */
-    public FunctionTool append() {
-        return FunctionTool.newBuilder()
-                .name("text_file$append")
-                .description("""
-                        向文件末尾追加内容（适合日志记录、累积数据等场景）。
-                        
-                        【使用场景】
-                        - 向日志文件追加新的日志条目
-                        - 在数据文件末尾添加新记录
-                        - 累积输出结果
-                        
-                        【返回结果】
-                        - bytes_appended: 追加的字节数
-                        - lines_count_appended: 追加的行数
-                        
-                        【注意事项】
-                        - 内容总是添加到文件末尾
-                        - 如果文件不存在会自动创建
-                        - 不需要 last_modified 参数（追加操作天然安全）
-                        - 如果父目录不存在会自动创建
-                        """)
-                .parameterType(AppendSpec.class)
-                .<AppendSpec>function((caller, spec) -> {
-                    try {
-
-                        // 验证内容
-                        if (spec.content() == null || spec.content().isEmpty()) {
-                            return Result.error("INVALID_CONTENT", "追加内容不能为空");
-                        }
-
-                        final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
-
-                        // 确保父目录存在
-                        final Path parent = resolved.getParent();
-                        if (parent != null && !Files.exists(parent)) {
-                            Files.createDirectories(parent);
-                        }
-
-                        // 确定编码
-                        final Charset fileCharset = spec.encoding() != null && !spec.encoding().isEmpty()
-                                ? Charset.forName(spec.encoding())
-                                : charset;
-
-                        // 处理换行符
-                        String contentToAppend = spec.content();
-                        if (spec.addNewline() && Files.exists(resolved) && Files.size(resolved) > 0) {
-                            // 检查文件末尾是否已有换行符
-                            final byte[] lastBytes = Files.readAllBytes(resolved);
-                            if (lastBytes.length > 0 && lastBytes[lastBytes.length - 1] != '\n') {
-                                contentToAppend = "\n" + contentToAppend;
-                            }
-                        }
-
-                        // 追加文件写入
-                        Files.writeString(resolved, contentToAppend, fileCharset, CREATE, APPEND);
-                        final long bytesAppended = contentToAppend.getBytes(StandardCharsets.UTF_8).length;
-                        final int linesCountAppended = contentToAppend.split("\\n", -1).length;
-
-                        return Result.success(Map.of(
-                                "bytes_appended", bytesAppended,
-                                "lines_count_appended", linesCountAppended
-                        ));
-
-                    } catch (IOException e) {
-                        return Result.error("IO_ERROR", "追加内容失败：" + e.getMessage());
-                    }
-                })
-                .build();
-    }
-
-    /**
-     * 搜索并替换文本内容
-     */
-    public FunctionTool replace() {
-        return FunctionTool.newBuilder()
-                .name("text_file$replace")
-                .description("""
-                        在文件中搜索并替换文本内容。
-                        
-                        【使用场景】
-                        - 批量替换变量名或函数名
-                        - 修改配置项的值
-                        - 更新文档中的特定文本
-                        
-                        【搜索模式】
-                        - 精确匹配：search_text="oldValue"
-                        - 正则匹配：use_regex=true, search_text="old\\w+"
-                        
-                        【返回结果】
-                        - operation: 操作类型（replace）
-                        - replacements_count: 替换次数
-                        - last_modified: 修改后的时间戳
-                        
-                        【典型工作流】
-                        1. read(path="Main.java", offset_lines=20, limit_lines=10)
-                           → 查看上下文，确认要替换的内容
-                        2. replace(path="Main.java", search_text="oldMethod",
-                                      replacement="newMethod", replace_all=true)
-                        
-                        【注意事项】
-                        - 必须先调用 read 获取 last_modified
-                        - replace_all=false 时只替换第一个匹配项
-                        - 使用正则时注意转义特殊字符
-                        - 大小写敏感
-                        """)
-                .parameterType(ReplaceTextSpec.class)
-                .<ReplaceTextSpec>function((caller, spec) -> {
-                    try {
-                        // 验证内容
-                        if (spec.searchText() == null || spec.searchText().isEmpty()) {
-                            throw new IllegalArgumentException("搜索文本不能为空");
-                        }
-
-                        final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
-
-                        if (!Files.exists(resolved)) {
-                            throw new FileNotFoundException("文件不存在：" + spec.path());
-                        }
-
-                        // 并发控制校验
-                        FileUtils.checkFileUnmodified(resolved, spec.lastModified());
-
-                        // 确定编码
-                        final Charset fileCharset = spec.encoding() != null && !spec.encoding().isEmpty()
-                                ? Charset.forName(spec.encoding())
-                                : charset;
-
-                        // 读取文件内容
-                        final String content = Files.readString(resolved, fileCharset);
-
-                        // 准备替换
-                        final String replacement = spec.replacement() != null ? spec.replacement() : "";
-                        final String newContent;
-                        int replacementsCount;
-
-                        // 正则替换
-                        if (spec.useRegex()) {
-                            try {
-                                final Pattern pattern = Pattern.compile(spec.searchText());
-                                final Matcher matcher = pattern.matcher(content);
-
-                                // 全部替换
-                                if (spec.replaceAll()) {
-                                    newContent = matcher.replaceAll(replacement);
-                                    // 计算替换次数
-                                    replacementsCount = 0;
-                                    final Matcher countMatcher = pattern.matcher(content);
-                                    while (countMatcher.find()) {
-                                        replacementsCount++;
-                                    }
-                                }
-                                // 只替换最初匹配
-                                else {
-                                    newContent = matcher.replaceFirst(replacement);
-                                    replacementsCount = matcher.hitEnd() ? 0 : 1;
-                                }
-                            } catch (PatternSyntaxException e) {
-                                throw new IllegalArgumentException("正则表达式语法错误：" + e.getMessage(), e);
-                            }
-                        }
-                        // 精确替换
-                        else {
-                            // 全部替换
-                            if (spec.replaceAll()) {
-                                newContent = content.replace(spec.searchText(), replacement);
-                                replacementsCount = (content.length() - newContent.length()) / spec.searchText().length();
-                            }
-                            // 只替换最初匹配
-                            else {
-                                final int index = content.indexOf(spec.searchText());
-                                if (index == -1) {
-                                    // 未找到匹配项，返回成功但替换次数为0
-                                    final long lastModified = Files.getLastModifiedTime(resolved).toMillis();
-                                    return Result.success(Map.of(
-                                            "operation", "replace",
-                                            "replacements_count", 0,
-                                            "last_modified", lastModified
-                                    ));
-                                }
-                                newContent = content.substring(0, index) + replacement + content.substring(index + spec.searchText().length());
-                                replacementsCount = 1;
-                            }
-                        }
-
-                        // 如果没有变化，直接返回
-                        if (newContent.equals(content)) {
-                            final long lastModified = Files.getLastModifiedTime(resolved).toMillis();
-                            return Result.success(Map.of(
-                                    "operation", "replace",
-                                    "replacements_count", 0,
-                                    "last_modified", lastModified
-                            ));
-                        }
-
-                        // 写回文件
-                        Files.writeString(resolved, newContent, fileCharset);
-                        final long lastModified = Files.getLastModifiedTime(resolved).toMillis();
-
-                        return Result.success(Map.of(
-                                "operation", "replace",
-                                "replacements_count", replacementsCount,
-                                "last_modified", lastModified
-                        ));
-
-                    } catch (SecurityException e) {
-                        return Result.error("SECURITY_VIOLATION", e.getMessage());
-                    } catch (IllegalArgumentException e) {
-                        return Result.error("INVALID_CONTENT", e.getMessage());
-                    } catch (FileNotFoundException e) {
-                        return Result.error("FILE_NOT_FOUND", e.getMessage());
-                    } catch (IOException e) {
-                        return Result.error("IO_ERROR", "替换文本失败：" + e.getMessage());
-                    }
-                })
-                .build();
-    }
-
-    /**
-     * 使用正则表达式搜索文件内容
+     * 文件内关键词搜索
      */
     public FunctionTool search() {
         return FunctionTool.newBuilder()
-                .name("text_file$search")
+                .name("file$search")
                 .description("""
-                        使用正则表达式在文件中搜索匹配的文本内容，类似 grep 命令。
+                        在文件中搜索包含关键词的行，返回匹配项及上下文。
                         
                         【使用场景】
-                        - 查找代码中的特定模式（如方法定义、TODO注释等）
-                        - 搜索日志中的错误或警告信息
-                        - 定位配置文件中的特定配置项
-                        - 分析文档中的关键词出现位置
-                        
-                        【功能特性】
-                        - 支持正则表达式搜索
-                        - 可选择显示/隐藏行号
-                        - 支持上下文展示（匹配行的前后N行）
-                        - 限制最大返回匹配数，避免输出过多
+                        - 定位函数或方法定义
+                        - 查找特定变量或常量
+                        - 搜索TODO注释或错误信息
                         
                         【返回结果】
                         - count: 总匹配数
-                        - returned: 实际返回的匹配数
-                        - has_more: 是否还有更多匹配未返回
                         - results: 匹配结果列表，每项包含：
-                          * line_number: 行号（如果 show_line_numbers=true）
-                          * line: 匹配的完整行内容
-                          * text: 实际匹配的文本片段
-                          * before: 前N行内容（如果 context_lines > 0）
-                          * after: 后N行内容（如果 context_lines > 0）
+                          * line_number: 行号（从1开始）
+                          * content: 匹配的完整行内容
+                          * before: 前N行内容（如果 contextLines > 0）
+                          * after: 后N行内容（如果 contextLines > 0）
                         
                         【典型工作流】
-                        1. 查找所有TODO注释：
-                           search(path="src/Main.java", pattern="TODO.*", context_lines=2)
-                        2. 查找方法定义并显示行号：
-                           search(path="src/Main.java", pattern="public void \\w+", show_line_numbers=true)
-                        3. 搜索错误日志：
-                           search(path="logs/app.log", pattern="ERROR.*timeout", max_results=50)
+                        1. 定位方法：search(path="Main.java", searchTerm="public void calculate")
+                        2. 确认上下文后，使用 str_replace 进行精确替换
                         
                         【注意事项】
-                        - 正则表达式语法错误会返回详细错误信息
-                        - 大文件搜索可能较慢，建议先用 read 了解文件大小
-                        - 默认最多返回100个匹配结果，可通过 max_results 调整
-                        - 上下文行数过大会增加输出体积
+                        - 简单文本匹配（非正则），大小写敏感
+                        - 返回所有匹配项，建议配合 contextLines 使用
+                        - 大文件搜索可能较慢
                         """)
                 .parameterType(SearchSpec.class)
                 .<SearchSpec>function((caller, spec) -> {
                     try {
-                        // 验证正则表达式
-                        if (spec.pattern() == null || spec.pattern().isEmpty()) {
-                            return Result.error("INVALID_PATTERN", "搜索模式不能为空");
+                        // 验证搜索词
+                        if (spec.searchTerm() == null || spec.searchTerm().isEmpty()) {
+                            return Result.error("INVALID_SEARCH_TERM", "搜索关键词不能为空");
                         }
 
                         final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
@@ -595,53 +245,28 @@ public class TextFileOpsToolKit implements ToolKit {
                             return Result.error("BINARY_FILE", "无法搜索二进制文件：" + spec.path());
                         }
 
-                        // 编译正则表达式
-                        final Pattern pattern;
-                        try {
-                            pattern = Pattern.compile(spec.pattern());
-                        } catch (PatternSyntaxException e) {
-                            return Result.error("INVALID_REGEX", "正则表达式语法错误：" + e.getDescription());
-                        }
+                        // 确定编码
+                        final Charset fileCharset = spec.encoding() != null && !spec.encoding().isEmpty()
+                                ? Charset.forName(spec.encoding())
+                                : charset;
 
-                        // 读取文件所有行
-                        final List<String> allLines = Files.readAllLines(resolved, charset);
+                        // 读取所有行
+                        final List<String> allLines = Files.readAllLines(resolved, fileCharset);
                         final int totalLines = allLines.size();
 
                         // 执行搜索
                         final List<Map<String, Object>> results = new ArrayList<>();
-                        final int maxResults = spec.maxResults() > 0 ? Math.min(spec.maxResults(), 1000) : 100;
                         final int contextLines = Math.max(0, spec.contextLines());
-                        final boolean showLineNumbers = spec.showLineNumbers();
-
-                        int totalMatches = 0;
-                        boolean hasMore = false;
+                        final String searchTerm = spec.searchTerm();
 
                         for (int i = 0; i < totalLines; i++) {
                             final String line = allLines.get(i);
-                            final Matcher matcher = pattern.matcher(line);
 
-                            if (matcher.find()) {
-                                totalMatches++;
-
-                                // 如果已达到最大返回数，标记有更多结果
-                                if (results.size() >= maxResults) {
-                                    hasMore = true;
-                                    break;
-                                }
-
+                            if (line.contains(searchTerm)) {
                                 // 构建结果项
                                 final Map<String, Object> resultItem = new java.util.HashMap<>();
-
-                                // 添加行号（如果需要）
-                                if (showLineNumbers) {
-                                    resultItem.put("line_number", i + 1); // 行号从1开始
-                                }
-
-                                // 添加匹配的完整行
-                                resultItem.put("line", line);
-
-                                // 添加实际匹配的文本
-                                resultItem.put("text", matcher.group());
+                                resultItem.put("line_number", i + 1); // 行号从1开始
+                                resultItem.put("content", line);
 
                                 // 添加上下文
                                 if (contextLines > 0) {
@@ -661,14 +286,276 @@ public class TextFileOpsToolKit implements ToolKit {
                         }
 
                         return Result.success(Map.of(
-                                "count", totalMatches,
-                                "returned", results.size(),
-                                "has_more", hasMore,
+                                "count", results.size(),
                                 "results", results
                         ));
 
                     } catch (IOException e) {
                         return Result.error("IO_ERROR", "搜索文件失败：" + e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    /**
+     * 字符串精确替换
+     */
+    public FunctionTool strReplace() {
+        return FunctionTool.newBuilder()
+                .name("file$str_replace")
+                .description("""
+                        在文件中精确替换文本内容，要求 oldStr 必须唯一匹配。
+                        
+                        【使用场景】
+                        - 修改变量名或方法名
+                        - 更新配置项的值
+                        - 修复代码中的特定文本
+                        
+                        【工作流程】
+                        1. 使用 file$search 定位目标内容
+                        2. 使用 file$view 确认上下文
+                        3. 调用 file$str_replace 执行替换（提供足够的上下文使 oldStr 唯一）
+                        
+                        【返回结果】
+                        - operation: 操作类型（str_replace）
+                        - replacements_count: 替换次数（成功时为1）
+                        - last_modified: 修改后的时间戳
+                        
+                        【注意事项】
+                        - oldStr 必须在文件中唯一匹配，否则报错
+                        - 必须提供 lastModified（从 file$view 获取）
+                        - 大小写敏感，空格和缩进必须完全匹配
+                        - 如果文件已被修改（lastModified 不匹配），操作会失败
+                        """)
+                .parameterType(StrReplaceSpec.class)
+                .<StrReplaceSpec>function((caller, spec) -> {
+                    try {
+                        // 验证参数
+                        if (spec.oldStr() == null || spec.oldStr().isEmpty()) {
+                            return Result.error("INVALID_OLD_STR", "oldStr 不能为空");
+                        }
+
+                        final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
+
+                        if (!Files.exists(resolved)) {
+                            return Result.error("FILE_NOT_FOUND", "文件不存在：" + spec.path());
+                        }
+
+                        // 并发控制校验
+                        FileUtils.checkFileUnmodified(resolved, spec.lastModified());
+
+                        // 确定编码
+                        final Charset fileCharset = spec.encoding() != null && !spec.encoding().isEmpty()
+                                ? Charset.forName(spec.encoding())
+                                : charset;
+
+                        // 读取文件内容
+                        final String content = Files.readString(resolved, fileCharset);
+
+                        // 查找匹配位置
+                        final int firstIndex = content.indexOf(spec.oldStr());
+                        if (firstIndex == -1) {
+                            return Result.error("NOT_FOUND",
+                                    "未找到匹配的文本。建议先用 file$search 定位，并提供更多上下文使 oldStr 唯一。");
+                        }
+
+                        // 检查是否有多个匹配
+                        final int secondIndex = content.indexOf(spec.oldStr(), firstIndex + 1);
+                        if (secondIndex != -1) {
+                            return Result.error("MULTIPLE_MATCHES",
+                                    "找到多个匹配项，oldStr 不够唯一。请提供更多上下文（如前后几行代码）使匹配唯一。");
+                        }
+
+                        // 执行替换
+                        final String newContent = content.substring(0, firstIndex) +
+                                spec.newStr() +
+                                content.substring(firstIndex + spec.oldStr().length());
+
+                        // 写回文件
+                        Files.writeString(resolved, newContent, fileCharset);
+                        final long lastModified = Files.getLastModifiedTime(resolved).toMillis();
+
+                        return Result.success(Map.of(
+                                "operation", "str_replace",
+                                "replacements_count", 1,
+                                "last_modified", lastModified
+                        ));
+
+                    } catch (SecurityException e) {
+                        return Result.error("SECURITY_VIOLATION", e.getMessage());
+                    } catch (IOException e) {
+                        return Result.error("IO_ERROR", "替换文本失败：" + e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    /**
+     * 在指定行插入内容
+     */
+    public FunctionTool insertLine() {
+        return FunctionTool.newBuilder()
+                .name("file$insert_line")
+                .description("""
+                        在文件的指定行位置插入新内容。
+                        
+                        【使用场景】
+                        - 在函数中添加新语句
+                        - 在类中添加新方法或字段
+                        - 在文件中插入新的配置项
+                        
+                        【行号语义】
+                        - lineNumber=1：在第1行之前插入（成为新的第1行）
+                        - lineNumber=50：在第50行之前插入（原第50行变为51行）
+                        - lineNumber > 总行数：追加到文件末尾
+                        - lineNumber <= 0：视为在第1行之前插入
+                        
+                        【返回结果】
+                        - operation: 操作类型（insert_line）
+                        - inserted_at_line: 实际插入的行号
+                        - lines_inserted: 插入的行数
+                        - last_modified: 修改后的时间戳
+                        
+                        【注意事项】
+                        - 必须提供 lastModified（从 file$view 获取）
+                        - content 可以包含多行（用 \\n 分隔）
+                        - 如果文件已被修改（lastModified 不匹配），操作会失败
+                        """)
+                .parameterType(InsertLineSpec.class)
+                .<InsertLineSpec>function((caller, spec) -> {
+                    try {
+                        // 验证参数
+                        if (spec.content() == null || spec.content().isEmpty()) {
+                            return Result.error("INVALID_CONTENT", "插入内容不能为空");
+                        }
+
+                        final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
+
+                        if (!Files.exists(resolved)) {
+                            return Result.error("FILE_NOT_FOUND", "文件不存在：" + spec.path());
+                        }
+
+                        // 并发控制校验
+                        FileUtils.checkFileUnmodified(resolved, spec.lastModified());
+
+                        // 确定编码
+                        final Charset fileCharset = spec.encoding() != null && !spec.encoding().isEmpty()
+                                ? Charset.forName(spec.encoding())
+                                : charset;
+
+                        // 读取所有行
+                        final List<String> allLines = Files.readAllLines(resolved, fileCharset);
+                        final int totalLines = allLines.size();
+
+                        // 计算插入位置（转换为索引）
+                        int insertIndex;
+                        if (spec.lineNumber() <= 0) {
+                            insertIndex = 0; // 在文件开头插入
+                        } else if (spec.lineNumber() > totalLines) {
+                            insertIndex = totalLines; // 在文件末尾插入
+                        } else {
+                            insertIndex = spec.lineNumber() - 1; // 转换为0-based索引
+                        }
+
+                        // 分割插入内容为多行
+                        final String[] linesToInsert = spec.content().split("\n", -1);
+
+                        // 构建新内容
+                        final List<String> newLines = new ArrayList<>();
+                        newLines.addAll(allLines.subList(0, insertIndex));
+                        newLines.addAll(List.of(linesToInsert));
+                        newLines.addAll(allLines.subList(insertIndex, totalLines));
+
+                        // 写回文件
+                        final String newContent = String.join("\n", newLines);
+                        Files.writeString(resolved, newContent, fileCharset);
+                        final long lastModified = Files.getLastModifiedTime(resolved).toMillis();
+
+                        return Result.success(Map.of(
+                                "operation", "insert_line",
+                                "inserted_at_line", insertIndex + 1, // 返回1-based行号
+                                "lines_inserted", linesToInsert.length,
+                                "last_modified", lastModified
+                        ));
+
+                    } catch (SecurityException e) {
+                        return Result.error("SECURITY_VIOLATION", e.getMessage());
+                    } catch (IOException e) {
+                        return Result.error("IO_ERROR", "插入内容失败：" + e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    /**
+     * 创建新文件
+     */
+    public FunctionTool create() {
+        return FunctionTool.newBuilder()
+                .name("file$create")
+                .description("""
+                        创建新文件并写入内容。
+                        
+                        【使用场景】
+                        - 创建新的源代码文件
+                        - 生成配置文件
+                        - 创建文档或脚本
+                        
+                        【返回结果】
+                        - operation: 操作类型（created 或 overwritten）
+                        - bytes_written: 写入的字节数
+                        - lines_count: 写入的行数
+                        
+                        【注意事项】
+                        - 默认不允许覆盖已存在的文件
+                        - 设置 overwrite=true 可以强制覆盖
+                        - 如果父目录不存在会自动创建
+                        - 新文件不需要 lastModified
+                        """)
+                .parameterType(CreateFileSpec.class)
+                .<CreateFileSpec>function((caller, spec) -> {
+                    try {
+                        // 验证内容
+                        if (spec.fileText() == null || spec.fileText().isEmpty()) {
+                            return Result.error("INVALID_CONTENT", "文件内容不能为空");
+                        }
+
+                        final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
+
+                        // 检查文件是否存在
+                        if (Files.exists(resolved)) {
+                            if (!spec.overwrite()) {
+                                return Result.error("FILE_EXISTS",
+                                        "文件已存在，设置 overwrite=true 以覆盖：" + spec.path());
+                            }
+                        }
+
+                        // 确保父目录存在
+                        final Path parent = resolved.getParent();
+                        if (parent != null && !Files.exists(parent)) {
+                            Files.createDirectories(parent);
+                        }
+
+                        // 确定编码
+                        final Charset fileCharset = spec.encoding() != null && !spec.encoding().isEmpty()
+                                ? Charset.forName(spec.encoding())
+                                : charset;
+
+                        // 写入文件
+                        Files.writeString(resolved, spec.fileText(), fileCharset);
+
+                        final long bytesWritten = Files.size(resolved);
+                        final long linesCount = spec.fileText().split("\n", -1).length;
+                        final String operation = Files.exists(resolved) ? "overwritten" : "created";
+
+                        return Result.success(Map.of(
+                                "operation", operation,
+                                "bytes_written", bytesWritten,
+                                "lines_count", linesCount
+                        ));
+
+                    } catch (IOException e) {
+                        return Result.error("IO_ERROR", "创建文件失败：" + e.getMessage());
                     }
                 })
                 .build();
@@ -683,7 +570,6 @@ public class TextFileOpsToolKit implements ToolKit {
     public static class Builder implements Buildable<TextFileOpsToolKit, Builder> {
 
         private Path workspace;
-        private int maxLines = DEFAULT_MAX_READ_LINES;
         private long maxFileSize = DEFAULT_MAX_FILE_SIZE_BYTES;
         private Charset charset = StandardCharsets.UTF_8;
         private boolean readOnly = false;
@@ -696,17 +582,6 @@ public class TextFileOpsToolKit implements ToolKit {
          */
         public Builder workspace(Path workspace) {
             this.workspace = workspace.toAbsolutePath().normalize();
-            return this;
-        }
-
-        /**
-         * 设置单次最大读取行数
-         *
-         * @param maxLines 最大行数
-         * @return 当前构建器
-         */
-        public Builder maxLines(int maxLines) {
-            this.maxLines = maxLines;
             return this;
         }
 
@@ -735,8 +610,8 @@ public class TextFileOpsToolKit implements ToolKit {
         /**
          * 设置是否为只读模式
          * <p>
-         * 当设置为 true 时，只会安装读取相关的工具（text_file$read），
-         * 不会安装写入、追加和替换工具。
+         * 当设置为 true 时，只会安装查看和搜索工具（file$view, file$search），
+         * 不会安装编辑工具。
          *
          * @param readOnly 是否只读
          * @return 当前构建器
@@ -758,87 +633,14 @@ public class TextFileOpsToolKit implements ToolKit {
 
     // ==================== Spec 数据结构 ====================
 
-    record ReadSpec(
+    record ViewSpec(
             @JsonPropertyDescription("文件的相对路径，例如：src/main.java")
             @JsonProperty(value = "path", required = true)
             String path,
 
-            @JsonPropertyDescription("起始行号，从0开始（可选，默认0）")
-            @JsonProperty("offset_lines")
-            int offsetLines,
-
-            @JsonPropertyDescription("最大读取行数（可选，默认200，最大5000）")
-            @JsonProperty("limit_lines")
-            int limitLines
-    ) {
-    }
-
-    record WriteSpec(
-            @JsonPropertyDescription("文件的相对路径")
-            @JsonProperty(value = "path", required = true)
-            String path,
-
-            @JsonPropertyDescription("要写入的文件内容（不能为空）")
-            @JsonProperty(value = "content", required = true)
-            String content,
-
-            @JsonPropertyDescription("是否覆盖现有文件（可选，默认false）")
-            @JsonProperty("overwrite")
-            boolean overwrite,
-
-            @JsonPropertyDescription("最后修改时间戳（从read获取，新文件传0）")
-            @JsonProperty(value = "last_modified", required = true)
-            long lastModified,
-
-            @JsonPropertyDescription("文件编码（可选，默认UTF-8）")
-            @JsonProperty("encoding")
-            String encoding
-    ) {
-    }
-
-    record AppendSpec(
-            @JsonPropertyDescription("文件的相对路径")
-            @JsonProperty(value = "path", required = true)
-            String path,
-
-            @JsonPropertyDescription("要追加的内容（不能为空）")
-            @JsonProperty(value = "content", required = true)
-            String content,
-
-            @JsonPropertyDescription("是否在开头添加换行符（可选，默认true）")
-            @JsonProperty("add_newline")
-            boolean addNewline,
-
-            @JsonPropertyDescription("文件编码（可选，默认UTF-8）")
-            @JsonProperty("encoding")
-            String encoding
-    ) {
-    }
-
-    record ReplaceTextSpec(
-            @JsonPropertyDescription("文件的相对路径")
-            @JsonProperty(value = "path", required = true)
-            String path,
-
-            @JsonPropertyDescription("要搜索的文本内容")
-            @JsonProperty(value = "search_text", required = true)
-            String searchText,
-
-            @JsonPropertyDescription("替换后的文本内容（可选，默认为空字符串）")
-            @JsonProperty("replacement")
-            String replacement,
-
-            @JsonPropertyDescription("是否替换所有匹配项（可选，默认false只替换第一个）")
-            @JsonProperty("replace_all")
-            boolean replaceAll,
-
-            @JsonPropertyDescription("是否使用正则表达式（可选，默认false）")
-            @JsonProperty("use_regex")
-            boolean useRegex,
-
-            @JsonPropertyDescription("最后修改时间戳（从read获取）")
-            @JsonProperty(value = "last_modified", required = true)
-            long lastModified,
+            @JsonPropertyDescription("查看的行范围 [start, end]，从1开始计数（可选，不填则查看全部）")
+            @JsonProperty("view_range")
+            int[] viewRange,
 
             @JsonPropertyDescription("文件编码（可选，默认UTF-8）")
             @JsonProperty("encoding")
@@ -851,21 +653,78 @@ public class TextFileOpsToolKit implements ToolKit {
             @JsonProperty(value = "path", required = true)
             String path,
 
-            @JsonPropertyDescription("正则表达式搜索模式")
-            @JsonProperty(value = "pattern", required = true)
-            String pattern,
+            @JsonPropertyDescription("搜索关键词（简单文本匹配，大小写敏感）")
+            @JsonProperty(value = "search_term", required = true)
+            String searchTerm,
 
-            @JsonPropertyDescription("是否显示行号（可选，默认true）")
-            @JsonProperty("show_line_numbers")
-            boolean showLineNumbers,
-
-            @JsonPropertyDescription("上下文行数，返回匹配行的前后N行（可选，默认0）")
+            @JsonPropertyDescription("上下文行数，返回匹配行的前后N行（可选，默认2）")
             @JsonProperty("context_lines")
             int contextLines,
 
-            @JsonPropertyDescription("最大返回匹配数（可选，默认100，最大1000）")
-            @JsonProperty("max_results")
-            int maxResults,
+            @JsonPropertyDescription("文件编码（可选，默认UTF-8）")
+            @JsonProperty("encoding")
+            String encoding
+    ) {
+    }
+
+    record StrReplaceSpec(
+            @JsonPropertyDescription("文件的相对路径")
+            @JsonProperty(value = "path", required = true)
+            String path,
+
+            @JsonPropertyDescription("要替换的原始文本（必须在文件中唯一匹配）")
+            @JsonProperty(value = "old_str", required = true)
+            String oldStr,
+
+            @JsonPropertyDescription("替换后的新文本")
+            @JsonProperty(value = "new_str", required = true)
+            String newStr,
+
+            @JsonPropertyDescription("最后修改时间戳（从 file$view 获取）")
+            @JsonProperty(value = "last_modified", required = true)
+            long lastModified,
+
+            @JsonPropertyDescription("文件编码（可选，默认UTF-8）")
+            @JsonProperty("encoding")
+            String encoding
+    ) {
+    }
+
+    record InsertLineSpec(
+            @JsonPropertyDescription("文件的相对路径")
+            @JsonProperty(value = "path", required = true)
+            String path,
+
+            @JsonPropertyDescription("插入位置的行号（从1开始，<=0视为第1行前，>总行数视为末尾）")
+            @JsonProperty(value = "line_number", required = true)
+            int lineNumber,
+
+            @JsonPropertyDescription("要插入的内容（可包含多行，用\\n分隔）")
+            @JsonProperty(value = "content", required = true)
+            String content,
+
+            @JsonPropertyDescription("最后修改时间戳（从 file$view 获取）")
+            @JsonProperty(value = "last_modified", required = true)
+            long lastModified,
+
+            @JsonPropertyDescription("文件编码（可选，默认UTF-8）")
+            @JsonProperty("encoding")
+            String encoding
+    ) {
+    }
+
+    record CreateFileSpec(
+            @JsonPropertyDescription("文件的相对路径")
+            @JsonProperty(value = "path", required = true)
+            String path,
+
+            @JsonPropertyDescription("文件内容")
+            @JsonProperty(value = "file_text", required = true)
+            String fileText,
+
+            @JsonPropertyDescription("是否覆盖已存在的文件（可选，默认false）")
+            @JsonProperty("overwrite")
+            boolean overwrite,
 
             @JsonPropertyDescription("文件编码（可选，默认UTF-8）")
             @JsonProperty("encoding")

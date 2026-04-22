@@ -18,14 +18,18 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.
 import io.github.oldmanpushcart.dashscope4j.agent.typical.plan.PlanAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,9 +39,8 @@ public class DebugTestCase implements LoadingEnv {
     public void debug$1() {
 
         final var sessionId =
-                "SESSION-snake"
-                //UUID.randomUUID().toString()
-                ;
+                //"SESSION-snake"
+                UUID.randomUUID().toString();
         final var sessionManager = CompressSessionManager.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
@@ -59,15 +62,6 @@ public class DebugTestCase implements LoadingEnv {
                         ToolKitLoader.of(DashscopeToolKit.create()),
                         ToolKitLoader.of(RuntimeToolKit.create()),
                         ToolKitLoader.of(GuiToolKit.newBuilder().build()),
-                        ToolKitLoader.of(ShellToolKit.newBuilder()
-                                .timeout(Duration.ofSeconds(60))
-                                .build()),
-                        ToolKitLoader.of(FileOpsToolKit.newBuilder()
-                                .workspace(Path.of("./"))
-                                .build()),
-                        ToolKitLoader.of(TextFileOpsToolKit.newBuilder()
-                                .workspace(Path.of("./"))
-                                .build()),
                         McpToolLoader.newBuilder()
                                 .name("amap")
                                 .transport(RecoverableMcpClientTransport.newBuilder()
@@ -91,29 +85,53 @@ public class DebugTestCase implements LoadingEnv {
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
+                    .toolKits(kits-> {
+
+                        kits.add(RuntimeToolKit.create());
+
+                        kits.add(ShellToolKit.newBuilder()
+                                .timeout(Duration.ofSeconds(60))
+                                .build());
+
+                        kits.add(FileOpsToolKit.newBuilder()
+                                .workspace(Path.of("./"))
+                                .build());
+
+                        kits.add(TextFileOpsToolKit.newBuilder()
+                                .workspace(Path.of("./"))
+                                .build());
+
+                        return kits;
+                    })
                     .sessionManager(sessionManager)
                     .sessionId(sessionId)
                     .build();
 
-//            {
-//                final var outbound = Flux.from(agent.flow(Message.user(" 根据杭州明天天气，画一幅山水画。")))
-//                        .doOnNext(message-> System.out.println(message.text()))
-//                        .reduce(AssistantMessage::accumulate)
-//                        .toFuture()
-//                        .join();
-//                System.out.println(outbound.text());
-//            }
-
             {
-                final var outbound = agent.async(Message.user("""
-                                我要你执行编译这些代码并运行起来，如果编译失败你需要解决编译或运行失败的问题，直到成功！
-                                你有环境的，你动动你的脑子去search_tool工具找找
-                                """))
-                        .toCompletableFuture()
+                final var outbound = Flux.from(agent.flow(Message.user("""
+                                根据杭州明天的天气，画一幅山水画。
+                                """)))
+                        .reduce(AssistantMessage::accumulate)
+                        .toFuture()
                         .join();
-
                 System.out.println(outbound.text());
             }
+
+//            {
+//                final var outbound = agent.async(Message.user("""
+//                                给我写一个桌面版闹钟
+//                                1. Java编写，使用Swing
+//                                2. 可以设置倒计时的时间
+//                                3. 时钟用液晶显示品样式显示
+//                                4. 倒计时开始后就无法设置，用户可以主动停止，停止后才能重新设置
+//
+//                                编译并运行
+//                                """))
+//                        .toCompletableFuture()
+//                        .join();
+//
+//                System.out.println(outbound.text());
+//            }
 
         } finally {
             IOUtils.closeQuietly(toolbox);
