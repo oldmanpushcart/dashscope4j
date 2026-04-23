@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.agent.session;
 
-import io.github.oldmanpushcart.dashscope4j.agent.session.store.SessionStore;
+import io.github.oldmanpushcart.dashscope4j.agent.session.compressor.FragmentCompressor;
+import io.github.oldmanpushcart.dashscope4j.agent.session.store.FragmentStore;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
@@ -35,19 +35,14 @@ public class CompressSessionManager implements SessionManager {
     private final Map<String, CompressSession> sessionMap;
 
     /**
-     * 会话存储器
+     * 片段存储器
      */
-    private final SessionStore store;
+    private final FragmentStore store;
 
     /**
-     * DashScope 客户端
+     * 片段压缩器
      */
-    private final DashscopeClient client;
-
-    /**
-     * 用于生成摘要的聊天模型
-     */
-    private final ChatModel model;
+    private final FragmentCompressor compressor;
 
     /**
      * 最大 Token 数
@@ -66,8 +61,7 @@ public class CompressSessionManager implements SessionManager {
      */
     public CompressSessionManager(Builder builder) {
 
-        Objects.requireNonNull(builder.client, "client must not be null");
-        Objects.requireNonNull(builder.model, "model must not be null");
+        Objects.requireNonNull(builder.compressor, "compressor must not be null");
         Objects.requireNonNull(builder.store, "store must not be null");
         CheckUtils.require(builder.maxTokens, t -> t > 0, "maxTokens must be greater than 0");
         CheckUtils.require(builder.gcRatio, t -> t > 0 && t < 1, "gcRatio must in (0,1)");
@@ -83,8 +77,7 @@ public class CompressSessionManager implements SessionManager {
                 }
         );
         this.store = builder.store;
-        this.client = builder.client;
-        this.model = builder.model;
+        this.compressor = builder.compressor;
         this.maxTokens = builder.maxTokens;
         // 计算保留 Token 数：maxTokens * gcRatio
         this.retainTokens = (int) (maxTokens * builder.gcRatio);
@@ -108,8 +101,7 @@ public class CompressSessionManager implements SessionManager {
                         new CompressSession(
                                 sessionId,
                                 store,
-                                client,
-                                model,
+                                compressor,
                                 maxTokens,
                                 retainTokens
                         ));
@@ -152,19 +144,14 @@ public class CompressSessionManager implements SessionManager {
     public static class Builder implements Buildable<CompressSessionManager, Builder> {
 
         /**
-         * 会话存储器
+         * 片段存储器
          */
-        private SessionStore store;
+        private FragmentStore store;
 
         /**
-         * DashScope 客户端
+         * 片段压缩器
          */
-        private DashscopeClient client;
-
-        /**
-         * 聊天模型（用于生成摘要）
-         */
-        private ChatModel model;
+        private FragmentCompressor compressor;
 
         /**
          * 最大 Token 数
@@ -182,35 +169,24 @@ public class CompressSessionManager implements SessionManager {
         private int maxSessions = 100;
 
         /**
-         * 设置会话存储器
+         * 设置片段存储器
          *
          * @param store 存储器实例
          * @return 当前构建器
          */
-        public Builder store(SessionStore store) {
+        public Builder store(FragmentStore store) {
             this.store = store;
             return this;
         }
 
         /**
-         * 设置 DashScope 客户端
+         * 设置片段压缩器
          *
-         * @param client DashScope 客户端
+         * @param compressor 片段压缩器
          * @return 当前构建器
          */
-        public Builder client(DashscopeClient client) {
-            this.client = client;
-            return this;
-        }
-
-        /**
-         * 设置聊天模型
-         *
-         * @param model 聊天模型
-         * @return 当前构建器
-         */
-        public Builder model(ChatModel model) {
-            this.model = model;
+        public Builder compressor(FragmentCompressor compressor) {
+            this.compressor = compressor;
             return this;
         }
 

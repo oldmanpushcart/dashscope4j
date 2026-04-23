@@ -15,12 +15,12 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 基于有序 Map 的会话存储实现
+ * 基于有序 Map 的片段存储实现
  * <p>
- * 使用 ConcurrentSkipListMap 提供高性能、有序的会话片段存储和检索能力。
+ * 使用 ConcurrentSkipListMap 提供高性能、有序的片段存储和检索能力。
  * </p>
  */
-public class HashMapSessionStore implements SessionStore {
+public class HashMapFragmentStore implements FragmentStore {
 
     /**
      * 内存片段存储（有序、线程安全）

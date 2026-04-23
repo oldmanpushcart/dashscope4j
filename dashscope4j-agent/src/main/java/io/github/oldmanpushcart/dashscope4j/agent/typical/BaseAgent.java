@@ -3,7 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.session.SessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
-import io.github.oldmanpushcart.dashscope4j.agent.session.store.HashMapSessionStore;
+import io.github.oldmanpushcart.dashscope4j.agent.session.store.HashMapFragmentStore;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
@@ -132,7 +132,7 @@ public abstract class BaseAgent implements Agent {
         // 如果没有指定会话管理器，则默认创建压缩会话管理器
         this.sessionManager = Optional.of(builder.sessionManager)
                 .orElseGet(() -> CompressSessionManager.newBuilder()
-                        .store(new HashMapSessionStore())
+                        .store(new HashMapFragmentStore())
                         .build());
 
         this.client = builder.client;

@@ -13,12 +13,12 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
- * 会话存储
+ * 片段存储
  * <p>
  * 用于存储和检索会话片段。
  * </p>
  */
-public interface SessionStore extends AutoCloseable {
+public interface FragmentStore extends AutoCloseable {
 
     /**
      * 流式获取会话片段

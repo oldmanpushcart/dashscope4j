@@ -1,7 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
-import io.github.oldmanpushcart.dashscope4j.agent.session.store.FileSessionStore;
+import io.github.oldmanpushcart.dashscope4j.agent.session.compressor.LlmFragmentCompressor;
+import io.github.oldmanpushcart.dashscope4j.agent.session.store.FileFragmentStore;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.dashscope.DashscopeToolKit;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.file.FileOpsToolKit;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.file.TextFileOpsToolKit;
@@ -18,19 +19,16 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillTool
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.file.FileSkillProvider;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Flux;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
-import java.util.UUID;
 
 public class DebugTestCase implements LoadingEnv {
 
@@ -42,10 +40,8 @@ public class DebugTestCase implements LoadingEnv {
                 //UUID.randomUUID().toString()
                 ;
         final var sessionManager = CompressSessionManager.newBuilder()
-                .client(client)
-                .model(ChatModel.QWEN_FLASH)
-                //.store(new HashMapSessionStore())
-                .store(FileSessionStore.newBuilder()
+                //.store(new HashMapFragmentStore())
+                .store(FileFragmentStore.newBuilder()
                         .directory(Paths.get("./session"))
                         .build())
                 .maxTokens(50 * 10000)
@@ -54,7 +50,6 @@ public class DebugTestCase implements LoadingEnv {
 
         final var toolbox = HashMapToolbox.newBuilder()
                 .indexer(HashMapToolIndexer.newBuilder()
-                        .client(client)
                         .model(ChatModel.QWEN_FLASH)
                         .cacheFile(Path.of("./toolbox-index-cache.jsonl"))
                         .build())
@@ -87,7 +82,6 @@ public class DebugTestCase implements LoadingEnv {
         try {
 
             final var agent = ReActAgent.newBuilder()
-                    .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
                     .toolKits(kits -> {
@@ -114,8 +108,8 @@ public class DebugTestCase implements LoadingEnv {
 
 //            {
 //                final var outbound = Flux.from(agent.flow(Message.user("""
-//                                贪吃蛇吃了红点后应该变长1格，移动速度增加100ms
-//                                编译并运行
+//                                鐠愶拷鎮嗛摂鍥ф倖娴滃棛瀛╅悙鐟版倵鎼存棁锟介崣姗€鏆?閺嶇》绱濈粔璇插З闁�喎瀹虫晶鐐插�100ms
+//                                缂傛牞鐦ч獮鎯扮箥鐞?
 //                                """)))
 //                        .reduce(AssistantMessage::accumulate)
 //                        .toFuture()
@@ -125,8 +119,8 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(Message.user("""
-                                修复问题：下边界还是穿过去了，我怀疑是你把下边的按钮条算到游戏界面去了。穿过去碰壁的距离和按钮条接近。
-                                编译并运行
+                                娣囷拷锟介梻锟斤拷閿涙矮绗呮潏鍦�櫕鏉╂ɑ妲哥粚鑳�箖閸樿�绨￠敍灞惧灉閹�偓閻ゆ垶妲告担鐘冲Ω娑撳�绔熼惃鍕�瘻闁斤拷娼�粻妤€鍩屽〒鍛婂灆閻ｅ矂娼伴崢璁崇啊閵嗗倻鈹涙潻鍥у箵绾版澘锟介惃鍕�獩缁傝�鎷伴幐澶愭尦閺夆剝甯存潻鎴欌偓?
+                                缂傛牞鐦ч獮鎯扮箥鐞?
                                 """))
                         .toCompletableFuture()
                         .join();

@@ -62,9 +62,9 @@ public class RetryInterceptor implements Interceptor {
                     // null 表示不重试，直接返回失败
                     if (delay == null) {
                         if (attempt > 0) {
-                            logger.warn("{} retry exhausted after {} attempts: {}", this, attempt + 1, ex.getMessage());
+                            logger.warn("{} retry exhausted after {} attempts!", this, attempt + 1, ex);
                         } else {
-                            logger.debug("{} initial request failed without retry: {}", this, ex.getMessage());
+                            logger.debug("{} initial request failed without retry!", this, ex);
                         }
                         return CompletableFuture.failedFuture(ex);
                     }
