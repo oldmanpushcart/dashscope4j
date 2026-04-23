@@ -116,7 +116,7 @@ public class FileFragmentStore implements FragmentStore {
      * 追加会话片段（线程安全）
      */
     @Override
-    public CompletionStage<Fragment> upsert(String sessionId, List<Message> messages) {
+    public CompletionStage<Fragment> insert(String sessionId, List<Message> messages) {
         Objects.requireNonNull(sessionId, "sessionId must not be null");
         Objects.requireNonNull(messages, "messages must not be null");
 

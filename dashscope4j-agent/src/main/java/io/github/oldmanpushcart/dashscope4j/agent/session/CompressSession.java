@@ -131,7 +131,7 @@ class CompressSession implements Session {
     @Override
     public CompletionStage<Void> remember(List<Message> messages) {
         // 将消息持久化到存储，然后推送到内存缓存并检查是否需要压缩
-        return store.upsert(sessionId, messages)
+        return store.insert(sessionId, messages)
                 .thenCompose(fragment -> push(fragment, fragments -> compressor.compress(fragments, retainTokens)))
                 .thenAccept(u -> {
 

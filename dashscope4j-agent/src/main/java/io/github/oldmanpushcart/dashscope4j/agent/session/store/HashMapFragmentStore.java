@@ -48,7 +48,7 @@ public class HashMapFragmentStore implements FragmentStore {
     }
 
     @Override
-    public CompletionStage<Fragment> upsert(String sessionId, List<Message> messages) {
+    public CompletionStage<Fragment> insert(String sessionId, List<Message> messages) {
         Objects.requireNonNull(sessionId, "sessionId must not be null");
         Objects.requireNonNull(messages, "messages must not be null");
 

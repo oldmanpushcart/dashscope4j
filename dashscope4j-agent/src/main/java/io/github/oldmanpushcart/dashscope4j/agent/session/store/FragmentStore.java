@@ -39,7 +39,7 @@ public interface FragmentStore extends AutoCloseable {
      * @param messages  消息列表（包含用户输入和助手输出）
      * @return 会话片段
      */
-    CompletionStage<Fragment> upsert(String sessionId, List<Message> messages);
+    CompletionStage<Fragment> insert(String sessionId, List<Message> messages);
 
     /**
      * 删除会话片段
