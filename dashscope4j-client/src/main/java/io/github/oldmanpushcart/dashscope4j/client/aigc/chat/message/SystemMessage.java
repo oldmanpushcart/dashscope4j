@@ -47,6 +47,15 @@ public record SystemMessage(
                 .collect(Collectors.joining());
     }
 
+    @Override
+    public Message withCache(Content.CacheControl control) {
+        return newBuilder(this)
+                .contents(contents -> contents.stream()
+                        .map(content -> content.withCache(control))
+                        .toList())
+                .build();
+    }
+
     public static Builder newBuilder() {
         return new Builder();
     }
@@ -65,7 +74,7 @@ public record SystemMessage(
         }
 
         public Builder(SystemMessage message) {
-            this.contents.addAll(message.contents);
+            this.contents = message.contents;
         }
 
         public Builder contents(List<Content> contents) {

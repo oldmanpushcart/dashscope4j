@@ -41,6 +41,15 @@ public record UserMessage(
     }
 
     @Override
+    public Message withCache(Content.CacheControl control) {
+        return newBuilder(this)
+                .contents(contents -> contents.stream()
+                        .map(content -> content.withCache(control))
+                        .toList())
+                .build();
+    }
+
+    @Override
     public Role role() {
         return Role.USER;
     }

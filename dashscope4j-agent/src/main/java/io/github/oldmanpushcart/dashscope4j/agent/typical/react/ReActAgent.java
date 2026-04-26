@@ -72,11 +72,8 @@ public class ReActAgent extends BaseAgent {
                             final var prompt = REACT_PROMPT_TEMPLATE
                                     .render(Map.of("tools", JacksonJsonUtils.toJson(tools)));
 
-                            // ReAct 内容（加缓存）
-                            final var content = Content.text(prompt).withCache();
-
                             // 添加到 SystemMessage
-                            messages.add(0, Message.system(content));
+                            messages.add(0, Message.system(prompt).withCache());
                             return messages;
 
                         })
@@ -159,7 +156,6 @@ public class ReActAgent extends BaseAgent {
 
                     /*
                      * 继续沟通：反馈 Action 执行结果
-                     *
                      * 拿到函数调用后，反馈给 LLM 告知当前阶段的执行结果，并开始下一阶段的思考
                      */
                     .thenCompose(resultJson -> {
@@ -423,13 +419,6 @@ public class ReActAgent extends BaseAgent {
                     }
                 })
                 .thenCompose(v -> v);
-    }
-
-    @Override
-    public Agent newSession(String sessionId) {
-        return ReActAgent.newBuilder(this)
-                .sessionId(sessionId)
-                .build();
     }
 
     /**

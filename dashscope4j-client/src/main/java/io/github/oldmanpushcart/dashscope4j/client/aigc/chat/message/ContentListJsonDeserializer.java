@@ -14,6 +14,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 内容列表 JSON 反序列化器
+ */
 class ContentListJsonDeserializer extends JsonDeserializer<List<Content>> {
 
     @Override

@@ -44,6 +44,26 @@ public sealed interface Message permits SystemMessage, AssistantMessage, UserMes
     String text();
 
     /**
+     * 缓存消息中全部内容
+     * <p>
+     * 默认使用 {@link Content.CacheControl#EPHEMERAL}
+     * </p>
+     *
+     * @return 消息
+     */
+    default Message withCache() {
+        return withCache(Content.CacheControl.EPHEMERAL);
+    }
+
+    /**
+     * 缓存消息中全部内容
+     *
+     * @param control 缓存控制
+     * @return 缓存消息
+     */
+    Message withCache(Content.CacheControl control);
+
+    /**
      * 角色
      */
     enum Role {

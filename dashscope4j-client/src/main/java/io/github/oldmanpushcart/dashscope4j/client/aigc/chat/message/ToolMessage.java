@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 
 import java.util.Set;
 
@@ -27,6 +28,11 @@ public record ToolMessage(
     @Override
     public String text() {
         return content;
+    }
+
+    @Override
+    public Message withCache(Content.CacheControl control) {
+        return this;
     }
 
 }

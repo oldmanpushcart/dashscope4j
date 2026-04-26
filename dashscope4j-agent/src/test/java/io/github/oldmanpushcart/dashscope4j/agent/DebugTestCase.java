@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
-import io.github.oldmanpushcart.dashscope4j.agent.session.compressor.LlmFragmentCompressor;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.FileFragmentStore;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.dashscope.DashscopeToolKit;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.file.FileOpsToolKit;
@@ -19,16 +18,19 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillTool
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.file.FileSkillProvider;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 public class DebugTestCase implements LoadingEnv {
 
@@ -36,20 +38,23 @@ public class DebugTestCase implements LoadingEnv {
     public void debug$1() {
 
         final var sessionId =
-                "SESSION-snake"
-                //UUID.randomUUID().toString()
+                //"SESSION-snake"
+                UUID.randomUUID().toString()
                 ;
         final var sessionManager = CompressSessionManager.newBuilder()
                 //.store(new HashMapFragmentStore())
                 .store(FileFragmentStore.newBuilder()
                         .directory(Paths.get("./session"))
                         .build())
+                .client(client)
+                .model(ChatModel.QWEN_PLUS)
                 .maxTokens(50 * 10000)
                 .gcRatio(0.3)
                 .build();
 
         final var toolbox = HashMapToolbox.newBuilder()
                 .indexer(HashMapToolIndexer.newBuilder()
+                        .client(client)
                         .model(ChatModel.QWEN_FLASH)
                         .cacheFile(Path.of("./toolbox-index-cache.jsonl"))
                         .build())
@@ -67,14 +72,9 @@ public class DebugTestCase implements LoadingEnv {
                                         .transportFactory(mapper ->
                                                 HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
                                                         .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+                                                        .jsonMapper(mapper)
                                                         .build())
                                         .build())
-                                .build(),
-                        SkillToolLoader.newBuilder()
-                                .providers(List.of(
-                                        FileSkillProvider.ofPath(Path.of("./skills/school-score")),
-                                        FileSkillProvider.ofPath(Path.of("/Users/vlinux/.agents/skills/dws"))
-                                ))
                                 .build()
                 ))
                 .build();
@@ -82,6 +82,7 @@ public class DebugTestCase implements LoadingEnv {
         try {
 
             final var agent = ReActAgent.newBuilder()
+                    .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
                     .toolKits(kits -> {
@@ -103,13 +104,12 @@ public class DebugTestCase implements LoadingEnv {
                         return kits;
                     })
                     .sessionManager(sessionManager)
-                    .sessionId(sessionId)
                     .build();
 
 //            {
-//                final var outbound = Flux.from(agent.flow(Message.user("""
-//                                鐠愶拷鎮嗛摂鍥ф倖娴滃棛瀛╅悙鐟版倵鎼存棁锟介崣姗€鏆?閺嶇》绱濈粔璇插З闁�喎瀹虫晶鐐插�100ms
-//                                缂傛牞鐦ч獮鎯扮箥鐞?
+//                final var outbound = Flux.from(agent.flow(sessionId, Message.user("""
+//                                用Java写一个时钟，使用Swing，需要有时分秒的指针，并且还会动！
+//                                编译并运行
 //                                """)))
 //                        .reduce(AssistantMessage::accumulate)
 //                        .toFuture()
@@ -118,9 +118,8 @@ public class DebugTestCase implements LoadingEnv {
 //            }
 
             {
-                final var outbound = agent.async(Message.user("""
-                                娣囷拷锟介梻锟斤拷閿涙矮绗呮潏鍦�櫕鏉╂ɑ妲哥粚鑳�箖閸樿�绨￠敍灞惧灉閹�偓閻ゆ垶妲告担鐘冲Ω娑撳�绔熼惃鍕�瘻闁斤拷娼�粻妤€鍩屽〒鍛婂灆閻ｅ矂娼伴崢璁崇啊閵嗗倻鈹涙潻鍥у箵绾版澘锟介惃鍕�獩缁傝�鎷伴幐澶愭尦閺夆剝甯存潻鎴欌偓?
-                                缂傛牞鐦ч獮鎯扮箥鐞?
+                final var outbound = agent.async(sessionId, Message.user("""
+                                请帮我查询今天的天气情况
                                 """))
                         .toCompletableFuture()
                         .join();

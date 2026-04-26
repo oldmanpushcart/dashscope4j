@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.agent.session;
 
-import io.github.oldmanpushcart.dashscope4j.agent.session.compressor.FragmentCompressor;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.FragmentStore;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
@@ -40,9 +40,14 @@ public class CompressSessionManager implements SessionManager {
     private final FragmentStore store;
 
     /**
-     * 片段压缩器
+     * DashScope 客户端
      */
-    private final FragmentCompressor compressor;
+    private final DashscopeClient client;
+
+    /**
+     * 聊天模型
+     */
+    private final ChatModel model;
 
     /**
      * 最大 Token 数
@@ -61,8 +66,9 @@ public class CompressSessionManager implements SessionManager {
      */
     public CompressSessionManager(Builder builder) {
 
-        Objects.requireNonNull(builder.compressor, "compressor must not be null");
         Objects.requireNonNull(builder.store, "store must not be null");
+        Objects.requireNonNull(builder.client, "client must not be null");
+        Objects.requireNonNull(builder.model, "model must not be null");
         CheckUtils.require(builder.maxTokens, t -> t > 0, "maxTokens must be greater than 0");
         CheckUtils.require(builder.gcRatio, t -> t > 0 && t < 1, "gcRatio must in (0,1)");
         CheckUtils.require(builder.maxSessions, t -> t > 0, "maxSessions must be greater than 0");
@@ -77,7 +83,8 @@ public class CompressSessionManager implements SessionManager {
                 }
         );
         this.store = builder.store;
-        this.compressor = builder.compressor;
+        this.client = builder.client;
+        this.model = builder.model;
         this.maxTokens = builder.maxTokens;
         // 计算保留 Token 数：maxTokens * gcRatio
         this.retainTokens = (int) (maxTokens * builder.gcRatio);
@@ -101,7 +108,8 @@ public class CompressSessionManager implements SessionManager {
                         new CompressSession(
                                 sessionId,
                                 store,
-                                compressor,
+                                client,
+                                model,
                                 maxTokens,
                                 retainTokens
                         ));
@@ -149,9 +157,14 @@ public class CompressSessionManager implements SessionManager {
         private FragmentStore store;
 
         /**
-         * 片段压缩器
+         * DashScope 客户端
          */
-        private FragmentCompressor compressor;
+        private DashscopeClient client;
+
+        /**
+         * 聊天模型
+         */
+        private ChatModel model;
 
         /**
          * 最大 Token 数
@@ -180,13 +193,24 @@ public class CompressSessionManager implements SessionManager {
         }
 
         /**
-         * 设置片段压缩器
+         * 设置 DashScope 客户端
          *
-         * @param compressor 片段压缩器
+         * @param client DashScope 客户端
          * @return 当前构建器
          */
-        public Builder compressor(FragmentCompressor compressor) {
-            this.compressor = compressor;
+        public Builder client(DashscopeClient client) {
+            this.client = client;
+            return this;
+        }
+
+        /**
+         * 设置聊天模型
+         *
+         * @param model 聊天模型
+         * @return 当前构建器
+         */
+        public Builder model(ChatModel model) {
+            this.model = model;
             return this;
         }
 

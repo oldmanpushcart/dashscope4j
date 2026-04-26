@@ -1,8 +1,10 @@
 package io.github.oldmanpushcart.dashscope4j.agent.session;
 
-import io.github.oldmanpushcart.dashscope4j.agent.session.compressor.FragmentCompressor;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.FragmentStore;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.FragmentStore.Fragment;
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
 import io.github.oldmanpushcart.dashscope4j.client.util.TokenizerUtils;
@@ -18,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -51,9 +52,14 @@ class CompressSession implements Session {
     private final FragmentStore store;
 
     /**
-     * 片段压缩器
+     * DashScope 客户端（用于 LLM 压缩）
      */
-    private final FragmentCompressor compressor;
+    private final DashscopeClient client;
+
+    /**
+     * 聊天模型（用于生成摘要）
+     */
+    private final ChatModel model;
 
     /**
      * 最大 Token 数
@@ -98,14 +104,16 @@ class CompressSession implements Session {
      *
      * @param sessionId    会话 ID
      * @param store        片段存储器
-     * @param compressor   片段压缩器
+     * @param client       DashScope 客户端
+     * @param model        聊天模型
      * @param maxTokens    最大 Token 数（触发压缩的阈值）
      * @param retainTokens 保留的 Token 数（压缩后保留的上下文大小）
      */
-    CompressSession(String sessionId, FragmentStore store, FragmentCompressor compressor, int maxTokens, int retainTokens) {
+    CompressSession(String sessionId, FragmentStore store, DashscopeClient client, ChatModel model, int maxTokens, int retainTokens) {
         this.sessionId = sessionId;
         this.store = store;
-        this.compressor = compressor;
+        this.client = client;
+        this.model = model;
         this.maxTokens = maxTokens;
         this.retainTokens = retainTokens;
         this._toString = "dashscope4j-agent:/session/%s".formatted(sessionId);
@@ -132,10 +140,7 @@ class CompressSession implements Session {
     public CompletionStage<Void> remember(List<Message> messages) {
         // 将消息持久化到存储，然后推送到内存缓存并检查是否需要压缩
         return store.insert(sessionId, messages)
-                .thenCompose(fragment -> push(fragment, fragments -> compressor.compress(fragments, retainTokens)))
-                .thenAccept(u -> {
-
-                });
+                .thenCompose(this::push);
     }
 
     /**
@@ -216,11 +221,10 @@ class CompressSession implements Session {
      * </ul>
      * </p>
      *
-     * @param fragment   新片段
-     * @param compressor 压缩函数，接收片段列表，返回压缩结果
+     * @param fragment 新片段
      * @return 完成时的 CompletionStage
      */
-    public CompletionStage<Void> push(Fragment fragment, Function<List<Fragment>, CompletionStage<FragmentCompressor.Result>> compressor) {
+    public CompletionStage<Void> push(Fragment fragment) {
         if (closed) {
             return CompletableFuture.failedFuture(new IllegalStateException("Session is closed"));
         }
@@ -239,7 +243,7 @@ class CompressSession implements Session {
         }
 
         // 超出限制，执行压缩操作
-        return compressor.apply(fragments)
+        return compress(fragments)
                 .handle((result, ex) -> {
 
                     // 压缩失败，使用非压缩结果
@@ -271,6 +275,90 @@ class CompressSession implements Session {
 
                 });
 
+    }
+
+    /**
+     * 压缩结果记录
+     * <p>
+     * 封装压缩操作的结果，包含保留的新片段和生成的历史摘要。
+     * </p>
+     *
+     * @param retained 保留的片段列表（较新的片段，未被压缩）
+     * @param summary  生成的历史摘要消息
+     */
+    private record CompressResult(List<Fragment> retained, Message summary) {
+    }
+
+    /**
+     * 执行片段压缩
+     * <p>
+     * 当片段总 Token 数超过限制时，使用 LLM 生成历史摘要并压缩旧片段。
+     * </p>
+     *
+     * @param fragments 当前所有片段列表（按时间倒序，最新的在前）
+     * @return 压缩结果的 CompletionStage
+     */
+    private CompletionStage<CompressResult> compress(List<Fragment> fragments) {
+        // 创建片段副本，避免修改原始列表
+        final var fragmentCopy = new ArrayList<>(fragments);
+
+        // 执行紧凑化，分离出需要压缩的旧片段
+        final var evictions = compact(retainTokens, fragmentCopy);
+
+        // 按时间正序排列被驱逐的片段（从旧到新），拼接为历史对话
+        final var history = evictions.stream()
+                .sorted((o1, o2) -> Long.compare(o2.fragmentId(), o1.fragmentId()))
+                .flatMap(f -> f.messages().stream())
+                .toList();
+
+        // 构建摘要生成请求
+        final var request = AigcRequest.newBuilder(model)
+                .input(ChatModel.Input.newBuilder()
+                        .addMessages(history)
+                        .addMessage(Message.user("""
+                                你是一个专业的对话摘要助手。请总结对话历史，生成一个简洁但全面的摘要。摘要应该：
+                                1. 保留关键信息和重要细节
+                                2. 忽略寒暄和无关内容
+                                3. 用简洁的语言总结主要话题和结论
+                                4. 保持在 200-500 字以内
+                                5. 只输出摘要内容，不要添加任何解释或额外说明
+                                """))
+                        .build())
+                .build();
+
+        return client.async(request)
+                .thenApply(response -> response.output().best().message())
+                .thenApply(message -> new CompressResult(fragmentCopy, message));
+    }
+
+    /**
+     * 紧凑化片段列表
+     * <p>
+     * 从片段列表中移除超出保留 Token 数的旧片段，保留最近的片段。
+     * 片段列表按时间倒序排列（最新的在前），因此从尾部开始移除旧片段。
+     * </p>
+     *
+     * @param retainTokens 保留的 Token 数
+     * @param fragments    片段列表（会被修改，移除旧片段）
+     * @return 被移除的片段列表（按时间正序排列，从旧到新）
+     */
+    private static List<Fragment> compact(int retainTokens, List<Fragment> fragments) {
+        final var evictions = new ArrayList<Fragment>();
+        int tokens = 0;
+        boolean evictFlag = false;
+        final var removeIt = fragments.iterator();
+        while (removeIt.hasNext()) {
+            final var fragment = removeIt.next();
+            // 如果累计 Token 数未超过保留限制，则保留该片段
+            if (!evictFlag && !(evictFlag = !(tokens + fragment.tokens() <= retainTokens))) {
+                tokens += fragment.tokens();
+            } else {
+                // 超出限制，移除该片段并记录到驱逐列表
+                removeIt.remove();
+                evictions.add(0, fragment);  // 插入到头部，保持从旧到新的顺序
+            }
+        }
+        return evictions;
     }
 
     /**

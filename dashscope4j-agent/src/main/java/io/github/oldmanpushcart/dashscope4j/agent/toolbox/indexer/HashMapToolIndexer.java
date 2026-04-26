@@ -79,30 +79,22 @@ public class HashMapToolIndexer implements ToolIndexer {
     /**
      * 工具路由匹配 PromptMessage
      */
-    private static final Message TOOL_ROUTER_MESSAGE = SystemMessage.newBuilder()
-            .contents(contents -> {
-                final var prompt = PromptTemplate.newBuilder()
-                        .template(HashMapToolIndexer.class.getResourceAsStream("/prompt/TOOL_ROUTER.md"))
-                        .build()
-                        .render();
-                final var content = Content.text(prompt).withCache();
-                return List.of(content);
-            })
-            .build();
+    private static final Message TOOL_ROUTER_MESSAGE = Message
+            .system(PromptTemplate.newBuilder()
+                    .template(HashMapToolIndexer.class.getResourceAsStream("/prompt/TOOL_ROUTER.md"))
+                    .build()
+                    .render())
+            .withCache();
 
     /**
      * 工具元信息提取 PromptMessage
      */
-    private static final Message TOOL_META_EXTRACTOR_MESSAGE = SystemMessage.newBuilder()
-            .contents(contents -> {
-                final var prompt = PromptTemplate.newBuilder()
-                        .template(HashMapToolIndexer.class.getResourceAsStream("/prompt/TOOL_META_EXTRACTOR.md"))
-                        .build()
-                        .render();
-                final var content = Content.text(prompt).withCache();
-                return List.of(content);
-            })
-            .build();
+    private static final Message TOOL_META_EXTRACTOR_MESSAGE = Message
+            .system(PromptTemplate.newBuilder()
+                    .template(HashMapToolIndexer.class.getResourceAsStream("/prompt/TOOL_META_EXTRACTOR.md"))
+                    .build()
+                    .render())
+            .withCache();
 
     /**
      * 构造 HashMap 工具索引器

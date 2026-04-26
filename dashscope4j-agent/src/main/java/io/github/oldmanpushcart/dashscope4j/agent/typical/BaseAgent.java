@@ -1,8 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
-import io.github.oldmanpushcart.dashscope4j.agent.session.SessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
+import io.github.oldmanpushcart.dashscope4j.agent.session.SessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.HashMapFragmentStore;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
@@ -13,9 +13,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.TextContent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
@@ -26,7 +23,10 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
@@ -67,11 +67,6 @@ public abstract class BaseAgent implements Agent {
      * Agent 介绍（系统提示词）
      */
     private final String introduction;
-
-    /**
-     * 会话ID
-     */
-    private final String sessionId;
 
     /**
      * 工具箱，用于管理和查找工具
@@ -122,7 +117,6 @@ public abstract class BaseAgent implements Agent {
         this.name = builder.name;
         this.description = builder.description;
         this.introduction = builder.introduction;
-        this.sessionId = Objects.requireNonNullElseGet(builder.sessionId, () -> UUID.randomUUID().toString());
 
         this.toolbox = builder.toolbox;
         this.searchTools = Optional.of(builder.toolbox)
@@ -158,16 +152,6 @@ public abstract class BaseAgent implements Agent {
         return introduction;
     }
 
-    @Override
-    public String sessionId() {
-        return sessionId;
-    }
-
-    @Override
-    public FunctionTool asTool() {
-        return new AgentAsFunction(this).asTool();
-    }
-
     /**
      * 构建 AIGC 请求
      * <p>
@@ -196,11 +180,7 @@ public abstract class BaseAgent implements Agent {
                             // 如果有设置 introduction 则添加
                             final var introduction = introduction();
                             if (CommonUtils.isNotBlankString(introduction)) {
-                                final var content = TextContent.newBuilder()
-                                        .text(introduction)
-                                        .cacheControl(Content.CacheControl.EPHEMERAL)
-                                        .build();
-                                messages.add(0, Message.system(content));
+                                messages.add(0, Message.system(introduction).withCache());
                             }
 
                             // 添加用户输入
@@ -241,14 +221,14 @@ public abstract class BaseAgent implements Agent {
     }
 
     @Override
-    public CompletionStage<AssistantMessage> async(UserMessage inbound) {
+    public CompletionStage<AssistantMessage> async(String sessionId, UserMessage inbound) {
         return CompletableFuture.completedStage(newRequest(sessionId, inbound))
                 .thenCompose(this::baseAsync)
                 .thenApply(response -> response.output().best().message());
     }
 
     @Override
-    public Publisher<AssistantMessage> flow(UserMessage inbound) {
+    public Publisher<AssistantMessage> flow(String sessionId, UserMessage inbound) {
         // 使用 Flux.defer 延迟执行，在订阅时才进行记忆召回
         return Flux.defer(() -> {
 
@@ -360,7 +340,6 @@ public abstract class BaseAgent implements Agent {
         private String name;
         private String description;
         private String introduction;
-        private String sessionId;
 
         private Toolbox toolbox;
         private SessionManager sessionManager;
@@ -380,7 +359,6 @@ public abstract class BaseAgent implements Agent {
             this.name = agent.name;
             this.description = agent.description;
             this.introduction = agent.introduction;
-            this.sessionId = agent.sessionId;
 
             this.toolbox = agent.toolbox;
             this.sessionManager = agent.sessionManager;
@@ -405,11 +383,6 @@ public abstract class BaseAgent implements Agent {
 
         public B introduction(String introduction) {
             this.introduction = introduction;
-            return self();
-        }
-
-        public B sessionId(String sessionId) {
-            this.sessionId = sessionId;
             return self();
         }
 

@@ -75,6 +75,15 @@ public record AssistantMessage(
                 .collect(Collectors.joining());
     }
 
+    @Override
+    public Message withCache(Content.CacheControl control) {
+        return newBuilder(this)
+                .contents(contents -> contents.stream()
+                        .map(content -> content.withCache(control))
+                        .toList())
+                .build();
+    }
+
     /**
      * @return 是否为工具调用
      */
