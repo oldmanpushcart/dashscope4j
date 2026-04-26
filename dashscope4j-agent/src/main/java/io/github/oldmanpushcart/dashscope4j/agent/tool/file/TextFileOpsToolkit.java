@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.tool.file;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.util.FileUtils;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
@@ -29,7 +29,7 @@ import java.util.Map;
  * - create: 创建新文件（可选覆盖）
  * </p>
  */
-public class TextFileOpsToolKit implements ToolKit {
+public class TextFileOpsToolkit implements Toolkit {
 
     // ==================== 常量定义 ====================
 
@@ -60,7 +60,7 @@ public class TextFileOpsToolKit implements ToolKit {
      */
     private final boolean readOnly;
 
-    private TextFileOpsToolKit(Builder builder) {
+    private TextFileOpsToolkit(Builder builder) {
         this.workspace = builder.workspace;
         this.maxFileSize = builder.maxFileSize;
         this.charset = builder.charset;
@@ -567,7 +567,7 @@ public class TextFileOpsToolKit implements ToolKit {
         return new Builder();
     }
 
-    public static class Builder implements Buildable<TextFileOpsToolKit, Builder> {
+    public static class Builder implements Buildable<TextFileOpsToolkit, Builder> {
 
         private Path workspace;
         private long maxFileSize = DEFAULT_MAX_FILE_SIZE_BYTES;
@@ -622,12 +622,12 @@ public class TextFileOpsToolKit implements ToolKit {
         }
 
         @Override
-        public TextFileOpsToolKit build() {
+        public TextFileOpsToolkit build() {
             // 如果未设置工作区，使用当前目录
             if (workspace == null) {
                 workspace = Paths.get("").toAbsolutePath().normalize();
             }
-            return new TextFileOpsToolKit(this);
+            return new TextFileOpsToolkit(this);
         }
     }
 

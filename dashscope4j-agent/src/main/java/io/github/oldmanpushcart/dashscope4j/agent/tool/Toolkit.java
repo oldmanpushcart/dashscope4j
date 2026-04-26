@@ -1,9 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.tool;
 
-import io.github.oldmanpushcart.dashscope4j.agent.tool.file.FileOpsToolKit;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.system.GuiToolKit;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.system.RuntimeToolKit;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.system.ShellToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.file.FileOpsToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.system.*;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
@@ -16,10 +14,10 @@ import java.util.List;
  * 每个工具包可以包含多个功能相关的工具，例如：
  * </p>
  * <ul>
- *   <li>{@link GuiToolKit} - GUI 自动化工具包（截图、鼠标、键盘、剪贴板）</li>
- *   <li>{@link FileOpsToolKit} - 文件操作工具包</li>
- *   <li>{@link ShellToolKit} - Shell 命令执行工具包</li>
- *   <li>{@link RuntimeToolKit} - 运行时环境信息查询工具包</li>
+ *   <li>{@link GuiToolkit} - GUI 自动化工具包（截图、鼠标、键盘、剪贴板）</li>
+ *   <li>{@link FileOpsToolkit} - 文件操作工具包</li>
+ *   <li>{@link ShellToolkit} - Shell 命令执行工具包</li>
+ *   <li>{@link RuntimeToolkit} - 运行时环境信息查询工具包</li>
  * </ul>
  * <p>
  * <b>设计目的：</b>
@@ -30,11 +28,11 @@ import java.util.List;
  *   <li>提供统一的工具注册接口</li>
  * </ul>
  *
- * @see GuiToolKit GUI 自动化工具包实现
+ * @see GuiToolkit GUI 自动化工具包实现
  * @see Tool 单个工具接口
  * @see FunctionTool 函数型工具实现
  */
-public interface ToolKit {
+public interface Toolkit {
 
     /**
      * 获取此工具包提供的所有工具列表

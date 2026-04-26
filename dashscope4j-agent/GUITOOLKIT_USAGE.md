@@ -1,8 +1,8 @@
-# GuiToolKit 使用指南
+# GuiToolkit 使用指南
 
 ## 概述
 
-GuiToolKit 为 LLM Agent 提供了完整的桌面自动化能力，包括：
+GuiToolkit 为 LLM Agent 提供了完整的桌面自动化能力，包括：
 - 📸 屏幕截图（支持全屏和区域截图）
 - 🖱️ 鼠标操作（移动、点击、拖拽、滚动）
 - ⌨️ 键盘操作（按键、文本输入、组合键）
@@ -10,11 +10,11 @@ GuiToolKit 为 LLM Agent 提供了完整的桌面自动化能力，包括：
 
 ## 快速开始
 
-### 1. 创建 GuiToolKit
+### 1. 创建 GuiToolkit
 
 ```java
 // 完整功能
-var guiToolKit = GuiToolKit.newBuilder()
+var guiToolkit = GuiToolkit.newBuilder()
     .enableScreenshot(true)
     .enableMouse(true)
     .enableKeyboard(true)
@@ -22,7 +22,7 @@ var guiToolKit = GuiToolKit.newBuilder()
     .build();
 
 // 只读模式（仅截图）
-var readOnlyKit = GuiToolKit.newBuilder()
+var readOnlyKit = GuiToolkit.newBuilder()
     .enableScreenshot(true)
     .enableMouse(false)
     .enableKeyboard(false)
@@ -39,9 +39,9 @@ var toolbox = HashMapToolbox.newBuilder()
         .model(ChatModel.QWEN_FLASH)
         .build())
     .loaders(List.of(
-        ToolKitLoader.of(guiToolKit),
-        ToolKitLoader.of(SystemToolKit.create()),
-        ToolKitLoader.of(FileOpsToolKit.newBuilder()
+        ToolkitLoader.of(guiToolkit),
+        ToolkitLoader.of(SystemToolkit.create()),
+        ToolkitLoader.of(FileOpsToolkit.newBuilder()
             .workspace(Path.of("./"))
             .build())
     ))
@@ -453,7 +453,7 @@ agent.async("robust", Message.user("""
 
 ```java
 // 如果只需要截图，禁用其他功能以减少资源占用
-var screenshotOnly = GuiToolKit.newBuilder()
+var screenshotOnly = GuiToolkit.newBuilder()
     .enableScreenshot(true)
     .enableMouse(false)
     .enableKeyboard(false)
@@ -463,7 +463,7 @@ var screenshotOnly = GuiToolKit.newBuilder()
 
 ### 2. 限制截图尺寸
 
-GuiToolKit 内置了最大截图尺寸限制（1920x1080），超出会自动报错。
+GuiToolkit 内置了最大截图尺寸限制（1920x1080），超出会自动报错。
 
 ### 3. 减少不必要的截图
 
@@ -477,7 +477,7 @@ agent.async("session", Message.user("操作前截图一次，操作后截图一�
 
 ## 总结
 
-GuiToolKit 为 LLM Agent 提供了强大的桌面自动化能力，可以实现：
+GuiToolkit 为 LLM Agent 提供了强大的桌面自动化能力，可以实现：
 - ✅ 视觉感知（截图）
 - ✅ 鼠标控制（移动、点击、拖拽、滚动）
 - ✅ 键盘输入（按键、文本、组合键）

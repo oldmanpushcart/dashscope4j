@@ -2,29 +2,25 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.FileFragmentStore;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.dashscope.DashscopeToolKit;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.file.FileOpsToolKit;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.file.TextFileOpsToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.dashscope.DashscopeToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.file.FileOpsToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.file.TextFileOpsToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.tool.network.HttpToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.system.GuiToolKit;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.system.RuntimeToolKit;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.system.ShellToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.system.GuiToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.system.RuntimeToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.HashMapToolIndexer;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.ToolKitLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.ToolkitLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.McpToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.RecoverableMcpClientTransport;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.file.FileSkillProvider;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Flux;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -59,10 +55,10 @@ public class DebugTestCase implements LoadingEnv {
                         .cacheFile(Path.of("./toolbox-index-cache.jsonl"))
                         .build())
                 .loaders(List.of(
-                        ToolKitLoader.of(DashscopeToolKit.create()),
-                        ToolKitLoader.of(RuntimeToolKit.create()),
-                        ToolKitLoader.of(GuiToolKit.newBuilder().build()),
-                        ToolKitLoader.of(HttpToolkit.newBuilder()
+                        ToolkitLoader.of(DashscopeToolkit.create()),
+                        ToolkitLoader.of(RuntimeToolkit.create()),
+                        ToolkitLoader.of(GuiToolkit.newBuilder().build()),
+                        ToolkitLoader.of(HttpToolkit.newBuilder()
                                 .workspace(Path.of("./"))
                                 .httpClient(new OkHttpClient.Builder().build())
                                 .build()),
@@ -85,19 +81,19 @@ public class DebugTestCase implements LoadingEnv {
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
-                    .toolKits(kits -> {
+                    .toolkits(kits -> {
 
-                        kits.add(RuntimeToolKit.create());
+                        kits.add(RuntimeToolkit.create());
 
-                        kits.add(ShellToolKit.newBuilder()
+                        kits.add(ShellToolkit.newBuilder()
                                 .timeout(Duration.ofSeconds(60))
                                 .build());
 
-                        kits.add(FileOpsToolKit.newBuilder()
+                        kits.add(FileOpsToolkit.newBuilder()
                                 .workspace(Path.of("./"))
                                 .build());
 
-                        kits.add(TextFileOpsToolKit.newBuilder()
+                        kits.add(TextFileOpsToolkit.newBuilder()
                                 .workspace(Path.of("./"))
                                 .build());
 

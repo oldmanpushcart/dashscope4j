@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader;
 
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
@@ -15,18 +15,18 @@ import java.util.function.Predicate;
 /**
  * 工具集加载器
  * <p>
- * 通用的 ToolLoader 适配器，用于将 ToolKit 加载到 Toolbox 中。
+ * 通用的 ToolLoader 适配器，用于将 Toolkit 加载到 Toolbox 中。
  * 支持通过过滤器选择性加载工具。
  * </p>
  *
  * @since 4.0.0
  */
-public class ToolKitLoader implements ToolLoader {
+public class ToolkitLoader implements ToolLoader {
 
     /**
      * 工具集
      */
-    private final ToolKit kit;
+    private final Toolkit toolkit;
 
     /**
      * 工具过滤器（可选）
@@ -38,9 +38,9 @@ public class ToolKitLoader implements ToolLoader {
      *
      * @param builder 构建器
      */
-    private ToolKitLoader(Builder builder) {
-        Objects.requireNonNull(builder.kit, "kit must not be null!");
-        this.kit = builder.kit;
+    private ToolkitLoader(Builder builder) {
+        Objects.requireNonNull(builder.toolkit, "toolkit must not be null!");
+        this.toolkit = builder.toolkit;
         this.filter = builder.filter;
     }
 
@@ -48,7 +48,7 @@ public class ToolKitLoader implements ToolLoader {
     public CompletionStage<Void> install(Toolbox toolbox) {
 
         // 并行等待所有注册操作完成
-        final var stages = kit.tools().stream()
+        final var stages = toolkit.tools().stream()
                 .filter(FunctionTool.class::isInstance)
                 .map(FunctionTool.class::cast)
                 // 应用过滤器（如果设置了）
@@ -65,23 +65,23 @@ public class ToolKitLoader implements ToolLoader {
     }
 
     /**
-     * 创建 ToolKitLoader（向后兼容）
+     * 创建 ToolkitLoader（向后兼容）
      *
      * @param kit 工具集
-     * @return ToolKitLoader 实例
+     * @return ToolkitLoader 实例
      */
-    public static ToolKitLoader of(ToolKit kit) {
-        return newBuilder().kit(kit).build();
+    public static ToolkitLoader of(Toolkit kit) {
+        return newBuilder().toolkit(kit).build();
     }
 
     /**
-     * 创建 ToolKitLoader（向后兼容）
+     * 创建 ToolkitLoader（向后兼容）
      *
      * @param tools 工具列表
-     * @return ToolKitLoader 实例
+     * @return ToolkitLoader 实例
      */
-    public static ToolKitLoader of(Tool... tools) {
-        return newBuilder().kit(() -> Arrays.asList(tools)).build();
+    public static ToolkitLoader of(Tool... tools) {
+        return newBuilder().toolkit(() -> Arrays.asList(tools)).build();
     }
 
     /**
@@ -94,19 +94,19 @@ public class ToolKitLoader implements ToolLoader {
     }
 
     /**
-     * ToolKitLoader 构建器
+     * ToolkitLoader 构建器
      * <p>
      * 使用 Builder 模式配置工具集加载器，支持设置过滤器。
      * </p>
      *
      * @since 4.0.0
      */
-    public static class Builder implements Buildable<ToolKitLoader, Builder> {
+    public static class Builder implements Buildable<ToolkitLoader, Builder> {
 
         /**
          * 工具集（必需）
          */
-        private ToolKit kit;
+        private Toolkit toolkit;
 
         /**
          * 工具过滤器（可选）
@@ -116,11 +116,11 @@ public class ToolKitLoader implements ToolLoader {
         /**
          * 设置工具集
          *
-         * @param kit 工具集
+         * @param toolkit 工具集
          * @return 当前构建器
          */
-        public Builder kit(ToolKit kit) {
-            this.kit = kit;
+        public Builder toolkit(Toolkit toolkit) {
+            this.toolkit = toolkit;
             return this;
         }
 
@@ -141,11 +141,11 @@ public class ToolKitLoader implements ToolLoader {
         /**
          * 构建工具集加载器
          *
-         * @return 新创建的 ToolKitLoader 实例
+         * @return 新创建的 ToolkitLoader 实例
          */
         @Override
-        public ToolKitLoader build() {
-            return new ToolKitLoader(this);
+        public ToolkitLoader build() {
+            return new ToolkitLoader(this);
         }
 
     }

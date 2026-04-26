@@ -4,7 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.SessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.HashMapFragmentStore;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
@@ -106,7 +106,7 @@ public abstract class BaseAgent implements Agent {
     /**
      * 工具包列表
      */
-    private final List<ToolKit> toolKits;
+    private final List<Toolkit> toolkits;
 
     /**
      * 构造 BaseAgent
@@ -134,7 +134,7 @@ public abstract class BaseAgent implements Agent {
         // 创建不可变副本，防止外部修改
         this.parameters = CommonUtils.unmodifiableCopy(builder.parameters);
         this.interceptors = CommonUtils.unmodifiableCopy(builder.interceptors);
-        this.toolKits = CommonUtils.unmodifiableCopy(builder.toolKits);
+        this.toolkits = CommonUtils.unmodifiableCopy(builder.toolkits);
     }
 
     @Override
@@ -204,8 +204,8 @@ public abstract class BaseAgent implements Agent {
                     }
 
                     // 添加 toolkits 工具包
-                    if (CommonUtils.isNotEmpty(toolKits)) {
-                        toolKits.forEach(kit -> tools.addAll(kit.tools()));
+                    if (CommonUtils.isNotEmpty(toolkits)) {
+                        toolkits.forEach(kit -> tools.addAll(kit.tools()));
                     }
 
                     return parameters;
@@ -348,7 +348,7 @@ public abstract class BaseAgent implements Agent {
         private ChatModel model;
         private Map<String, Object> parameters;
         private List<Interceptor> interceptors;
-        private List<ToolKit> toolKits;
+        private List<Toolkit> toolkits;
 
         protected Builder() {
 
@@ -367,7 +367,7 @@ public abstract class BaseAgent implements Agent {
             this.model = agent.model;
             this.parameters = CommonUtils.unmodifiableCopy(agent.parameters);
             this.interceptors = CommonUtils.unmodifiableCopy(agent.interceptors);
-            this.toolKits = CommonUtils.unmodifiableCopy(agent.toolKits);
+            this.toolkits = CommonUtils.unmodifiableCopy(agent.toolkits);
 
         }
 
@@ -426,13 +426,13 @@ public abstract class BaseAgent implements Agent {
             return self();
         }
 
-        public B toolKits(List<ToolKit> toolKits) {
-            this.toolKits = toolKits;
+        public B toolkits(List<Toolkit> toolkits) {
+            this.toolkits = toolkits;
             return self();
         }
 
-        public B toolKits(UnaryOperator<List<ToolKit>> operator) {
-            this.toolKits = operator.apply(CommonUtils.mutableCopy(this.toolKits));
+        public B toolkits(UnaryOperator<List<Toolkit>> operator) {
+            this.toolkits = operator.apply(CommonUtils.mutableCopy(this.toolkits));
             return self();
         }
 

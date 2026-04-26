@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.tool.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.util.FileUtils;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * OkHttpClient 可由外部传入，支持自定义配置。
  * </p>
  */
-public class HttpToolkit implements ToolKit {
+public class HttpToolkit implements Toolkit {
 
     /**
      * 默认超时时间（秒）

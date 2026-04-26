@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.tool.system;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
@@ -26,7 +26,7 @@ import static java.util.concurrent.TimeUnit.*;
  * <p>
  * 提供在本地环境中执行 Shell 命令的能力（⚠️ 需谨慎使用）
  */
-public class ShellToolKit implements ToolKit {
+public class ShellToolkit implements Toolkit {
 
     /**
      * 默认命令执行超时时间
@@ -48,7 +48,7 @@ public class ShellToolKit implements ToolKit {
      */
     private final SecurityLevel securityLevel;
 
-    private ShellToolKit(Builder builder) {
+    private ShellToolkit(Builder builder) {
         this.timeout = builder.timeout;
         this.securityLevel = builder.securityLevel;
     }
@@ -453,7 +453,7 @@ public class ShellToolKit implements ToolKit {
         return new Builder();
     }
 
-    public static class Builder implements Buildable<ShellToolKit, Builder> {
+    public static class Builder implements Buildable<ShellToolkit, Builder> {
         private Duration timeout = DEFAULT_TIMEOUT;
         private SecurityLevel securityLevel = DEFAULT_SECURITY_LEVEL;
 
@@ -488,8 +488,8 @@ public class ShellToolKit implements ToolKit {
         }
 
         @Override
-        public ShellToolKit build() {
-            return new ShellToolKit(this);
+        public ShellToolkit build() {
+            return new ShellToolkit(this);
         }
     }
 

@@ -301,13 +301,13 @@ var toolbox = HashMapToolbox.newBuilder()
     .build();
 ```
 
-#### GUI 自动化工具 (GuiToolKit)
+#### GUI 自动化工具 (GuiToolkit)
 
-GuiToolKit 提供了屏幕截图和桌面自动化能力，让 Agent 能够操作计算机界面：
+GuiToolkit 提供了屏幕截图和桌面自动化能力，让 Agent 能够操作计算机界面：
 
 ```java
 // 创建 GUI 工具包
-var guiToolKit = GuiToolKit.newBuilder()
+var guiToolkit = GuiToolkit.newBuilder()
     .enableScreenshot(true)    // 启用截图功能
     .enableMouse(true)         // 启用鼠标操作
     .enableKeyboard(true)      // 启用键盘操作
@@ -315,7 +315,7 @@ var guiToolKit = GuiToolKit.newBuilder()
     .build();
 
 // 或者使用选择性功能
-var readOnlyGuiToolKit = GuiToolKit.newBuilder()
+var readOnlyGuiToolkit = GuiToolkit.newBuilder()
     .enableScreenshot(true)    // 只启用截图
     .enableMouse(false)        // 禁用鼠标操作
     .enableKeyboard(false)     // 禁用键盘操作
@@ -329,9 +329,9 @@ var toolbox = HashMapToolbox.newBuilder()
         .model(ChatModel.QWEN_FLASH)
         .build())
     .loaders(List.of(
-        ToolKitLoader.of(guiToolKit),           // GUI 自动化工具
-        ToolKitLoader.of(SystemToolKit.create()),  // 系统工具
-        ToolKitLoader.of(FileOpsToolKit.newBuilder()
+        ToolkitLoader.of(guiToolkit),           // GUI 自动化工具
+        ToolkitLoader.of(SystemToolkit.create()),  // 系统工具
+        ToolkitLoader.of(FileOpsToolkit.newBuilder()
             .workspace(Path.of("./"))
             .build())
     ))

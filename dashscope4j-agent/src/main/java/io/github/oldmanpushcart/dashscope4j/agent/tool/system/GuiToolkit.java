@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.tool.system;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
@@ -48,9 +48,9 @@ import java.util.function.BiFunction;
  * </ul>
  *
  * @see #newBuilder() 创建构建器实例
- * @see ToolKit 工具包接口
+ * @see Toolkit 工具包接口
  */
-public class GuiToolKit implements ToolKit {
+public class GuiToolkit implements io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit {
 
     /**
      * 默认截图格式
@@ -96,7 +96,7 @@ public class GuiToolKit implements ToolKit {
      * @param builder 构建器，包含各项功能的启用配置
      * @throws RuntimeException 当 AWT Robot 初始化失败时抛出（通常在无头环境下）
      */
-    private GuiToolKit(Builder builder) {
+    private GuiToolkit(Builder builder) {
         try {
             // 创建 AWT Robot 实例，用于模拟鼠标和键盘操作
             this.robot = new Robot();
@@ -786,7 +786,7 @@ public class GuiToolKit implements ToolKit {
                         """)
                 .supplier(() -> {
                     try {
-                        final var clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                        final var clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
                         String content = "";
 
                         if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
@@ -850,7 +850,7 @@ public class GuiToolKit implements ToolKit {
                     try {
                         final var text = spec.text() != null ? spec.text() : "";
 
-                        final var clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                        final var clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
                         final var selection = new StringSelection(text);
                         clipboard.setContents(selection, selection);
 
@@ -1261,7 +1261,7 @@ public class GuiToolKit implements ToolKit {
      * <p>
      * 使用示例：
      * <pre>{@code
-     * GuiToolKit kit = GuiToolKit.newBuilder()
+     * GuiToolkit kit = GuiToolkit.newBuilder()
      *     .enableScreenshot(true)
      *     .enableMouse(true)
      *     .enableKeyboard(false)  // 禁用键盘操作
@@ -1283,7 +1283,7 @@ public class GuiToolKit implements ToolKit {
      * 所有功能默认启用，可根据需要选择性禁用。
      * </p>
      */
-    public static class Builder implements Buildable<GuiToolKit, Builder> {
+    public static class Builder implements Buildable<GuiToolkit, Builder> {
         // 各项功能的启用标志，默认全部启用
         private boolean enableScreenshot = true;
         private boolean enableMouse = true;
@@ -1367,18 +1367,18 @@ public class GuiToolKit implements ToolKit {
         }
 
         /**
-         * 根据当前配置构建 GuiToolKit 实例
+         * 根据当前配置构建 GuiToolkit 实例
          * <p>
          * 此方法会初始化 AWT Robot，如果在不支持图形界面的环境
          * （如无头服务器）中调用，将抛出 RuntimeException。
          * </p>
          *
-         * @return 配置好的 GuiToolKit 实例
+         * @return 配置好的 GuiToolkit 实例
          * @throws RuntimeException 当 AWT Robot 初始化失败时抛出
          */
         @Override
-        public GuiToolKit build() {
-            return new GuiToolKit(this);
+        public GuiToolkit build() {
+            return new GuiToolkit(this);
         }
     }
 

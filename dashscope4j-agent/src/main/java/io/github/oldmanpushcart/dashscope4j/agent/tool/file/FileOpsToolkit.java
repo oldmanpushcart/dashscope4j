@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.tool.file;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.util.FileUtils;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
@@ -33,7 +33,7 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
  * 所有路径操作都限制在 workspace 范围内，防止目录穿越攻击。
  * </p>
  */
-public class FileOpsToolKit implements ToolKit {
+public class FileOpsToolkit implements Toolkit {
 
     /**
      * 默认最大返回条目数
@@ -55,7 +55,7 @@ public class FileOpsToolKit implements ToolKit {
      */
     private final boolean readOnly;
 
-    private FileOpsToolKit(Builder builder) {
+    private FileOpsToolkit(Builder builder) {
         this.workspace = builder.workspace;
         this.maxResults = builder.maxResults;
         this.readOnly = builder.readOnly;
@@ -739,7 +739,7 @@ public class FileOpsToolKit implements ToolKit {
         return new Builder();
     }
 
-    public static class Builder implements Buildable<FileOpsToolKit, Builder> {
+    public static class Builder implements Buildable<FileOpsToolkit, Builder> {
         private Path workspace;
         private int maxResults = DEFAULT_MAX_RESULTS;
         private boolean readOnly = false;
@@ -800,9 +800,9 @@ public class FileOpsToolKit implements ToolKit {
         }
 
         @Override
-        public FileOpsToolKit build() {
+        public FileOpsToolkit build() {
             Objects.requireNonNull(workspace, "workspace must be set before building");
-            return new FileOpsToolKit(this);
+            return new FileOpsToolkit(this);
         }
     }
 

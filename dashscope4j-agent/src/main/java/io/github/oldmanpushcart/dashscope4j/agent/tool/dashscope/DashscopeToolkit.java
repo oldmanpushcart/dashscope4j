@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.tool.dashscope;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceEmitter;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.cosyvoice.CosyVoiceSession;
@@ -41,7 +41,7 @@ import java.util.concurrent.CompletableFuture;
  * - t2v: 文生视频
  * - tts: 文本转语音
  */
-public class DashscopeToolKit implements ToolKit {
+public class DashscopeToolkit implements Toolkit {
 
     /**
      * 文档理解模型配置
@@ -52,7 +52,7 @@ public class DashscopeToolKit implements ToolKit {
             .uploadEnabled(true)
             .build();
 
-    private DashscopeToolKit() {
+    private DashscopeToolkit() {
         // 无状态工具包，无需配置
     }
 
@@ -155,7 +155,7 @@ public class DashscopeToolKit implements ToolKit {
 
         List<URI> toUris() {
             return files.stream()
-                    .map(DashscopeToolKit::parseUri)
+                    .map(DashscopeToolkit::parseUri)
                     .toList();
         }
     }
@@ -230,13 +230,13 @@ public class DashscopeToolKit implements ToolKit {
 
         List<URI> toImageUris() {
             return images != null ? images.stream()
-                                    .map(DashscopeToolKit::parseUri)
+                                    .map(DashscopeToolkit::parseUri)
                                     .toList() : List.of();
         }
 
         List<URI> toVideoUris() {
             return videos != null ? videos.stream()
-                                    .map(DashscopeToolKit::parseUri)
+                                    .map(DashscopeToolkit::parseUri)
                                     .toList() : List.of();
         }
 
@@ -355,7 +355,7 @@ public class DashscopeToolKit implements ToolKit {
 
         List<URI> toImageUris() {
             return images != null ? images.stream()
-                                    .map(DashscopeToolKit::parseUri)
+                                    .map(DashscopeToolkit::parseUri)
                                     .toList() : List.of();
         }
 
@@ -881,12 +881,12 @@ public class DashscopeToolKit implements ToolKit {
     }
 
     /**
-     * 创建 DashscopeToolKit 实例
+     * 创建 DashscopeToolkit 实例
      *
-     * @return DashscopeToolKit 实例
+     * @return DashscopeToolkit 实例
      */
-    public static DashscopeToolKit create() {
-        return new DashscopeToolKit();
+    public static DashscopeToolkit create() {
+        return new DashscopeToolkit();
     }
 
 }

@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.tool.system;
 
-import io.github.oldmanpushcart.dashscope4j.agent.tool.ToolKit;
+import io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
@@ -20,7 +20,7 @@ import java.util.Map;
  * - env: 获取环境变量
  * </p>
  */
-public class RuntimeToolKit implements ToolKit {
+public class RuntimeToolkit implements Toolkit {
 
     @Override
     public List<Tool> tools() {
@@ -172,8 +172,8 @@ public class RuntimeToolKit implements ToolKit {
                 .build();
     }
 
-    public static RuntimeToolKit create() {
-        return new RuntimeToolKit();
+    public static RuntimeToolkit create() {
+        return new RuntimeToolkit();
     }
 
 }
