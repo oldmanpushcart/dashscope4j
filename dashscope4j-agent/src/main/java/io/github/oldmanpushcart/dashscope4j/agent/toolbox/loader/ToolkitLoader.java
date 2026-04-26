@@ -67,11 +67,11 @@ public class ToolkitLoader implements ToolLoader {
     /**
      * 创建 ToolkitLoader（向后兼容）
      *
-     * @param kit 工具集
+     * @param toolkit 工具集
      * @return ToolkitLoader 实例
      */
-    public static ToolkitLoader of(Toolkit kit) {
-        return newBuilder().toolkit(kit).build();
+    public static ToolkitLoader of(Toolkit toolkit) {
+        return newBuilder().toolkit(toolkit).build();
     }
 
     /**

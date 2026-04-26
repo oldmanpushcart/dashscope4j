@@ -205,7 +205,7 @@ public abstract class BaseAgent implements Agent {
 
                     // 添加 toolkits 工具包
                     if (CommonUtils.isNotEmpty(toolkits)) {
-                        toolkits.forEach(kit -> tools.addAll(kit.tools()));
+                        toolkits.forEach(toolkit -> tools.addAll(toolkit.tools()));
                     }
 
                     return parameters;

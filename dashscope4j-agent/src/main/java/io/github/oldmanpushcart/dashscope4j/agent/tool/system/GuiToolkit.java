@@ -1261,7 +1261,7 @@ public class GuiToolkit implements io.github.oldmanpushcart.dashscope4j.agent.to
      * <p>
      * 使用示例：
      * <pre>{@code
-     * GuiToolkit kit = GuiToolkit.newBuilder()
+     * GuiToolkit toolkit = GuiToolkit.newBuilder()
      *     .enableScreenshot(true)
      *     .enableMouse(true)
      *     .enableKeyboard(false)  // 禁用键盘操作
