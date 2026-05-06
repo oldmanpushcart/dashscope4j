@@ -14,6 +14,15 @@ import static java.util.Objects.nonNull;
  */
 public class CompletableFutureUtils {
 
+    public static <T> CompletionStage<T> illegalState(Throwable ex, String message) {
+        final var cause = unwrapEx(ex);
+        return CompletableFuture.failedStage(new IllegalStateException(message, cause));
+    }
+
+    public static <T> CompletionStage<T> illegalState(String message) {
+        return CompletableFuture.failedStage(new IllegalStateException(message));
+    }
+
     /**
      * 解包异常
      *

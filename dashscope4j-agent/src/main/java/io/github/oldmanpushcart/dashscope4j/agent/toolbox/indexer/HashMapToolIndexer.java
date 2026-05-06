@@ -10,7 +10,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Con
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalState;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -99,8 +99,7 @@ public class HashMapToolIndexer implements ToolIndexer {
                 // 计算文档失败，则更新工具索引失败
                 .exceptionallyCompose(ex -> {
                     final var name = tool.meta().name();
-                    final var message = "Indexer upsert occur error! tool: %s".formatted(name);
-                    return CompletableFuture.failedStage(new IllegalStateException(message, ex));
+                    return illegalState(ex, "Indexing tool: %s occur error!".formatted(name));
                 });
     }
 
@@ -204,14 +203,7 @@ public class HashMapToolIndexer implements ToolIndexer {
                             .collect(Collectors.toSet());
 
                 })
-                .exceptionallyCompose(ex -> {
-                    final var cause = CompletableFutureUtils.unwrapEx(ex);
-                    return CompletableFuture.failedStage(new IllegalStateException("Indexer query occur error!", cause));
-                });
-    }
-
-    public void close() {
-
+                .exceptionallyCompose(ex -> illegalState(ex, "Indexing tools by intent occur error!"));
     }
 
     public static Builder newBuilder() {
@@ -363,12 +355,12 @@ public class HashMapToolIndexer implements ToolIndexer {
                                 final var entry = JacksonJsonUtils.toObject(line, Entry.class);
                                 entries.put(entry.key(), entry);
                             } catch (Throwable ex) {
-                                logger.warn("{} cache ignored entry line, parse json error! line={};", superThis, line, ex);
+                                logger.warn("{} cache ignored entry, because JSON parse error. line={};", superThis, line, ex);
                             }
                         });
                 logger.debug("{} cache loaded. size={};", superThis, entries.size());
             } catch (IOException ioEx) {
-                logger.warn("{} cache read file error! file={};", superThis, cacheFile, ioEx);
+                logger.warn("{} cache failed to read file. file={};", superThis, cacheFile, ioEx);
             }
 
         }

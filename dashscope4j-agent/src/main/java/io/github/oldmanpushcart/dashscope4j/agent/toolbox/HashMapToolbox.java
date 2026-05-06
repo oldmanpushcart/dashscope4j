@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.toolbox;
 
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.ToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.ToolLoader;
+import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +14,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalState;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.unwrapEx;
 
 public class HashMapToolbox implements Toolbox {
 
@@ -39,7 +44,7 @@ public class HashMapToolbox implements Toolbox {
 
     @Override
     public CompletionStage<ToolSubscription> subscribe(ToolLoader loader) {
-        final var subscription = new ToolSubscriptionImpl(loader);
+        final var subscription = new ToolSubscriptionImpl(this, loader);
         final var handler = new ToolSubscriptionHandlerImpl(loader, subscription);
         return loader.subscribe(subscription, handler)
                 .thenApply(u -> subscription);
@@ -49,17 +54,20 @@ public class HashMapToolbox implements Toolbox {
     public CompletionStage<List<ToolUse>> lookupByIntent(String intent) {
         return indexer.query(intent)
                 .thenApply(names -> {
-                    final var result = new ArrayList<ToolUse>();
+                    final List<ToolUse> result = new ArrayList<>();
                     for (final var name : names) {
                         final var lookupOpt = lookupByName(name);
                         if (lookupOpt.isPresent()) {
                             result.add(lookupOpt.get());
                         } else {
+                            logger.warn("{} found bad index, remove it. tool={}", this, name);
                             indexer.remove(name);
                         }
                     }
                     return result;
-                });
+                })
+                .exceptionallyCompose(ex -> illegalState(ex, "Lookup tools by intent failed!"))
+                ;
     }
 
     @Override
@@ -92,20 +100,41 @@ public class HashMapToolbox implements Toolbox {
         syncer.interrupt();
 
         // 关闭所有的订阅关系
-        new ArrayList<>(registry.values())
+        registry.values()
                 .stream()
                 .map(entry -> entry.subscription)
-                .forEach(ToolSubscription::close);
+                .collect(Collectors.toSet())
+                .forEach(IOUtils::closeQuietly);
 
         logger.debug("{} closed.", this);
     }
 
+    /**
+     * 添加工具
+     * <p>
+     * 添加的工具必须要有订阅关系，明确工具来源。
+     * </p>
+     *
+     * @param use          工具使用信息
+     * @param subscription 订阅关系
+     * @return 操作回调
+     */
     private CompletionStage<Void> upsert(ToolUse use, ToolSubscription subscription) {
         final var name = use.tool().meta().name();
         registry.put(name, new Entry(name, use, subscription));
-        return indexer.upsert(use.tool());
+        return indexer.upsert(use.tool())
+                .exceptionallyCompose(ex -> illegalState(ex, "Upsert tool: %s occur error!".formatted(name)));
     }
 
+    /**
+     * 删除工具
+     * <p>
+     * 删除的工具必须要有订阅关系，只有订阅者自己才能删除
+     * </p>
+     *
+     * @param name         工具名称
+     * @param subscription 订阅关系
+     */
     private void remove(String name, ToolSubscription subscription) {
         final var entry = registry.get(name);
 
@@ -117,7 +146,7 @@ public class HashMapToolbox implements Toolbox {
 
         // 只有订阅者自己才能删除
         if (entry.subscription != subscription) {
-            throw new IllegalArgumentException("Remove tool: %s failed, not the same subscription!".formatted(name));
+            throw new IllegalArgumentException("Remove tool: %s occur error, not the same subscription!".formatted(name));
         }
 
         indexer.remove(name);
@@ -133,11 +162,23 @@ public class HashMapToolbox implements Toolbox {
 
     private class ToolSubscriptionImpl implements ToolSubscription {
 
+        private final Toolbox toolbox;
         private final ToolLoader loader;
         private final CompletableFuture<?> closeF = new CompletableFuture<>();
 
-        private ToolSubscriptionImpl(ToolLoader loader) {
+        private ToolSubscriptionImpl(Toolbox toolbox, ToolLoader loader) {
+            this.toolbox = toolbox;
             this.loader = loader;
+        }
+
+        @Override
+        public Toolbox toolbox() {
+            return toolbox;
+        }
+
+        @Override
+        public ToolLoader loader() {
+            return loader;
         }
 
         @Override
@@ -191,12 +232,19 @@ public class HashMapToolbox implements Toolbox {
      */
     private class Syncer extends Thread {
 
+        private final Duration syncInterval;
+
         private final ReentrantLock lock = new ReentrantLock();
         private final Condition waiting = lock.newCondition();
         private final List<ChangeEvent> events = new ArrayList<>();
 
-        private final Duration syncInterval;
-
+        /**
+         * 变更事件
+         *
+         * @param upserts      更新工具集合
+         * @param removes      删除工具名称集合
+         * @param subscription 订阅关系
+         */
         private record ChangeEvent(List<ToolUse> upserts, List<String> removes, ToolSubscription subscription) {
         }
 
@@ -242,21 +290,33 @@ public class HashMapToolbox implements Toolbox {
                         lock.unlock();
                     }
 
+                    // 创建跳过名单，开始新一轮同步
+                    final var skipSet = new HashSet<ToolSubscription>();
+
                     // 开始执行同步（使用迭代器，失败不删除）
                     final var eventIt = events.iterator();
                     while (eventIt.hasNext()) {
                         final var event = eventIt.next();
 
+                        // 检查是否在跳过名单中
+                        if (skipSet.contains(event.subscription)) {
+                            logger.debug("{} skip event for subscription: {}", HashMapToolbox.this, event.subscription);
+                            continue;
+                        }
+
                         try {
                             processEvent(event);
                             eventIt.remove();
                         } catch (Throwable ex) {
-                            logger.warn("{} sync change event failed, will retry after {}ms! upserts={}, removes={};",
+                            // 加入跳过名单，本轮不再处理该 subscription 的后续事件
+                            skipSet.add(event.subscription);
+                            logger.warn("{} process change failed! will be retry after {}ms. subscription={}, upserts={}, removes={};",
                                     HashMapToolbox.this,
                                     syncInterval.toMillis(),
+                                    event.subscription,
                                     event.upserts.size(),
                                     event.removes.size(),
-                                    ex
+                                    unwrapEx(ex)
                             );
                         }
                     }
@@ -290,6 +350,13 @@ public class HashMapToolbox implements Toolbox {
         }
     }
 
+    /**
+     * 注册项
+     *
+     * @param name         工具名称
+     * @param use          工具用途
+     * @param subscription 订阅关系
+     */
     private record Entry(String name, ToolUse use, ToolSubscription subscription) {
 
     }

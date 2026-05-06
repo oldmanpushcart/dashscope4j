@@ -103,24 +103,6 @@ public class DebugTestCase implements LoadingEnv {
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
                     .toolbox(toolbox)
-                    .toolkits(kits -> {
-
-                        kits.add(RuntimeToolkit.create());
-
-                        kits.add(ShellToolkit.newBuilder()
-                                .timeout(Duration.ofSeconds(60))
-                                .build());
-
-                        kits.add(FileOpsToolkit.newBuilder()
-                                .workspace(Path.of("./"))
-                                .build());
-
-                        kits.add(TextFileOpsToolkit.newBuilder()
-                                .workspace(Path.of("./"))
-                                .build());
-
-                        return kits;
-                    })
                     .sessionManager(sessionManager)
                     .build();
 
@@ -137,7 +119,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(sessionId, Message.user("""
-                                请帮我查询今天的天气情况
+                                查询本班所有男生的数学成绩
                                 """))
                         .toCompletableFuture()
                         .join();
