@@ -1,8 +1,8 @@
-package io.github.oldmanpushcart.dashscope4j.agent.tool.system;
+package io.github.oldmanpushcart.dashscope4j.agent.toolbox3.loader.toolkit.system;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox3.loader.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
@@ -50,7 +50,7 @@ import java.util.function.BiFunction;
  * @see #newBuilder() 创建构建器实例
  * @see Toolkit 工具包接口
  */
-public class GuiToolkit implements io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit {
+public class GuiToolkit implements Toolkit {
 
     /**
      * 默认截图格式

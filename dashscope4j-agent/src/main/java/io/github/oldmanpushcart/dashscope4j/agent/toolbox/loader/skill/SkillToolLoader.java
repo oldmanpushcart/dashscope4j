@@ -339,7 +339,7 @@ public class SkillToolLoader implements ToolLoader {
      *
      * <p>Example usage:</p>
      * <pre>{@code
-     * SkillToolLoader loader = SkillToolLoader.newBuilder()
+     * SkillLoader loader = SkillLoader.newBuilder()
      *     .providers(List.of(
      *         FileSkillProvider.ofPath(Paths.get("skills/weekly-report")),
      *         FileSkillProvider.ofPath(Paths.get("skills/school-score"))

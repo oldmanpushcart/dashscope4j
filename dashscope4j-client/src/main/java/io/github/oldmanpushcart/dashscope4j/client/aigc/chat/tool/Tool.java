@@ -14,6 +14,16 @@ import java.util.concurrent.CompletionStage;
  */
 public interface Tool {
 
+    Meta meta();
+
+    interface Meta {
+
+        String name();
+
+        String description();
+
+    }
+
     /**
      * @return 工具分类
      */

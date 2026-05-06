@@ -4,7 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.SessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.HashMapFragmentStore;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox3.loader.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;

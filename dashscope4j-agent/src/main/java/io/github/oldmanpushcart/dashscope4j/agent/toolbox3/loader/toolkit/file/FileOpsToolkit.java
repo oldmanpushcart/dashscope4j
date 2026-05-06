@@ -1,8 +1,8 @@
-package io.github.oldmanpushcart.dashscope4j.agent.tool.file;
+package io.github.oldmanpushcart.dashscope4j.agent.toolbox3.loader.toolkit.file;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.github.oldmanpushcart.dashscope4j.agent.tool.Toolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox3.loader.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.util.FileUtils;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;

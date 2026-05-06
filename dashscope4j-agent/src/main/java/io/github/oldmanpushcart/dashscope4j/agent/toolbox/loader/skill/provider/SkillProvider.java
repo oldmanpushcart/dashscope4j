@@ -31,7 +31,7 @@ public interface SkillProvider {
      * 获取当前状态的签名标识
      * <p>
      * 用于快速判断 Skills 是否发生变化，无需完整加载。
-     * 当签名值与上次不同时，表示内容已变更，SkillToolLoader 会重新调用 {@link #provide()} 加载。
+     * 当签名值与上次不同时，表示内容已变更，SkillLoader 会重新调用 {@link #provide()} 加载。
      * </p>
      * <p>
      * 实现建议：

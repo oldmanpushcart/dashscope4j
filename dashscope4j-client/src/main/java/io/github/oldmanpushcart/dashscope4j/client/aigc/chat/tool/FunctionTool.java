@@ -17,6 +17,7 @@ import static io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils.joinS
  */
 public interface FunctionTool extends Tool {
 
+    @Override
     @JsonProperty("function")
     Meta meta();
 
@@ -47,7 +48,7 @@ public interface FunctionTool extends Tool {
             @JsonProperty("parameters")
             JsonNode parameterSchema
 
-    ) {
+    ) implements Tool.Meta {
 
     }
 

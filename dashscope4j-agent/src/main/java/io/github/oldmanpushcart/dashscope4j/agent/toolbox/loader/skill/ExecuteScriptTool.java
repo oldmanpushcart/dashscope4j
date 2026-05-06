@@ -110,6 +110,7 @@ class ExecuteScriptTool {
 
                         // 构建命令
                         final var command = new ArrayList<String>();
+
                         command.add(finalInterpreter);
                         command.add(tempScript.toString());
                         command.addAll(args != null ? args : List.of());

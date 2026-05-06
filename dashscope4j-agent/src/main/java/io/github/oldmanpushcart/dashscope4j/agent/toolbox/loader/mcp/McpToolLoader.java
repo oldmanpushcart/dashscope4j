@@ -324,7 +324,7 @@ public class McpToolLoader implements ToolLoader {
     }
 
     /**
-     * McpToolLoader 构建器
+     * McpLoader 构建器
      * <p>
      * 使用 Builder 模式配置 MCP 工具加载器。
      * </p>
