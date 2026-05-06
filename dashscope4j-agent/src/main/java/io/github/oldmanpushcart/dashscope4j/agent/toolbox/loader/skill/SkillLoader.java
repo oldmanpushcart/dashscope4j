@@ -54,47 +54,48 @@ public class SkillLoader extends AbstractToolLoader {
     CompletionStage<SkillLoader> init() {
 
         // 1. 加载所有技能
-        directories.forEach(this::initSkills);
+        initSkills();
 
         // 2. 构建初始 ToolUse 集合
         initToolUses();
 
         // 3. 启动文件监听器
-        this.watcher.start();
+        watcher.start();
 
         return CompletableFuture.completedFuture(this);
     }
 
-    private void initSkills(Path directory) {
+    private void initSkills() {
 
-        if (!Files.exists(directory) || !Files.isDirectory(directory)) {
-            logger.warn("{} directory not found or not a directory: {}", this, directory);
-            return;
-        }
+        directories.forEach(directory -> {
 
-        try (final var __stream__ = Files.list(directory)) {
-            __stream__
-                    .filter(Files::isDirectory)
-                    .forEach(skillDir -> {
-                        try {
-                            final var skill = Skill.of(skillDir);
-                            final var name = skill.header().name();
-                            skills.put(name, skill);
-                            logger.debug("{} loaded skill: {} from {}", this, name, skillDir);
-                        } catch (IOException e) {
-                            logger.warn("{} skipping invalid skill directory {}", this, skillDir, e);
-                        }
-                    });
-        } catch (IOException e) {
-            logger.warn("{} failed to list directory {}", this, directory, e);
-        }
+            if (!Files.exists(directory) || !Files.isDirectory(directory)) {
+                logger.warn("{} directory not found or not a directory: {}", this, directory);
+                return;
+            }
+
+            try (final var __stream__ = Files.list(directory)) {
+                __stream__
+                        .filter(Files::isDirectory)
+                        .forEach(skillDir -> {
+                            try {
+                                final var skill = Skill.of(skillDir);
+                                final var name = skill.header().name();
+                                skills.put(name, skill);
+                                logger.debug("{} loaded skill: {} from {}", this, name, skillDir);
+                            } catch (IOException e) {
+                                logger.warn("{} skipping invalid skill directory {}", this, skillDir, e);
+                            }
+                        });
+            } catch (IOException e) {
+                logger.warn("{} failed to list directory {}", this, directory, e);
+            }
+
+        });
 
     }
 
     private void initToolUses() {
-
-        // 清空旧缓存
-        uses.clear();
 
         // 添加全局工具
         List.of(
