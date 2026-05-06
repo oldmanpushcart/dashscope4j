@@ -22,11 +22,6 @@ public interface Agent {
     String description();
 
     /**
-     * @return 介绍
-     */
-    String introduction();
-
-    /**
      * 异步处理用户消息
      *
      * @param sessionId 会话ID

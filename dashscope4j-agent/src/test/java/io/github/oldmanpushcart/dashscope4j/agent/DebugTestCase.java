@@ -1,21 +1,21 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
-import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
-import io.github.oldmanpushcart.dashscope4j.agent.session.store.FileFragmentStore;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.ToolUse;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.HashMapToolIndexer;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.McpLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.RecoverableMcpClientTransport;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.ToolkitLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.dashscope.DashscopeToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.file.FileOpsToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.file.TextFileOpsToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.network.HttpToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.system.GuiToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.system.RuntimeToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.system.ShellToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.SessionPlugin;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.HashMapToolbox;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolboxPlugin;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.HashMapToolIndexer;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.mcp.McpLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.mcp.RecoverableMcpClientTransport;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.skill.SkillLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.ToolkitLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.dashscope.DashscopeToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.file.FileOpsToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.file.TextFileOpsToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.network.HttpToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.GuiToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.RuntimeToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
@@ -25,7 +25,6 @@ import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -37,14 +36,10 @@ public class DebugTestCase implements LoadingEnv {
 
         final var sessionId =
                 //"SESSION-snake"
-                UUID.randomUUID().toString();
-        final var sessionManager = CompressSessionManager.newBuilder()
-                //.store(new HashMapFragmentStore())
-                .store(FileFragmentStore.newBuilder()
-                        .directory(Paths.get("./session"))
-                        .build())
-                .client(client)
-                .model(ChatModel.QWEN_PLUS)
+                //UUID.randomUUID().toString()
+                "SESSION-001"
+                ;
+        final var sessionPlugin = SessionPlugin.newBuilder()
                 .maxTokens(50 * 10000)
                 .gcRatio(0.3)
                 .build();
@@ -57,6 +52,7 @@ public class DebugTestCase implements LoadingEnv {
 
         final var mcpLoader = McpLoader.newBuilder()
                 .name("amap")
+                .mode(ToolUse.Mode.DYNAMIC)
                 .transport(RecoverableMcpClientTransport.newBuilder()
                         .transportFactory(mapper ->
                                 HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
@@ -97,13 +93,20 @@ public class DebugTestCase implements LoadingEnv {
         toolbox.subscribe(skillLoader).toCompletableFuture().join();
         toolbox.subscribe(mcpLoader).toCompletableFuture().join();
 
+        final var toolboxPlugin = ToolboxPlugin.newBuilder()
+                .toolbox(toolbox)
+                .build();
+
         try {
 
             final var agent = ReActAgent.newBuilder()
                     .client(client)
                     .model(ChatModel.QWEN_PLUS)
-                    .toolbox(toolbox)
-                    .sessionManager(sessionManager)
+                    .plugins(plugins -> {
+                        plugins.add(sessionPlugin);
+                        plugins.add(toolboxPlugin);
+                        return plugins;
+                    })
                     .build();
 
 //            {
@@ -119,7 +122,7 @@ public class DebugTestCase implements LoadingEnv {
 
             {
                 final var outbound = agent.async(sessionId, Message.user("""
-                                查询本班所有男生的数学成绩
+                                上海呢?
                                 """))
                         .toCompletableFuture()
                         .join();
