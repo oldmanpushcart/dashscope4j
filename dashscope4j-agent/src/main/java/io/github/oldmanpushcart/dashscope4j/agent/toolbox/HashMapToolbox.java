@@ -2,85 +2,34 @@ package io.github.oldmanpushcart.dashscope4j.agent.toolbox;
 
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.ToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.ToolLoader;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
-import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.time.Duration;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.UnaryOperator;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * 基于 HashMap 的工具箱实现
- * <p>
- * 提供工具的注册、查询和管理功能，核心特性包括：
- * <ul>
- *     <li><b>工具索引</b>：通过 ToolIndexer 实现基于意图的智能工具检索</li>
- *     <li><b>工具加载</b>：支持多个 ToolLoader 并行加载工具</li>
- *     <li><b>线程安全</b>：使用 ConcurrentHashMap 保证并发访问安全</li>
- *     <li><b>生命周期管理</b>：支持初始化和关闭操作</li>
- * </ul>
- * </p>
- *
- * @see Toolbox
- * @see ToolIndexer
- * @see ToolLoader
- */
 public class HashMapToolbox implements Toolbox {
 
-    /**
-     * 日志记录器
-     */
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    /**
-     * 工具索引器，用于根据意图智能检索工具
-     */
     private final ToolIndexer indexer;
+    private final Map<String, Entry> registry = new ConcurrentHashMap<>();
+    private final CompletableFuture<?> closeF = new CompletableFuture<>();
 
-    /**
-     * 工具加载器组，负责从不同来源加载工具
-     */
-    private final ToolLoader loader;
+    // 变更同步器
+    private final Syncer syncer;
 
-    /**
-     * 工具存储表（线程安全）
-     * key: 工具名称
-     * value: 工具实例
-     */
-    private final Map<String, Tool> tools = new ConcurrentHashMap<>();
-
-    /**
-     * 初始化标志
-     */
-    private final AtomicBoolean init = new AtomicBoolean(false);
-
-    /**
-     * 关闭标志
-     */
-    private final AtomicBoolean closed = new AtomicBoolean(false);
-
-    /**
-     * 构造 HashMapToolbox
-     *
-     * @param builder 构建器
-     */
     private HashMapToolbox(Builder builder) {
-        Objects.requireNonNull(builder.indexer, "indexer must not be null!");
+        Objects.requireNonNull(builder.indexer, "indexer cannot be null!");
+        Objects.requireNonNull(builder.syncInterval, "syncInterval cannot be null!");
         this.indexer = builder.indexer;
-        // 将多个加载器包装为组加载器
-        this.loader = new GroupToolLoader(CommonUtils.unmodifiableCopy(builder.loaders));
+        this.syncer = new Syncer(builder.syncInterval);
+        this.syncer.start();
     }
 
     @Override
@@ -88,278 +37,285 @@ public class HashMapToolbox implements Toolbox {
         return "dashscope4j-agent:/toolbox";
     }
 
-    /**
-     * 初始化工具箱
-     * <p>
-     * 触发所有 ToolLoader 并行安装工具，完成后可正常使用。
-     * 该方法只能调用一次，重复调用会抛出异常。
-     * </p>
-     *
-     * @return 初始化完成的 CompletableFuture
-     * @throws IllegalStateException 如果已经关闭或已经初始化
-     */
-    CompletionStage<HashMapToolbox> init() {
-
-        if (isClosed()) {
-            throw new IllegalStateException("Already closed!");
-        }
-
-        if (!init.compareAndSet(false, true)) {
-            throw new IllegalStateException("Already initialized!");
-        }
-
-        return loader.install(this)
-                .thenApply(u -> this)
-                .whenComplete((u, ex) -> {
-                    if (null != ex) {
-                        logger.warn("{} init failed!", this, ex);
-                        // 初始化失败时自动关闭资源
-                        close();
-                    } else {
-                        logger.debug("{} init success.", this);
-                    }
-                });
+    @Override
+    public CompletionStage<ToolSubscription> subscribe(ToolLoader loader) {
+        final var subscription = new ToolSubscriptionImpl(loader);
+        final var handler = new ToolSubscriptionHandlerImpl(loader, subscription);
+        return loader.subscribe(subscription, handler)
+                .thenApply(u -> subscription);
     }
 
-    /**
-     * 根据用户意图查找相关工具
-     * <p>
-     * 通过 ToolIndexer 智能检索与用户意图匹配的工具名称，
-     * 然后从工具表中获取对应的工具实例。
-     * </p>
-     *
-     * @param instant 用户意图消息
-     * @return 匹配的工具映射表（工具名 -> 工具实例）
-     */
     @Override
-    public CompletionStage<Map<String, Tool>> lookup(UserMessage instant) {
-        return indexer.query(instant.text())
+    public CompletionStage<List<ToolUse>> lookupByIntent(String intent) {
+        return indexer.query(intent)
                 .thenApply(names -> {
-                    final var result = new HashMap<String, Tool>();
-
-                    // 过滤并清理无效的索引数据
-                    names.forEach(name -> {
-                        final var tool = tools.get(name);
-                        if (null != tool) {
-                            result.put(name, tool);
+                    final var result = new ArrayList<ToolUse>();
+                    for (final var name : names) {
+                        final var lookupOpt = lookupByName(name);
+                        if (lookupOpt.isPresent()) {
+                            result.add(lookupOpt.get());
                         } else {
                             indexer.remove(name);
-                            logger.debug("{} cleanup invalid index: {}", this, name);
                         }
-                    });
-
+                    }
                     return result;
                 });
     }
 
-    /**
-     * 根据工具名称精确查找工具
-     *
-     * @param name 工具名称
-     * @return 工具实例，如果不存在则返回 null
-     */
     @Override
-    public CompletionStage<Tool> lookupByName(String name) {
-        return CompletableFuture.completedStage(tools.get(name));
+    public Optional<ToolUse> lookupByName(String name) {
+        return Optional.ofNullable(registry.get(name))
+                .map(Entry::use);
     }
 
-    /**
-     * 注册工具
-     * <p>
-     * 将工具同时注册到索引器和工具表中，使其可以被查找和使用。
-     * </p>
-     *
-     * @param name 工具名称
-     * @param tool 工具实例
-     * @return 注册完成的 CompletableFuture
-     */
     @Override
-    public CompletionStage<Void> register(String name, Tool tool) {
-        return indexer.upsert(name, tool)
-                .thenAccept(u -> tools.put(name, tool));
+    public List<ToolUse> lookupAll() {
+        return registry.values()
+                .stream()
+                .map(Entry::use)
+                .toList();
     }
 
-    /**
-     * 移除工具
-     * <p>
-     * 从索引器和工具表中同时移除指定工具。
-     * </p>
-     *
-     * @param name 工具名称
-     * @return 移除完成的 CompletableFuture
-     */
-    @Override
-    public CompletionStage<Void> remove(String name) {
-        return indexer.remove(name)
-                .thenAccept(u -> tools.remove(name));
-    }
-
-    /**
-     * 检查工具箱是否已关闭
-     *
-     * @return true 如果已关闭，否则 false
-     */
     @Override
     public boolean isClosed() {
-        return closed.get();
+        return closeF.isDone();
     }
 
-    /**
-     * 关闭工具箱
-     * <p>
-     * 释放所有资源，包括关闭加载器和索引器。
-     * 该方法可以安全地多次调用，只有第一次调用会执行真正的关闭操作。
-     * </p>
-     */
     @Override
     public void close() {
 
-        if (!closed.compareAndSet(false, true)) {
+        if (!closeF.complete(null)) {
             return;
         }
 
-        // 关闭所有加载器和索引器
-        IOUtils.closeQuietly(loader);
-        IOUtils.closeQuietly(indexer);
+        // 停止同步器
+        syncer.interrupt();
+
+        // 关闭所有的订阅关系
+        new ArrayList<>(registry.values())
+                .stream()
+                .map(entry -> entry.subscription)
+                .forEach(ToolSubscription::close);
 
         logger.debug("{} closed.", this);
+    }
+
+    private CompletionStage<Void> upsert(ToolUse use, ToolSubscription subscription) {
+        final var name = use.tool().meta().name();
+        registry.put(name, new Entry(name, use, subscription));
+        return indexer.upsert(use.tool());
+    }
+
+    private void remove(String name, ToolSubscription subscription) {
+        final var entry = registry.get(name);
+
+        // 没有在注册表中找到，说明这个是脏数据，直接清理索结束
+        if (entry == null) {
+            indexer.remove(name);
+            return;
+        }
+
+        // 只有订阅者自己才能删除
+        if (entry.subscription != subscription) {
+            throw new IllegalArgumentException("Remove tool: %s failed, not the same subscription!".formatted(name));
+        }
+
+        indexer.remove(name);
+        registry.remove(name);
 
     }
 
+    private void unsubscribe(ToolSubscription subscription) {
+        //noinspection resource
+        registry.entrySet()
+                .removeIf(entry -> entry.getValue().subscription() == subscription);
+    }
 
-    /**
-     * 工具加载器组
-     * <p>
-     * 将多个 ToolLoader 组合为一个逻辑加载器，支持并行安装和统一关闭。
-     * </p>
-     */
-    class GroupToolLoader implements ToolLoader {
+    private class ToolSubscriptionImpl implements ToolSubscription {
 
-        /**
-         * 加载器列表
-         */
-        private final List<ToolLoader> loaders;
+        private final ToolLoader loader;
+        private final CompletableFuture<?> closeF = new CompletableFuture<>();
 
-        /**
-         * 构造加载器组
-         *
-         * @param loaders 加载器列表
-         */
-        GroupToolLoader(List<ToolLoader> loaders) {
-            this.loaders = loaders;
+        private ToolSubscriptionImpl(ToolLoader loader) {
+            this.loader = loader;
         }
 
-        /**
-         * 并行安装所有工具加载器
-         *
-         * @param toolbox 工具箱实例
-         * @return 所有加载器安装完成的 CompletableFuture
-         */
         @Override
-        public CompletionStage<Void> install(Toolbox toolbox) {
-
-            // 并行安装所有工具加载器
-            final var stages = loaders.stream()
-                    .map(loader -> loader.install(HashMapToolbox.this))
-                    .toList();
-
-            return CompletableFutureUtils.allOf(stages);
+        public boolean isClosed() {
+            return closeF.isDone();
         }
 
-        /**
-         * 关闭所有加载器
-         */
         @Override
         public void close() {
-            // 关闭所有安装的加载器
-            loaders.forEach(IOUtils::closeQuietly);
+            if (!closeF.complete(null)) {
+                return;
+            }
+            unsubscribe(this);
+            loader.unsubscribe(this);
+        }
+
+    }
+
+    private class ToolSubscriptionHandlerImpl implements ToolSubscriptionHandler {
+
+        private final ToolLoader loader;
+        private final ToolSubscription subscription;
+
+        private ToolSubscriptionHandlerImpl(ToolLoader loader, ToolSubscription subscription) {
+            this.loader = loader;
+            this.subscription = subscription;
+        }
+
+        @Override
+        public CompletionStage<Void> onSubscribe() {
+            CompletionStage<Void> stage = CompletableFuture.completedStage(null);
+            for (ToolUse use : loader.loaded()) {
+                stage = stage.thenCompose(u -> upsert(use, subscription));
+            }
+            return stage;
+        }
+
+        @Override
+        public void onChange(List<ToolUse> upserts, List<String> removes) {
+            syncer.notifyChange(upserts, removes, subscription);
         }
 
     }
 
     /**
-     * 创建构建器
-     *
-     * @return 新的 Builder 实例
+     * 变更同步器
+     * <p>
+     * 继承 Thread，按固定周期串行处理 onChange 事件。
+     * 消费失败的事件会保留在队列中，下次周期继续尝试。
+     * </p>
      */
+    private class Syncer extends Thread {
+
+        private final ReentrantLock lock = new ReentrantLock();
+        private final Condition waiting = lock.newCondition();
+        private final List<ChangeEvent> events = new ArrayList<>();
+
+        private final Duration syncInterval;
+
+        private record ChangeEvent(List<ToolUse> upserts, List<String> removes, ToolSubscription subscription) {
+        }
+
+        Syncer(Duration syncInterval) {
+            this.syncInterval = syncInterval;
+            setDaemon(true);
+            setName("dashscope4j-agent:/toolbox/syncer");
+        }
+
+        /**
+         * 通知变更
+         *
+         * @param upserts      新增/更新的工具列表
+         * @param removes      删除的工具名称列表
+         * @param subscription 对应的订阅
+         */
+        void notifyChange(List<ToolUse> upserts, List<String> removes, ToolSubscription subscription) {
+            lock.lock();
+            try {
+                events.add(new ChangeEvent(upserts, removes, subscription));
+                waiting.signalAll();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        @Override
+        public void run() {
+
+            while (!isInterrupted()) {
+
+                try {
+
+                    // 等待一个同步周期
+                    lock.lock();
+                    try {
+                        if (!waiting.await(syncInterval.toMillis(), TimeUnit.MILLISECONDS)) {
+                            if (events.isEmpty()) {
+                                continue;
+                            }
+                        }
+                    } finally {
+                        lock.unlock();
+                    }
+
+                    // 开始执行同步（使用迭代器，失败不删除）
+                    final var eventIt = events.iterator();
+                    while (eventIt.hasNext()) {
+                        final var event = eventIt.next();
+
+                        try {
+                            processEvent(event);
+                            eventIt.remove();
+                        } catch (Throwable ex) {
+                            logger.warn("{} sync change event failed, will retry after {}ms! upserts={}, removes={};",
+                                    HashMapToolbox.this,
+                                    syncInterval.toMillis(),
+                                    event.upserts.size(),
+                                    event.removes.size(),
+                                    ex
+                            );
+                        }
+                    }
+
+                } catch (InterruptedException ieEx) {
+                    interrupt();
+                    break;
+                }
+
+            }// while
+
+        }
+
+        /**
+         * 处理变更事件
+         *
+         * @param event 变更事件
+         */
+        private void processEvent(ChangeEvent event) {
+
+            // 先处理删除
+            for (final var name : event.removes) {
+                remove(name, event.subscription);
+            }
+
+            // 再处理新增/更新
+            for (final var use : event.upserts) {
+                upsert(use, event.subscription).toCompletableFuture().join();
+            }
+
+        }
+    }
+
+    private record Entry(String name, ToolUse use, ToolSubscription subscription) {
+
+    }
+
     public static Builder newBuilder() {
         return new Builder();
     }
 
-    /**
-     * HashMapToolbox 构建器
-     * <p>
-     * 使用 Builder 模式配置和构建工具箱实例。
-     * </p>
-     */
-    public static class Builder implements Buildable<HashMapToolbox, Builder> {
+    public static class Builder {
 
-        /**
-         * 工具索引器
-         */
         private ToolIndexer indexer;
+        private Duration syncInterval = Duration.ofSeconds(5);
 
-        /**
-         * 工具加载器列表
-         */
-        private List<ToolLoader> loaders;
-
-        /**
-         * 设置工具索引器
-         *
-         * @param indexer 索引器实例
-         * @return 当前构建器
-         */
         public Builder indexer(ToolIndexer indexer) {
             this.indexer = indexer;
             return this;
         }
 
-        /**
-         * 设置工具加载器列表
-         *
-         * @param loaders 加载器列表
-         * @return 当前构建器
-         */
-        public Builder loaders(List<ToolLoader> loaders) {
-            this.loaders = loaders;
+        public Builder syncInterval(Duration syncInterval) {
+            this.syncInterval = syncInterval;
             return this;
         }
 
-        /**
-         * 通过操作符修改工具加载器列表
-         *
-         * @param operator 列表操作符
-         * @return 当前构建器
-         */
-        public Builder loaders(UnaryOperator<List<ToolLoader>> operator) {
-            this.loaders = operator.apply(CommonUtils.mutableCopy(this.loaders));
-            return this;
-        }
-
-        /**
-         * 同步构建工具箱（阻塞等待初始化完成）
-         *
-         * @return 初始化完成的工具箱实例
-         */
-        @Override
         public HashMapToolbox build() {
-            return buildAsync()
-                    .toCompletableFuture()
-                    .join();
+            return new HashMapToolbox(this);
         }
-
-        /**
-         * 异步构建工具箱（非阻塞）
-         *
-         * @return 初始化完成的 CompletionStage
-         */
-        public CompletionStage<HashMapToolbox> buildAsync() {
-            //noinspection resource
-            return new HashMapToolbox(this)
-                    .init();
-        }
-
     }
 
 }

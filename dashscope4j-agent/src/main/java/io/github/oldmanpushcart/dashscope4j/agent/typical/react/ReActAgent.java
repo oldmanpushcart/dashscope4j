@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
-import io.github.oldmanpushcart.dashscope4j.agent.Agent;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.ToolUse;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
@@ -351,7 +351,7 @@ public class ReActAgent extends BaseAgent {
      * @param name    工具名称
      * @return 工具
      */
-    private CompletionStage<Tool> requireTool(AigcRequest<Input, Output> request, String name) {
+    private Tool requireTool(AigcRequest<Input, Output> request, String name) {
 
         // 先从请求中找工具
         //noinspection unchecked
@@ -363,20 +363,14 @@ public class ReActAgent extends BaseAgent {
                 .findFirst();
 
         // 再从toolbox中找
-        //noinspection OptionalIsPresent
         if (findOpt.isPresent()) {
-            return CompletableFuture.completedStage(findOpt.get());
+            return findOpt.get();
         }
 
         //noinspection resource
         return toolbox().lookupByName(name)
-                .thenCompose(tool -> {
-                    if (tool == null) {
-                        return CompletableFuture.failedStage(ToolExecutionException.notFound(name));
-                    } else {
-                        return CompletableFuture.completedStage(tool);
-                    }
-                });
+                .map(ToolUse::tool)
+                .orElseThrow(()-> ToolExecutionException.notFound(name));
     }
 
     /**
@@ -391,7 +385,7 @@ public class ReActAgent extends BaseAgent {
     private CompletionStage<String> callingTool(AigcRequest<Input, Output> request, String name, Tool.Caller caller, String argumentJson) {
         logger.debug("{}/function/{} >>> {}", this, name, argumentJson);
         return CompletableFuture.completedStage(null)
-                .thenCompose(unused -> requireTool(request, name))
+                .thenApply(unused -> requireTool(request, name))
                 .thenCompose(tool -> tool.call(caller, argumentJson))
                 .whenComplete((resultJson, ex) -> {
                     if (null != ex) {

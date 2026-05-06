@@ -1,98 +1,157 @@
 package io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill;
 
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.provider.SkillProvider;
+import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Skill 接口 - 定义 Skill 的元数据和资源访问能力
- * 符合 Anthropic Skills 规范 (<a href="https://agentskills.io/specification">...</a>)
+ * 技能
  *
- * @since 4.0.0
+ * @param home   主目录
+ * @param header 头信息
+ * @param body   正文
  */
-public interface Skill {
+public record Skill(Path home, Header header, String body) {
 
     /**
-     * Skill Header - YAML frontmatter 的结构化表示
+     * 读取引用内容
+     *
+     * @param relativePath 引用相对路径
+     * @return 引用内容
+     * @throws IOException 读取错误
      */
-    interface Header {
-        String name();
-
-        String description();
-
-        String license();
-
-        String compatibility();
-
-        Map<String, String> metadata();
-
-        List<String> allowedTools();
+    public String getReference(String relativePath) throws IOException {
+        final var resourcePath = resolveAndValidate(relativePath);
+        if (!Files.exists(resourcePath)) {
+            throw new IOException("Reference not found: " + relativePath);
+        }
+        return Files.readString(resourcePath, UTF_8);
     }
 
-    // === 核心内容访问 ===
-
     /**
-     * @return Skill Header (YAML frontmatter)
-     */
-    Header header();
-
-    /**
-     * @return SKILL.md 的正文内容 (Markdown 格式，不含 frontmatter)
-     */
-    String body();
-
-    /**
-     * @return 提供此 Skill 的 Provider
-     */
-    SkillProvider from();
-
-    // === Reference 资源 (文档类) ===
-
-    /**
-     * 引用文档内容
+     * 获取静态资源文件
      *
-     * @param relativePath 相对路径 (如 "references/REFERENCE.md")
-     * @return 文档内容的异步回调
+     * @param relativePath 静态资源相对路径
+     * @return 静态资源文件
+     * @throws IOException 文件不存在或路径非法
      */
-    CompletionStage<String> reference(String relativePath);
+    public Path getAsset(String relativePath) throws IOException {
+        final var resourcePath = resolveAndValidate(relativePath);
+        if (!Files.exists(resourcePath)) {
+            throw new IOException("Asset not found: " + relativePath);
+        }
+        return resourcePath.toAbsolutePath();
+    }
 
-    // === Asset 资源 (静态文件) ===
 
     /**
-     * 打开静态资源通道
+     * 执行脚本
      *
-     * @param relativePath 相对路径 (如 "assets/template.xlsx")
-     * @param handler      接收资源的 Handler
+     * @param relativePath 脚本相对路径（用于验证和错误提示）
+     * @param commands     完整的命令列表（如 ["python", "/path/to/script.py", "--arg1", "value1"]）
+     * @param timeout      超时时间
+     * @return 脚本执行结果（标准输出）
+     * @throws IOException 脚本执行失败
      */
-    void asset(String relativePath, AssetHandler handler);
+    public String executeScript(String relativePath, List<String> commands, Duration timeout) throws IOException {
+        final var scriptPath = resolveAndValidate(relativePath);
+        if (!Files.exists(scriptPath)) {
+            throw new IOException("Script not found: " + relativePath);
+        }
 
-    // === Script 脚本 ===
+        // 启动进程
+        final var process = new ProcessBuilder(commands)
+                .directory(home.toFile())
+                .redirectErrorStream(true)
+                .start();
+
+        try {
+
+            // 等待进程完成，支持超时
+            final var completed = process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
+
+            if (!completed) {
+                process.destroyForcibly();
+                throw new IOException("Script execution timeout after %sms".formatted(timeout.toMillis()));
+            }
+
+            // 检查退出码
+            final var exitCode = process.exitValue();
+            if (exitCode != 0) {
+                throw new IOException("Script exited with code: %s".formatted(exitCode));
+            }
+
+            // 读取标准输出并关闭流
+            try (final var inputStream = process.getInputStream()) {
+                return new String(inputStream.readAllBytes(), UTF_8).trim();
+            }
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            process.destroyForcibly();
+            throw new IOException("Script execution interrupted", e);
+        }
+    }
 
     /**
-     * 读取脚本内容
+     * 解析并验证路径（防止目录穿越攻击）
      *
-     * @param relativePath 脚本相对路径 (如 "scripts/extract.py")
-     * @return 脚本内容的异步回调
+     * @param relativePath 相对路径
+     * @return 解析后的绝对路径
+     * @throws SecurityException 路径非法或尝试穿越
+     * @throws IOException       路径解析失败
      */
-    CompletionStage<String> script(String relativePath);
+    private Path resolveAndValidate(String relativePath) throws IOException {
+        CheckUtils.requireNonBlankString(relativePath, "Relative path cannot be blank");
 
-    // === Handler 接口 ===
+        // 解析路径
+        final var resolved = home.resolve(relativePath).normalize();
+
+        // 安全检查：防止目录穿越
+        if (!resolved.startsWith(home)) {
+            throw new SecurityException("Path escapes skill directory: %s".formatted(relativePath));
+        }
+
+        return resolved;
+    }
 
     /**
-     * 静态资源处理器 - 负责接收二进制数据
+     * 从技能目录加载 Skill
+     *
+     * @param home 技能主目录
+     * @return Skill 实例
+     * @throws IOException 加载失败
      */
-    interface AssetHandler {
+    public static Skill of(Path home) throws IOException {
+        return SkillParser.parse(home);
+    }
 
-        void onRead(ByteBuffer buffer);
-
-        void onFailure(IOException ex);
-
-        void onCompleted();
-
+    /**
+     * 技能头信息
+     *
+     * @param name          名称
+     * @param description   描述
+     * @param license       许可
+     * @param compatibility 兼容性
+     * @param metadata      元数据
+     * @param allowedTools  允许的工具
+     */
+    public record Header(
+            String name,
+            String description,
+            String license,
+            String compatibility,
+            Map<String, String> metadata,
+            List<String> allowedTools
+    ) {
     }
 
 }

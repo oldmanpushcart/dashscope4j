@@ -2,18 +2,20 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.session.CompressSessionManager;
 import io.github.oldmanpushcart.dashscope4j.agent.session.store.FileFragmentStore;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox3.loader.toolkit.dashscope.DashscopeToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox3.loader.toolkit.file.FileOpsToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox3.loader.toolkit.file.TextFileOpsToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox3.loader.toolkit.network.HttpToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox3.loader.toolkit.system.GuiToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox3.loader.toolkit.system.RuntimeToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox3.loader.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.ToolUse;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.HashMapToolIndexer;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.ToolkitLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.McpToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.McpLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.mcp.RecoverableMcpClientTransport;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.skill.SkillLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.ToolkitLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.dashscope.DashscopeToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.file.FileOpsToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.file.TextFileOpsToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.network.HttpToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.system.GuiToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.system.RuntimeToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.loader.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
@@ -35,8 +37,7 @@ public class DebugTestCase implements LoadingEnv {
 
         final var sessionId =
                 //"SESSION-snake"
-                UUID.randomUUID().toString()
-                ;
+                UUID.randomUUID().toString();
         final var sessionManager = CompressSessionManager.newBuilder()
                 //.store(new HashMapFragmentStore())
                 .store(FileFragmentStore.newBuilder()
@@ -48,32 +49,53 @@ public class DebugTestCase implements LoadingEnv {
                 .gcRatio(0.3)
                 .build();
 
+        final var skillLoader = SkillLoader.newBuilder()
+                .directories(List.of(
+                        Path.of("./skills")
+                ))
+                .build();
+
+        final var mcpLoader = McpLoader.newBuilder()
+                .name("amap")
+                .transport(RecoverableMcpClientTransport.newBuilder()
+                        .transportFactory(mapper ->
+                                HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
+                                        .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+                                        .jsonMapper(mapper)
+                                        .build())
+                        .build())
+                .build();
+
+        final var toolkitLoader = new ToolkitLoader()
+                .append(ToolUse.Mode.DYNAMIC, DashscopeToolkit.create())
+                .append(ToolUse.Mode.DYNAMIC, RuntimeToolkit.create())
+                .append(ToolUse.Mode.DYNAMIC, GuiToolkit.newBuilder().build())
+                .append(ToolUse.Mode.DYNAMIC, HttpToolkit.newBuilder()
+                        .workspace(Path.of("./"))
+                        .httpClient(new OkHttpClient.Builder().build())
+                        .build())
+                .append(ToolUse.Mode.FIXED, RuntimeToolkit.create())
+                .append(ToolUse.Mode.FIXED, ShellToolkit.newBuilder()
+                        .timeout(Duration.ofSeconds(60))
+                        .build())
+                .append(ToolUse.Mode.FIXED, FileOpsToolkit.newBuilder()
+                        .workspace(Path.of("./"))
+                        .build())
+                .append(ToolUse.Mode.FIXED, TextFileOpsToolkit.newBuilder()
+                        .workspace(Path.of("./"))
+                        .build());
+
         final var toolbox = HashMapToolbox.newBuilder()
                 .indexer(HashMapToolIndexer.newBuilder()
                         .client(client)
                         .model(ChatModel.QWEN_FLASH)
                         .cacheFile(Path.of("./toolbox-index-cache.jsonl"))
                         .build())
-                .loaders(List.of(
-                        ToolkitLoader.of(DashscopeToolkit.create()),
-                        ToolkitLoader.of(RuntimeToolkit.create()),
-                        ToolkitLoader.of(GuiToolkit.newBuilder().build()),
-                        ToolkitLoader.of(HttpToolkit.newBuilder()
-                                .workspace(Path.of("./"))
-                                .httpClient(new OkHttpClient.Builder().build())
-                                .build()),
-                        McpToolLoader.newBuilder()
-                                .name("amap")
-                                .transport(RecoverableMcpClientTransport.newBuilder()
-                                        .transportFactory(mapper ->
-                                                HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
-                                                        .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
-                                                        .jsonMapper(mapper)
-                                                        .build())
-                                        .build())
-                                .build()
-                ))
                 .build();
+
+        toolbox.subscribe(toolkitLoader).toCompletableFuture().join();
+        toolbox.subscribe(skillLoader).toCompletableFuture().join();
+        toolbox.subscribe(mcpLoader).toCompletableFuture().join();
 
         try {
 

@@ -2,14 +2,16 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.ToolUse;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+
+import static java.util.stream.Collectors.toMap;
 
 /**
  * 工具搜索函数
@@ -49,7 +51,13 @@ class SearchToolsFunction implements Function<SearchToolsFunction.Search, Comple
      */
     @Override
     public CompletionStage<Map<String, Tool>> apply(Search search) {
-        return toolbox.lookup(Message.user(search.intent()));
+        return toolbox.lookupByIntent(search.intent())
+                .thenApply(uses -> uses.stream()
+                        .map(ToolUse::tool)
+                        .collect(toMap(
+                                tool -> tool.meta().name(),
+                                Function.identity()
+                        )));
     }
 
     /**

@@ -52,7 +52,7 @@ class McpToolFunctionTool implements McpFunctionTool {
         this.mcpTool = mcpTool;
         // 生成工具元数据，名称格式：namespace$tool$toolName
         this.meta = new Meta(
-                "%s$tool$%s".formatted(namespace, mcpTool.name()),
+                "mcp$%s$tool$%s".formatted(namespace, mcpTool.name()),
                 mcpTool.description(),
                 JacksonJsonUtils.toNode(mcpTool.inputSchema())
         );
