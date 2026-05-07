@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.
 import io.github.oldmanpushcart.dashscope4j.agent.util.FileUtils;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolExecutionException;
 import okhttp3.*;
 import okio.BufferedSink;
 import okio.Okio;
@@ -228,7 +229,12 @@ public class HttpToolkit implements Toolkit {
                         }
 
                     } catch (IOException e) {
-                        throw new RuntimeException("GET failed!", e);
+                        throw new ToolExecutionException(
+                                "HTTP-REQUEST-FAILED",
+                                "GET request failed: " + spec.url(),
+                                "Check the URL is correct and the server is accessible. Retry if this is a transient error.",
+                                e
+                        );
                     }
                 })
                 .build();
@@ -312,7 +318,12 @@ public class HttpToolkit implements Toolkit {
                         }
 
                     } catch (IOException e) {
-                        throw new RuntimeException("POST failed!", e);
+                        throw new ToolExecutionException(
+                                "HTTP-REQUEST-FAILED",
+                                "POST request failed: " + spec.url(),
+                                "Check the URL, request body, and headers. Retry if this is a transient error.",
+                                e
+                        );
                     }
                 })
                 .build();
@@ -389,7 +400,12 @@ public class HttpToolkit implements Toolkit {
                         }
 
                     } catch (IOException e) {
-                        throw new RuntimeException("PUT failed!", e);
+                        throw new ToolExecutionException(
+                                "HTTP-REQUEST-FAILED",
+                                "PUT request failed: " + spec.url(),
+                                "Check the URL, request body, and headers. Retry if this is a transient error.",
+                                e
+                        );
                     }
                 })
                 .build();
@@ -459,7 +475,12 @@ public class HttpToolkit implements Toolkit {
                         }
 
                     } catch (IOException e) {
-                        throw new RuntimeException("DELETE failed!", e);
+                        throw new ToolExecutionException(
+                                "HTTP-REQUEST-FAILED",
+                                "DELETE request failed: " + spec.url(),
+                                "Check the URL is correct and the resource exists. Retry if this is a transient error.",
+                                e
+                        );
                     }
                 })
                 .build();
@@ -558,9 +579,19 @@ public class HttpToolkit implements Toolkit {
                         }
 
                     } catch (SecurityException e) {
-                        throw new RuntimeException("Access denied!", e);
+                        throw new ToolExecutionException(
+                                "ACCESS-DENIED",
+                                "Access denied: " + e.getMessage(),
+                                "Ensure the file path is within the workspace and you have write permissions.",
+                                e
+                        );
                     } catch (IOException e) {
-                        throw new RuntimeException("Download failed!", e);
+                        throw new ToolExecutionException(
+                                "DOWNLOAD-FAILED",
+                                "Download failed: " + spec.url(),
+                                "Check the URL is accessible and you have network connectivity. Retry if this is a transient error.",
+                                e
+                        );
                     }
                 })
                 .build();
@@ -603,7 +634,12 @@ public class HttpToolkit implements Toolkit {
                                     MediaType.parse(requireNonNullElse(mimeType, "application/octet-stream"))));
 
                 } catch (IOException e) {
-                    throw new RuntimeException("Failed to process file: " + filePath, e);
+                    throw new ToolExecutionException(
+                            "FILE-PROCESSING-FAILED",
+                            "Failed to process file: " + filePath,
+                            "Check the file path and ensure you have read permissions.",
+                            e
+                    );
                 }
             });
         }
@@ -646,7 +682,12 @@ public class HttpToolkit implements Toolkit {
                                     MediaType.parse(requireNonNullElse(mimeType, "application/octet-stream"))));
 
                 } catch (IOException e) {
-                    throw new RuntimeException("Failed to process file: " + filePath, e);
+                    throw new ToolExecutionException(
+                            "FILE-PROCESSING-FAILED",
+                            "Failed to process file: " + filePath,
+                            "Check the file path and ensure you have read permissions.",
+                            e
+                    );
                 }
             });
         }

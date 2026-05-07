@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.
 import io.github.oldmanpushcart.dashscope4j.agent.util.FileUtils;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolExecutionException;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
 
@@ -113,11 +114,15 @@ public class FileOpsToolkit implements Toolkit {
                         final Path filePath = FileUtils.checkPathEscape(workspace, spec.path());
 
                         if (!Files.exists(filePath)) {
-                            return Result.error("FILE_NOT_FOUND", "文件不存在：" + spec.path());
+                            throw new ToolExecutionException(
+                                    "FILE-NOT-FOUND",
+                                    "File not found: " + spec.path(),
+                                    "Verify the file path is correct and the file exists in the workspace."
+                            );
                         }
 
                         final var attrs = Files.readAttributes(filePath, BasicFileAttributes.class);
-                        final var info = Map.of(
+                        return Map.of(
                                 "name", filePath.getFileName().toString(),
                                 "type", attrs.isDirectory() ? "directory" : "file",
                                 "size", attrs.size(),
@@ -126,12 +131,20 @@ public class FileOpsToolkit implements Toolkit {
                                 "writable", Files.isWritable(filePath)
                         );
 
-                        return Result.success(info);
-
                     } catch (SecurityException ex) {
-                        return Result.error("ACCESS_DENIED", ex.getMessage());
+                        throw new ToolExecutionException(
+                                "ACCESS-DENIED",
+                                "Access denied: " + spec.path(),
+                                "Check file permissions and ensure the file is within the workspace.",
+                                ex
+                        );
                     } catch (IOException ex) {
-                        return Result.error("IO_ERROR", "读取文件信息失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "IO-ERROR",
+                                "Failed to read file attributes: " + spec.path(),
+                                "The file may be corrupted or inaccessible. Try again or check system logs.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -166,31 +179,47 @@ public class FileOpsToolkit implements Toolkit {
                         final Path targetPath = FileUtils.checkPathEscape(workspace, spec.path());
 
                         if (!Files.exists(targetPath)) {
-                            return Result.error("FILE_NOT_FOUND", "文件不存在：" + spec.path());
+                            throw new ToolExecutionException(
+                                    "FILE-NOT-FOUND",
+                                    "File not found: " + spec.path(),
+                                    "Verify the file path is correct and the file exists in the workspace."
+                            );
                         }
 
                         if (Files.isDirectory(targetPath)) {
                             // 检查是否为空目录
                             try (final var stream = Files.list(targetPath)) {
                                 if (stream.findAny().isPresent()) {
-                                    return Result.error("DIRECTORY_NOT_EMPTY",
-                                            "目录非空，无法删除：" + spec.path());
+                                    throw new ToolExecutionException(
+                                            "DIRECTORY-NOT-EMPTY",
+                                            "Directory not empty: " + spec.path(),
+                                            "Remove all files and subdirectories first, or use a recursive delete tool."
+                                    );
                                 }
                             }
                         }
 
                         Files.delete(targetPath);
 
-                        final var result = Map.of(
+                        return Map.of(
                                 "success", true,
                                 "message", "Deleted: " + spec.path()
                         );
-                        return Result.success(result);
 
                     } catch (SecurityException ex) {
-                        return Result.error("ACCESS_DENIED", ex.getMessage());
+                        throw new ToolExecutionException(
+                                "ACCESS-DENIED",
+                                "Access denied: " + spec.path(),
+                                "Check file permissions and ensure you have delete access.",
+                                ex
+                        );
                     } catch (IOException ex) {
-                        return Result.error("IO_ERROR", "删除失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "IO-ERROR",
+                                "Failed to delete: " + spec.path(),
+                                "The file may be in use or locked. Try again later.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -226,32 +255,52 @@ public class FileOpsToolkit implements Toolkit {
                         final Path targetPath = FileUtils.checkPathEscape(workspace, spec.target());
 
                         if (!Files.exists(sourcePath)) {
-                            return Result.error("FILE_NOT_FOUND", "源文件不存在：" + spec.source());
+                            throw new ToolExecutionException(
+                                    "FILE-NOT-FOUND",
+                                    "Source file not found: " + spec.source(),
+                                    "Verify the source path is correct and the file exists."
+                            );
                         }
 
                         if (Files.exists(targetPath)) {
-                            return Result.error("TARGET_EXISTS", "目标已存在：" + spec.target());
+                            throw new ToolExecutionException(
+                                    "TARGET-EXISTS",
+                                    "Target already exists: " + spec.target(),
+                                    "Choose a different target path or delete the existing file first."
+                            );
                         }
 
                         // 确保目标父目录存在
                         final Path parentDir = targetPath.getParent();
                         if (parentDir != null && !Files.exists(parentDir)) {
-                            return Result.error("PARENT_NOT_FOUND",
-                                    "目标父目录不存在：" + workspace.relativize(parentDir));
+                            throw new ToolExecutionException(
+                                    "PARENT-NOT-FOUND",
+                                    "Parent directory not found: " + workspace.relativize(parentDir),
+                                    "Create the parent directory first or choose a different target path."
+                            );
                         }
 
                         Files.move(sourcePath, targetPath);
 
-                        final var result = Map.of(
+                        return Map.of(
                                 "success", true,
                                 "message", "Moved: %s -> %s".formatted(spec.source(), spec.target())
                         );
-                        return Result.success(result);
 
                     } catch (SecurityException ex) {
-                        return Result.error("ACCESS_DENIED", ex.getMessage());
+                        throw new ToolExecutionException(
+                                "ACCESS-DENIED",
+                                "Access denied: cannot move " + spec.source() + " to " + spec.target(),
+                                "Check permissions for both source and target locations.",
+                                ex
+                        );
                     } catch (IOException ex) {
-                        return Result.error("IO_ERROR", "移动失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "IO-ERROR",
+                                "Failed to move: " + spec.source() + " -> " + spec.target(),
+                                "The file may be in use or the operation is not supported.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -307,13 +356,12 @@ public class FileOpsToolkit implements Toolkit {
                                     }
                                 }
 
-                                final var result = Map.of(
+                                return Map.of(
                                         "success", true,
                                         "message", "File created: " + workspace.relativize(targetPath),
                                         "path", workspace.relativize(targetPath).toString(),
                                         "type", "file"
                                 );
-                                return Result.success(result);
                             }
 
                             case DIRECTORY -> {
@@ -328,24 +376,36 @@ public class FileOpsToolkit implements Toolkit {
                                     }
                                 }
 
-                                final var result = Map.of(
+                                return Map.of(
                                         "success", true,
                                         "message", "Directory created: " + workspace.relativize(targetPath),
                                         "path", workspace.relativize(targetPath).toString(),
                                         "type", "directory"
                                 );
-                                return Result.success(result);
                             }
 
-                            default -> {
-                                return Result.error("INVALID_TYPE", "无效的创建类型：" + spec.type());
-                            }
+                            default -> throw new ToolExecutionException(
+                                    "INVALID-TYPE",
+                                    "Invalid create type: " + spec.type(),
+                                    "Use FILE for files or DIRECTORY for directories."
+                            );
                         }
 
                     } catch (SecurityException ex) {
-                        return Result.error("ACCESS_DENIED", ex.getMessage());
+                        throw new ToolExecutionException(
+                                "ACCESS-DENIED",
+                                "Access denied: " + spec.path(),
+                                "Check file permissions and ensure you have write access.",
+                                ex
+                        );
                     } catch (IOException ex) {
-                        return Result.error("IO_ERROR", "创建失败：" + ex.getMessage());
+                        final String operation = spec.type() == CreateType.FILE ? "create file" : "create directory";
+                        throw new ToolExecutionException(
+                                "IO-ERROR",
+                                "Failed to " + operation + ": " + spec.path(),
+                                "The disk may be full or the path is invalid.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -377,7 +437,11 @@ public class FileOpsToolkit implements Toolkit {
                         final Path dirPath = FileUtils.checkPathEscape(workspace, spec.path());
 
                         if (!Files.isDirectory(dirPath)) {
-                            return Result.error("NOT_DIRECTORY", "不是目录：" + spec.path());
+                            throw new ToolExecutionException(
+                                    "NOT-A-DIRECTORY",
+                                    "Not a directory: " + spec.path(),
+                                    "Provide a valid directory path. Use file$info to check the path type."
+                            );
                         }
 
                         final int maxReturn = spec.limit() != null
@@ -408,7 +472,7 @@ public class FileOpsToolkit implements Toolkit {
                                 ? buildListTruncateHint(spec.path(), items.size(), maxReturn, totalCount)
                                 : null;
 
-                        final var result = new ListResult(
+                        return new ListResult(
                                 items.stream().map(Object.class::cast).toList(),
                                 items.size(),
                                 hasMore,
@@ -416,12 +480,20 @@ public class FileOpsToolkit implements Toolkit {
                                 hint
                         );
 
-                        return Result.success(result);
-
                     } catch (SecurityException ex) {
-                        return Result.error("ACCESS_DENIED", ex.getMessage());
+                        throw new ToolExecutionException(
+                                "ACCESS-DENIED",
+                                "Access denied: " + spec.path(),
+                                "Check directory permissions and ensure it is within the workspace.",
+                                ex
+                        );
                     } catch (IOException ex) {
-                        return Result.error("IO_ERROR", "列出目录失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "IO-ERROR",
+                                "Failed to list directory: " + spec.path(),
+                                "The directory may be inaccessible or corrupted.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -455,7 +527,11 @@ public class FileOpsToolkit implements Toolkit {
                         final Path searchPath = FileUtils.checkPathEscape(workspace, spec.path());
 
                         if (!Files.isDirectory(searchPath)) {
-                            return Result.error("NOT_DIRECTORY", "不是目录：" + spec.path());
+                            throw new ToolExecutionException(
+                                    "NOT-A-DIRECTORY",
+                                    "Not a directory: " + spec.path(),
+                                    "Provide a valid directory path. Use file$info to check the path type."
+                            );
                         }
 
                         final int maxReturn = spec.limit() != null
@@ -508,7 +584,7 @@ public class FileOpsToolkit implements Toolkit {
                                 ? buildSearchTruncateHint(spec, items.size(), maxReturn)
                                 : null;
 
-                        final var result = new ListResult(
+                        return new ListResult(
                                 items,
                                 items.size(),
                                 hasMore.get(),
@@ -516,12 +592,20 @@ public class FileOpsToolkit implements Toolkit {
                                 hint
                         );
 
-                        return Result.success(result);
-
                     } catch (SecurityException ex) {
-                        return Result.error("ACCESS_DENIED", ex.getMessage());
+                        throw new ToolExecutionException(
+                                "ACCESS-DENIED",
+                                "Access denied: " + spec.path(),
+                                "Check directory permissions and ensure it is within the workspace.",
+                                ex
+                        );
                     } catch (IOException ex) {
-                        return Result.error("IO_ERROR", "搜索失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "IO-ERROR",
+                                "Failed to search files in: " + spec.path(),
+                                "The directory may be inaccessible or corrupted.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -721,34 +805,6 @@ public class FileOpsToolkit implements Toolkit {
     ) {
     }
 
-    /**
-     * 统一的结果封装
-     */
-    record Result(
-            @JsonProperty("error")
-            String error,
-
-            @JsonProperty("message")
-            String message,
-
-            @JsonProperty("data")
-            Object data
-    ) {
-        /**
-         * 创建成功结果
-         */
-        static Result success(Object data) {
-            return new Result(null, null, data);
-        }
-
-        /**
-         * 创建错误结果
-         */
-        static Result error(String error, String message) {
-            return new Result(error, message, null);
-        }
-    }
-
     // ==================== Builder ====================
 
     public static Builder newBuilder() {
@@ -804,6 +860,8 @@ public class FileOpsToolkit implements Toolkit {
     }
 
 }
+
+
 
 
 

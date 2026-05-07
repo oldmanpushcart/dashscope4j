@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolExecutionException;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import javax.imageio.ImageIO;
@@ -101,7 +102,12 @@ public class GuiToolkit implements Toolkit {
             // 创建 AWT Robot 实例，用于模拟鼠标和键盘操作
             this.robot = new Robot();
         } catch (AWTException e) {
-            throw new RuntimeException("Failed to initialize AWT Robot", e);
+            throw new ToolExecutionException(
+                    "AWT-INIT-FAILED",
+                    "Failed to initialize AWT Robot. This may be due to running in a headless environment.",
+                    "Ensure the environment supports graphical operations or disable GUI features.",
+                    e
+            );
         }
         // 从构建器中读取各项功能的启用状态
         this.enableScreenshot = builder.enableScreenshot;
@@ -198,12 +204,15 @@ public class GuiToolkit implements Toolkit {
                             // 检查截图尺寸限制
                             final long pixelCount = (long) captureRect.width * captureRect.height;
                             if (pixelCount > MAX_SCREENSHOT_SIZE) {
-                                return Result.error("SCREENSHOT_TOO_LARGE",
-                                        "截图尺寸过大：%dx%d，最大支持 %d 像素".formatted(
+                                throw new ToolExecutionException(
+                                        "SCREENSHOT-TOO-LARGE",
+                                        String.format("Screenshot too large: %dx%d pixels, max supported is %d pixels",
                                                 captureRect.width,
                                                 captureRect.height,
                                                 MAX_SCREENSHOT_SIZE
-                                        ));
+                                        ),
+                                        "Reduce the capture area by specifying smaller width and height values."
+                                );
                             }
 
                             // 执行截图
@@ -220,7 +229,7 @@ public class GuiToolkit implements Toolkit {
                             final var fileUri = tempFile.toURI();
 
                             // 返回结果
-                            final var result = Map.of(
+                            return Map.of(
                                     "file_uri", fileUri.toString(),
                                     "file_path", tempFile.getAbsolutePath(),
                                     "width", screenCapture.getWidth(),
@@ -235,10 +244,13 @@ public class GuiToolkit implements Toolkit {
                                     )
                             );
 
-                            return Result.success(result);
-
                         } catch (Exception ex) {
-                            return Result.error("SCREENSHOT_FAILED", "截图失败：" + ex.getMessage());
+                            throw new ToolExecutionException(
+                                    "SCREENSHOT-FAILED",
+                                    "Screenshot failed: " + ex.getMessage(),
+                                    "Ensure the screen is accessible and try again.",
+                                    ex
+                            );
                         }
                     }
 
@@ -323,10 +335,21 @@ public class GuiToolkit implements Toolkit {
                                 )
                         );
 
-                        return Result.success(result);
+                        return Map.of(
+                                "success", true,
+                                "current_position", Map.of(
+                                        "x", location.x,
+                                        "y", location.y
+                                )
+                        );
 
                     } catch (Exception ex) {
-                        return Result.error("MOUSE_MOVE_FAILED", "鼠标移动失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "MOUSE-MOVE-FAILED",
+                                "Mouse move failed: " + ex.getMessage(),
+                                "Ensure the coordinates are within screen bounds.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -400,8 +423,11 @@ public class GuiToolkit implements Toolkit {
                                 robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
                                 break;
                             default:
-                                return Result.error("INVALID_BUTTON",
-                                        "无效的按键类型：" + button + "，支持：left, right, middle, double_left");
+                                throw new ToolExecutionException(
+                                        "INVALID-BUTTON",
+                                        String.format("Invalid button type: %s. Supported: left, right, middle, double_left", button),
+                                        "Use one of the supported button types: left, right, middle, or double_left."
+                                );
                         }
 
                         final var result = Map.of(
@@ -410,10 +436,19 @@ public class GuiToolkit implements Toolkit {
                                 "click_count", clickCount
                         );
 
-                        return Result.success(result);
+                        return Map.of(
+                                "success", true,
+                                "button", button,
+                                "click_count", clickCount
+                        );
 
                     } catch (Exception ex) {
-                        return Result.error("MOUSE_CLICK_FAILED", "鼠标点击失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "MOUSE-CLICK-FAILED",
+                                "Mouse click failed: " + ex.getMessage(),
+                                "Ensure the mouse can perform the click operation.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -468,7 +503,7 @@ public class GuiToolkit implements Toolkit {
                         // 释放左键
                         robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
 
-                        final var result = Map.of(
+                        return Map.of(
                                 "success", true,
                                 "from", Map.of(
                                         "x", spec.fromX(),
@@ -480,10 +515,13 @@ public class GuiToolkit implements Toolkit {
                                 )
                         );
 
-                        return Result.success(result);
-
                     } catch (Exception ex) {
-                        return Result.error("MOUSE_DRAG_FAILED", "鼠标拖拽失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "MOUSE-DRAG-FAILED",
+                                "鼠标拖拽失败：" + ex.getMessage(),
+                                "Ensure both start and end positions are valid.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -527,15 +565,18 @@ public class GuiToolkit implements Toolkit {
                     try {
                         robot.mouseWheel(spec.amount());
 
-                        final var result = Map.of(
+                        return Map.of(
                                 "success", true,
                                 "amount", spec.amount()
                         );
 
-                        return Result.success(result);
-
                     } catch (Exception ex) {
-                        return Result.error("MOUSE_SCROLL_FAILED", "鼠标滚动失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "MOUSE-SCROLL-FAILED",
+                                "鼠标滚动失败：" + ex.getMessage(),
+                                "Ensure the scroll amount is reasonable.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -589,17 +630,25 @@ public class GuiToolkit implements Toolkit {
                         robot.delay(50);
                         robot.keyRelease(keyCode);
 
-                        final var result = Map.of(
+                        return Map.of(
                                 "success", true,
                                 "key", spec.key()
                         );
 
-                        return Result.success(result);
-
                     } catch (IllegalArgumentException ex) {
-                        return Result.error("INVALID_KEY", ex.getMessage());
+                        throw new ToolExecutionException(
+                                "INVALID-KEY",
+                                ex.getMessage(),
+                                "Check the key name against Java KeyEvent constants.",
+                                ex
+                        );
                     } catch (Exception ex) {
-                        return Result.error("KEY_PRESS_FAILED", "按键失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "KEY-PRESS-FAILED",
+                                "按键失败：" + ex.getMessage(),
+                                "Verify the key name is valid and supported.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -647,20 +696,27 @@ public class GuiToolkit implements Toolkit {
                     try {
                         final String text = spec.text();
                         if (text == null || text.isEmpty()) {
-                            return Result.error("EMPTY_TEXT", "输入文本不能为空");
+                            throw new ToolExecutionException(
+                                "EMPTY-TEXT",
+                                "输入文本不能为空",
+                                "Provide a non-empty text string to type."
+                        );
                         }
 
                         typeString(text);
 
-                        final var result = Map.of(
+                        return Map.of(
                                 "success", true,
                                 "text_length", text.length()
                         );
 
-                        return Result.success(result);
-
                     } catch (Exception ex) {
-                        return Result.error("KEY_TYPE_FAILED", "文本输入失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "KEY-TYPE-FAILED",
+                                "文本输入失败：" + ex.getMessage(),
+                                "Consider using clipboard for non-ASCII characters.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -711,12 +767,19 @@ public class GuiToolkit implements Toolkit {
                     try {
                         final List<String> keys = spec.keys();
                         if (keys == null || keys.isEmpty()) {
-                            return Result.error("EMPTY_KEYS", "按键列表不能为空");
+                            throw new ToolExecutionException(
+                                "EMPTY-KEYS",
+                                "按键列表不能为空",
+                                "Provide at least one key in the combination."
+                        );
                         }
 
                         if (keys.size() > 5) {
-                            return Result.error("TOO_MANY_KEYS",
-                                    "组合键最多支持 5 个按键，当前：" + keys.size());
+                            throw new ToolExecutionException(
+                                "TOO-MANY-KEYS",
+                                String.format("Too many keys in combination: %d, maximum is 5", keys.size()),
+                                "Limit the number of keys to 5 or fewer."
+                        );
                         }
 
                         // 解析所有按键
@@ -737,17 +800,25 @@ public class GuiToolkit implements Toolkit {
                             robot.delay(30);
                         }
 
-                        final var result = Map.of(
+                        return Map.of(
                                 "success", true,
                                 "keys", keys
                         );
 
-                        return Result.success(result);
-
                     } catch (IllegalArgumentException ex) {
-                        return Result.error("INVALID_KEY", ex.getMessage());
+                        throw new ToolExecutionException(
+                                "INVALID-KEY",
+                                ex.getMessage(),
+                                "Check the key name against Java KeyEvent constants.",
+                                ex
+                        );
                     } catch (Exception ex) {
-                        return Result.error("KEY_COMBO_FAILED", "组合键失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "KEY-COMBO-FAILED",
+                                "组合键失败：" + ex.getMessage(),
+                                "Verify all keys in the combination are valid.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -854,15 +925,18 @@ public class GuiToolkit implements Toolkit {
                         final var selection = new StringSelection(text);
                         clipboard.setContents(selection, selection);
 
-                        final var result = Map.of(
+                        return Map.of(
                                 "success", true,
                                 "length", text.length()
                         );
 
-                        return Result.success(result);
-
                     } catch (Exception ex) {
-                        return Result.error("CLIPBOARD_SET_FAILED", "设置剪贴板失败：" + ex.getMessage());
+                        throw new ToolExecutionException(
+                                "CLIPBOARD-SET-FAILED",
+                                "设置剪贴板失败：" + ex.getMessage(),
+                                "Ensure you have permission to modify the clipboard.",
+                                ex
+                        );
                     }
                 })
                 .build();
@@ -1208,51 +1282,6 @@ public class GuiToolkit implements Toolkit {
     ) {
     }
 
-    // ==================== 结果数据结构 ====================
-
-    /**
-     * 工具执行的统一结果封装
-     * <p>
-     * 所有工具方法的返回值都使用此结构，包含三种状态：
-     * - 成功：error 和 message 为 null，data 包含实际数据
-     * - 失败：error 包含错误码，message 包含错误描述，data 为 null
-     * </p>
-     *
-     * @param error   错误码，成功时为 null，失败时为非空字符串（如 "SCREENSHOT_FAILED"）
-     * @param message 错误消息，成功时为 null，失败时为详细的错误描述
-     * @param data    成功时的返回数据，失败时为 null
-     */
-    record Result(
-            @JsonProperty("error")
-            String error,
-
-            @JsonProperty("message")
-            String message,
-
-            @JsonProperty("data")
-            Object data
-    ) {
-        /**
-         * 创建成功结果
-         *
-         * @param data 返回的业务数据
-         * @return 成功结果对象
-         */
-        static Result success(Object data) {
-            return new Result(null, null, data);
-        }
-
-        /**
-         * 创建失败结果
-         *
-         * @param error   错误码，用于程序化判断错误类型
-         * @param message 错误消息，用于人类阅读的错误描述
-         * @return 失败结果对象
-         */
-        static Result error(String error, String message) {
-            return new Result(error, message, null);
-        }
-    }
 
     // ==================== Builder ====================
 

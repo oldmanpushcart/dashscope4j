@@ -2,12 +2,9 @@ package io.github.oldmanpushcart.dashscope4j.agent.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * 文件工具类
@@ -22,9 +19,8 @@ public class FileUtils {
      * @param userPath  用户提供的相对路径
      * @return 解析后的绝对路径
      * @throws SecurityException 如果路径非法或尝试穿越
-     * @throws IOException       如果路径解析失败
      */
-    public static Path checkPathEscape(Path workspace, String userPath) throws IOException {
+    public static Path checkPathEscape(Path workspace, String userPath) {
         // 拒绝绝对路径，防止路径穿越
         if (Path.of(userPath).isAbsolute()) {
             throw new SecurityException("拒绝访问：不支持绝对路径：" + userPath);
@@ -125,12 +121,12 @@ public class FileUtils {
     /**
      * 检查文件自指定时间戳后是否被修改
      *
-     * @param file          文件路径
-     * @param lastModified  预期的最后修改时间戳（毫秒）
+     * @param file         文件路径
+     * @param lastModified 预期的最后修改时间戳（毫秒）
      * @throws SecurityException 如果文件已被修改
      * @throws IOException       如果读取文件属性失败
      */
-    public static void checkFileUnmodified(Path file, long lastModified) throws IOException {
+    public static void checkFileUnmodified(Path file, long lastModified) throws SecurityException, IOException {
         if (!Files.exists(file)) {
             throw new SecurityException("文件不存在：" + file);
         }

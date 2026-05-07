@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolExecutionException;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
 
@@ -14,11 +15,9 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -60,13 +59,13 @@ public class ShellToolkit implements Toolkit {
 
     @Override
     public List<Tool> tools() {
-        return List.of(createShellTool());
+        return List.of(shell());
     }
 
     /**
      * 创建 shell$exec 工具
      */
-    private FunctionTool createShellTool() {
+    private FunctionTool shell() {
         return FunctionTool.newBuilder()
                 .name("shell$exec")
                 .description("""
@@ -110,26 +109,54 @@ public class ShellToolkit implements Toolkit {
                         validateCommand(spec.command());
 
                         final var charset = detectTerminalCharset();
-                        final var result = executeWithTimeout(spec.command(), charset);
-                        return CompletableFuture.completedStage(result);
-                    } catch (SecurityException ex) {
-                        // 安全拦截的危险命令
-                        final var result = new Result(
-                                "⛔ 命令被拒绝：" + ex.getMessage(),
-                                -1,
-                                false  // Shell 执行失败
+                        
+                        final var process = new ProcessBuilder()
+                                .redirectErrorStream(true)
+                                .command(spec.command())
+                                .start();
+
+                        // 等待进程完成（带超时）
+                        final var completed = process.waitFor(timeout.toMillis(), MILLISECONDS);
+
+                        if (!completed) {
+                            // 超时，销毁进程
+                            process.destroyForcibly();
+                            throw new ToolExecutionException(
+                                    "COMMAND-TIMEOUT",
+                                    String.format("Command execution timed out (exceeded %s), forcibly terminated", timeout),
+                                    "Try simplifying the command or increasing the timeout."
+                            );
+                        }
+
+                        // 同步读取输出
+                        final var outputBuf = new StringBuilder();
+                        try (final var reader = new BufferedReader(new InputStreamReader(process.getInputStream(), charset))) {
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                outputBuf.append(line).append('\n');
+                            }
+                        }
+
+                        final int exitCode = process.exitValue();
+                        final String output = outputBuf.toString();
+                        
+                        return Map.of(
+                                "output", output,
+                                "exit_code", exitCode,
+                                "is_success", exitCode == 0,
+                                "prompt", generatePrompt(exitCode, timeout)
                         );
-                        return CompletableFuture.completedStage(result);
+                        
                     } catch (IOException | InterruptedException ex) {
                         if (ex instanceof InterruptedException) {
                             Thread.currentThread().interrupt();
                         }
-                        final var result = new Result(
-                                "命令执行失败：" + ex.getMessage(),
-                                -1,
-                                false  // Shell 执行失败
+                        throw new ToolExecutionException(
+                                "COMMAND-EXECUTION-FAILED",
+                                "Command execution failed: " + ex.getMessage(),
+                                "Check the command syntax and ensure the program exists.",
+                                ex
                         );
-                        return CompletableFuture.completedStage(result);
                     }
                 })
                 .build();
@@ -188,13 +215,36 @@ public class ShellToolkit implements Toolkit {
         if (isWindows()) {
             try {
                 // 执行 chcp 获取活动代码页
-                final var result = executeWithTimeout(List.of("cmd.exe", "/c", "chcp"), Charset.defaultCharset());
-                if (!result.shellExecutionSuccess()) {
-                    throw new IOException(result.toString());
+                final var process = new ProcessBuilder()
+                        .redirectErrorStream(true)
+                        .command("cmd.exe", "/c", "chcp")
+                        .start();
+
+                // 等待进程完成（带超时）
+                final var completed = process.waitFor(timeout.toMillis(), MILLISECONDS);
+                if (!completed) {
+                    process.destroyForcibly();
+                    return Charset.defaultCharset();
+                }
+
+                // 读取输出
+                final var outputBuf = new StringBuilder();
+                try (final var reader = new BufferedReader(new InputStreamReader(process.getInputStream(), Charset.defaultCharset()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        outputBuf.append(line).append('\n');
+                    }
+                }
+
+                final String output = outputBuf.toString();
+                final int exitCode = process.exitValue();
+                
+                if (exitCode != 0) {
+                    return Charset.defaultCharset();
                 }
 
                 // 根据活动代码页约定值推测当前终端字符集
-                final var matcher = activeCodePagePattern.matcher(result.output);
+                final var matcher = activeCodePagePattern.matcher(output);
                 if (matcher.find()) {
                     final var cp = Integer.parseInt(matcher.group(1));
                     return switch (cp) {
@@ -257,57 +307,47 @@ public class ShellToolkit implements Toolkit {
     }
 
     /**
-     * 带超时控制的命令执行
+     * 生成提示信息
      *
-     * @param command 命令列表
-     * @param charset 字符集
-     * @return 执行结果
-     * @throws IOException          IO 异常
-     * @throws InterruptedException 中断异常
+     * @param exitCode 退出码
+     * @param timeout  超时时间
+     * @return 提示信息
      */
-    private Result executeWithTimeout(List<String> command, Charset charset) throws IOException, InterruptedException {
-        final var process = new ProcessBuilder()
-                .redirectErrorStream(true)
-                .command(command)
-                .start();
-
-        // 启动输出读取线程
-        final var outputFuture = CompletableFuture.supplyAsync(() -> {
-            final var outputBuf = new StringBuilder();
-            try (final var reader = new BufferedReader(new InputStreamReader(process.getInputStream(), charset))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    outputBuf.append(line).append('\n');
-                }
-            } catch (IOException e) {
-                return "读取输出时出错：" + e.getMessage();
-            }
-            return outputBuf.toString();
-        });
-
-        // 等待进程完成（带超时）
-        final var completed = process.waitFor(timeout.toMillis(), MILLISECONDS);
-
-        if (!completed) {
-            // 超时，销毁进程
-            process.destroyForcibly();
-            return new Result(
-                    "⏱️ 命令执行超时（超过 " + timeout + "），已被强制终止",
-                    -2,
-                    false  // Shell 执行失败
+    private String generatePrompt(int exitCode, Duration timeout) {
+        // 命令返回非零退出码
+        if (exitCode != 0) {
+            return String.format(
+                    """
+                            ⚠️ Command execution failed (exit code: %d), please check:
+                            
+                            [Common Issues]
+                            1. Command syntax is correct
+                               - Windows: Use cmd.exe /c or PowerShell -Command
+                               - Linux/Mac: Use bash -c or execute directly
+                            
+                            2. Command exists
+                               - Check if the command is installed
+                               - Check PATH environment variable
+                            
+                            3. Sufficient permissions
+                               - Admin/root privileges required?
+                               - File has execute permission?
+                            
+                            4. Parameters are correct
+                               - Path exists?
+                               - Parameter format matches OS?
+                            
+                            [Debugging Tips]
+                            - Simplify the command and test step by step
+                            - Use echo to test environment variables
+                            - Check full error message for details
+                            """,
+                    exitCode
             );
         }
 
-        // 获取输出（已考虑超时）
-        String output;
-        try {
-            output = outputFuture.get(timeout.toMillis(), MILLISECONDS);
-        } catch (ExecutionException e) {
-            output = "获取输出失败：" + e.getCause().getMessage();
-        } catch (TimeoutException e) {
-            output = "读取输出超时";
-        }
-        return new Result(output, process.exitValue(), true);  // Shell 执行成功
+        // 完全成功
+        return "Execution successful";
     }
 
     // ==================== 内部类 ====================
@@ -324,98 +364,6 @@ public class ShellToolkit implements Toolkit {
     ) {
     }
 
-    /**
-     * 命令执行结果
-     */
-    record Result(
-
-            @JsonProperty("output")
-            String output,
-
-            @JsonProperty("exit_code")
-            int exitCode,
-
-            @JsonProperty("shell_execution_success")
-            boolean shellExecutionSuccess
-
-    ) {
-        /**
-         * 命令是否执行成功(退出码为0)
-         *
-         * @return 命令是否成功
-         */
-        @JsonProperty("is_command_success")
-        public boolean isCommandSuccess() {
-            return exitCode == 0;
-        }
-
-        /**
-         * 获取提示信息
-         *
-         * @param timeout 超时时间
-         * @return 提示信息
-         */
-        public String prompt(Duration timeout) {
-            // Shell 执行失败(超时、异常等)
-            if (!shellExecutionSuccess) {
-                return """
-                        ⚠️ Shell 执行失败，命令未能正常运行：
-                        
-                        【可能原因】
-                        - 命令执行超时(超过 %s)
-                        - 命令被安全策略拦截
-                        - 系统资源不足或 IO 错误
-                        
-                        【建议】
-                        - 检查命令是否过于耗时
-                        - 确认命令不在危险命令黑名单中
-                        - 简化命令后重试
-                        """.formatted(timeout);
-            }
-
-            // Shell 执行成功，但命令返回非零退出码
-            if (exitCode != 0) {
-                return """
-                        ⚠️ 命令执行失败(退出码: %d)，请检查以下可能的问题：
-                        
-                        【常见问题排查】
-                        1. 命令语法是否正确
-                           - Windows: 使用 cmd.exe /c 或 PowerShell -Command
-                           - Linux/Mac: 使用 bash -c 或直接执行
-                        
-                        2. 命令是否存在
-                           - 检查命令是否已安装
-                           - 检查 PATH 环境变量配置
-                        
-                        3. 权限是否足够
-                           - 是否需要管理员/root 权限
-                           - 文件是否有执行权限
-                        
-                        4. 参数是否正确
-                           - 路径是否存在
-                           - 参数格式是否匹配操作系统
-                        
-                        【调试建议】
-                        - 尝试简化命令，逐步排查
-                        - 使用 echo 测试环境变量
-                        - 查看完整错误信息定位问题
-                        """.formatted(exitCode);
-            }
-
-            // 完全成功
-            return "执行成功";
-        }
-
-        /**
-         * 获取提示信息(使用默认超时时间)
-         *
-         * @return 提示信息
-         */
-        @JsonProperty("prompt")
-        public String prompt() {
-            return prompt(DEFAULT_TIMEOUT);
-        }
-    }
 
     /**
      * 安全等级枚举
