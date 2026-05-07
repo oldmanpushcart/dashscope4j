@@ -129,7 +129,7 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(sessionId, Message.user("""
-                            查询班上所有男生的语文成绩
+                            杭州明天天气如何？
                             """))
                     .toCompletableFuture()
                     .join();
