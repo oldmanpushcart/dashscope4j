@@ -31,6 +31,12 @@ public class RuntimeToolkit implements Toolkit {
         );
     }
 
+    // ==================== Builder ====================
+
+    public static RuntimeToolkit create() {
+        return new RuntimeToolkit();
+    }
+
     /**
      * 创建 runtime$os 工具
      */
@@ -170,10 +176,6 @@ public class RuntimeToolkit implements Toolkit {
                     return dateTimeInfo;
                 })
                 .build();
-    }
-
-    public static RuntimeToolkit create() {
-        return new RuntimeToolkit();
     }
 
 }

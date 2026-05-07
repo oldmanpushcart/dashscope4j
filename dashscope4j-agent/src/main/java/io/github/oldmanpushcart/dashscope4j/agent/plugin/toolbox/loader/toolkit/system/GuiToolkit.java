@@ -159,6 +159,139 @@ public class GuiToolkit implements Toolkit {
         return Collections.unmodifiableList(tools);
     }
 
+    // ==================== Builder ====================
+
+    /**
+     * 创建构建器实例
+     * <p>
+     * 使用示例：
+     * <pre>{@code
+     * GuiToolkit toolkit = GuiToolkit.newBuilder()
+     *     .enableScreenshot(true)
+     *     .enableMouse(true)
+     *     .enableKeyboard(false)  // 禁用键盘操作
+     *     .enableClipboard(true)
+     *     .build();
+     * }</pre>
+     * </p>
+     *
+     * @return 新的构建器实例，默认启用所有功能
+     */
+
+    public static GuiToolkit create() {
+        return newBuilder().build();
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    /**
+     * GUI 工具包构建器
+     * <p>
+     * 采用建造者模式，允许灵活配置各项功能的启用状态。
+     * 所有功能默认启用，可根据需要选择性禁用。
+     * </p>
+     */
+    public static class Builder implements Buildable<GuiToolkit, Builder> {
+        // 各项功能的启用标志，默认全部启用
+        private boolean enableScreenshot = true;
+        private boolean enableMouse = true;
+        private boolean enableKeyboard = true;
+        private boolean enableClipboard = true;
+
+        /**
+         * 配置是否启用截图功能
+         * <p>
+         * 禁用后将不提供 gui$screenshot 工具。
+         * 适用于不需要屏幕识别能力的场景，可减少工具数量。
+         * </p>
+         *
+         * @param enable true 启用，false 禁用
+         * @return 当前构建器实例，支持链式调用
+         */
+        public Builder enableScreenshot(boolean enable) {
+            this.enableScreenshot = enable;
+            return this;
+        }
+
+        /**
+         * 配置是否启用鼠标操作功能
+         * <p>
+         * 禁用后将不提供以下工具：
+         * - gui$mouse$move（移动鼠标）
+         * - gui$mouse$click（点击鼠标）
+         * - gui$mouse$drag（拖拽鼠标）
+         * - gui$mouse$scroll（滚动滚轮）
+         * </p>
+         * <p>
+         * 适用于只需要键盘操作或截图的场景。
+         * </p>
+         *
+         * @param enable true 启用，false 禁用
+         * @return 当前构建器实例，支持链式调用
+         */
+        public Builder enableMouse(boolean enable) {
+            this.enableMouse = enable;
+            return this;
+        }
+
+        /**
+         * 配置是否启用键盘操作功能
+         * <p>
+         * 禁用后将不提供以下工具：
+         * - gui$key$press（按下按键）
+         * - gui$key$type（输入文本）
+         * - gui$key$combo（组合键）
+         * </p>
+         * <p>
+         * 适用于只需要鼠标操作或截图的场景。
+         * </p>
+         *
+         * @param enable true 启用，false 禁用
+         * @return 当前构建器实例，支持链式调用
+         */
+        public Builder enableKeyboard(boolean enable) {
+            this.enableKeyboard = enable;
+            return this;
+        }
+
+        /**
+         * 配置是否启用剪贴板操作功能
+         * <p>
+         * 禁用后将不提供以下工具：
+         * - gui$clipboard$get（获取剪贴板内容）
+         * - gui$clipboard$set（设置剪贴板内容）
+         * </p>
+         * <p>
+         * 适用于不需要跨应用传递文本的场景。
+         * 注意：如需输入中文等非 ASCII 字符，建议启用剪贴板功能。
+         * </p>
+         *
+         * @param enable true 启用，false 禁用
+         * @return 当前构建器实例，支持链式调用
+         */
+        public Builder enableClipboard(boolean enable) {
+            this.enableClipboard = enable;
+            return this;
+        }
+
+        /**
+         * 根据当前配置构建 GuiToolkit 实例
+         * <p>
+         * 此方法会初始化 AWT Robot，如果在不支持图形界面的环境
+         * （如无头服务器）中调用，将抛出 RuntimeException。
+         * </p>
+         *
+         * @return 配置好的 GuiToolkit 实例
+         * @throws RuntimeException 当 AWT Robot 初始化失败时抛出
+         */
+        @Override
+        public GuiToolkit build() {
+            return new GuiToolkit(this);
+        }
+    }
+
     // ==================== 屏幕截图工具 ====================
 
     /**
@@ -1280,140 +1413,6 @@ public class GuiToolkit implements Toolkit {
             @JsonProperty(value = "text", required = true)
             String text
     ) {
-    }
-
-
-    // ==================== Builder ====================
-
-    /**
-     * 创建构建器实例
-     * <p>
-     * 使用示例：
-     * <pre>{@code
-     * GuiToolkit toolkit = GuiToolkit.newBuilder()
-     *     .enableScreenshot(true)
-     *     .enableMouse(true)
-     *     .enableKeyboard(false)  // 禁用键盘操作
-     *     .enableClipboard(true)
-     *     .build();
-     * }</pre>
-     * </p>
-     *
-     * @return 新的构建器实例，默认启用所有功能
-     */
-
-    public static GuiToolkit create() {
-        return newBuilder().build();
-    }
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    /**
-     * GUI 工具包构建器
-     * <p>
-     * 采用建造者模式，允许灵活配置各项功能的启用状态。
-     * 所有功能默认启用，可根据需要选择性禁用。
-     * </p>
-     */
-    public static class Builder implements Buildable<GuiToolkit, Builder> {
-        // 各项功能的启用标志，默认全部启用
-        private boolean enableScreenshot = true;
-        private boolean enableMouse = true;
-        private boolean enableKeyboard = true;
-        private boolean enableClipboard = true;
-
-        /**
-         * 配置是否启用截图功能
-         * <p>
-         * 禁用后将不提供 gui$screenshot 工具。
-         * 适用于不需要屏幕识别能力的场景，可减少工具数量。
-         * </p>
-         *
-         * @param enable true 启用，false 禁用
-         * @return 当前构建器实例，支持链式调用
-         */
-        public Builder enableScreenshot(boolean enable) {
-            this.enableScreenshot = enable;
-            return this;
-        }
-
-        /**
-         * 配置是否启用鼠标操作功能
-         * <p>
-         * 禁用后将不提供以下工具：
-         * - gui$mouse$move（移动鼠标）
-         * - gui$mouse$click（点击鼠标）
-         * - gui$mouse$drag（拖拽鼠标）
-         * - gui$mouse$scroll（滚动滚轮）
-         * </p>
-         * <p>
-         * 适用于只需要键盘操作或截图的场景。
-         * </p>
-         *
-         * @param enable true 启用，false 禁用
-         * @return 当前构建器实例，支持链式调用
-         */
-        public Builder enableMouse(boolean enable) {
-            this.enableMouse = enable;
-            return this;
-        }
-
-        /**
-         * 配置是否启用键盘操作功能
-         * <p>
-         * 禁用后将不提供以下工具：
-         * - gui$key$press（按下按键）
-         * - gui$key$type（输入文本）
-         * - gui$key$combo（组合键）
-         * </p>
-         * <p>
-         * 适用于只需要鼠标操作或截图的场景。
-         * </p>
-         *
-         * @param enable true 启用，false 禁用
-         * @return 当前构建器实例，支持链式调用
-         */
-        public Builder enableKeyboard(boolean enable) {
-            this.enableKeyboard = enable;
-            return this;
-        }
-
-        /**
-         * 配置是否启用剪贴板操作功能
-         * <p>
-         * 禁用后将不提供以下工具：
-         * - gui$clipboard$get（获取剪贴板内容）
-         * - gui$clipboard$set（设置剪贴板内容）
-         * </p>
-         * <p>
-         * 适用于不需要跨应用传递文本的场景。
-         * 注意：如需输入中文等非 ASCII 字符，建议启用剪贴板功能。
-         * </p>
-         *
-         * @param enable true 启用，false 禁用
-         * @return 当前构建器实例，支持链式调用
-         */
-        public Builder enableClipboard(boolean enable) {
-            this.enableClipboard = enable;
-            return this;
-        }
-
-        /**
-         * 根据当前配置构建 GuiToolkit 实例
-         * <p>
-         * 此方法会初始化 AWT Robot，如果在不支持图形界面的环境
-         * （如无头服务器）中调用，将抛出 RuntimeException。
-         * </p>
-         *
-         * @return 配置好的 GuiToolkit 实例
-         * @throws RuntimeException 当 AWT Robot 初始化失败时抛出
-         */
-        @Override
-        public GuiToolkit build() {
-            return new GuiToolkit(this);
-        }
     }
 
 }

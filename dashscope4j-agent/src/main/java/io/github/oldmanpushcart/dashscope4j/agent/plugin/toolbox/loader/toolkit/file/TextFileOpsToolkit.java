@@ -23,11 +23,11 @@ import java.util.Map;
  * 文本文件操作工具包
  * <p>
  * 提供智能体友好的文本文件编辑能力：
- * - view: 查看文件内容（支持行范围）
+ * - read: 读取文件内容（支持行范围）
  * - search: 关键词搜索（返回匹配行及上下文）
  * - str_replace: 字符串精确替换（要求唯一匹配）
  * - insert_line: 在指定行插入内容
- * - create: 创建新文件（可选覆盖）
+ * - write: 写入新文件（可选覆盖）
  * </p>
  */
 public class TextFileOpsToolkit implements Toolkit {
@@ -71,27 +71,101 @@ public class TextFileOpsToolkit implements Toolkit {
     @Override
     public List<Tool> tools() {
         if (readOnly) {
-            // 只读模式：仅返回查看和搜索工具
-            return List.of(view(), search());
+            // 只读模式：仅返回读取和搜索工具
+            return List.of(read(), search());
         } else {
             // 读写模式：返回所有工具
-            return List.of(view(), search(), strReplace(), insertLine(), create());
+            return List.of(read(), search(), strReplace(), insertLine(), write());
+        }
+    }
+
+    // ==================== Builder ====================
+
+    public static TextFileOpsToolkit create() {
+        return newBuilder().build();
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static class Builder implements Buildable<TextFileOpsToolkit, Builder> {
+
+        private Path workspace = Path.of("./");
+        private long maxFileSize = DEFAULT_MAX_FILE_SIZE_BYTES;
+        private Charset charset = StandardCharsets.UTF_8;
+        private boolean readOnly = false;
+
+        /**
+         * 设置工作区根路径
+         *
+         * @param workspace 工作区根路径
+         * @return 当前构建器
+         */
+        public Builder workspace(Path workspace) {
+            this.workspace = workspace.toAbsolutePath().normalize();
+            return this;
+        }
+
+        /**
+         * 设置最大文件大小（字节）
+         *
+         * @param maxFileSize 最大文件大小
+         * @return 当前构建器
+         */
+        public Builder maxFileSize(long maxFileSize) {
+            this.maxFileSize = maxFileSize;
+            return this;
+        }
+
+        /**
+         * 设置默认字符编码
+         *
+         * @param charset 默认编码
+         * @return 当前构建器
+         */
+        public Builder charset(Charset charset) {
+            this.charset = charset;
+            return this;
+        }
+
+        /**
+         * 设置是否为只读模式
+         * <p>
+         * 当设置为 true 时，只会安装读取和搜索工具（text_file$read, text_file$search），
+         * 不会安装编辑工具。
+         *
+         * @param readOnly 是否只读
+         * @return 当前构建器
+         */
+        public Builder readOnly(boolean readOnly) {
+            this.readOnly = readOnly;
+            return this;
+        }
+
+        @Override
+        public TextFileOpsToolkit build() {
+            // 如果未设置工作区，使用当前目录
+            if (workspace == null) {
+                workspace = Paths.get("").toAbsolutePath().normalize();
+            }
+            return new TextFileOpsToolkit(this);
         }
     }
 
     // ==================== 工具方法 ====================
 
     /**
-     * 查看文件内容
+     * 读取文件内容
      */
-    public FunctionTool view() {
+    public FunctionTool read() {
         return FunctionTool.newBuilder()
-                .name("text_file$view")
+                .name("text_file$read")
                 .description("""
-                        查看文件内容，支持指定行范围。
+                        读取文件内容，支持指定行范围。
                         
                         【使用场景】
-                        - 查看源代码文件内容
+                        - 读取源代码文件内容
                         - 阅读配置文件
                         - 检查日志片段
                         
@@ -573,24 +647,24 @@ public class TextFileOpsToolkit implements Toolkit {
     }
 
     /**
-     * 创建新文件
+     * 写入文件内容
      */
-    public FunctionTool create() {
+    public FunctionTool write() {
         return FunctionTool.newBuilder()
-                .name("text_file$create")
+                .name("text_file$write")
                 .description("""
-                        创建新文件并写入内容。
-                        
+                        写入文件内容，创建新文件或覆盖现有文件。
+                            
                         【使用场景】
                         - 创建新的源代码文件
                         - 生成配置文件
                         - 创建文档或脚本
-                        
+                            
                         【返回结果】
                         - operation: 操作类型（created 或 overwritten）
                         - bytes_written: 写入的字节数
                         - lines_count: 写入的行数
-                        
+                            
                         【注意事项】
                         - 默认不允许覆盖已存在的文件
                         - 设置 overwrite=true 可以强制覆盖
@@ -656,76 +730,6 @@ public class TextFileOpsToolkit implements Toolkit {
                     }
                 })
                 .build();
-    }
-
-    // ==================== Builder ====================
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static class Builder implements Buildable<TextFileOpsToolkit, Builder> {
-
-        private Path workspace;
-        private long maxFileSize = DEFAULT_MAX_FILE_SIZE_BYTES;
-        private Charset charset = StandardCharsets.UTF_8;
-        private boolean readOnly = false;
-
-        /**
-         * 设置工作区根路径
-         *
-         * @param workspace 工作区根路径
-         * @return 当前构建器
-         */
-        public Builder workspace(Path workspace) {
-            this.workspace = workspace.toAbsolutePath().normalize();
-            return this;
-        }
-
-        /**
-         * 设置最大文件大小（字节）
-         *
-         * @param maxFileSize 最大文件大小
-         * @return 当前构建器
-         */
-        public Builder maxFileSize(long maxFileSize) {
-            this.maxFileSize = maxFileSize;
-            return this;
-        }
-
-        /**
-         * 设置默认字符编码
-         *
-         * @param charset 默认编码
-         * @return 当前构建器
-         */
-        public Builder charset(Charset charset) {
-            this.charset = charset;
-            return this;
-        }
-
-        /**
-         * 设置是否为只读模式
-         * <p>
-         * 当设置为 true 时，只会安装查看和搜索工具（file$view, file$search），
-         * 不会安装编辑工具。
-         *
-         * @param readOnly 是否只读
-         * @return 当前构建器
-         */
-        public Builder readOnly(boolean readOnly) {
-            this.readOnly = readOnly;
-            return this;
-        }
-
-        @Override
-        public TextFileOpsToolkit build() {
-            // 如果未设置工作区，使用当前目录
-            if (workspace == null) {
-                workspace = Paths.get("").toAbsolutePath().normalize();
-            }
-            return new TextFileOpsToolkit(this);
-        }
     }
 
     // ==================== Spec 数据结构 ====================

@@ -70,6 +70,15 @@ public class DashscopeToolkit implements Toolkit {
     }
 
     /**
+     * 创建 DashscopeToolkit 实例
+     *
+     * @return DashscopeToolkit 实例
+     */
+    public static DashscopeToolkit create() {
+        return new DashscopeToolkit();
+    }
+
+    /**
      * 文档分析理解工具
      */
     private FunctionTool analyzeDocument() {
@@ -878,15 +887,6 @@ public class DashscopeToolkit implements Toolkit {
         }
         // 否则当作本地文件路径处理
         return Paths.get(uriOrPath).toUri();
-    }
-
-    /**
-     * 创建 DashscopeToolkit 实例
-     *
-     * @return DashscopeToolkit 实例
-     */
-    public static DashscopeToolkit create() {
-        return new DashscopeToolkit();
     }
 
 }

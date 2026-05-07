@@ -62,6 +62,48 @@ public class ShellToolkit implements Toolkit {
         return List.of(shell());
     }
 
+    // ==================== Builder ====================
+
+    public static ShellToolkit create() {
+        return newBuilder().build();
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static class Builder implements Buildable<ShellToolkit, Builder> {
+        private Duration timeout = DEFAULT_TIMEOUT;
+        private SecurityLevel securityLevel = DEFAULT_SECURITY_LEVEL;
+
+        /**
+         * 设置命令执行超时时间
+         *
+         * @param timeout 超时时间（建议 1-300 秒）
+         * @return this
+         */
+        public Builder timeout(Duration timeout) {
+            this.timeout = timeout;
+            return this;
+        }
+
+        /**
+         * 设置安全等级
+         *
+         * @param securityLevel 安全等级
+         * @return this
+         */
+        public Builder securityLevel(SecurityLevel securityLevel) {
+            this.securityLevel = securityLevel;
+            return this;
+        }
+
+        @Override
+        public ShellToolkit build() {
+            return new ShellToolkit(this);
+        }
+    }
+
     /**
      * 创建 shell$exec 工具
      */
@@ -109,7 +151,7 @@ public class ShellToolkit implements Toolkit {
                         validateCommand(spec.command());
 
                         final var charset = detectTerminalCharset();
-                        
+
                         final var process = new ProcessBuilder()
                                 .redirectErrorStream(true)
                                 .command(spec.command())
@@ -139,14 +181,14 @@ public class ShellToolkit implements Toolkit {
 
                         final int exitCode = process.exitValue();
                         final String output = outputBuf.toString();
-                        
+
                         return Map.of(
                                 "output", output,
                                 "exit_code", exitCode,
                                 "is_success", exitCode == 0,
                                 "prompt", generatePrompt(exitCode, timeout)
                         );
-                        
+
                     } catch (IOException | InterruptedException ex) {
                         if (ex instanceof InterruptedException) {
                             Thread.currentThread().interrupt();
@@ -238,7 +280,7 @@ public class ShellToolkit implements Toolkit {
 
                 final String output = outputBuf.toString();
                 final int exitCode = process.exitValue();
-                
+
                 if (exitCode != 0) {
                     return Charset.defaultCharset();
                 }
@@ -398,44 +440,6 @@ public class ShellToolkit implements Toolkit {
                 "rm -rf /", "mkfs", "dd if=/dev/zero",
                 "> /dev/sda", ":(){ :|:& };:", "chmod -R 777 /"
         };
-    }
-
-    // ==================== Builder ====================
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static class Builder implements Buildable<ShellToolkit, Builder> {
-        private Duration timeout = DEFAULT_TIMEOUT;
-        private SecurityLevel securityLevel = DEFAULT_SECURITY_LEVEL;
-
-        /**
-         * 设置命令执行超时时间
-         *
-         * @param timeout 超时时间（建议 1-300 秒）
-         * @return this
-         */
-        public Builder timeout(Duration timeout) {
-            this.timeout = timeout;
-            return this;
-        }
-
-        /**
-         * 设置安全等级
-         *
-         * @param securityLevel 安全等级
-         * @return this
-         */
-        public Builder securityLevel(SecurityLevel securityLevel) {
-            this.securityLevel = securityLevel;
-            return this;
-        }
-
-        @Override
-        public ShellToolkit build() {
-            return new ShellToolkit(this);
-        }
     }
 
 }

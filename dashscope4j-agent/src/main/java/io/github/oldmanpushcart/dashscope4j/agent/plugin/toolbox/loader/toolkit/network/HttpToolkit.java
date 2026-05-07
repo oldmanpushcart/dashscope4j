@@ -105,6 +105,100 @@ public class HttpToolkit implements Toolkit {
         }
     }
 
+    // ==================== Builder ====================
+
+    public static HttpToolkit create() {
+        return newBuilder().build();
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static class Builder implements io.github.oldmanpushcart.dashscope4j.client.util.Buildable<HttpToolkit, Builder> {
+
+        private OkHttpClient httpClient;
+        private Path workspace = Path.of("./");
+        private int defaultTimeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
+        private long maxDownloadSize = DEFAULT_MAX_DOWNLOAD_SIZE;
+        private long smallTextThreshold = DEFAULT_SMALL_TEXT_THRESHOLD;
+        private boolean readOnly = false;
+
+        /**
+         * 设置自定义 OkHttpClient
+         *
+         * @param httpClient HTTP 客户端
+         * @return 当前构建器
+         */
+        public Builder httpClient(OkHttpClient httpClient) {
+            this.httpClient = httpClient;
+            return this;
+        }
+
+        /**
+         * 设置工作区根路径（用于下载文件）
+         *
+         * @param workspace 工作区路径
+         * @return 当前构建器
+         */
+        public Builder workspace(Path workspace) {
+            this.workspace = workspace.toAbsolutePath().normalize();
+            return this;
+        }
+
+        /**
+         * 设置默认超时时间（秒）
+         *
+         * @param timeoutSeconds 超时时间
+         * @return 当前构建器
+         */
+        public Builder defaultTimeoutSeconds(int timeoutSeconds) {
+            this.defaultTimeoutSeconds = timeoutSeconds;
+            return this;
+        }
+
+        /**
+         * 设置最大下载文件大小（字节）
+         *
+         * @param maxDownloadSize 最大文件大小
+         * @return 当前构建器
+         */
+        public Builder maxDownloadSize(long maxDownloadSize) {
+            this.maxDownloadSize = maxDownloadSize;
+            return this;
+        }
+
+        /**
+         * 设置小文本阈值（字节），小于此值的文本直接返回内容
+         *
+         * @param smallTextThreshold 小文本阈值
+         * @return 当前构建器
+         */
+        public Builder smallTextThreshold(long smallTextThreshold) {
+            this.smallTextThreshold = smallTextThreshold;
+            return this;
+        }
+
+        /**
+         * 设置是否为只读模式
+         * <p>
+         * 当设置为 true 时，只会安装 http$get 工具，
+         * 不会安装 POST/PUT/DELETE/DOWNLOAD 等写操作工具。
+         *
+         * @param readOnly 是否只读
+         * @return 当前构建器
+         */
+        public Builder readOnly(boolean readOnly) {
+            this.readOnly = readOnly;
+            return this;
+        }
+
+        @Override
+        public HttpToolkit build() {
+            return new HttpToolkit(this);
+        }
+    }
+
     // ==================== 工具方法 ====================
 
     /**
@@ -785,96 +879,6 @@ public class HttpToolkit implements Toolkit {
             case "application/octet-stream" -> ".bin";
             default -> ".dat"; // 默认二进制文件
         };
-    }
-
-    // ==================== Builder ====================
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static class Builder implements io.github.oldmanpushcart.dashscope4j.client.util.Buildable<HttpToolkit, Builder> {
-
-        private OkHttpClient httpClient;
-        private Path workspace = Path.of("./");
-        private int defaultTimeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
-        private long maxDownloadSize = DEFAULT_MAX_DOWNLOAD_SIZE;
-        private long smallTextThreshold = DEFAULT_SMALL_TEXT_THRESHOLD;
-        private boolean readOnly = false;
-
-        /**
-         * 设置自定义 OkHttpClient
-         *
-         * @param httpClient HTTP 客户端
-         * @return 当前构建器
-         */
-        public Builder httpClient(OkHttpClient httpClient) {
-            this.httpClient = httpClient;
-            return this;
-        }
-
-        /**
-         * 设置工作区根路径（用于下载文件）
-         *
-         * @param workspace 工作区路径
-         * @return 当前构建器
-         */
-        public Builder workspace(Path workspace) {
-            this.workspace = workspace.toAbsolutePath().normalize();
-            return this;
-        }
-
-        /**
-         * 设置默认超时时间（秒）
-         *
-         * @param timeoutSeconds 超时时间
-         * @return 当前构建器
-         */
-        public Builder defaultTimeoutSeconds(int timeoutSeconds) {
-            this.defaultTimeoutSeconds = timeoutSeconds;
-            return this;
-        }
-
-        /**
-         * 设置最大下载文件大小（字节）
-         *
-         * @param maxDownloadSize 最大文件大小
-         * @return 当前构建器
-         */
-        public Builder maxDownloadSize(long maxDownloadSize) {
-            this.maxDownloadSize = maxDownloadSize;
-            return this;
-        }
-
-        /**
-         * 设置小文本阈值（字节），小于此值的文本直接返回内容
-         *
-         * @param smallTextThreshold 小文本阈值
-         * @return 当前构建器
-         */
-        public Builder smallTextThreshold(long smallTextThreshold) {
-            this.smallTextThreshold = smallTextThreshold;
-            return this;
-        }
-
-        /**
-         * 设置是否为只读模式
-         * <p>
-         * 当设置为 true 时，只会安装 http$get 工具，
-         * 不会安装 POST/PUT/DELETE/DOWNLOAD 等写操作工具。
-         *
-         * @param readOnly 是否只读
-         * @return 当前构建器
-         */
-        public Builder readOnly(boolean readOnly) {
-            this.readOnly = readOnly;
-            return this;
-        }
-
-        @Override
-        public HttpToolkit build() {
-            return new HttpToolkit(this);
-        }
     }
 
     // ==================== Spec 数据结构 ====================

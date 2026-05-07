@@ -81,7 +81,65 @@ public class FileOpsToolkit implements Toolkit {
             return List.of(info(), list(), search());
         } else {
             // 读写模式：返回所有工具
-            return List.of(info(), delete(), move(), create(), list(), search());
+            return List.of(info(), delete(), move(), touch(), mkdir(), list(), search());
+        }
+    }
+
+    // ==================== Builder ====================
+
+    public static FileOpsToolkit create() {
+        return newBuilder().build();
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static class Builder implements Buildable<FileOpsToolkit, Builder> {
+        private Path workspace = Path.of("./");
+        private int maxResults = DEFAULT_MAX_RESULTS;
+        private boolean readOnly = false;
+
+        /**
+         * 设置工作区根路径
+         *
+         * @param workspace 工作区目录路径
+         * @return this
+         */
+        public Builder workspace(Path workspace) {
+            this.workspace = workspace;
+            return this;
+        }
+
+        /**
+         * 设置最大返回条目数
+         *
+         * @param maxResults 最大返回数（1-1000）
+         * @return this
+         */
+        public Builder maxResults(int maxResults) {
+            this.maxResults = maxResults;
+            return this;
+        }
+
+        /**
+         * 设置是否为只读模式
+         * <p>
+         * 当设置为 true 时，只会安装读取相关的工具（file$info、file$list、file$search），
+         * 不会安装写入、删除和移动工具（file$delete、file$move、file$touch、file$mkdir）。
+         *
+         * @param readOnly 是否只读
+         * @return this
+         */
+        public Builder readOnly(boolean readOnly) {
+            this.readOnly = readOnly;
+            return this;
+        }
+
+        @Override
+        public FileOpsToolkit build() {
+            Objects.requireNonNull(workspace, "workspace must be set before building");
+            return new FileOpsToolkit(this);
         }
     }
 
@@ -307,32 +365,31 @@ public class FileOpsToolkit implements Toolkit {
     }
 
     /**
-     * file$create 工具
+     * file$touch 工具 - 创建文件
      */
-    private FunctionTool create() {
+    private FunctionTool touch() {
         return FunctionTool.newBuilder()
-                .name("file$create")
+                .name("file$touch")
                 .description("""
-                        创建文件或目录（统一入口）。
+                        创建新文件或更新现有文件的时间戳。
                         
                         【使用场景】
                         - 创建新的文本文件
-                        - 创建目录结构
                         - 写入初始文件内容
+                        - 创建空文件作为占位符
                         
                         【返回结果】
                         - success: 是否成功
                         - message: 操作结果提示
                         - path: 创建的路径（相对于 workspace）
-                        - type: 创建的类型（file/directory）
                         
                         【注意事项】
                         - 文件已存在时会覆盖内容，请谨慎操作
-                        - 目录已存在时返回成功（幂等操作）
                         - 适合创建文本文件，不适合二进制文件
+                        - 如果父目录不存在且 parents=true，会自动创建
                         """)
-                .parameterType(CreateSpec.class)
-                .<CreateSpec>function((caller, spec) -> {
+                .parameterType(TouchSpec.class)
+                .<TouchSpec>function((caller, spec) -> {
                     try {
                         final Path targetPath = FileUtils.checkPathEscape(workspace, spec.path());
 
@@ -344,52 +401,21 @@ public class FileOpsToolkit implements Toolkit {
                             }
                         }
 
-                        switch (spec.type()) {
-                            case FILE -> {
-                                // 创建文件
-                                if (spec.content() != null) {
-                                    Files.writeString(targetPath, spec.content(), CREATE, TRUNCATE_EXISTING);
-                                } else {
-                                    // 创建空文件
-                                    if (!Files.exists(targetPath)) {
-                                        Files.createFile(targetPath);
-                                    }
-                                }
-
-                                return Map.of(
-                                        "success", true,
-                                        "message", "File created: " + workspace.relativize(targetPath),
-                                        "path", workspace.relativize(targetPath).toString(),
-                                        "type", "file"
-                                );
+                        // 创建或更新文件
+                        if (spec.content() != null) {
+                            Files.writeString(targetPath, spec.content(), CREATE, TRUNCATE_EXISTING);
+                        } else {
+                            // 创建空文件
+                            if (!Files.exists(targetPath)) {
+                                Files.createFile(targetPath);
                             }
-
-                            case DIRECTORY -> {
-                                // 创建目录
-                                if (spec.parents()) {
-                                    Files.createDirectories(targetPath);
-                                } else {
-                                    try {
-                                        Files.createDirectory(targetPath);
-                                    } catch (FileAlreadyExistsException e) {
-                                        // 目录已存在，视为成功（幂等）
-                                    }
-                                }
-
-                                return Map.of(
-                                        "success", true,
-                                        "message", "Directory created: " + workspace.relativize(targetPath),
-                                        "path", workspace.relativize(targetPath).toString(),
-                                        "type", "directory"
-                                );
-                            }
-
-                            default -> throw new ToolExecutionException(
-                                    "INVALID-TYPE",
-                                    "Invalid create type: " + spec.type(),
-                                    "Use FILE for files or DIRECTORY for directories."
-                            );
                         }
+
+                        return Map.of(
+                                "success", true,
+                                "message", "File created: " + workspace.relativize(targetPath),
+                                "path", workspace.relativize(targetPath).toString()
+                        );
 
                     } catch (SecurityException ex) {
                         throw new ToolExecutionException(
@@ -399,10 +425,74 @@ public class FileOpsToolkit implements Toolkit {
                                 ex
                         );
                     } catch (IOException ex) {
-                        final String operation = spec.type() == CreateType.FILE ? "create file" : "create directory";
                         throw new ToolExecutionException(
                                 "IO-ERROR",
-                                "Failed to " + operation + ": " + spec.path(),
+                                "Failed to create file: " + spec.path(),
+                                "The disk may be full or the path is invalid.",
+                                ex
+                        );
+                    }
+                })
+                .build();
+    }
+
+    /**
+     * file$mkdir 工具 - 创建目录
+     */
+    private FunctionTool mkdir() {
+        return FunctionTool.newBuilder()
+                .name("file$mkdir")
+                .description("""
+                        创建新目录。
+                        
+                        【使用场景】
+                        - 创建目录结构
+                        - 组织项目文件
+                        - 创建工作区子目录
+                        
+                        【返回结果】
+                        - success: 是否成功
+                        - message: 操作结果提示
+                        - path: 创建的目录路径（相对于 workspace）
+                        
+                        【注意事项】
+                        - 目录已存在时返回成功（幂等操作）
+                        - 如果 parents=true，会创建所有必需的父目录
+                        - 类似 Unix 的 mkdir -p 命令
+                        """)
+                .parameterType(MkdirSpec.class)
+                .<MkdirSpec>function((caller, spec) -> {
+                    try {
+                        final Path targetPath = FileUtils.checkPathEscape(workspace, spec.path());
+
+                        // 创建目录
+                        if (spec.parents()) {
+                            Files.createDirectories(targetPath);
+                        } else {
+                            try {
+                                Files.createDirectory(targetPath);
+                            } catch (FileAlreadyExistsException e) {
+                                // 目录已存在，视为成功（幂等）
+                            }
+                        }
+
+                        return Map.of(
+                                "success", true,
+                                "message", "Directory created: " + workspace.relativize(targetPath),
+                                "path", workspace.relativize(targetPath).toString()
+                        );
+
+                    } catch (SecurityException ex) {
+                        throw new ToolExecutionException(
+                                "ACCESS-DENIED",
+                                "Access denied: " + spec.path(),
+                                "Check file permissions and ensure you have write access.",
+                                ex
+                        );
+                    } catch (IOException ex) {
+                        throw new ToolExecutionException(
+                                "IO-ERROR",
+                                "Failed to create directory: " + spec.path(),
                                 "The disk may be full or the path is invalid.",
                                 ex
                         );
@@ -707,36 +797,32 @@ public class FileOpsToolkit implements Toolkit {
     }
 
     /**
-     * 创建类型枚举
+     * file$touch 参数
      */
-    enum CreateType {
-        /**
-         * 创建文件
-         */
-        FILE,
-        /**
-         * 创建目录
-         */
-        DIRECTORY
-    }
-
-    /**
-     * file$create 参数
-     */
-    record CreateSpec(
-            @JsonPropertyDescription("要创建的文件或目录的相对路径")
+    record TouchSpec(
+            @JsonPropertyDescription("要创建的文件相对路径")
             @JsonProperty(value = "path", required = true)
             String path,
 
-            @JsonPropertyDescription("创建类型：FILE-文件，DIRECTORY-目录")
-            @JsonProperty(value = "type", required = true)
-            CreateType type,
-
-            @JsonPropertyDescription("文件内容（仅当 type=FILE 时有效，不提供则创建空文件）")
+            @JsonPropertyDescription("文件内容（不提供则创建空文件）")
             @JsonProperty("content")
             String content,
 
             @JsonPropertyDescription("是否自动创建所有必需的父目录")
+            @JsonProperty("parents")
+            boolean parents
+    ) {
+    }
+
+    /**
+     * file$mkdir 参数
+     */
+    record MkdirSpec(
+            @JsonPropertyDescription("要创建的目录相对路径")
+            @JsonProperty(value = "path", required = true)
+            String path,
+
+            @JsonPropertyDescription("是否自动创建所有必需的父目录（类似 mkdir -p）")
             @JsonProperty("parents")
             boolean parents
     ) {
@@ -803,60 +889,6 @@ public class FileOpsToolkit implements Toolkit {
             @JsonProperty("hint")
             String hint
     ) {
-    }
-
-    // ==================== Builder ====================
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static class Builder implements Buildable<FileOpsToolkit, Builder> {
-        private Path workspace;
-        private int maxResults = DEFAULT_MAX_RESULTS;
-        private boolean readOnly = false;
-
-        /**
-         * 设置工作区根路径
-         *
-         * @param workspace 工作区目录路径
-         * @return this
-         */
-        public Builder workspace(Path workspace) {
-            this.workspace = workspace;
-            return this;
-        }
-
-        /**
-         * 设置最大返回条目数
-         *
-         * @param maxResults 最大返回数（1-1000）
-         * @return this
-         */
-        public Builder maxResults(int maxResults) {
-            this.maxResults = maxResults;
-            return this;
-        }
-
-        /**
-         * 设置是否为只读模式
-         * <p>
-         * 当设置为 true 时，只会安装读取相关的工具（file$info、file$list、file$search），
-         * 不会安装写入、删除和移动工具（file$delete、file$move、file$create）。
-         *
-         * @param readOnly 是否只读
-         * @return this
-         */
-        public Builder readOnly(boolean readOnly) {
-            this.readOnly = readOnly;
-            return this;
-        }
-
-        @Override
-        public FileOpsToolkit build() {
-            Objects.requireNonNull(workspace, "workspace must be set before building");
-            return new FileOpsToolkit(this);
-        }
     }
 
 }

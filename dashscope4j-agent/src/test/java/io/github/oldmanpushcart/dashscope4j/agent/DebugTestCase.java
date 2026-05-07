@@ -26,7 +26,6 @@ import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,15 +69,9 @@ public class DebugTestCase implements LoadingEnv {
                 ))
                 .append(ToolUse.Mode.DYNAMIC, List.of(
                         RuntimeToolkit.create(),
-                        ShellToolkit.newBuilder()
-                                .timeout(Duration.ofSeconds(60))
-                                .build(),
-                        FileOpsToolkit.newBuilder()
-                                .workspace(Path.of("./"))
-                                .build(),
-                        TextFileOpsToolkit.newBuilder()
-                                .workspace(Path.of("./"))
-                                .build()
+                        ShellToolkit.create(),
+                        FileOpsToolkit.create(),
+                        TextFileOpsToolkit.create()
                 ));
 
         final var toolbox = HashMapToolbox.newBuilder()
