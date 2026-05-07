@@ -33,6 +33,11 @@ class LoopInterceptor implements ChatInterceptor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
+    public String toString() {
+        return "dashscope4j-agent:/react";
+    }
+
+    @Override
     public CompletionStage<?> intercept(Chain chain, AigcRequest<Input, Output> request) {
         return switch (chain.type()) {
             case ASYNC -> processAsync(chain, request);

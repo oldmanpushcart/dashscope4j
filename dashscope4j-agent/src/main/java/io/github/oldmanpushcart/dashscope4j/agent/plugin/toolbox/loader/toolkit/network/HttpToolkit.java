@@ -13,9 +13,10 @@ import okio.Okio;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.Objects.requireNonNullElse;
 
 /**
  * HTTP 工具包
@@ -45,6 +46,11 @@ public class HttpToolkit implements Toolkit {
     private static final long DEFAULT_MAX_DOWNLOAD_SIZE = 50 * 1024 * 1024;
 
     /**
+     * 默认小文本阈值（10KB），小于此值的文本直接返回内容
+     */
+    private static final long DEFAULT_SMALL_TEXT_THRESHOLD = 10 * 1024;
+
+    /**
      * HTTP 客户端
      */
     private final OkHttpClient httpClient;
@@ -55,14 +61,14 @@ public class HttpToolkit implements Toolkit {
     private final Path workspace;
 
     /**
-     * 默认超时时间（秒）
-     */
-    private final int defaultTimeoutSeconds;
-
-    /**
      * 最大下载文件大小（字节）
      */
     private final long maxDownloadSize;
+
+    /**
+     * 小文本阈值（字节），小于此值的文本直接返回内容
+     */
+    private final long smallTextThreshold;
 
     /**
      * 是否只读模式
@@ -70,14 +76,20 @@ public class HttpToolkit implements Toolkit {
     private final boolean readOnly;
 
     private HttpToolkit(Builder builder) {
-        this.httpClient = builder.httpClient != null ? builder.httpClient : new OkHttpClient.Builder()
-                .connectTimeout(builder.defaultTimeoutSeconds, TimeUnit.SECONDS)
-                .readTimeout(builder.defaultTimeoutSeconds, TimeUnit.SECONDS)
-                .writeTimeout(builder.defaultTimeoutSeconds, TimeUnit.SECONDS)
-                .build();
-        this.workspace = builder.workspace;
-        this.defaultTimeoutSeconds = builder.defaultTimeoutSeconds;
+        Objects.requireNonNull(builder.workspace, "workspace must not be null!");
+
+        // 如果外部传入了 httpClient，直接使用；否则创建默认的
+        this.httpClient = Objects.requireNonNullElseGet(
+                builder.httpClient,
+                () -> new OkHttpClient.Builder()
+                        .connectTimeout(builder.defaultTimeoutSeconds, TimeUnit.SECONDS)
+                        .readTimeout(builder.defaultTimeoutSeconds, TimeUnit.SECONDS)
+                        .writeTimeout(builder.defaultTimeoutSeconds, TimeUnit.SECONDS)
+                        .build());
+
+        this.workspace = builder.workspace.toAbsolutePath().normalize();
         this.maxDownloadSize = builder.maxDownloadSize;
+        this.smallTextThreshold = builder.smallTextThreshold;
         this.readOnly = builder.readOnly;
     }
 
@@ -85,10 +97,10 @@ public class HttpToolkit implements Toolkit {
     public List<Tool> tools() {
         if (readOnly) {
             // 只读模式：仅返回 GET 请求
-            return List.of(get());
+            return List.of(get(), download());
         } else {
             // 读写模式：返回所有工具
-            return List.of(get(), post(), put(), delete(), download());
+            return List.of(get(), post(), put(), delete());
         }
     }
 
@@ -111,15 +123,22 @@ public class HttpToolkit implements Toolkit {
                         【返回结果】
                         - status_code: HTTP 状态码
                         - headers: 响应头 Map
-                        - body: 响应体（文本或 base64 编码的二进制）
                         - content_type: Content-Type
                         - response_time_ms: 响应时间（毫秒）
+                        - body: 小文本直接返回文本内容
+                        - file_uri: 大文本或二进制文件保存后的文件 URI（相对于 workspace）
+                        - file_size: 文件大小（字节）
+                        
+                        【处理策略】
+                        - 小文本（< %d 且为文本类型）：直接返回 body 字段
+                        - 大文本（≥ %d）：保存到临时文件，返回 file_uri
+                        - 二进制文件：保存到临时文件，返回 file_uri
+                        - 超过最大限制（%d）：拒绝下载
                         
                         【注意事项】
                         - 适用于无副作用的数据获取
-                        - 大响应体会被截断（最大 1MB）
-                        - 二进制内容会自动 base64 编码
-                        """)
+                        - 文件自动保存到 workspace 下的 http_cache 目录
+                        """.formatted(smallTextThreshold, smallTextThreshold, maxDownloadSize))
                 .parameterType(GetSpec.class)
                 .<GetSpec>function((caller, spec) -> {
                     try {
@@ -136,15 +155,7 @@ public class HttpToolkit implements Toolkit {
                         }
 
                         // 执行请求
-                        final int timeout = spec.timeout() != null && spec.timeout() > 0
-                                ? spec.timeout()
-                                : defaultTimeoutSeconds;
-
-                        try (Response response = httpClient.newBuilder()
-                                .readTimeout(timeout, TimeUnit.SECONDS)
-                                .build()
-                                .newCall(requestBuilder.build())
-                                .execute()) {
+                        try (Response response = httpClient.newCall(requestBuilder.build()).execute()) {
                             final long responseTime = System.currentTimeMillis() - startTime;
                             // 读取响应
                             final int statusCode = response.code();
@@ -166,31 +177,58 @@ public class HttpToolkit implements Toolkit {
                             result.put("response_time_ms", responseTime);
 
                             final byte[] bytes = body.bytes();
+                            final long fileSize = bytes.length;
+                            result.put("file_size", fileSize);
 
-                            // 检查响应体大小（限制 1MB）
-                            if (bytes.length > 1024 * 1024) {
-                                result.put("body", "[Response too large, truncated]");
-                                result.put("truncated", true);
-                                result.put("actual_size", bytes.length);
+                            // 检查是否超过最大下载限制
+                            if (fileSize > maxDownloadSize) {
+                                throw new IOException(String.format("Response size %.2f MB exceeds limit %.2f MB",
+                                        fileSize / 1024.0 / 1024.0,
+                                        maxDownloadSize / 1024.0 / 1024.0));
+                            }
+
+                            // 判断是否为文本内容
+                            final boolean isText = isTextContent(contentType);
+                            final boolean isSmallText = isText && fileSize < smallTextThreshold;
+
+                            if (isSmallText) {
+                                // 小文本：直接返回内容
+                                result.put("body", new String(bytes, determineCharset(contentType)));
+                                result.put("saved_to_file", false);
                             } else {
-                                // 判断是否为文本
-                                if (isTextContent(contentType)) {
-                                    result.put("body", new String(bytes, determineCharset(contentType)));
-                                    result.put("truncated", false);
-                                } else {
-                                    // 二进制内容 base64 编码
-                                    result.put("body", Base64.getEncoder().encodeToString(bytes));
-                                    result.put("encoding", "base64");
-                                    result.put("truncated", false);
+                                // 大文本或二进制：保存到文件
+                                try {
+                                    final Path cacheDir = workspace.resolve("http_cache");
+                                    if (!Files.exists(cacheDir)) {
+                                        Files.createDirectories(cacheDir);
+                                    }
+
+                                    // 生成唯一文件名
+                                    final String extension = getFileExtension(contentType);
+                                    final String fileName = "http_response_" + System.currentTimeMillis() + "_" + java.util.UUID.randomUUID().toString().substring(0, 8) + extension;
+                                    final Path savePath = cacheDir.resolve(fileName);
+
+                                    // 写入文件
+                                    Files.write(savePath, bytes);
+
+                                    // 返回文件 URI（相对于 workspace）
+                                    final String fileUri = workspace.relativize(savePath).toString();
+                                    result.put("file_uri", fileUri);
+                                    result.put("saved_to_file", true);
+                                    result.put("message", isText
+                                            ? "Large text saved to file. Use file$info or file$view to view."
+                                            : "Binary file saved. Use file$info to view file information.");
+
+                                } catch (IOException ex) {
+                                    throw new IOException("Failed to save response to file!", ex);
                                 }
                             }
 
-                            return Result.success(result);
-
+                            return result;
                         }
 
                     } catch (IOException e) {
-                        return Result.error("HTTP_ERROR", "GET 请求失败：" + e.getMessage());
+                        throw new RuntimeException("GET failed!", e);
                     }
                 })
                 .build();
@@ -244,12 +282,10 @@ public class HttpToolkit implements Toolkit {
                             requestBody = buildMultipartBody(spec);
                         } else {
                             // 普通 POST
-                            final String contentType = spec.contentType() != null
-                                    ? spec.contentType()
-                                    : "application/json";
+                            final String contentType = requireNonNullElse(spec.contentType(), "application/json");
 
                             requestBody = RequestBody.create(
-                                    spec.body() != null ? spec.body() : "",
+                                    requireNonNullElse(spec.body(), ""),
                                     MediaType.parse(contentType)
                             );
                         }
@@ -269,23 +305,14 @@ public class HttpToolkit implements Toolkit {
                         }
 
                         // 执行请求
-                        final int timeout = spec.timeout() != null && spec.timeout() > 0
-                                ? spec.timeout()
-                                : defaultTimeoutSeconds;
-
-                        try (Response response = httpClient.newBuilder()
-                                .readTimeout(timeout, TimeUnit.SECONDS)
-                                .writeTimeout(timeout, TimeUnit.SECONDS)
-                                .build()
-                                .newCall(requestBuilder.build())
-                                .execute()) {
+                        try (Response response = httpClient.newCall(requestBuilder.build()).execute()) {
                             final long responseTime = System.currentTimeMillis() - startTime;
                             return readResponse(response, responseTime);
 
                         }
 
                     } catch (IOException e) {
-                        return Result.error("HTTP_ERROR", "POST 请求失败：" + e.getMessage());
+                        throw new RuntimeException("POST failed!", e);
                     }
                 })
                 .build();
@@ -333,12 +360,9 @@ public class HttpToolkit implements Toolkit {
                             requestBody = buildMultipartBodyForPut(spec);
                         } else {
                             // 普通 PUT
-                            final String contentType = spec.contentType() != null
-                                    ? spec.contentType()
-                                    : "application/json";
-
+                            final String contentType = requireNonNullElse(spec.contentType(), "application/json");
                             requestBody = RequestBody.create(
-                                    spec.body() != null ? spec.body() : "",
+                                    requireNonNullElse(spec.body(), ""),
                                     MediaType.parse(contentType)
                             );
                         }
@@ -358,23 +382,14 @@ public class HttpToolkit implements Toolkit {
                         }
 
                         // 执行请求
-                        final int timeout = spec.timeout() != null && spec.timeout() > 0
-                                ? spec.timeout()
-                                : defaultTimeoutSeconds;
-
-                        try (Response response = httpClient.newBuilder()
-                                .readTimeout(timeout, TimeUnit.SECONDS)
-                                .writeTimeout(timeout, TimeUnit.SECONDS)
-                                .build()
-                                .newCall(requestBuilder.build())
-                                .execute()) {
+                        try (Response response = httpClient.newCall(requestBuilder.build()).execute()) {
                             final long responseTime = System.currentTimeMillis() - startTime;
                             return readResponse(response, responseTime);
 
                         }
 
                     } catch (IOException e) {
-                        return Result.error("HTTP_ERROR", "PUT 请求失败：" + e.getMessage());
+                        throw new RuntimeException("PUT failed!", e);
                     }
                 })
                 .build();
@@ -420,9 +435,7 @@ public class HttpToolkit implements Toolkit {
 
                         // 如果有 body，使用 DELETE with body
                         if (spec.body() != null && !spec.body().isEmpty()) {
-                            final String contentType = spec.contentType() != null
-                                    ? spec.contentType()
-                                    : "application/json";
+                            final String contentType = requireNonNullElse(spec.contentType(), "application/json");
 
                             final RequestBody body = RequestBody.create(
                                     spec.body(),
@@ -439,22 +452,14 @@ public class HttpToolkit implements Toolkit {
                         }
 
                         // 执行请求
-                        final int timeout = spec.timeout() != null && spec.timeout() > 0
-                                ? spec.timeout()
-                                : defaultTimeoutSeconds;
-
-                        try (Response response = httpClient.newBuilder()
-                                .readTimeout(timeout, TimeUnit.SECONDS)
-                                .build()
-                                .newCall(requestBuilder.build())
-                                .execute()) {
+                        try (Response response = httpClient.newCall(requestBuilder.build()).execute()) {
                             final long responseTime = System.currentTimeMillis() - startTime;
                             return readResponse(response, responseTime);
 
                         }
 
                     } catch (IOException e) {
-                        return Result.error("HTTP_ERROR", "DELETE 请求失败：" + e.getMessage());
+                        throw new RuntimeException("DELETE failed!", e);
                     }
                 })
                 .build();
@@ -502,8 +507,7 @@ public class HttpToolkit implements Toolkit {
 
                         // 检查文件是否已存在
                         if (Files.exists(savePath) && !spec.overwrite()) {
-                            return Result.error("FILE_EXISTS",
-                                    "文件已存在，设置 overwrite=true 以覆盖：" + spec.savePath());
+                            throw new IOException("File already exists. Set overwrite=true to override: " + spec.savePath());
                         }
 
                         // 确保父目录存在
@@ -519,19 +523,10 @@ public class HttpToolkit implements Toolkit {
                                 .build();
 
                         // 执行请求
-                        final int timeout = spec.timeout() != null && spec.timeout() > 0
-                                ? spec.timeout()
-                                : defaultTimeoutSeconds;
-
-                        try (Response response = httpClient.newBuilder()
-                                .readTimeout(timeout, TimeUnit.SECONDS)
-                                .build()
-                                .newCall(request)
-                                .execute()) {
+                        try (Response response = httpClient.newCall(request).execute()) {
                             final long responseTime = System.currentTimeMillis() - startTime;
                             if (!response.isSuccessful()) {
-                                return Result.error("HTTP_ERROR",
-                                        "下载失败，状态码：" + response.code());
+                                throw new IOException("Download failed with status code: " + response.code());
                             }
 
                             final ResponseBody body = response.body();
@@ -539,10 +534,9 @@ public class HttpToolkit implements Toolkit {
                             // 检查文件大小
                             final long contentLength = body.contentLength();
                             if (contentLength > 0 && contentLength > maxDownloadSize) {
-                                return Result.error("SIZE_EXCEEDED",
-                                        String.format("文件大小 %.2f MB 超过限制 %.2f MB",
-                                                contentLength / 1024.0 / 1024.0,
-                                                maxDownloadSize / 1024.0 / 1024.0));
+                                throw new IOException(String.format("File size %.2f MB exceeds limit %.2f MB",
+                                        contentLength / 1024.0 / 1024.0,
+                                        maxDownloadSize / 1024.0 / 1024.0));
                             }
 
                             // 写入文件
@@ -559,14 +553,14 @@ public class HttpToolkit implements Toolkit {
                             result.put("content_type", contentType);
                             result.put("response_time_ms", responseTime);
 
-                            return Result.success(result);
+                            return result;
 
                         }
 
                     } catch (SecurityException e) {
-                        return Result.error("ACCESS_DENIED", e.getMessage());
+                        throw new RuntimeException("Access denied!", e);
                     } catch (IOException e) {
-                        return Result.error("IO_ERROR", "下载失败：" + e.getMessage());
+                        throw new RuntimeException("Download failed!", e);
                     }
                 })
                 .build();
@@ -593,12 +587,12 @@ public class HttpToolkit implements Toolkit {
                     final Path resolved = FileUtils.checkPathEscape(workspace, filePath);
 
                     if (!Files.exists(resolved)) {
-                        throw new IOException("文件不存在：" + filePath);
+                        throw new IOException("File not found: " + filePath);
                     }
 
                     final long fileSize = Files.size(resolved);
                     if (fileSize > 10 * 1024 * 1024) {
-                        throw new IOException(String.format("文件 %.2f MB 超过限制 10MB", fileSize / 1024.0 / 1024.0));
+                        throw new IOException(String.format("File size %.2f MB exceeds limit 10MB", fileSize / 1024.0 / 1024.0));
                     }
 
                     final String fileName = resolved.getFileName().toString();
@@ -606,10 +600,10 @@ public class HttpToolkit implements Toolkit {
 
                     builder.addFormDataPart(fieldName, fileName,
                             RequestBody.create(Files.readAllBytes(resolved),
-                                    MediaType.parse(mimeType != null ? mimeType : "application/octet-stream")));
+                                    MediaType.parse(requireNonNullElse(mimeType, "application/octet-stream"))));
 
                 } catch (IOException e) {
-                    throw new RuntimeException("处理文件失败：" + filePath, e);
+                    throw new RuntimeException("Failed to process file: " + filePath, e);
                 }
             });
         }
@@ -636,12 +630,12 @@ public class HttpToolkit implements Toolkit {
                     final Path resolved = FileUtils.checkPathEscape(workspace, filePath);
 
                     if (!Files.exists(resolved)) {
-                        throw new IOException("文件不存在：" + filePath);
+                        throw new IOException("File not found: " + filePath);
                     }
 
                     final long fileSize = Files.size(resolved);
                     if (fileSize > 10 * 1024 * 1024) {
-                        throw new IOException(String.format("文件 %.2f MB 超过限制 10MB", fileSize / 1024.0 / 1024.0));
+                        throw new IOException(String.format("File size %.2f MB exceeds limit 10MB", fileSize / 1024.0 / 1024.0));
                     }
 
                     final String fileName = resolved.getFileName().toString();
@@ -649,10 +643,10 @@ public class HttpToolkit implements Toolkit {
 
                     builder.addFormDataPart(fieldName, fileName,
                             RequestBody.create(Files.readAllBytes(resolved),
-                                    MediaType.parse(mimeType != null ? mimeType : "application/octet-stream")));
+                                    MediaType.parse(requireNonNullElse(mimeType, "application/octet-stream"))));
 
                 } catch (IOException e) {
-                    throw new RuntimeException("处理文件失败：" + filePath, e);
+                    throw new RuntimeException("Failed to process file: " + filePath, e);
                 }
             });
         }
@@ -663,7 +657,7 @@ public class HttpToolkit implements Toolkit {
     /**
      * 读取响应
      */
-    private Result readResponse(Response response, long responseTime) throws IOException {
+    private Map<String, Object> readResponse(Response response, long responseTime) throws IOException {
         final int statusCode = response.code();
         final Headers headers = response.headers();
         final ResponseBody body = response.body();
@@ -691,7 +685,7 @@ public class HttpToolkit implements Toolkit {
         }
         result.put("content_type", contentType);
 
-        return Result.success(result);
+        return result;
     }
 
     /**
@@ -722,6 +716,36 @@ public class HttpToolkit implements Toolkit {
         return java.nio.charset.StandardCharsets.UTF_8;
     }
 
+    /**
+     * 根据 Content-Type 获取文件扩展名
+     */
+    private String getFileExtension(String contentType) {
+        if (contentType == null || contentType.isEmpty()) {
+            return ".txt";
+        }
+
+        // 移除 charset 等参数
+        final String mainType = contentType.split(";")[0].trim().toLowerCase();
+
+        return switch (mainType) {
+            case "application/json" -> ".json";
+            case "application/xml", "text/xml" -> ".xml";
+            case "text/html" -> ".html";
+            case "text/plain" -> ".txt";
+            case "text/css" -> ".css";
+            case "text/javascript", "application/javascript" -> ".js";
+            case "image/png" -> ".png";
+            case "image/jpeg" -> ".jpg";
+            case "image/gif" -> ".gif";
+            case "image/svg+xml" -> ".svg";
+            case "application/pdf" -> ".pdf";
+            case "application/zip" -> ".zip";
+            case "application/gzip" -> ".gz";
+            case "application/octet-stream" -> ".bin";
+            default -> ".dat"; // 默认二进制文件
+        };
+    }
+
     // ==================== Builder ====================
 
     public static Builder newBuilder() {
@@ -731,9 +755,10 @@ public class HttpToolkit implements Toolkit {
     public static class Builder implements io.github.oldmanpushcart.dashscope4j.client.util.Buildable<HttpToolkit, Builder> {
 
         private OkHttpClient httpClient;
-        private Path workspace;
+        private Path workspace = Path.of("./");
         private int defaultTimeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
         private long maxDownloadSize = DEFAULT_MAX_DOWNLOAD_SIZE;
+        private long smallTextThreshold = DEFAULT_SMALL_TEXT_THRESHOLD;
         private boolean readOnly = false;
 
         /**
@@ -781,6 +806,17 @@ public class HttpToolkit implements Toolkit {
         }
 
         /**
+         * 设置小文本阈值（字节），小于此值的文本直接返回内容
+         *
+         * @param smallTextThreshold 小文本阈值
+         * @return 当前构建器
+         */
+        public Builder smallTextThreshold(long smallTextThreshold) {
+            this.smallTextThreshold = smallTextThreshold;
+            return this;
+        }
+
+        /**
          * 设置是否为只读模式
          * <p>
          * 当设置为 true 时，只会安装 http$get 工具，
@@ -796,10 +832,6 @@ public class HttpToolkit implements Toolkit {
 
         @Override
         public HttpToolkit build() {
-            // 如果未设置工作区，使用当前目录
-            if (workspace == null) {
-                workspace = Paths.get("").toAbsolutePath().normalize();
-            }
             return new HttpToolkit(this);
         }
     }
@@ -813,11 +845,7 @@ public class HttpToolkit implements Toolkit {
 
             @JsonPropertyDescription("自定义请求头 Map")
             @JsonProperty("headers")
-            Map<String, String> headers,
-
-            @JsonPropertyDescription("超时时间（秒），不填则使用默认值")
-            @JsonProperty("timeout")
-            Integer timeout
+            Map<String, String> headers
     ) {
     }
 
@@ -840,11 +868,7 @@ public class HttpToolkit implements Toolkit {
 
             @JsonPropertyDescription("文件上传 Map，key 为字段名，value 为 workspace 内的文件路径")
             @JsonProperty("files")
-            Map<String, String> files,
-
-            @JsonPropertyDescription("超时时间（秒），不填则使用默认值")
-            @JsonProperty("timeout")
-            Integer timeout
+            Map<String, String> files
     ) {
     }
 
@@ -867,11 +891,7 @@ public class HttpToolkit implements Toolkit {
 
             @JsonPropertyDescription("文件上传 Map（可选）")
             @JsonProperty("files")
-            Map<String, String> files,
-
-            @JsonPropertyDescription("超时时间（秒），不填则使用默认值")
-            @JsonProperty("timeout")
-            Integer timeout
+            Map<String, String> files
     ) {
     }
 
@@ -890,11 +910,7 @@ public class HttpToolkit implements Toolkit {
 
             @JsonPropertyDescription("自定义请求头 Map")
             @JsonProperty("headers")
-            Map<String, String> headers,
-
-            @JsonPropertyDescription("超时时间（秒），不填则使用默认值")
-            @JsonProperty("timeout")
-            Integer timeout
+            Map<String, String> headers
     ) {
     }
 
@@ -909,33 +925,8 @@ public class HttpToolkit implements Toolkit {
 
             @JsonPropertyDescription("是否覆盖已存在文件（默认 false）")
             @JsonProperty("overwrite")
-            boolean overwrite,
-
-            @JsonPropertyDescription("超时时间（秒），不填则使用默认值")
-            @JsonProperty("timeout")
-            Integer timeout
+            boolean overwrite
     ) {
-    }
-
-    // ==================== 结果数据结构 ====================
-
-    record Result(
-            @JsonProperty("error")
-            String error,
-
-            @JsonProperty("message")
-            String message,
-
-            @JsonProperty("data")
-            Object data
-    ) {
-        static Result success(Object data) {
-            return new Result(null, null, data);
-        }
-
-        static Result error(String error, String message) {
-            return new Result(error, message, null);
-        }
     }
 
 }

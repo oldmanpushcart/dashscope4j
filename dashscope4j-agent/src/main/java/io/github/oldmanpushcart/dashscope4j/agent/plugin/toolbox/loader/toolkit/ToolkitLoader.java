@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -34,11 +35,19 @@ public class ToolkitLoader extends AbstractToolLoader {
         return "dashscope4j-agent:/toolbox/loader/toolkit";
     }
 
+    public ToolkitLoader append(ToolUse.Mode mode, List<Toolkit> toolkits) {
+        Objects.requireNonNull(toolkits, "toolkits must not be null!");
+        final var tools = toolkits.stream()
+                .flatMap(toolkit -> toolkit.tools().stream())
+                .toList();
+        return addTools(mode, tools);
+    }
+
     /**
      * 添加多个工具包
      *
-     * @param mode      使用模式（FIXED/DYNAMIC）
-     * @param toolkits  工具包列表
+     * @param mode     使用模式（FIXED/DYNAMIC）
+     * @param toolkits 工具包列表
      * @return 当前实例，支持链式调用
      */
     public ToolkitLoader append(ToolUse.Mode mode, Toolkit... toolkits) {
@@ -59,8 +68,8 @@ public class ToolkitLoader extends AbstractToolLoader {
     /**
      * 添加多个工具
      *
-     * @param mode   使用模式（FIXED/DYNAMIC）
-     * @param tools  工具列表
+     * @param mode  使用模式（FIXED/DYNAMIC）
+     * @param tools 工具列表
      * @return 当前实例，支持链式调用
      */
     public ToolkitLoader append(ToolUse.Mode mode, Tool... tools) {

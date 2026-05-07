@@ -44,7 +44,7 @@ public class HashMapToolbox implements Toolbox {
 
     @Override
     public CompletionStage<ToolSubscription> subscribe(ToolLoader loader) {
-        final var subscription = new ToolSubscriptionImpl(this, loader);
+        final var subscription = new ToolSubscriptionImpl(loader);
         final var handler = new ToolSubscriptionHandlerImpl(loader, subscription);
         return loader.subscribe(subscription, handler)
                 .thenApply(u -> subscription);
@@ -162,23 +162,11 @@ public class HashMapToolbox implements Toolbox {
 
     private class ToolSubscriptionImpl implements ToolSubscription {
 
-        private final Toolbox toolbox;
         private final ToolLoader loader;
         private final CompletableFuture<?> closeF = new CompletableFuture<>();
 
-        private ToolSubscriptionImpl(Toolbox toolbox, ToolLoader loader) {
-            this.toolbox = toolbox;
+        private ToolSubscriptionImpl(ToolLoader loader) {
             this.loader = loader;
-        }
-
-        @Override
-        public Toolbox toolbox() {
-            return toolbox;
-        }
-
-        @Override
-        public ToolLoader loader() {
-            return loader;
         }
 
         @Override

@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.SessionPlugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
@@ -19,7 +20,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
@@ -31,18 +32,14 @@ import java.util.UUID;
 
 public class DebugTestCase implements LoadingEnv {
 
-    @Test
-    public void debug$1() {
-
-        final var sessionId =
-                //"SESSION-snake"
-                //UUID.randomUUID().toString()
-                "SESSION-001"
-                ;
-        final var sessionPlugin = SessionPlugin.newBuilder()
+    private Plugin buildingSessionPlugin() {
+        return SessionPlugin.newBuilder()
                 .maxTokens(50 * 10000)
                 .gcRatio(0.3)
                 .build();
+    }
+
+    private Plugin buildingToolboxPlugin() {
 
         final var skillLoader = SkillLoader.newBuilder()
                 .directories(List.of(
@@ -63,51 +60,68 @@ public class DebugTestCase implements LoadingEnv {
                 .build();
 
         final var toolkitLoader = new ToolkitLoader()
-                .append(ToolUse.Mode.DYNAMIC, DashscopeToolkit.create())
-                .append(ToolUse.Mode.DYNAMIC, RuntimeToolkit.create())
-                .append(ToolUse.Mode.DYNAMIC, GuiToolkit.newBuilder().build())
-                .append(ToolUse.Mode.DYNAMIC, HttpToolkit.newBuilder()
-                        .workspace(Path.of("./"))
-                        .httpClient(new OkHttpClient.Builder().build())
-                        .build())
-                .append(ToolUse.Mode.FIXED, RuntimeToolkit.create())
-                .append(ToolUse.Mode.FIXED, ShellToolkit.newBuilder()
-                        .timeout(Duration.ofSeconds(60))
-                        .build())
-                .append(ToolUse.Mode.FIXED, FileOpsToolkit.newBuilder()
-                        .workspace(Path.of("./"))
-                        .build())
-                .append(ToolUse.Mode.FIXED, TextFileOpsToolkit.newBuilder()
-                        .workspace(Path.of("./"))
-                        .build());
+                .append(ToolUse.Mode.DYNAMIC, List.of(
+                        DashscopeToolkit.create(),
+                        GuiToolkit.create(),
+                        HttpToolkit.newBuilder()
+                                .workspace(Path.of("./"))
+                                .httpClient(new OkHttpClient.Builder().build())
+                                .build()
+                ))
+                .append(ToolUse.Mode.DYNAMIC, List.of(
+                        RuntimeToolkit.create(),
+                        ShellToolkit.newBuilder()
+                                .timeout(Duration.ofSeconds(60))
+                                .build(),
+                        FileOpsToolkit.newBuilder()
+                                .workspace(Path.of("./"))
+                                .build(),
+                        TextFileOpsToolkit.newBuilder()
+                                .workspace(Path.of("./"))
+                                .build()
+                ));
 
         final var toolbox = HashMapToolbox.newBuilder()
                 .indexer(HashMapToolIndexer.newBuilder()
                         .client(client)
                         .model(ChatModel.QWEN_FLASH)
-                        .cacheFile(Path.of("./toolbox-index-cache.jsonl"))
+                        .cacheFile(Path.of(".toolbox-index-cache.jsonl"))
                         .build())
                 .build();
 
-        toolbox.subscribe(toolkitLoader).toCompletableFuture().join();
-        toolbox.subscribe(skillLoader).toCompletableFuture().join();
-        toolbox.subscribe(mcpLoader).toCompletableFuture().join();
+        CompletableFutureUtils.allOf(List.of(
+                        toolbox.subscribe(toolkitLoader),
+                        toolbox.subscribe(skillLoader),
+                        toolbox.subscribe(mcpLoader)
+                ))
+                .toCompletableFuture()
+                .join();
 
-        final var toolboxPlugin = ToolboxPlugin.newBuilder()
+        return ToolboxPlugin.newBuilder()
                 .toolbox(toolbox)
                 .build();
+    }
 
-        try {
+    @Test
+    public void debug$1() {
 
-            final var agent = ReActAgent.newBuilder()
-                    .client(client)
-                    .model(ChatModel.QWEN_PLUS)
-                    .plugins(plugins -> {
-                        plugins.add(sessionPlugin);
-                        plugins.add(toolboxPlugin);
-                        return plugins;
-                    })
-                    .build();
+        final var sessionId =
+                //"SESSION-snake"
+                UUID.randomUUID().toString()
+                // "SESSION-001"
+                ;
+        final var sessionPlugin = buildingSessionPlugin();
+        final var toolboxPlugin = buildingToolboxPlugin();
+
+        final var agent = ReActAgent.newBuilder()
+                .client(client)
+                .model(ChatModel.QWEN_PLUS)
+                .plugins(plugins -> {
+                    plugins.add(sessionPlugin);
+                    plugins.add(toolboxPlugin);
+                    return plugins;
+                })
+                .build();
 
 //            {
 //                final var outbound = Flux.from(agent.flow(sessionId, Message.user("""
@@ -120,18 +134,14 @@ public class DebugTestCase implements LoadingEnv {
 //                System.out.println(outbound.text());
 //            }
 
-            {
-                final var outbound = agent.async(sessionId, Message.user("""
-                                上海呢?
-                                """))
-                        .toCompletableFuture()
-                        .join();
+        {
+            final var outbound = agent.async(sessionId, Message.user("""
+                            查询班上所有男生的语文成绩
+                            """))
+                    .toCompletableFuture()
+                    .join();
 
-                System.out.println(outbound.text());
-            }
-
-        } finally {
-            IOUtils.closeQuietly(toolbox);
+            System.out.println(outbound.text());
         }
 
     }

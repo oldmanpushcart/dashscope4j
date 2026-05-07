@@ -7,11 +7,18 @@ import io.github.oldmanpushcart.dashscope4j.agent.util.FileUtils;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -56,7 +63,12 @@ public class FileOpsToolkit implements Toolkit {
     private final boolean readOnly;
 
     private FileOpsToolkit(Builder builder) {
-        this.workspace = builder.workspace;
+        Objects.requireNonNull(builder.workspace, "workspace must not be null!");
+        CheckUtils.require(builder.workspace, Files::isDirectory, "workspace must be an existing directory: %s".formatted(builder.workspace));
+        CheckUtils.require(builder.workspace, Files::isReadable, "workspace must be readable: %s".formatted(builder.workspace));
+        CheckUtils.require(builder.workspace, v -> !builder.readOnly && Files.isWritable(v), "workspace must be writable: %s".formatted(builder.workspace));
+        CheckUtils.require(builder.maxResults, t -> t > 0, "maxResults must be greater than 0, current is: %s".formatted(builder.maxResults));
+        this.workspace = builder.workspace.toAbsolutePath().normalize();
         this.maxResults = builder.maxResults;
         this.readOnly = builder.readOnly;
     }
@@ -224,7 +236,7 @@ public class FileOpsToolkit implements Toolkit {
                         // 确保目标父目录存在
                         final Path parentDir = targetPath.getParent();
                         if (parentDir != null && !Files.exists(parentDir)) {
-                            return Result.error("PARENT_NOT_FOUND", 
+                            return Result.error("PARENT_NOT_FOUND",
                                     "目标父目录不存在：" + workspace.relativize(parentDir));
                         }
 
@@ -392,8 +404,8 @@ public class FileOpsToolkit implements Toolkit {
                             }
                         }
 
-                        final String hint = hasMore 
-                                ? buildListTruncateHint(spec.path(), items.size(), maxReturn, totalCount) 
+                        final String hint = hasMore
+                                ? buildListTruncateHint(spec.path(), items.size(), maxReturn, totalCount)
                                 : null;
 
                         final var result = new ListResult(
@@ -614,9 +626,13 @@ public class FileOpsToolkit implements Toolkit {
      * 创建类型枚举
      */
     enum CreateType {
-        /** 创建文件 */
+        /**
+         * 创建文件
+         */
         FILE,
-        /** 创建目录 */
+        /**
+         * 创建目录
+         */
         DIRECTORY
     }
 
@@ -751,22 +767,8 @@ public class FileOpsToolkit implements Toolkit {
          * @return this
          */
         public Builder workspace(Path workspace) {
-            Objects.requireNonNull(workspace, "workspace must not be null");
-            if (!Files.isDirectory(workspace)) {
-                throw new IllegalArgumentException("workspace must be an existing directory: " + workspace);
-            }
-            this.workspace = workspace.toAbsolutePath().normalize();
+            this.workspace = workspace;
             return this;
-        }
-
-        /**
-         * 设置工作区根路径（字符串形式）
-         *
-         * @param workspace 工作区目录路径字符串
-         * @return this
-         */
-        public Builder workspace(String workspace) {
-            return workspace(Paths.get(workspace));
         }
 
         /**
@@ -776,11 +778,6 @@ public class FileOpsToolkit implements Toolkit {
          * @return this
          */
         public Builder maxResults(int maxResults) {
-            if (maxResults < 1 || maxResults > 1000) {
-                throw new IllegalArgumentException(
-                        "maxResults must be between 1 and 1000, got: " + maxResults
-                );
-            }
             this.maxResults = maxResults;
             return this;
         }

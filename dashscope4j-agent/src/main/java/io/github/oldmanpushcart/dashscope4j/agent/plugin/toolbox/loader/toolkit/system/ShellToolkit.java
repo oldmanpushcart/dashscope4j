@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,13 +14,14 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Shell 命令执行工具包
@@ -49,6 +51,9 @@ public class ShellToolkit implements Toolkit {
     private final SecurityLevel securityLevel;
 
     private ShellToolkit(Builder builder) {
+        Objects.requireNonNull(builder.timeout, "timeout must not be null!");
+        CheckUtils.require(builder.timeout, t -> !t.isNegative() && !t.isZero(), "timeout must be positive!");
+        Objects.requireNonNull(builder.securityLevel, "securityLevel must not be null!");
         this.timeout = builder.timeout;
         this.securityLevel = builder.securityLevel;
     }
@@ -464,14 +469,6 @@ public class ShellToolkit implements Toolkit {
          * @return this
          */
         public Builder timeout(Duration timeout) {
-            if (timeout == null || timeout.isNegative() || timeout.isZero()) {
-                throw new IllegalArgumentException("timeout must be positive");
-            }
-            if (timeout.getSeconds() > 300) {
-                throw new IllegalArgumentException(
-                        "timeout must not exceed 300 seconds, got: " + timeout.getSeconds() + "s"
-                );
-            }
             this.timeout = timeout;
             return this;
         }

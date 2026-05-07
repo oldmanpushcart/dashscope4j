@@ -1272,6 +1272,11 @@ public class GuiToolkit implements Toolkit {
      *
      * @return 新的构建器实例，默认启用所有功能
      */
+
+    public static GuiToolkit create() {
+        return newBuilder().build();
+    }
+
     public static Builder newBuilder() {
         return new Builder();
     }

@@ -85,7 +85,7 @@ public class TextFileOpsToolkit implements Toolkit {
      */
     public FunctionTool view() {
         return FunctionTool.newBuilder()
-                .name("file$view")
+                .name("text_file$view")
                 .description("""
                         查看文件内容，支持指定行范围。
                         
@@ -187,7 +187,7 @@ public class TextFileOpsToolkit implements Toolkit {
      */
     public FunctionTool search() {
         return FunctionTool.newBuilder()
-                .name("file$search")
+                .name("text_file$search")
                 .description("""
                         在文件中搜索包含关键词的行，返回匹配项及上下文。
                         
@@ -302,7 +302,7 @@ public class TextFileOpsToolkit implements Toolkit {
      */
     public FunctionTool strReplace() {
         return FunctionTool.newBuilder()
-                .name("file$str_replace")
+                .name("text_file$str_replace")
                 .description("""
                         在文件中精确替换文本内容，要求 oldStr 必须唯一匹配。
                         
@@ -395,7 +395,7 @@ public class TextFileOpsToolkit implements Toolkit {
      */
     public FunctionTool insertLine() {
         return FunctionTool.newBuilder()
-                .name("file$insert_line")
+                .name("text_file$insert_line")
                 .description("""
                         在文件的指定行位置插入新内容。
                         
@@ -492,7 +492,7 @@ public class TextFileOpsToolkit implements Toolkit {
      */
     public FunctionTool create() {
         return FunctionTool.newBuilder()
-                .name("file$create")
+                .name("text_file$create")
                 .description("""
                         创建新文件并写入内容。
                         
