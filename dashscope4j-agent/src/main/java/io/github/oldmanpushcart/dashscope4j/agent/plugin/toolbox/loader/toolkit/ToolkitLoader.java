@@ -133,6 +133,7 @@ public class ToolkitLoader extends AbstractToolLoader {
 
     @Override
     public void close() {
+
         // 调用父类 close()，内部会检查 closeF 防重复执行
         super.close();
 
