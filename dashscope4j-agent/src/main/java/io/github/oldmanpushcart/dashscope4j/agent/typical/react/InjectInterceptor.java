@@ -42,7 +42,7 @@ class InjectInterceptor implements ChatInterceptor {
                         .messages(messages -> {
 
                             messages.add(0, Message.system("""
-                                    ### 工具列表
+                                    ## 工具列表
                                     %s
                                     """.formatted(JacksonJsonUtils.toJson(tools))));
 
