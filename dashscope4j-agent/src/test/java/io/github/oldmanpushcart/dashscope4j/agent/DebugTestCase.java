@@ -22,7 +22,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
-import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -62,10 +61,7 @@ public class DebugTestCase implements LoadingEnv {
                 .append(ToolUse.Mode.DYNAMIC, List.of(
                         DashscopeToolkit.create(),
                         GuiToolkit.create(),
-                        HttpToolkit.newBuilder()
-                                .workspace(Path.of("./"))
-                                .httpClient(new OkHttpClient.Builder().build())
-                                .build()
+                        HttpToolkit.create()
                 ))
                 .append(ToolUse.Mode.DYNAMIC, List.of(
                         RuntimeToolkit.create(),
@@ -129,8 +125,7 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(sessionId, Message.user("""
-                            用JavaSwing给我写一个⏰，有十分秒三根指针按时间推动，能正确的显示当前的时间。
-                            编译通过并运行。
+                            根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weatcher.png
                             """))
                     .toCompletableFuture()
                     .join();

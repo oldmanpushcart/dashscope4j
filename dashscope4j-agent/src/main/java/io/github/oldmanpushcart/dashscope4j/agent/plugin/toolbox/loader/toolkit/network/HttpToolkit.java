@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.util.FileUtils;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolExecutionException;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import okhttp3.*;
 import okio.BufferedSink;
 import okio.Okio;
@@ -115,7 +116,7 @@ public class HttpToolkit implements Toolkit {
         return new Builder();
     }
 
-    public static class Builder implements io.github.oldmanpushcart.dashscope4j.client.util.Buildable<HttpToolkit, Builder> {
+    public static class Builder implements Buildable<HttpToolkit, Builder> {
 
         private OkHttpClient httpClient;
         private Path workspace = Path.of("./");
