@@ -102,8 +102,8 @@ public class GuiToolkit implements Toolkit {
             // 创建 AWT Robot 实例，用于模拟鼠标和键盘操作
             this.robot = new Robot();
         } catch (AWTException e) {
-            throw new ToolExecutionException(
-                    "AWT-INIT-FAILED",
+            throw ToolExecutionException.callFailed(
+                    "gui$init",
                     "Failed to initialize AWT Robot. This may be due to running in a headless environment.",
                     "Ensure the environment supports graphical operations or disable GUI features.",
                     e
@@ -337,8 +337,8 @@ public class GuiToolkit implements Toolkit {
                             // 检查截图尺寸限制
                             final long pixelCount = (long) captureRect.width * captureRect.height;
                             if (pixelCount > MAX_SCREENSHOT_SIZE) {
-                                throw new ToolExecutionException(
-                                        "SCREENSHOT-TOO-LARGE",
+                                throw ToolExecutionException.callFailed(
+                                        "gui$screenshot",
                                         String.format("Screenshot too large: %dx%d pixels, max supported is %d pixels",
                                                 captureRect.width,
                                                 captureRect.height,
@@ -378,8 +378,8 @@ public class GuiToolkit implements Toolkit {
                             );
 
                         } catch (Exception ex) {
-                            throw new ToolExecutionException(
-                                    "SCREENSHOT-FAILED",
+                            throw ToolExecutionException.callFailed(
+                                    "gui$screenshot",
                                     "Screenshot failed: " + ex.getMessage(),
                                     "Ensure the screen is accessible and try again.",
                                     ex
@@ -477,8 +477,8 @@ public class GuiToolkit implements Toolkit {
                         );
 
                     } catch (Exception ex) {
-                        throw new ToolExecutionException(
-                                "MOUSE-MOVE-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "gui$mouse$move",
                                 "Mouse move failed: " + ex.getMessage(),
                                 "Ensure the coordinates are within screen bounds.",
                                 ex
@@ -556,8 +556,8 @@ public class GuiToolkit implements Toolkit {
                                 robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
                                 break;
                             default:
-                                throw new ToolExecutionException(
-                                        "INVALID-BUTTON",
+                                throw ToolExecutionException.callFailed(
+                                        "gui$mouse$click",
                                         String.format("Invalid button type: %s. Supported: left, right, middle, double_left", button),
                                         "Use one of the supported button types: left, right, middle, or double_left."
                                 );
@@ -576,8 +576,8 @@ public class GuiToolkit implements Toolkit {
                         );
 
                     } catch (Exception ex) {
-                        throw new ToolExecutionException(
-                                "MOUSE-CLICK-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "gui$mouse$click",
                                 "Mouse click failed: " + ex.getMessage(),
                                 "Ensure the mouse can perform the click operation.",
                                 ex
@@ -649,8 +649,8 @@ public class GuiToolkit implements Toolkit {
                         );
 
                     } catch (Exception ex) {
-                        throw new ToolExecutionException(
-                                "MOUSE-DRAG-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "gui$mouse$drag",
                                 "鼠标拖拽失败：" + ex.getMessage(),
                                 "Ensure both start and end positions are valid.",
                                 ex
@@ -704,8 +704,8 @@ public class GuiToolkit implements Toolkit {
                         );
 
                     } catch (Exception ex) {
-                        throw new ToolExecutionException(
-                                "MOUSE-SCROLL-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "gui$mouse$scroll",
                                 "鼠标滚动失败：" + ex.getMessage(),
                                 "Ensure the scroll amount is reasonable.",
                                 ex
@@ -769,15 +769,15 @@ public class GuiToolkit implements Toolkit {
                         );
 
                     } catch (IllegalArgumentException ex) {
-                        throw new ToolExecutionException(
-                                "INVALID-KEY",
+                        throw ToolExecutionException.callFailed(
+                                "gui$key$press",
                                 ex.getMessage(),
                                 "Check the key name against Java KeyEvent constants.",
                                 ex
                         );
                     } catch (Exception ex) {
-                        throw new ToolExecutionException(
-                                "KEY-PRESS-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "gui$key$press",
                                 "按键失败：" + ex.getMessage(),
                                 "Verify the key name is valid and supported.",
                                 ex
@@ -829,8 +829,8 @@ public class GuiToolkit implements Toolkit {
                     try {
                         final String text = spec.text();
                         if (text == null || text.isEmpty()) {
-                            throw new ToolExecutionException(
-                                "EMPTY-TEXT",
+                            throw ToolExecutionException.callFailed(
+                                "gui$key$type",
                                 "输入文本不能为空",
                                 "Provide a non-empty text string to type."
                         );
@@ -844,8 +844,8 @@ public class GuiToolkit implements Toolkit {
                         );
 
                     } catch (Exception ex) {
-                        throw new ToolExecutionException(
-                                "KEY-TYPE-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "gui$key$type",
                                 "文本输入失败：" + ex.getMessage(),
                                 "Consider using clipboard for non-ASCII characters.",
                                 ex
@@ -900,16 +900,16 @@ public class GuiToolkit implements Toolkit {
                     try {
                         final List<String> keys = spec.keys();
                         if (keys == null || keys.isEmpty()) {
-                            throw new ToolExecutionException(
-                                "EMPTY-KEYS",
+                            throw ToolExecutionException.callFailed(
+                                "gui$key$combo",
                                 "按键列表不能为空",
                                 "Provide at least one key in the combination."
                         );
                         }
 
                         if (keys.size() > 5) {
-                            throw new ToolExecutionException(
-                                "TOO-MANY-KEYS",
+                            throw ToolExecutionException.callFailed(
+                                "gui$key$combo",
                                 String.format("Too many keys in combination: %d, maximum is 5", keys.size()),
                                 "Limit the number of keys to 5 or fewer."
                         );
@@ -939,15 +939,15 @@ public class GuiToolkit implements Toolkit {
                         );
 
                     } catch (IllegalArgumentException ex) {
-                        throw new ToolExecutionException(
-                                "INVALID-KEY",
+                        throw ToolExecutionException.callFailed(
+                                "gui$key$combo",
                                 ex.getMessage(),
                                 "Check the key name against Java KeyEvent constants.",
                                 ex
                         );
                     } catch (Exception ex) {
-                        throw new ToolExecutionException(
-                                "KEY-COMBO-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "gui$key$combo",
                                 "组合键失败：" + ex.getMessage(),
                                 "Verify all keys in the combination are valid.",
                                 ex
@@ -1064,8 +1064,8 @@ public class GuiToolkit implements Toolkit {
                         );
 
                     } catch (Exception ex) {
-                        throw new ToolExecutionException(
-                                "CLIPBOARD-SET-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "gui$clipboard$set",
                                 "设置剪贴板失败：" + ex.getMessage(),
                                 "Ensure you have permission to modify the clipboard.",
                                 ex

@@ -369,7 +369,7 @@ class LoopInterceptor implements ChatInterceptor {
                     if (request.input().failOnToolError()) {
                         return CompletableFuture.<String>failedStage(ex);
                     } else {
-                        final var result = ToolResult.ofError(ex);
+                        final var result = ToolResult.ofError(name, ex);
                         final var resultJson = JacksonJsonUtils.toJson(result);
                         return CompletableFuture.completedStage(resultJson);
                     }

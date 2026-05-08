@@ -324,8 +324,8 @@ public class HttpToolkit implements Toolkit {
                         }
 
                     } catch (IOException e) {
-                        throw new ToolExecutionException(
-                                "HTTP-REQUEST-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "http$get",
                                 "GET request failed: " + spec.url(),
                                 "Check the URL is correct and the server is accessible. Retry if this is a transient error.",
                                 e
@@ -413,8 +413,8 @@ public class HttpToolkit implements Toolkit {
                         }
 
                     } catch (IOException e) {
-                        throw new ToolExecutionException(
-                                "HTTP-REQUEST-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "http$post",
                                 "POST request failed: " + spec.url(),
                                 "Check the URL, request body, and headers. Retry if this is a transient error.",
                                 e
@@ -495,8 +495,8 @@ public class HttpToolkit implements Toolkit {
                         }
 
                     } catch (IOException e) {
-                        throw new ToolExecutionException(
-                                "HTTP-REQUEST-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "http$put",
                                 "PUT request failed: " + spec.url(),
                                 "Check the URL, request body, and headers. Retry if this is a transient error.",
                                 e
@@ -570,8 +570,8 @@ public class HttpToolkit implements Toolkit {
                         }
 
                     } catch (IOException e) {
-                        throw new ToolExecutionException(
-                                "HTTP-REQUEST-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "http$delete",
                                 "DELETE request failed: " + spec.url(),
                                 "Check the URL is correct and the resource exists. Retry if this is a transient error.",
                                 e
@@ -674,15 +674,15 @@ public class HttpToolkit implements Toolkit {
                         }
 
                     } catch (SecurityException e) {
-                        throw new ToolExecutionException(
-                                "ACCESS-DENIED",
+                        throw ToolExecutionException.callFailed(
+                                "http$download",
                                 "Access denied: " + e.getMessage(),
                                 "Ensure the file path is within the workspace and you have write permissions.",
                                 e
                         );
                     } catch (IOException e) {
-                        throw new ToolExecutionException(
-                                "DOWNLOAD-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "http$download",
                                 "Download failed: " + spec.url(),
                                 "Check the URL is accessible and you have network connectivity. Retry if this is a transient error.",
                                 e
@@ -729,8 +729,8 @@ public class HttpToolkit implements Toolkit {
                                     MediaType.parse(requireNonNullElse(mimeType, "application/octet-stream"))));
 
                 } catch (IOException e) {
-                    throw new ToolExecutionException(
-                            "FILE-PROCESSING-FAILED",
+                    throw ToolExecutionException.callFailed(
+                            "http$post",
                             "Failed to process file: " + filePath,
                             "Check the file path and ensure you have read permissions.",
                             e
@@ -777,8 +777,8 @@ public class HttpToolkit implements Toolkit {
                                     MediaType.parse(requireNonNullElse(mimeType, "application/octet-stream"))));
 
                 } catch (IOException e) {
-                    throw new ToolExecutionException(
-                            "FILE-PROCESSING-FAILED",
+                    throw ToolExecutionException.callFailed(
+                            "http$put",
                             "Failed to process file: " + filePath,
                             "Check the file path and ensure you have read permissions.",
                             e

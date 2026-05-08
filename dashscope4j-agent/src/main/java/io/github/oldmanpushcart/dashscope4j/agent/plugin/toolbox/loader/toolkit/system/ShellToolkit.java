@@ -163,8 +163,8 @@ public class ShellToolkit implements Toolkit {
                         if (!completed) {
                             // 超时，销毁进程
                             process.destroyForcibly();
-                            throw new ToolExecutionException(
-                                    "COMMAND-TIMEOUT",
+                            throw ToolExecutionException.callFailed(
+                                    "shell$execute",
                                     String.format("Command execution timed out (exceeded %s), forcibly terminated", timeout),
                                     "Try simplifying the command or increasing the timeout."
                             );
@@ -193,8 +193,8 @@ public class ShellToolkit implements Toolkit {
                         if (ex instanceof InterruptedException) {
                             Thread.currentThread().interrupt();
                         }
-                        throw new ToolExecutionException(
-                                "COMMAND-EXECUTION-FAILED",
+                        throw ToolExecutionException.callFailed(
+                                "shell$execute",
                                 "Command execution failed: " + ex.getMessage(),
                                 "Check the command syntax and ensure the program exists.",
                                 ex

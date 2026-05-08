@@ -55,12 +55,12 @@ public record ToolResult<T>(
         return new ToolResult<>(true, data, null, null);
     }
 
-    public static <T> ToolResult<T> ofError(Throwable error) {
+    public static <T> ToolResult<T> ofError(String name, Throwable error) {
         final ToolExecutionException teCause;
         if (error instanceof ToolExecutionException cause) {
             teCause = cause;
         } else {
-            teCause = ToolExecutionException.wrap(error);
+            teCause = ToolExecutionException.wrap(name, error);
         }
         return new ToolResult<>(
                 false,

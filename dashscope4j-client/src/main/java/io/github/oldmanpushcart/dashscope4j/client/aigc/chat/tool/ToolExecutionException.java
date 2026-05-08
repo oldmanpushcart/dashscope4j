@@ -12,17 +12,20 @@ public class ToolExecutionException extends RuntimeException {
     public static final String TOOL_CALL_FAILED = "TOOL-CALL-FAILED";
     public static final String TOOL_INTERNAL_ERROR = "TOOL-INTERNAL-ERROR";
 
+    private final String name;
     private final String code;
     private final String suggestion;
 
-    public ToolExecutionException(String code, String message, String suggestion) {
+    public ToolExecutionException(String name, String code, String message, String suggestion) {
         super(message);
+        this.name = name;
         this.code = code;
         this.suggestion = suggestion;
     }
 
-    public ToolExecutionException(String code, String message, String suggestion, Throwable cause) {
+    public ToolExecutionException(String name, String code, String message, String suggestion, Throwable cause) {
         super(message, cause);
+        this.name = name;
         this.code = code;
         this.suggestion = suggestion;
     }
@@ -37,6 +40,7 @@ public class ToolExecutionException extends RuntimeException {
 
     public static ToolExecutionException notFound(String name) {
         return new ToolExecutionException(
+                name,
                 TOOL_NOT_FOUND,
                 "Tool not found: %s".formatted(name),
                 """
@@ -55,6 +59,7 @@ public class ToolExecutionException extends RuntimeException {
 
     public static ToolExecutionException marshalFailed(String name, Throwable cause) {
         return new ToolExecutionException(
+                name,
                 TOOL_MARSHAL_FAILED,
                 "Failed to marshal input for Tool: %s, reason: %s".formatted(name, parseCause(cause)),
                 """
@@ -67,6 +72,7 @@ public class ToolExecutionException extends RuntimeException {
 
     public static ToolExecutionException unmarshalFailed(String name, Throwable cause) {
         return new ToolExecutionException(
+                name,
                 TOOL_UNMARSHAL_FAILED,
                 "Failed to unmarshal output for Tool: %s, reason: %s".formatted(name, parseCause(cause)),
                 """
@@ -79,6 +85,7 @@ public class ToolExecutionException extends RuntimeException {
 
     public static ToolExecutionException callFailed(String name, Throwable cause) {
         return new ToolExecutionException(
+                name,
                 TOOL_CALL_FAILED,
                 "Failed to call Tool: %s, reason: %s".formatted(name, parseCause(cause)),
                 """
@@ -90,11 +97,33 @@ public class ToolExecutionException extends RuntimeException {
         );
     }
 
-    public static ToolExecutionException wrap(Throwable cause) {
+    public static ToolExecutionException callFailed(String name, String message, String suggestion, Throwable cause) {
+        return new ToolExecutionException(
+                name,
+                TOOL_CALL_FAILED,
+                "Failed to call Tool: %s, reason: %s".formatted(name, message),
+                suggestion,
+                cause
+        );
+    }
+
+    public static ToolExecutionException callFailed(String name, String message, String suggestion) {
+        return new ToolExecutionException(
+                name,
+                TOOL_CALL_FAILED,
+                "Failed to call Tool: %s, reason: %s".formatted(name, message),
+                suggestion
+        );
+    }
+
+
+
+    public static ToolExecutionException wrap(String name, Throwable cause) {
         if (cause instanceof ToolExecutionException teCause) {
             return teCause;
         }
         return new ToolExecutionException(
+                name,
                 TOOL_INTERNAL_ERROR,
                 "Internal error: %s".formatted(parseCause(cause)),
                 """

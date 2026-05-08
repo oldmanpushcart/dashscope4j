@@ -75,7 +75,6 @@ public interface FunctionTool extends Tool {
         /**
          * @return 工具调用存根类型（函数存根）
          */
-        @JsonProperty("type")
         @Override
         public Classify classify() {
             return Classify.FUNCTION;

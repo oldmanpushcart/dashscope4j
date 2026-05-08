@@ -172,8 +172,8 @@ public class FileOpsToolkit implements Toolkit {
                         final Path filePath = FileUtils.checkPathEscape(workspace, spec.path());
 
                         if (!Files.exists(filePath)) {
-                            throw new ToolExecutionException(
-                                    "FILE-NOT-FOUND",
+                            throw ToolExecutionException.callFailed(
+                                    "file$info",
                                     "File not found: " + spec.path(),
                                     "Verify the file path is correct and the file exists in the workspace."
                             );
@@ -190,15 +190,15 @@ public class FileOpsToolkit implements Toolkit {
                         );
 
                     } catch (SecurityException ex) {
-                        throw new ToolExecutionException(
-                                "ACCESS-DENIED",
+                        throw ToolExecutionException.callFailed(
+                                "file$info",
                                 "Access denied: " + spec.path(),
                                 "Check file permissions and ensure the file is within the workspace.",
                                 ex
                         );
                     } catch (IOException ex) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "file$info",
                                 "Failed to read file attributes: " + spec.path(),
                                 "The file may be corrupted or inaccessible. Try again or check system logs.",
                                 ex
@@ -237,8 +237,8 @@ public class FileOpsToolkit implements Toolkit {
                         final Path targetPath = FileUtils.checkPathEscape(workspace, spec.path());
 
                         if (!Files.exists(targetPath)) {
-                            throw new ToolExecutionException(
-                                    "FILE-NOT-FOUND",
+                            throw ToolExecutionException.callFailed(
+                                    "file$delete",
                                     "File not found: " + spec.path(),
                                     "Verify the file path is correct and the file exists in the workspace."
                             );
@@ -248,8 +248,8 @@ public class FileOpsToolkit implements Toolkit {
                             // 检查是否为空目录
                             try (final var stream = Files.list(targetPath)) {
                                 if (stream.findAny().isPresent()) {
-                                    throw new ToolExecutionException(
-                                            "DIRECTORY-NOT-EMPTY",
+                                    throw ToolExecutionException.callFailed(
+                                            "file$delete",
                                             "Directory not empty: " + spec.path(),
                                             "Remove all files and subdirectories first, or use a recursive delete tool."
                                     );
@@ -265,15 +265,15 @@ public class FileOpsToolkit implements Toolkit {
                         );
 
                     } catch (SecurityException ex) {
-                        throw new ToolExecutionException(
-                                "ACCESS-DENIED",
+                        throw ToolExecutionException.callFailed(
+                                "file$delete",
                                 "Access denied: " + spec.path(),
                                 "Check file permissions and ensure you have delete access.",
                                 ex
                         );
                     } catch (IOException ex) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "file$delete",
                                 "Failed to delete: " + spec.path(),
                                 "The file may be in use or locked. Try again later.",
                                 ex
@@ -313,16 +313,16 @@ public class FileOpsToolkit implements Toolkit {
                         final Path targetPath = FileUtils.checkPathEscape(workspace, spec.target());
 
                         if (!Files.exists(sourcePath)) {
-                            throw new ToolExecutionException(
-                                    "FILE-NOT-FOUND",
+                            throw ToolExecutionException.callFailed(
+                                    "file$move",
                                     "Source file not found: " + spec.source(),
                                     "Verify the source path is correct and the file exists."
                             );
                         }
 
                         if (Files.exists(targetPath)) {
-                            throw new ToolExecutionException(
-                                    "TARGET-EXISTS",
+                            throw ToolExecutionException.callFailed(
+                                    "file$move",
                                     "Target already exists: " + spec.target(),
                                     "Choose a different target path or delete the existing file first."
                             );
@@ -331,8 +331,8 @@ public class FileOpsToolkit implements Toolkit {
                         // 确保目标父目录存在
                         final Path parentDir = targetPath.getParent();
                         if (parentDir != null && !Files.exists(parentDir)) {
-                            throw new ToolExecutionException(
-                                    "PARENT-NOT-FOUND",
+                            throw ToolExecutionException.callFailed(
+                                    "file$move",
                                     "Parent directory not found: " + workspace.relativize(parentDir),
                                     "Create the parent directory first or choose a different target path."
                             );
@@ -346,15 +346,15 @@ public class FileOpsToolkit implements Toolkit {
                         );
 
                     } catch (SecurityException ex) {
-                        throw new ToolExecutionException(
-                                "ACCESS-DENIED",
+                        throw ToolExecutionException.callFailed(
+                                "file$move",
                                 "Access denied: cannot move " + spec.source() + " to " + spec.target(),
                                 "Check permissions for both source and target locations.",
                                 ex
                         );
                     } catch (IOException ex) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "file$move",
                                 "Failed to move: " + spec.source() + " -> " + spec.target(),
                                 "The file may be in use or the operation is not supported.",
                                 ex
@@ -395,16 +395,16 @@ public class FileOpsToolkit implements Toolkit {
                         final Path targetPath = FileUtils.checkPathEscape(workspace, spec.target());
 
                         if (!Files.exists(sourcePath)) {
-                            throw new ToolExecutionException(
-                                    "FILE-NOT-FOUND",
+                            throw ToolExecutionException.callFailed(
+                                    "file$copy",
                                     "Source file not found: " + spec.source(),
                                     "Verify the source path is correct and the file exists."
                             );
                         }
 
                         if (Files.exists(targetPath) && !spec.overwrite()) {
-                            throw new ToolExecutionException(
-                                    "TARGET-EXISTS",
+                            throw ToolExecutionException.callFailed(
+                                    "file$copy",
                                     "Target already exists: " + spec.target(),
                                     "Set overwrite=true to replace the existing file, or choose a different target path."
                             );
@@ -413,8 +413,8 @@ public class FileOpsToolkit implements Toolkit {
                         // 确保目标父目录存在
                         final Path parentDir = targetPath.getParent();
                         if (parentDir != null && !Files.exists(parentDir)) {
-                            throw new ToolExecutionException(
-                                    "PARENT-NOT-FOUND",
+                            throw ToolExecutionException.callFailed(
+                                    "file$copy",
                                     "Parent directory not found: " + workspace.relativize(parentDir),
                                     "Create the parent directory first or choose a different target path."
                             );
@@ -435,15 +435,15 @@ public class FileOpsToolkit implements Toolkit {
                         );
 
                     } catch (SecurityException ex) {
-                        throw new ToolExecutionException(
-                                "ACCESS-DENIED",
+                        throw ToolExecutionException.callFailed(
+                                "file$copy",
                                 "Access denied: cannot copy " + spec.source() + " to " + spec.target(),
                                 "Check permissions for both source and target locations.",
                                 ex
                         );
                     } catch (IOException ex) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "file$copy",
                                 "Failed to copy: " + spec.source() + " -> " + spec.target(),
                                 "The file may be in use or the operation is not supported.",
                                 ex
@@ -507,15 +507,15 @@ public class FileOpsToolkit implements Toolkit {
                         );
 
                     } catch (SecurityException ex) {
-                        throw new ToolExecutionException(
-                                "ACCESS-DENIED",
+                        throw ToolExecutionException.callFailed(
+                                "file$touch",
                                 "Access denied: " + spec.path(),
                                 "Check file permissions and ensure you have write access.",
                                 ex
                         );
                     } catch (IOException ex) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "file$touch",
                                 "Failed to create file: " + spec.path(),
                                 "The disk may be full or the path is invalid.",
                                 ex
@@ -572,15 +572,15 @@ public class FileOpsToolkit implements Toolkit {
                         );
 
                     } catch (SecurityException ex) {
-                        throw new ToolExecutionException(
-                                "ACCESS-DENIED",
+                        throw ToolExecutionException.callFailed(
+                                "file$mkdir",
                                 "Access denied: " + spec.path(),
                                 "Check file permissions and ensure you have write access.",
                                 ex
                         );
                     } catch (IOException ex) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "file$mkdir",
                                 "Failed to create directory: " + spec.path(),
                                 "The disk may be full or the path is invalid.",
                                 ex
@@ -616,8 +616,8 @@ public class FileOpsToolkit implements Toolkit {
                         final Path dirPath = FileUtils.checkPathEscape(workspace, spec.path());
 
                         if (!Files.isDirectory(dirPath)) {
-                            throw new ToolExecutionException(
-                                    "NOT-A-DIRECTORY",
+                            throw ToolExecutionException.callFailed(
+                                    "file$list",
                                     "Not a directory: " + spec.path(),
                                     "Provide a valid directory path. Use file$info to check the path type."
                             );
@@ -660,15 +660,15 @@ public class FileOpsToolkit implements Toolkit {
                         );
 
                     } catch (SecurityException ex) {
-                        throw new ToolExecutionException(
-                                "ACCESS-DENIED",
+                        throw ToolExecutionException.callFailed(
+                                "file$list",
                                 "Access denied: " + spec.path(),
                                 "Check directory permissions and ensure it is within the workspace.",
                                 ex
                         );
                     } catch (IOException ex) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "file$list",
                                 "Failed to list directory: " + spec.path(),
                                 "The directory may be inaccessible or corrupted.",
                                 ex
@@ -706,8 +706,8 @@ public class FileOpsToolkit implements Toolkit {
                         final Path searchPath = FileUtils.checkPathEscape(workspace, spec.path());
 
                         if (!Files.isDirectory(searchPath)) {
-                            throw new ToolExecutionException(
-                                    "NOT-A-DIRECTORY",
+                            throw ToolExecutionException.callFailed(
+                                    "file$search",
                                     "Not a directory: " + spec.path(),
                                     "Provide a valid directory path. Use file$info to check the path type."
                             );
@@ -772,15 +772,15 @@ public class FileOpsToolkit implements Toolkit {
                         );
 
                     } catch (SecurityException ex) {
-                        throw new ToolExecutionException(
-                                "ACCESS-DENIED",
+                        throw ToolExecutionException.callFailed(
+                                "file$search",
                                 "Access denied: " + spec.path(),
                                 "Check directory permissions and ensure it is within the workspace.",
                                 ex
                         );
                     } catch (IOException ex) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "file$search",
                                 "Failed to search files in: " + spec.path(),
                                 "The directory may be inaccessible or corrupted.",
                                 ex

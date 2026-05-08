@@ -187,16 +187,16 @@ public class TextFileOpsToolkit implements Toolkit {
                         final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
 
                         if (!Files.exists(resolved)) {
-                            throw new ToolExecutionException(
-                                    "FILE-NOT-FOUND",
+                            throw ToolExecutionException.callFailed(
+                                    "text_file$read",
                                     "File not found: " + spec.path(),
                                     "Verify the file path is correct and the file exists in the workspace."
                             );
                         }
 
                         if (Files.isDirectory(resolved)) {
-                            throw new ToolExecutionException(
-                                    "IS-DIRECTORY",
+                            throw ToolExecutionException.callFailed(
+                                    "text_file$read",
                                     "Not a file: " + spec.path(),
                                     "Provide a valid file path, not a directory."
                             );
@@ -205,8 +205,8 @@ public class TextFileOpsToolkit implements Toolkit {
                         // 检查文件大小
                         final long fileSize = Files.size(resolved);
                         if (fileSize > maxFileSize) {
-                            throw new ToolExecutionException(
-                                    "SIZE-EXCEEDED",
+                            throw ToolExecutionException.callFailed(
+                                    "text_file$read",
                                     "File size %.2f MB exceeds limit %.2f MB".formatted(fileSize / 1024.0 / 1024.0, maxFileSize / 1024.0 / 1024.0),
                                     "The file is too large to view. Try viewing a specific range with view_range parameter."
                             );
@@ -214,8 +214,8 @@ public class TextFileOpsToolkit implements Toolkit {
 
                         // 检测是否为二进制文件
                         if (FileUtils.isBinaryFile(resolved)) {
-                            throw new ToolExecutionException(
-                                    "BINARY-FILE",
+                            throw ToolExecutionException.callFailed(
+                                    "text_file$read",
                                     "Cannot view binary file: " + spec.path(),
                                     "This tool only supports text files. Use file$info to check file type."
                             );
@@ -264,8 +264,8 @@ public class TextFileOpsToolkit implements Toolkit {
                         );
 
                     } catch (IOException e) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "text_file$read",
                                 "Failed to view file: " + spec.path(),
                                 "The file may be inaccessible or corrupted.",
                                 e
@@ -310,8 +310,8 @@ public class TextFileOpsToolkit implements Toolkit {
                 .<SearchSpec>function((caller, spec) -> {
                     // 验证搜索词
                     if (spec.searchTerm() == null || spec.searchTerm().isEmpty()) {
-                        throw new ToolExecutionException(
-                                "INVALID-SEARCH-TERM",
+                        throw ToolExecutionException.callFailed(
+                                "text_file$search",
                                 "Search term cannot be empty",
                                 "Provide a non-empty search term to find in the file."
                         );
@@ -321,16 +321,16 @@ public class TextFileOpsToolkit implements Toolkit {
                         final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
 
                         if (!Files.exists(resolved)) {
-                            throw new ToolExecutionException(
-                                    "FILE-NOT-FOUND",
+                            throw ToolExecutionException.callFailed(
+                                    "text_file$search",
                                     "File not found: " + spec.path(),
                                     "Verify the file path is correct and the file exists in the workspace."
                             );
                         }
 
                         if (Files.isDirectory(resolved)) {
-                            throw new ToolExecutionException(
-                                    "IS-DIRECTORY",
+                            throw ToolExecutionException.callFailed(
+                                    "text_file$search",
                                     "Not a file: " + spec.path(),
                                     "Provide a valid file path, not a directory."
                             );
@@ -339,8 +339,8 @@ public class TextFileOpsToolkit implements Toolkit {
                         // 检查文件大小
                         final long fileSize = Files.size(resolved);
                         if (fileSize > maxFileSize) {
-                            throw new ToolExecutionException(
-                                    "SIZE-EXCEEDED",
+                            throw ToolExecutionException.callFailed(
+                                    "text_file$search",
                                     String.format("File size %.2f MB exceeds limit %.2f MB",
                                             fileSize / 1024.0 / 1024.0,
                                             maxFileSize / 1024.0 / 1024.0),
@@ -350,8 +350,8 @@ public class TextFileOpsToolkit implements Toolkit {
 
                         // 检测是否为二进制文件
                         if (FileUtils.isBinaryFile(resolved)) {
-                            throw new ToolExecutionException(
-                                    "BINARY-FILE",
+                            throw ToolExecutionException.callFailed(
+                                    "text_file$search",
                                     "Cannot search binary file: " + spec.path(),
                                     "This tool only supports text files. Use file$info to check file type."
                             );
@@ -403,8 +403,8 @@ public class TextFileOpsToolkit implements Toolkit {
                         );
 
                     } catch (IOException e) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "text_file$search",
                                 "Failed to search file: " + spec.path(),
                                 "The file may be inaccessible or corrupted.",
                                 e
@@ -448,8 +448,8 @@ public class TextFileOpsToolkit implements Toolkit {
                 .<StrReplaceSpec>function((caller, spec) -> {
                     // 验证参数
                     if (spec.oldStr() == null || spec.oldStr().isEmpty()) {
-                        throw new ToolExecutionException(
-                                "INVALID-OLD-STR",
+                        throw ToolExecutionException.callFailed(
+                                "text_file$str_replace",
                                 "oldStr cannot be empty",
                                 "Provide the exact text to replace."
                         );
@@ -459,8 +459,8 @@ public class TextFileOpsToolkit implements Toolkit {
                         final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
 
                         if (!Files.exists(resolved)) {
-                            throw new ToolExecutionException(
-                                    "FILE-NOT-FOUND",
+                            throw ToolExecutionException.callFailed(
+                                    "text_file$str_replace",
                                     "File not found: " + spec.path(),
                                     "Verify the file path is correct and the file exists in the workspace."
                             );
@@ -480,8 +480,8 @@ public class TextFileOpsToolkit implements Toolkit {
                         // 查找匹配位置
                         final int firstIndex = content.indexOf(spec.oldStr());
                         if (firstIndex == -1) {
-                            throw new ToolExecutionException(
-                                    "NOT-FOUND",
+                            throw ToolExecutionException.callFailed(
+                                    "text_file$str_replace",
                                     "Text not found in file",
                                     "Use file$search to locate the text, and provide more context to make oldStr unique."
                             );
@@ -490,8 +490,8 @@ public class TextFileOpsToolkit implements Toolkit {
                         // 检查是否有多个匹配
                         final int secondIndex = content.indexOf(spec.oldStr(), firstIndex + 1);
                         if (secondIndex != -1) {
-                            throw new ToolExecutionException(
-                                    "MULTIPLE-MATCHES",
+                            throw ToolExecutionException.callFailed(
+                                    "text_file$str_replace",
                                     "Multiple matches found, oldStr is not unique",
                                     "Provide more context (e.g., surrounding lines) to make the match unique."
                             );
@@ -513,15 +513,15 @@ public class TextFileOpsToolkit implements Toolkit {
                         );
 
                     } catch (SecurityException e) {
-                        throw new ToolExecutionException(
-                                "SECURITY-VIOLATION",
+                        throw ToolExecutionException.callFailed(
+                                "text_file$str_replace",
                                 e.getMessage(),
                                 "The file may have been modified. Refresh and try again.",
                                 e
                         );
                     } catch (IOException e) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "text_file$str_replace",
                                 "Failed to replace text in file: " + spec.path(),
                                 "The file may be inaccessible or locked.",
                                 e
@@ -566,8 +566,8 @@ public class TextFileOpsToolkit implements Toolkit {
                 .<InsertLineSpec>function((caller, spec) -> {
                     // 验证参数
                     if (spec.content() == null || spec.content().isEmpty()) {
-                        throw new ToolExecutionException(
-                                "INVALID-CONTENT",
+                        throw ToolExecutionException.callFailed(
+                                "text_file$insert_line",
                                 "Content cannot be empty",
                                 "Provide the content to insert into the file."
                         );
@@ -577,8 +577,8 @@ public class TextFileOpsToolkit implements Toolkit {
                         final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
 
                         if (!Files.exists(resolved)) {
-                            throw new ToolExecutionException(
-                                    "FILE-NOT-FOUND",
+                            throw ToolExecutionException.callFailed(
+                                    "text_file$insert_line",
                                     "File not found: " + spec.path(),
                                     "Verify the file path is correct and the file exists in the workspace."
                             );
@@ -628,15 +628,15 @@ public class TextFileOpsToolkit implements Toolkit {
                         );
 
                     } catch (SecurityException e) {
-                        throw new ToolExecutionException(
-                                "SECURITY-VIOLATION",
+                        throw ToolExecutionException.callFailed(
+                                "text_file$insert_line",
                                 e.getMessage(),
                                 "The file may have been modified. Refresh and try again.",
                                 e
                         );
                     } catch (IOException e) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "text_file$insert_line",
                                 "Failed to insert content: " + spec.path(),
                                 "The file may be inaccessible or locked.",
                                 e
@@ -675,8 +675,8 @@ public class TextFileOpsToolkit implements Toolkit {
                 .<CreateFileSpec>function((caller, spec) -> {
                     // 验证内容
                     if (spec.fileText() == null || spec.fileText().isEmpty()) {
-                        throw new ToolExecutionException(
-                                "INVALID-CONTENT",
+                        throw ToolExecutionException.callFailed(
+                                "text_file$write",
                                 "File content cannot be empty",
                                 "Provide the content to write to the file."
                         );
@@ -688,8 +688,8 @@ public class TextFileOpsToolkit implements Toolkit {
                         // 检查文件是否存在
                         if (Files.exists(resolved)) {
                             if (!spec.overwrite()) {
-                                throw new ToolExecutionException(
-                                        "FILE-EXISTS",
+                                throw ToolExecutionException.callFailed(
+                                        "text_file$write",
                                         "File already exists: " + spec.path(),
                                         "Set overwrite=true to replace the existing file."
                                 );
@@ -721,8 +721,8 @@ public class TextFileOpsToolkit implements Toolkit {
                         );
 
                     } catch (IOException e) {
-                        throw new ToolExecutionException(
-                                "IO-ERROR",
+                        throw ToolExecutionException.callFailed(
+                                "text_file$write",
                                 "Failed to create file: " + spec.path(),
                                 "The directory may not exist or you lack permissions.",
                                 e

@@ -17,10 +17,13 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.GuiToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.RuntimeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.ShellToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
 
@@ -102,7 +105,7 @@ public class DebugTestCase implements LoadingEnv {
         final var sessionPlugin = buildingSessionPlugin();
         final var toolboxPlugin = buildingToolboxPlugin();
 
-        final var agent = ReActAgent.newBuilder()
+        final var agent = DashscopeAgent.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_PLUS)
                 .plugins(plugins -> {
@@ -134,5 +137,15 @@ public class DebugTestCase implements LoadingEnv {
         }
 
     }
+
+    @Test
+    public void debug$3() {
+
+        FunctionTool.Call call = new FunctionTool.Call(0, "call-id", new FunctionTool.Call.Stub("function-name", "{\"name\":\"张三\"}"));
+        final var json = JacksonJsonUtils.toJson(call);
+        System.out.println(json);
+
+    }
+
 
 }

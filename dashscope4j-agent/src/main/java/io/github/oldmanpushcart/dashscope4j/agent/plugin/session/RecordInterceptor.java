@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.SystemMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.ToolMessage;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
@@ -29,6 +30,11 @@ class RecordInterceptor implements ChatInterceptor {
 
     @Override
     public CompletionStage<?> intercept(Chain chain, AigcRequest<Input, Output> request) {
+
+        final var lastMessage = request.input().lastMessage();
+        if(lastMessage instanceof ToolMessage) {
+            return chain.proceed(request);
+        }
 
         final var session = (Session) (request.context().get("session"));
         if (null == session) {
