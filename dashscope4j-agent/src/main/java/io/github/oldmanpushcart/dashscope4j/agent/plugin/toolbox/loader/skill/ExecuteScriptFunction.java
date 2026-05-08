@@ -142,15 +142,15 @@ class ExecuteScriptFunction implements Function<ExecuteScriptFunction.Spec, Stri
      */
     public record Spec(
 
-            @JsonProperty("skill_name")
+            @JsonProperty(value = "skill_name", required = true)
             @JsonPropertyDescription("Skill 名称")
             String name,
 
-            @JsonProperty("script_path")
+            @JsonProperty(value = "script_path", required = true)
             @JsonPropertyDescription("脚本相对路径，如 'scripts/extract.py'")
             String path,
 
-            @JsonProperty("args")
+            @JsonProperty(value = "args", required = true)
             @JsonPropertyDescription("脚本参数列表")
             List<String> args,
 

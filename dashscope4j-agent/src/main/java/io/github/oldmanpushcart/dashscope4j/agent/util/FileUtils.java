@@ -15,27 +15,26 @@ public class FileUtils {
     /**
      * 检查并解析路径，防止路径穿越攻击
      *
-     * @param workspace 工作区根路径
+     * @param workspace 工作区根路径（支持相对路径，会自动转换为绝对路径）
      * @param userPath  用户提供的相对路径
      * @return 解析后的绝对路径
      * @throws SecurityException 如果路径非法或尝试穿越
      */
     public static Path checkPathEscape(Path workspace, String userPath) {
+        // 将 workspace 转换为绝对路径并规范化
+        Path absoluteWorkspace = workspace.toAbsolutePath().normalize();
+        
         // 拒绝绝对路径，防止路径穿越
         if (Path.of(userPath).isAbsolute()) {
             throw new SecurityException("拒绝访问：不支持绝对路径：" + userPath);
         }
 
-        Path resolved = workspace.resolve(userPath).normalize();
+        // 解析用户路径并规范化
+        Path resolved = absoluteWorkspace.resolve(userPath).normalize();
 
         // 双重验证：确保解析后的路径仍在工作目录内
-        if (!resolved.startsWith(workspace)) {
+        if (!resolved.startsWith(absoluteWorkspace)) {
             throw new SecurityException("拒绝访问：路径超出工作目录范围：" + userPath);
-        }
-
-        // 检查是否包含 .. 试图穿越（虽然 normalize 已经处理，但显式检查更安全）
-        if (userPath.contains("..") && !resolved.startsWith(workspace)) {
-            throw new SecurityException("拒绝访问：非法路径遍历：" + userPath);
         }
 
         return resolved;

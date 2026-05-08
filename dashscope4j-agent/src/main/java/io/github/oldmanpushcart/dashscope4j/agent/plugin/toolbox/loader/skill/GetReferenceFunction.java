@@ -87,11 +87,11 @@ class GetReferenceFunction implements Function<GetReferenceFunction.Spec, String
      * 参数类
      */
     record Spec(
-            @JsonProperty("skill_name")
+            @JsonProperty(value = "skill_name", required = true)
             @JsonPropertyDescription("Skill 名称")
             String name,
 
-            @JsonProperty("reference_path")
+            @JsonProperty(value = "reference_path", required = true)
             @JsonPropertyDescription("引用文件相对路径，如 'references/REFERENCE.md'")
             String path
     ) {

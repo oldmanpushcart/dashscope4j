@@ -129,7 +129,8 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(sessionId, Message.user("""
-                            杭州明天天气如何？
+                            用JavaSwing给我写一个⏰，有十分秒三根指针按时间推动，能正确的显示当前的时间。
+                            编译通过并运行。
                             """))
                     .toCompletableFuture()
                     .join();

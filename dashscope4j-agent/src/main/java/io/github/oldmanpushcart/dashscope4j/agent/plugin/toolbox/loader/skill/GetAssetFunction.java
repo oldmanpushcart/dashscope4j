@@ -92,11 +92,11 @@ class GetAssetFunction implements Function<GetAssetFunction.Spec, URI> {
      */
     record Spec(
 
-            @JsonProperty("skill_name")
+            @JsonProperty(value = "skill_name", required = true)
             @JsonPropertyDescription("Skill 名称")
             String name,
 
-            @JsonProperty("asset_path")
+            @JsonProperty(value = "asset_path", required = true)
             @JsonPropertyDescription("资源文件相对路径，如 'assets/template.xlsx'")
             String path
 

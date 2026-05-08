@@ -81,7 +81,7 @@ public class FileOpsToolkit implements Toolkit {
             return List.of(info(), list(), search());
         } else {
             // 读写模式：返回所有工具
-            return List.of(info(), delete(), move(), touch(), mkdir(), list(), search());
+            return List.of(info(), delete(), move(), copy(), touch(), mkdir(), list(), search());
         }
     }
 
@@ -356,6 +356,95 @@ public class FileOpsToolkit implements Toolkit {
                         throw new ToolExecutionException(
                                 "IO-ERROR",
                                 "Failed to move: " + spec.source() + " -> " + spec.target(),
+                                "The file may be in use or the operation is not supported.",
+                                ex
+                        );
+                    }
+                })
+                .build();
+    }
+
+    /**
+     * file$copy 工具
+     */
+    private FunctionTool copy() {
+        return FunctionTool.newBuilder()
+                .name("file$copy")
+                .description("""
+                        复制文件或目录到另一个位置。
+                        
+                        【使用场景】
+                        - 备份文件
+                        - 创建文件副本
+                        - 复制文件到其他目录
+                        
+                        【返回结果】
+                        - success: 是否成功
+                        - message: 操作结果提示
+                        
+                        【注意事项】
+                        - 如果目标已存在且 overwrite=false，操作会失败
+                        - 源和目标必须在 workspace 范围内
+                        - 跨目录复制时，目标父目录必须存在
+                        - 默认不覆盖已存在的文件，设置 overwrite=true 以覆盖
+                        """)
+                .parameterType(CopySpec.class)
+                .<CopySpec>function((caller, spec) -> {
+                    try {
+                        final Path sourcePath = FileUtils.checkPathEscape(workspace, spec.source());
+                        final Path targetPath = FileUtils.checkPathEscape(workspace, spec.target());
+
+                        if (!Files.exists(sourcePath)) {
+                            throw new ToolExecutionException(
+                                    "FILE-NOT-FOUND",
+                                    "Source file not found: " + spec.source(),
+                                    "Verify the source path is correct and the file exists."
+                            );
+                        }
+
+                        if (Files.exists(targetPath) && !spec.overwrite()) {
+                            throw new ToolExecutionException(
+                                    "TARGET-EXISTS",
+                                    "Target already exists: " + spec.target(),
+                                    "Set overwrite=true to replace the existing file, or choose a different target path."
+                            );
+                        }
+
+                        // 确保目标父目录存在
+                        final Path parentDir = targetPath.getParent();
+                        if (parentDir != null && !Files.exists(parentDir)) {
+                            throw new ToolExecutionException(
+                                    "PARENT-NOT-FOUND",
+                                    "Parent directory not found: " + workspace.relativize(parentDir),
+                                    "Create the parent directory first or choose a different target path."
+                            );
+                        }
+
+                        // 执行复制
+                        if (Files.isDirectory(sourcePath)) {
+                            // 复制目录（递归）
+                            copyDirectory(sourcePath, targetPath, spec.overwrite());
+                        } else {
+                            // 复制文件
+                            Files.copy(sourcePath, targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                        }
+
+                        return Map.of(
+                                "success", true,
+                                "message", "Copied: %s -> %s".formatted(spec.source(), spec.target())
+                        );
+
+                    } catch (SecurityException ex) {
+                        throw new ToolExecutionException(
+                                "ACCESS-DENIED",
+                                "Access denied: cannot copy " + spec.source() + " to " + spec.target(),
+                                "Check permissions for both source and target locations.",
+                                ex
+                        );
+                    } catch (IOException ex) {
+                        throw new ToolExecutionException(
+                                "IO-ERROR",
+                                "Failed to copy: " + spec.source() + " -> " + spec.target(),
                                 "The file may be in use or the operation is not supported.",
                                 ex
                         );
@@ -704,6 +793,35 @@ public class FileOpsToolkit implements Toolkit {
     // ==================== 辅助方法 ====================
 
     /**
+     * 递归复制目录
+     */
+    private void copyDirectory(Path source, Path target, boolean overwrite) throws IOException {
+        if (!Files.exists(target)) {
+            Files.createDirectories(target);
+        }
+
+        try (var stream = Files.list(source)) {
+            stream.forEach(entry -> {
+                try {
+                    final Path targetEntry = target.resolve(entry.getFileName().toString());
+                    if (Files.isDirectory(entry)) {
+                        // 递归复制子目录
+                        copyDirectory(entry, targetEntry, overwrite);
+                    } else {
+                        // 复制文件
+                        if (Files.exists(targetEntry) && !overwrite) {
+                            throw new IOException("Target already exists: " + workspace.relativize(targetEntry));
+                        }
+                        Files.copy(entry, targetEntry, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to copy: " + entry, e);
+                }
+            });
+        }
+    }
+
+    /**
      * 构建 list 截断提示
      */
     private String buildListTruncateHint(String path, int returned, int maxReturn, int total) {
@@ -793,6 +911,24 @@ public class FileOpsToolkit implements Toolkit {
             @JsonPropertyDescription("目标文件的相对路径")
             @JsonProperty(value = "target", required = true)
             String target
+    ) {
+    }
+
+    /**
+     * file$copy 参数
+     */
+    record CopySpec(
+            @JsonPropertyDescription("源文件或目录的相对路径")
+            @JsonProperty(value = "source", required = true)
+            String source,
+
+            @JsonPropertyDescription("目标文件或目录的相对路径")
+            @JsonProperty(value = "target", required = true)
+            String target,
+
+            @JsonPropertyDescription("是否覆盖已存在的目标（默认 false）")
+            @JsonProperty("overwrite")
+            boolean overwrite
     ) {
     }
 

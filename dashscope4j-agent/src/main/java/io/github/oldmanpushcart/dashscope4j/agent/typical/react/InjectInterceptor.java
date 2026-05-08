@@ -10,7 +10,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatIntercept
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -42,12 +41,14 @@ class InjectInterceptor implements ChatInterceptor {
                 .input(input -> Input.newBuilder(input)
                         .messages(messages -> {
 
-                            // 渲染 ReAct 模板
-                            final var prompt = REACT_PROMPT_TEMPLATE
-                                    .render(Map.of("tools", JacksonJsonUtils.toJson(tools)));
+                            messages.add(0, Message.system("""
+                                    ### 工具列表
+                                    %s
+                                    """.formatted(JacksonJsonUtils.toJson(tools))));
 
                             // 添加到 SystemMessage
-                            messages.add(0, Message.system(prompt).withCache());
+                            messages.add(0, Message.system(REACT_PROMPT_TEMPLATE.render()).withCache());
+
                             return messages;
 
                         })

@@ -654,17 +654,17 @@ public class TextFileOpsToolkit implements Toolkit {
                 .name("text_file$write")
                 .description("""
                         写入文件内容，创建新文件或覆盖现有文件。
-                            
+
                         【使用场景】
                         - 创建新的源代码文件
                         - 生成配置文件
                         - 创建文档或脚本
-                            
+
                         【返回结果】
                         - operation: 操作类型（created 或 overwritten）
                         - bytes_written: 写入的字节数
                         - lines_count: 写入的行数
-                            
+
                         【注意事项】
                         - 默认不允许覆盖已存在的文件
                         - 设置 overwrite=true 可以强制覆盖
