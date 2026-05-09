@@ -188,11 +188,7 @@ class FunctionToolCaller implements Tool.Caller {
         // 找到指定的工具
         for (final var tool : tools) {
 
-            if (!(tool instanceof FunctionTool functionTool)) {
-                continue;
-            }
-
-            if (Objects.equals(functionTool.meta().name(), functionCall.stub().name())) {
+            if (Objects.equals(tool.meta().name(), functionCall.stub().name())) {
                 return tool;
             }
 
