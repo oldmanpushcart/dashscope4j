@@ -105,7 +105,7 @@ public class DebugTestCase implements LoadingEnv {
         final var sessionPlugin = buildingSessionPlugin();
         final var toolboxPlugin = buildingToolboxPlugin();
 
-        final var agent = DashscopeAgent.newBuilder()
+        final var agent = ReActAgent.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_PLUS)
                 .plugins(plugins -> {

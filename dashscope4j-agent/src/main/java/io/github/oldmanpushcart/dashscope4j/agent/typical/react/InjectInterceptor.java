@@ -7,7 +7,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
-import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -17,9 +16,12 @@ import java.util.concurrent.CompletionStage;
  */
 class InjectInterceptor implements ChatInterceptor {
 
-    private static final PromptTemplate REACT_PROMPT_TEMPLATE = PromptTemplate.newBuilder()
-            .template(ReActAgent.class.getResourceAsStream("/prompt/REACT_AGENT.md"))
-            .build();
+    private static final Message REACT_SYSTEM_MESSAGE = Message
+            .system(PromptTemplate.newBuilder()
+                    .template(ReActAgent.class.getResourceAsStream("/prompt/REACT_AGENT.md"))
+                    .build()
+                    .render())
+            .withCache();
 
     @Override
     public CompletionStage<?> intercept(Chain chain, AigcRequest<Input, Output> request) {
@@ -41,13 +43,8 @@ class InjectInterceptor implements ChatInterceptor {
                 .input(input -> Input.newBuilder(input)
                         .messages(messages -> {
 
-                            messages.add(0, Message.system("""
-                                    ## 工具列表
-                                    %s
-                                    """.formatted(JacksonJsonUtils.toJson(tools))));
-
                             // 添加到 SystemMessage
-                            messages.add(0, Message.system(REACT_PROMPT_TEMPLATE.render()).withCache());
+                            messages.add(0, REACT_SYSTEM_MESSAGE);
 
                             return messages;
 
@@ -56,11 +53,8 @@ class InjectInterceptor implements ChatInterceptor {
 
                 .parameters(parameters -> {
 
-                    // 清除工具列表，完全交由 REACT 动态注入
-                    parameters.put("tools", null);
-
-                    // 关闭并行工具调用
-                    parameters.put("parallel_tool_calls", false);
+                    // 关闭工具调用，交由ReAct完成
+                    parameters.put("tool_choice", "none");
 
                     // 停止词
                     parameters.put("stop", List.of(
@@ -68,10 +62,6 @@ class InjectInterceptor implements ChatInterceptor {
                     ));
 
                     return parameters;
-                })
-                .context(context -> {
-                    context.put("react_tools", tools);
-                    return context;
                 })
                 .build();
     }

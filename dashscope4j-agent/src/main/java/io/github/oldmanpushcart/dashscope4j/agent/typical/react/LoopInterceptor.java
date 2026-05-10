@@ -307,7 +307,7 @@ class LoopInterceptor implements ChatInterceptor {
          * 请求自带的工具集已经再前边移到了request#context()中
          */
         //noinspection unchecked
-        final var tools = (List<Tool>) (request.context().get("react_tools"));
+        final var tools = (List<Tool>) (request.parameters().get("tools"));
         if (null != tools) {
             final var findOpt = tools.stream()
                     .filter(tool -> tool.meta().name().equals(name))
