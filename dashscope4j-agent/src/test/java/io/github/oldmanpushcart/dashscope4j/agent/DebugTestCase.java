@@ -20,12 +20,14 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.
 import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -105,9 +107,9 @@ public class DebugTestCase implements LoadingEnv {
         final var sessionPlugin = buildingSessionPlugin();
         final var toolboxPlugin = buildingToolboxPlugin();
 
-        final var agent = DashscopeAgent.newBuilder()
+        final var agent = ReActAgent.newBuilder()
                 .client(client)
-                .model(ChatModel.QWEN_MAX)
+                .model(ChatModel.QWEN_FLASH)
                 .plugins(plugins -> {
                     plugins.add(sessionPlugin);
                     plugins.add(toolboxPlugin);
@@ -115,26 +117,25 @@ public class DebugTestCase implements LoadingEnv {
                 })
                 .build();
 
-//            {
-//                final var outbound = Flux.from(agent.flow(sessionId, Message.user("""
-//                                用Java写一个时钟，使用Swing，需要有时分秒的指针，并且还会动！
-//                                编译并运行
-//                                """)))
-//                        .reduce(AssistantMessage::accumulate)
-//                        .toFuture()
-//                        .join();
-//                System.out.println(outbound.text());
-//            }
+            {
+                final var outbound = Flux.from(agent.flow(sessionId, Message.user("""
+                                根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
+                                """)))
+                        .reduce(AssistantMessage::accumulate)
+                        .toFuture()
+                        .join();
+                System.out.println(outbound.text());
+            }
 
-        {
-            final var outbound = agent.async(sessionId, Message.user("""
-                            根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weatcher.png
-                            """))
-                    .toCompletableFuture()
-                    .join();
-
-            System.out.println(outbound.text());
-        }
+//        {
+//            final var outbound = agent.async(sessionId, Message.user("""
+//                            根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
+//                            """))
+//                    .toCompletableFuture()
+//                    .join();
+//
+//            System.out.println(outbound.text());
+//        }
 
     }
 
