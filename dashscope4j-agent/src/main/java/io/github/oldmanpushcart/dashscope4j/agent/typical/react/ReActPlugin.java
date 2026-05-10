@@ -8,7 +8,7 @@ import java.util.List;
 class ReActPlugin implements Plugin {
 
     private final List<ChatInterceptor> preparationInterceptors = List.of(
-            new InjectInterceptor(),
+            new SettingInterceptor(),
             new LoopInterceptor()
     );
 

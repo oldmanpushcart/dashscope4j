@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.function.QueryScore
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.ImageContent;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolLookup;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import org.junit.jupiter.api.Assertions;
@@ -15,7 +16,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -133,10 +137,8 @@ public class ChatTestCase implements LoadingEnv {
         final var request = AigcRequest.newBuilder(data.model)
                 .input(ChatModel.Input.newBuilder()
                         .addMessage(Message.user("请问英语和物理分别是多少分?"))
-                        .build())
-                .parameters(Map.of(
-                        "tools", List.of(
-                                new QueryScoreFunction() {
+                        .lookups(List.of(
+                                ToolLookup.single(new QueryScoreFunction() {
 
                                     @Override
                                     public Result query(Query query) {
@@ -144,9 +146,9 @@ public class ChatTestCase implements LoadingEnv {
                                         return super.query(query);
                                     }
 
-                                }.toTool()
-                        )
-                ))
+                                }.toTool())
+                        ))
+                        .build())
                 .build();
         final var response = data.op().apply(request)
                 .toCompletableFuture()

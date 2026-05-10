@@ -1,11 +1,17 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope;
 
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseAgent;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Dashscope-Agent
  */
 public class DashscopeAgent extends BaseAgent {
+
+    private final Plugin dashscopePlugin;
 
     /**
      * 构造 DashscopeAgent
@@ -14,6 +20,14 @@ public class DashscopeAgent extends BaseAgent {
      */
     protected DashscopeAgent(Builder builder) {
         super(builder);
+        this.dashscopePlugin = new DashscopePlugin();
+    }
+
+    @Override
+    protected List<Plugin> plugins() {
+        final var newPlugins = new ArrayList<>(super.plugins());
+        newPlugins.add(dashscopePlugin);
+        return newPlugins;
     }
 
     public static Builder newBuilder() {

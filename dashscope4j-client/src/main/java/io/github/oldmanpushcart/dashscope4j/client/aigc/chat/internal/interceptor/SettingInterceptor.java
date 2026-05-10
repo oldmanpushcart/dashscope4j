@@ -16,10 +16,19 @@ public class SettingInterceptor implements Interceptor {
             return chain.proceed();
         }
 
-        final var newRequest = AigcRequest.newBuilder(request.as(model))
-                .parameters(parameter -> {
-                    parameter.put("result_format", "message");
-                    return parameter;
+        final var chatRequest = request.as(model);
+
+        final var newRequest = AigcRequest.newBuilder(chatRequest)
+                .parameters(parameters -> {
+
+                    // 设置结果消息格式为：MESSAGE
+                    parameters.put("result_format", "message");
+
+                    // 设置工具集
+                    final var lookup = chatRequest.input().lookup();
+                    parameters.put("tools", lookup.lookupAll());
+
+                    return parameters;
                 })
                 .build();
         return chain.proceed(newRequest);

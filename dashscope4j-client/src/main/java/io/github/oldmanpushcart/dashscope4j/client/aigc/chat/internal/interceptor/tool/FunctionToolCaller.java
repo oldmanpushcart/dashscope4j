@@ -21,11 +21,12 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
-import static java.util.concurrent.CompletableFuture.failedStage;
 
 class FunctionToolCaller implements Tool.Caller {
 
@@ -118,20 +119,14 @@ class FunctionToolCaller implements Tool.Caller {
         message.calls().stream()
                 .map(FunctionTool.Call.class::cast)
                 .forEach(call -> {
-                    CompletionStage<String> stage;
-                    try {
-                        final var tool = requireTool(call);
-                        stage = callFunction(tool, call);
-                    } catch (Throwable ex) {
-                        stage = failedStage(ex);
-                    }
+                    final var stage = callFunction(call);
                     futureMap.put(call.id(), stage.toCompletableFuture());
                 });
         return futureMap;
     }
 
     // 函数调用
-    private CompletionStage<String> callFunction(Tool tool, FunctionTool.Call call) {
+    private CompletionStage<String> callFunction(FunctionTool.Call call) {
 
         if (logger.isDebugEnabled()) {
             logger.debug("{}/{} >>> {}", this, call.stub().name(), call.stub().arguments());
@@ -140,7 +135,10 @@ class FunctionToolCaller implements Tool.Caller {
         return CompletableFuture.completedStage(null)
 
                 // 执行函数
-                .thenCompose(unused -> tool.call(this, call.stub().arguments()))
+                .thenCompose(unused -> {
+                    final var tool = requireTool(call);
+                    return tool.call(this, call.stub().arguments());
+                })
 
                 // 日志记录调用结果
                 .whenComplete((result, ex) -> {
@@ -178,24 +176,9 @@ class FunctionToolCaller implements Tool.Caller {
 
     // 找到函数工具
     private Tool requireTool(FunctionTool.Call functionCall) {
-
-        //noinspection unchecked
-        final var tools = (List<Tool>) (request.parameters().get("tools"));
-        if (null == tools) {
-            return null;
-        }
-
-        // 找到指定的工具
-        for (final var tool : tools) {
-
-            if (Objects.equals(tool.meta().name(), functionCall.stub().name())) {
-                return tool;
-            }
-
-        }
-
-        throw ToolExecutionException.notFound(functionCall.stub().name());
-
+        final var name = functionCall.stub().name();
+        return request.input().lookup().lookupByName(name)
+                .orElseThrow(() -> ToolExecutionException.notFound(name));
     }
 
 }

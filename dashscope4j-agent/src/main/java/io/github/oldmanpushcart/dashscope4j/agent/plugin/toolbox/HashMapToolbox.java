@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox;
 
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.ToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.ToolLoader;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,10 +52,10 @@ public class HashMapToolbox implements Toolbox {
     }
 
     @Override
-    public CompletionStage<List<ToolUse>> lookupByIntent(String intent) {
+    public CompletionStage<List<Tool>> lookupByIntent(String intent) {
         return indexer.query(intent)
                 .thenApply(names -> {
-                    final List<ToolUse> result = new ArrayList<>();
+                    final List<Tool> result = new ArrayList<>();
                     for (final var name : names) {
                         final var lookupOpt = lookupByName(name);
                         if (lookupOpt.isPresent()) {
@@ -71,16 +72,19 @@ public class HashMapToolbox implements Toolbox {
     }
 
     @Override
-    public Optional<ToolUse> lookupByName(String name) {
+    public Optional<Tool> lookupByName(String name) {
         return Optional.ofNullable(registry.get(name))
-                .map(Entry::use);
+                .map(Entry::use)
+                .map(ToolUse::tool);
     }
 
     @Override
-    public List<ToolUse> lookupAll() {
+    public List<Tool> lookupAll() {
         return registry.values()
                 .stream()
                 .map(Entry::use)
+                .filter(use->use.mode() == ToolUse.Mode.FIXED)
+                .map(ToolUse::tool)
                 .toList();
     }
 

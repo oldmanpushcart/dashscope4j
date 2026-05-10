@@ -1,6 +1,8 @@
 package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox;
 
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.ToolLoader;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolLookup;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,7 +14,7 @@ import java.util.concurrent.CompletionStage;
  * 管理来自多个 {@link ToolLoader} 的工具，提供订阅、检索和查询功能。
  * </p>
  */
-public interface Toolbox extends AutoCloseable {
+public interface Toolbox extends AutoCloseable, ToolLookup {
 
     /**
      * 订阅工具加载器，将其中的工具注册到工具箱。
@@ -28,7 +30,7 @@ public interface Toolbox extends AutoCloseable {
      * @param intent 用户意图描述
      * @return 匹配的工具列表
      */
-    CompletionStage<List<ToolUse>> lookupByIntent(String intent);
+    CompletionStage<List<Tool>> lookupByIntent(String intent);
 
     /**
      * 根据名称精确查找工具。
@@ -36,14 +38,16 @@ public interface Toolbox extends AutoCloseable {
      * @param name 工具名称
      * @return 找到的工具，未找到返回空 Optional
      */
-    Optional<ToolUse> lookupByName(String name);
+    @Override
+    Optional<Tool> lookupByName(String name);
 
     /**
      * 获取所有已注册的工具。
      *
      * @return 工具列表
      */
-    List<ToolUse> lookupAll();
+    @Override
+    List<Tool> lookupAll();
 
     /**
      * @return 是否已关闭

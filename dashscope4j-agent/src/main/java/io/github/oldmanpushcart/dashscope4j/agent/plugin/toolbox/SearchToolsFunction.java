@@ -51,7 +51,6 @@ class SearchToolsFunction implements Function<SearchToolsFunction.Search, Comple
     public CompletionStage<Map<String, Tool>> apply(Search search) {
         return toolbox.lookupByIntent(search.intent())
                 .thenApply(uses -> uses.stream()
-                        .map(ToolUse::tool)
                         .collect(toMap(
                                 tool -> tool.meta().name(),
                                 Function.identity()

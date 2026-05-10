@@ -4,7 +4,6 @@ import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
 
@@ -12,9 +11,9 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
- * 预处理拦截器：注入关键信息
+ * 预处理拦截器：设置
  */
-class InjectInterceptor implements ChatInterceptor {
+class SettingInterceptor implements ChatInterceptor {
 
     private static final Message REACT_SYSTEM_MESSAGE = Message
             .system(PromptTemplate.newBuilder()
@@ -35,9 +34,6 @@ class InjectInterceptor implements ChatInterceptor {
      * @return 重新构建的请求
      */
     private AigcRequest<Input, Output> newReActRequest(AigcRequest<Input, Output> request) {
-
-        //noinspection unchecked
-        final var tools = (List<Tool>) (request.parameters().getOrDefault("tools", List.of()));
 
         return AigcRequest.newBuilder(request)
                 .input(input -> Input.newBuilder(input)

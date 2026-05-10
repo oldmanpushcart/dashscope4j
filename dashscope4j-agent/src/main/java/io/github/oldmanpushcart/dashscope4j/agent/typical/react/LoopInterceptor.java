@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
@@ -301,38 +300,8 @@ class LoopInterceptor implements ChatInterceptor {
      * @return 工具
      */
     private Tool requireTool(AigcRequest<Input, Output> request, String name) {
-
-        /*
-         * 先从请求自带的工具集找
-         * 请求自带的工具集已经再前边移到了request#context()中
-         */
-        //noinspection unchecked
-        final var tools = (List<Tool>) (request.parameters().get("tools"));
-        if (null != tools) {
-            final var findOpt = tools.stream()
-                    .filter(tool -> tool.meta().name().equals(name))
-                    .findFirst();
-            if (findOpt.isPresent()) {
-                return findOpt.get();
-            }
-        }
-
-
-        /*
-         * 再从toolbox中找
-         * 这里是对toolbox做一个兼容性适配
-         */
-        final var toolbox = (Toolbox) (request.context().get("toolbox"));
-        if (null != toolbox) {
-            final var findOpt = toolbox.lookupByName(name);
-            if (findOpt.isPresent()) {
-                return findOpt.get().tool();
-            }
-        }
-
-        // 都找不到，就只能抛出错误
-        throw ToolExecutionException.notFound(name);
-
+        return request.input().lookup().lookupByName(name)
+                .orElseThrow(() -> ToolExecutionException.notFound(name));
     }
 
     /**

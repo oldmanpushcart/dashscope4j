@@ -11,6 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.internal.intercepto
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolLookup;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
@@ -28,11 +29,8 @@ import java.util.stream.Stream;
 
 import static io.github.oldmanpushcart.dashscope4j.client.Constants.*;
 
-public record ChatModel(
-        String name,
-        String path,
-        Set<String> tags
-) implements AigcModel<ChatModel.Input, ChatModel.Output> {
+public record ChatModel(String name, String path, Set<String> tags)
+        implements AigcModel<ChatModel.Input, ChatModel.Output> {
 
     public static final ChatModel QWEN_FLASH = new ChatModel("qwen-flash", TEXT_GENERATION_PATH);
     public static final ChatModel QWEN_PLUS = new ChatModel("qwen-plus", TEXT_GENERATION_PATH);
@@ -104,12 +102,14 @@ public record ChatModel(
     public static class Input {
 
         private final List<Message> messages;
+        private final List<ToolLookup> lookups;
         private final boolean uploadEnabled;
         private final boolean inlineEnabled;
         private final boolean failOnToolError;
 
         private Input(Builder builder) {
             this.messages = CommonUtils.unmodifiableCopy(builder.messages);
+            this.lookups = CommonUtils.unmodifiableCopy(builder.lookups);
             this.uploadEnabled = builder.uploadEnabled;
             this.inlineEnabled = builder.inlineEnabled;
             this.failOnToolError = builder.failOnToolError;
@@ -150,6 +150,7 @@ public record ChatModel(
         /**
          * @return 最后一条消息
          */
+        @JsonIgnore
         public Message lastMessage() {
             return !messages.isEmpty()
                     ? messages.get(messages.size() - 1)
@@ -161,6 +162,7 @@ public record ChatModel(
          *
          * @return TRUE | FALSE
          */
+        @JsonIgnore
         public boolean hasUserInputMessage() {
             return !messages.isEmpty()
                     && null != userInputMessage();
@@ -174,6 +176,7 @@ public record ChatModel(
          *
          * @return 用户输入信息
          */
+        @JsonIgnore
         public UserMessage userInputMessage() {
             final var last = lastMessage();
             return last instanceof UserMessage userMessage
@@ -190,10 +193,16 @@ public record ChatModel(
          *
          * @return 历史信息
          */
+        @JsonIgnore
         public List<Message> historyMessages() {
             return hasUserInputMessage()
                     ? messages.subList(0, messages.size() - 1)
                     : messages;
+        }
+
+        @JsonIgnore
+        public ToolLookup lookup() {
+            return ToolLookup.group(lookups);
         }
 
 
@@ -208,6 +217,7 @@ public record ChatModel(
         public static class Builder implements Buildable<Input, Builder> {
 
             private List<Message> messages;
+            private List<ToolLookup> lookups;
             private boolean uploadEnabled;
             private boolean inlineEnabled;
             private boolean failOnToolError;
@@ -218,6 +228,7 @@ public record ChatModel(
 
             public Builder(Input input) {
                 this.messages = input.messages;
+                this.lookups = input.lookups;
                 this.uploadEnabled = input.uploadEnabled;
                 this.inlineEnabled = input.inlineEnabled;
                 this.failOnToolError = input.failOnToolError;
@@ -245,6 +256,16 @@ public record ChatModel(
                     list.addAll(messages);
                     return list;
                 });
+            }
+
+            public Builder lookups(List<ToolLookup> lookups) {
+                this.lookups = lookups;
+                return this;
+            }
+
+            public Builder lookups(UnaryOperator<List<ToolLookup>> operator) {
+                this.lookups = operator.apply(CommonUtils.mutableCopy(this.lookups));
+                return this;
             }
 
             public Builder uploadEnabled(boolean uploadEnabled) {
