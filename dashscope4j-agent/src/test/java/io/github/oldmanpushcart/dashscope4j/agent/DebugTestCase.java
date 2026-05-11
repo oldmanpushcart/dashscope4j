@@ -109,7 +109,7 @@ public class DebugTestCase implements LoadingEnv {
 
         final var agent = ReActAgent.newBuilder()
                 .client(client)
-                .model(ChatModel.QWEN_FLASH)
+                .model(ChatModel.QWEN_MAX)
                 .plugins(plugins -> {
                     plugins.add(sessionPlugin);
                     plugins.add(toolboxPlugin);

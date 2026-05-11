@@ -6,21 +6,16 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatIntercept
 import java.util.List;
 
 class ReActPlugin implements Plugin {
-
-    private final List<ChatInterceptor> preparationInterceptors = List.of(
-            new SettingInterceptor(),
-            new LoopInterceptor()
-    );
-
-    private final List<ChatInterceptor> interactionInterceptors = List.of(
-            new CompactMessagesInterceptor()
-    );
+    
+    private final ChatInterceptor settingInterceptor = new SettingInterceptor();
+    private final ChatInterceptor loopInterceptor = new LoopInterceptor();
+    private final ChatInterceptor compactMessagesInterceptor = new CompactMessagesInterceptor();
 
     @Override
     public List<ChatInterceptor> interceptors(Phases phases) {
         return switch (phases) {
-            case PREPARATION -> preparationInterceptors;
-            case INTERACTION -> interactionInterceptors;
+            case PREPARATION -> List.of(settingInterceptor, loopInterceptor);
+            case INTERACTION -> List.of();
         };
     }
 
