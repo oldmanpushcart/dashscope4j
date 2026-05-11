@@ -12,16 +12,13 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatIntercept
 import java.util.concurrent.CompletionStage;
 
 /**
- * 注入工具箱拦截器
- * <p>
- * 负责在请求准备阶段将工具箱中的工具注入到请求参数中。
- * </p>
+ * 预处理拦截器：设置
  */
-class InjectInterceptor implements ChatInterceptor {
+class SettingInterceptor implements ChatInterceptor {
 
     private static final Message SEARCH_TOOLS_MESSAGE = Message
             .system(PromptTemplate.newBuilder()
-                    .template(InjectInterceptor.class.getResourceAsStream("/prompt/SEARCH_TOOLS.md"))
+                    .template(SettingInterceptor.class.getResourceAsStream("/prompt/SEARCH_TOOLS.md"))
                     .build()
                     .render())
             .withCache();
@@ -29,7 +26,7 @@ class InjectInterceptor implements ChatInterceptor {
     private final Toolbox toolbox;
     private final Tool searchToolsTool;
 
-    public InjectInterceptor(Toolbox toolbox, Tool searchToolsTool) {
+    public SettingInterceptor(Toolbox toolbox, Tool searchToolsTool) {
         this.toolbox = toolbox;
         this.searchToolsTool = searchToolsTool;
     }

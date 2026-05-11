@@ -15,7 +15,7 @@ public class ToolboxPlugin implements Plugin {
         Objects.requireNonNull(builder.toolbox, "toolbox must not be null!");
         final var toolbox = builder.toolbox;
         final var searchToolsTool = new SearchToolsFunction(toolbox).asTool();
-        this.injectInterceptor = new InjectInterceptor(toolbox, searchToolsTool);
+        this.injectInterceptor = new SettingInterceptor(toolbox, searchToolsTool);
     }
 
     @Override
