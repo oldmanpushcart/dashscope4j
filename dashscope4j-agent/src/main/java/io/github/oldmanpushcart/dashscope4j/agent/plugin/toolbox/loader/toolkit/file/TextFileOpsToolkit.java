@@ -22,12 +22,12 @@ import java.util.Map;
 /**
  * 文本文件操作工具包
  * <p>
- * 提供智能体友好的文本文件编辑能力：
- * - read: 读取文件内容（支持行范围）
- * - search: 关键词搜索（返回匹配行及上下文）
+ * 提供智能体友好的文本文件编辑能力（仅支持文本文件，不支持二进制文件）：
+ * - read: 读取文本文件内容（支持行范围）
+ * - search: 在文本文件中关键词搜索（返回匹配行及上下文）
  * - str_replace: 字符串精确替换（要求唯一匹配）
- * - insert_line: 在指定行插入内容
- * - write: 写入新文件（可选覆盖）
+ * - insert_line: 在指定行插入文本内容
+ * - write: 写入新文本文件（可选覆盖）
  * </p>
  */
 public class TextFileOpsToolkit implements Toolkit {
@@ -162,7 +162,9 @@ public class TextFileOpsToolkit implements Toolkit {
         return FunctionTool.newBuilder()
                 .name("text_file$read")
                 .description("""
-                        读取文件内容，支持指定行范围。
+                        读取文本文件内容，支持指定行范围。
+                        
+                        【重要】仅支持文本文件，不支持二进制文件（如图片、视频、压缩包等）
                         
                         【使用场景】
                         - 读取源代码文件内容
@@ -282,7 +284,9 @@ public class TextFileOpsToolkit implements Toolkit {
         return FunctionTool.newBuilder()
                 .name("text_file$search")
                 .description("""
-                        在文件中搜索包含关键词的行，返回匹配项及上下文。
+                        在文本文件中搜索包含关键词的行，返回匹配项及上下文。
+                        
+                        【重要】仅支持文本文件搜索，不支持二进制文件
                         
                         【使用场景】
                         - 定位函数或方法定义
@@ -421,7 +425,9 @@ public class TextFileOpsToolkit implements Toolkit {
         return FunctionTool.newBuilder()
                 .name("text_file$str_replace")
                 .description("""
-                        在文件中精确替换文本内容，要求 oldStr 必须唯一匹配。
+                        在文本文件中精确替换文本内容，要求 oldStr 必须唯一匹配。
+                        
+                        【重要】仅支持文本文件编辑，不支持二进制文件
                         
                         【使用场景】
                         - 修改变量名或方法名
@@ -538,7 +544,9 @@ public class TextFileOpsToolkit implements Toolkit {
         return FunctionTool.newBuilder()
                 .name("text_file$insert_line")
                 .description("""
-                        在文件的指定行位置插入新内容。
+                        在文本文件的指定行位置插入新内容。
+                        
+                        【重要】仅支持文本文件编辑，不支持二进制文件
                         
                         【使用场景】
                         - 在函数中添加新语句
@@ -653,7 +661,9 @@ public class TextFileOpsToolkit implements Toolkit {
         return FunctionTool.newBuilder()
                 .name("text_file$write")
                 .description("""
-                        写入文件内容，创建新文件或覆盖现有文件。
+                        写入文本文件内容，创建新文件或覆盖现有文件。
+
+                        【重要】仅支持文本文件，不支持二进制文件（如图片、视频、压缩包等）
 
                         【使用场景】
                         - 创建新的源代码文件
@@ -670,6 +680,7 @@ public class TextFileOpsToolkit implements Toolkit {
                         - 设置 overwrite=true 可以强制覆盖
                         - 如果父目录不存在会自动创建
                         - 新文件不需要 lastModified
+                        - 仅支持文本文件，不要用于写入二进制数据
                         """)
                 .parameterType(CreateFileSpec.class)
                 .<CreateFileSpec>function((caller, spec) -> {

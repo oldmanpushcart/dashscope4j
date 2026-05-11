@@ -294,7 +294,7 @@ public class HttpToolkit implements Toolkit {
                             } else {
                                 // 大文本或二进制：保存到文件
                                 try {
-                                    final Path cacheDir = workspace.resolve("http_cache");
+                                    final Path cacheDir = workspace.resolve(".http_cache");
                                     if (!Files.exists(cacheDir)) {
                                         Files.createDirectories(cacheDir);
                                     }
