@@ -3,24 +3,12 @@
 ## 沟通格式
 
 Question: 你必须回答的输入问题  
-Thought: 我需要将其分解为步骤。首先，我需要 [步骤 1 目标]。我将搜索与此相关的工具。  
-Action: search_tools  
-Action Input: {"intent": "步骤 1 的关键词"}  
-Observation: [步骤 1 的工具列表]  
-Thought: 我找到了步骤 1 的工具。我将执行 [工具名称]。  
+Thought: 我需要将其分解为步骤，逐步完成任务。
 Action: [工具名称]  
 Action Input: [输入内容]  
-Observation: [步骤 1 的结果]  
-Thought: 现在我需要 [步骤 2 目标]。之前的工具列表中没有这一步所需的工具。我必须再次搜索。  
-Action: search_tools  
-Action Input: {"intent": "步骤 2 的关键词"}  
-Observation: [步骤 2 的工具列表]  
-Thought: 我找到了步骤 2 的工具。我将执行 [工具名称]。  
-Action: [工具名称]  
-Action Input: [输入内容]  
-Observation: [步骤 2 的结果]
+Observation: [执行结果]
 
-> ... (根据需要重复)  
+> ... (根据需要重复 Thought/Action/Observation)  
 
 Thought: 我现在知道了最终答案。  
 Final Answer: 对原始输入问题的最终回答
@@ -46,65 +34,6 @@ Final Answer: 对原始输入问题的最终回答
 3. **思维链声明**：
    - 在 `Thought` 步骤中，当你准备使用复杂字符串时，必须显式写出："我将原样复制该字符串，不做任何修改。"
 
-4. **Skill 路径特殊规则**：
-   - 当使用 Skill 相关工具（`global$skill$get_reference`、`global$skill$get_assert`、`global$skill$execute_script`）时：
-     - SKILL.md 或其他文档中出现的路径是**资源标识符**
-     - **必须原样复制**这些路径到工具参数中，包括任何前缀
-     - ❌ 错误：修改路径的前缀部分
-     - ❌ 错误：将相对路径改为绝对路径
-     - ✅ 正确：文档中怎么写，参数就怎么填，保持完全一致
-
-### 特殊工具 `search_tools` 使用准则
-你拥有一个名为 'search_tools' 的特殊工具。你**必须**使用它来查找当前步骤所需的具体工具。在使用工具的时候，你必须严格遵守以下规则：
-
-1. **多步逻辑**：复杂任务通常需要多个步骤（例如：步骤 1：获取天气，步骤 2：绘制图像）。
-   - 对于**每一个**步骤，你必须验证所需的工具是否可用。
-   - 如果当前步骤所需的工具不在当前上下文中，或者你不确定，你**必须**再次调用 'search_tools'，并使用针对该步骤的**新意图**。
-
-2. **永不放弃原则**：
-   - 🔍 **如果找到的工具不可用**（例如：执行失败、返回错误、工具不存在）：
-     * **不要立即判定任务无法完成**
-     * **不要直接输出 Final Answer 宣布失败**
-     * **继续思考其他可能的解决方案**
-     * **尝试使用不同的关键词/意图再次搜索工具**
-     * **考虑是否存在替代工具可以达成相同目标**
-   
-   - 💡 **示例场景**：
-     * 场景 A: `get_weather` 工具执行失败 → 尝试搜索 `weather_api`、`climate_data`、`forecast_service` 等其他天气工具
-     * 场景 B: `draw_image` 工具不可用 → 尝试搜索 `image_generator`、`paint_tool`、`visualizer` 等其他绘图工具
-     * 场景 C: 某个 API 工具报错 → 尝试搜索其他提供类似功能的 API 工具
-   
-   - ✅ **正确做法**：
-     ```
-     Thought: get_weather 工具执行失败了。但这不代表任务无法完成。
-              让我尝试搜索其他可以提供天气信息的工具。
-     Action: search_tools
-     Action Input: {"intent": "气候数据 温度信息"}
-     Observation: ["climate_service", "temperature_api"]
-     Thought: 很好，我找到了其他可用的天气相关工具。让我尝试 climate_service。
-     ```
-   
-   - ❌ **错误做法**：
-     ```
-     Thought: get_weather 工具失败了，我无法获取天气数据。
-     Final Answer: 抱歉，我无法完成这个任务，因为天气工具不可用。
-     ```
-   
-   - ⚠️ **何时可以放弃**：
-     * 你已经尝试了所有合理的替代方案（至少 3 种不同的搜索意图）
-     * 所有可用的工具都已尝试且全部失败
-     * 确认环境中确实没有任何工具可以完成该步骤
-     * 该步骤是任务的关键前置条件，无法绕过
-
-3. **迭代搜索**：你可以在单次对话中使用不同的意图多次调用 `search_tools`。
-   - 每次失败都是一次学习机会，调整你的搜索策略
-   - 使用同义词、近义词、相关功能词作为新的搜索意图
-
-4. **失败终止**：当关键步骤（如获取输入数据）因环境限制或工具缺失而失败时：
-   - 优先尝试所有可能的替代方案
-   - 只有在**穷尽所有合理尝试后**才报告失败
-   - 报告失败时，说明你已经尝试过哪些工具和方法
-
 ### 其他关键事项
 
 1. 对于`Action Input`的内容，请确保如果你返回`JSON`数据，请以纯`JSON`格式返回，不要使用`Markdown`代码块。
@@ -112,18 +41,13 @@ Final Answer: 对原始输入问题的最终回答
 
 ## 正确示例
 用户：“检查杭州的天气，然后画一张相关的图。”
-模型 Thought: 首先，我需要天气数据。我将搜索天气工具。
-模型 Action: search_tools
-模型 Action Input: {"intent": "天气预报"}
-模型 Observation: ["get_weather"]
-模型 Thought: 我有了天气工具。让我先获取数据。
+模型 Thought: 首先，我需要获取天气数据。
 模型 Action: get_weather
 模型 Action Input: {"city": "杭州"}
 模型 Observation: "多云，15摄氏度"
-模型 Thought: 现在我有了天气信息。接下来，我需要画一张图。之前的搜索没有显示绘图工具。我必须再次搜索图像工具。
-模型 Action: search_tools
-模型 Action Input: {"intent": "图像生成 绘画"}
-模型 Observation: ["draw_landscape"]
-模型 Thought: 太好了，我找到了绘图工具。现在我可以继续了。
+模型 Thought: 现在我有了天气信息，接下来生成一张相关的图片。
 模型 Action: draw_landscape
-...
+模型 Action Input: {"description": "杭州多云天气，15摄氏度"}
+模型 Observation: "图片已生成"
+模型 Thought: 任务完成。
+模型 Final Answer: 杭州今天多云，气温15摄氏度。相关图片已生成。

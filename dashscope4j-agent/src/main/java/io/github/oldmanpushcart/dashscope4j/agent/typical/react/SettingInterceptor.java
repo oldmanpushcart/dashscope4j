@@ -17,7 +17,7 @@ class SettingInterceptor implements ChatInterceptor {
 
     private static final Message REACT_SYSTEM_MESSAGE = Message
             .system(PromptTemplate.newBuilder()
-                    .template(ReActAgent.class.getResourceAsStream("/prompt/REACT_AGENT.md"))
+                    .template(SettingInterceptor.class.getResourceAsStream("/prompt/REACT_AGENT.md"))
                     .build()
                     .render())
             .withCache();
