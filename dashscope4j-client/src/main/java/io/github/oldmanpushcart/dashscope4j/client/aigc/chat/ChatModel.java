@@ -29,6 +29,13 @@ import java.util.stream.Stream;
 
 import static io.github.oldmanpushcart.dashscope4j.client.Constants.*;
 
+/**
+ * 对话模型，支持文本和多模态对话
+ *
+ * @param name 模型名称
+ * @param path API路径
+ * @param tags 模型标签
+ */
 public record ChatModel(String name, String path, Set<String> tags)
         implements AigcModel<ChatModel.Input, ChatModel.Output> {
 
@@ -200,6 +207,11 @@ public record ChatModel(String name, String path, Set<String> tags)
                     : messages;
         }
 
+        /**
+         * 获取组合的工具查找器
+         *
+         * @return 工具查找器
+         */
         @JsonIgnore
         public ToolLookup lookup() {
             return ToolLookup.group(lookups);
@@ -214,7 +226,10 @@ public record ChatModel(String name, String path, Set<String> tags)
             return new Builder(input);
         }
 
-        public static class Builder implements Buildable<Input, Builder> {
+    /**
+     * 输入参数构建器
+     */
+    public static class Builder implements Buildable<Input, Builder> {
 
             private List<Message> messages;
             private List<ToolLookup> lookups;
@@ -234,16 +249,25 @@ public record ChatModel(String name, String path, Set<String> tags)
                 this.failOnToolError = input.failOnToolError;
             }
 
+            /**
+             * 设置消息列表
+             */
             public Builder messages(List<Message> messages) {
                 this.messages = messages;
                 return this;
             }
 
+            /**
+             * 修改消息列表
+             */
             public Builder messages(UnaryOperator<List<Message>> operator) {
                 this.messages = operator.apply(CommonUtils.mutableCopy(this.messages));
                 return this;
             }
 
+            /**
+             * 添加单条消息
+             */
             public Builder addMessage(Message message) {
                 return messages(list -> {
                     list.add(message);
@@ -251,6 +275,9 @@ public record ChatModel(String name, String path, Set<String> tags)
                 });
             }
 
+            /**
+             * 添加多条消息
+             */
             public Builder addMessages(List<? extends Message> messages) {
                 return messages(list -> {
                     list.addAll(messages);
@@ -258,26 +285,41 @@ public record ChatModel(String name, String path, Set<String> tags)
                 });
             }
 
+            /**
+             * 设置工具查找器列表
+             */
             public Builder lookups(List<ToolLookup> lookups) {
                 this.lookups = lookups;
                 return this;
             }
 
+            /**
+             * 修改工具查找器列表
+             */
             public Builder lookups(UnaryOperator<List<ToolLookup>> operator) {
                 this.lookups = operator.apply(CommonUtils.mutableCopy(this.lookups));
                 return this;
             }
 
+            /**
+             * 设置文件上传开关
+             */
             public Builder uploadEnabled(boolean uploadEnabled) {
                 this.uploadEnabled = uploadEnabled;
                 return this;
             }
 
+            /**
+             * 设置文件内联开关
+             */
             public Builder inlineEnabled(boolean inlineEnabled) {
                 this.inlineEnabled = inlineEnabled;
                 return this;
             }
 
+            /**
+             * 设置工具调用失败时是否中断
+             */
             public Builder failOnToolError(boolean failOnToolError) {
                 this.failOnToolError = failOnToolError;
                 return this;
@@ -296,6 +338,12 @@ public record ChatModel(String name, String path, Set<String> tags)
     /**
      * 输出参数
      */
+        /**
+         * 输出结果
+         *
+         * @param search   搜索信息
+         * @param choices 候选结果列表
+         */
     public record Output(
 
             @JsonProperty("search_info")
@@ -380,6 +428,12 @@ public record ChatModel(String name, String path, Set<String> tags)
          * @param finish  结束类型
          * @param message 消息
          */
+            /**
+             * 候选结果
+             *
+             * @param finish  结束类型
+             * @param message 助手消息
+             */
         public record Choice(
 
                 @JsonProperty("finish_reason")
@@ -436,6 +490,12 @@ public record ChatModel(String name, String path, Set<String> tags)
         /**
          * 结束类型
          */
+            /**
+             * 结束类型枚举
+             * <p>
+             * 权重值越小，优先级越高
+             * </p>
+             */
         public enum Finish {
 
             /**
@@ -477,6 +537,11 @@ public record ChatModel(String name, String path, Set<String> tags)
         /**
          * 搜索信息
          */
+            /**
+             * 搜索结果信息
+             *
+             * @param results 搜索结果列表
+             */
         public record Search(
 
                 @JsonProperty("search_results")
@@ -487,6 +552,15 @@ public record ChatModel(String name, String path, Set<String> tags)
             /**
              * 搜索结果
              */
+                /**
+                 * 单个搜索结果
+                 *
+                 * @param index 序号
+                 * @param name  站点名称
+                 * @param title 标题
+                 * @param icon  图标URL
+                 * @param site  站点URL
+                 */
             public record Result(
 
                     @JsonProperty("index")
