@@ -18,6 +18,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.RuntimeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeAgent;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.pe.PlanExecuteAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
@@ -107,7 +108,7 @@ public class DebugTestCase implements LoadingEnv {
         final var sessionPlugin = buildingSessionPlugin();
         final var toolboxPlugin = buildingToolboxPlugin();
 
-        final var agent = DashscopeAgent.newBuilder()
+        final var agent = PlanExecuteAgent.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_MAX)
                 .plugins(plugins -> {
@@ -115,6 +116,19 @@ public class DebugTestCase implements LoadingEnv {
                     plugins.add(toolboxPlugin);
                     return plugins;
                 })
+
+                .subAgentSupplier(() -> {
+                    return ReActAgent.newBuilder()
+                            .client(client)
+                            .model(ChatModel.QWEN_MAX)
+                            .plugins(plugins -> {
+                                plugins.add(sessionPlugin);
+                                plugins.add(toolboxPlugin);
+                                return plugins;
+                            })
+                            .build();
+                })
+
                 .build();
 
             {
