@@ -39,7 +39,7 @@ public class HashMapToolIndexer implements ToolIndexer {
      */
     private static final Message TOOL_ROUTER_MESSAGE = Message
             .system(PromptTemplate.newBuilder()
-                    .template(HashMapToolIndexer.class.getResourceAsStream("/prompt/TOOL_ROUTER.md"))
+                    .resource("/prompt/TOOL_ROUTER.md")
                     .build()
                     .render())
             .withCache();
@@ -49,7 +49,7 @@ public class HashMapToolIndexer implements ToolIndexer {
      */
     private static final Message TOOL_META_EXTRACTOR_MESSAGE = Message
             .system(PromptTemplate.newBuilder()
-                    .template(HashMapToolIndexer.class.getResourceAsStream("/prompt/TOOL_META_EXTRACTOR.md"))
+                    .resource("/prompt/TOOL_META_EXTRACTOR.md")
                     .build()
                     .render())
             .withCache();

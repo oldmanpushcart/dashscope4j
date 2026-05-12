@@ -25,7 +25,7 @@ class SettingInterceptor implements ChatInterceptor {
      */
     private static final Message DASHSCOPE_SYSTEM_MESSAGE = Message
             .system(PromptTemplate.newBuilder()
-                    .template(DashscopeAgent.class.getResourceAsStream("/prompt/DASHSCOPE_AGENT.md"))
+                    .resource("/prompt/DASHSCOPE_AGENT.md")
                     .build()
                     .render())
             .withCache();

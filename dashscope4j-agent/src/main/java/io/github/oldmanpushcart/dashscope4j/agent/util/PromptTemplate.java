@@ -2,7 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.agent.util;
 
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -139,12 +138,27 @@ public class PromptTemplate {
         }
 
         /**
-         * 设置模板
+         * 从类路径加载资源作为模板（相对于 PromptTemplate 类）
          *
-         * @param input 模板输入流
+         * @param name 资源名称（以 / 开头表示绝对路径，否则为相对路径）
          * @return this
          */
-        public Builder template(InputStream input) {
+        public Builder resource(String name) {
+            return resource(PromptTemplate.class, name);
+        }
+
+        /**
+         * 从类路径加载资源作为模板
+         *
+         * @param clazz 资源所在类（用于确定类加载器）
+         * @param name  资源名称（以 / 开头表示绝对路径，否则为相对于 clazz 的路径）
+         * @return this
+         */
+        public Builder resource(Class<?> clazz, String name) {
+            final var input = clazz.getResourceAsStream(name);
+            if (input == null) {
+                throw new IllegalArgumentException("Resource not found: " + name);
+            }
             final var stringBuf = new StringBuilder();
             try (final var scanner = new Scanner(input, UTF_8)) {
                 while (scanner.hasNextLine()) {
