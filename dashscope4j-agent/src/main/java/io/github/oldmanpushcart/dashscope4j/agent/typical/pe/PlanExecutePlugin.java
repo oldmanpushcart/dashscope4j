@@ -16,22 +16,20 @@ import java.util.function.Supplier;
 class PlanExecutePlugin implements Plugin {
     
     private final ChatInterceptor settingInterceptor = new SettingInterceptor();
-    private final ChatInterceptor loopAsyncInterceptor;
-    private final ChatInterceptor loopFlowInterceptor;
+    private final ChatInterceptor loopInterceptor;
     
     /**
      * 构造 PlanExecutePlugin
      */
     PlanExecutePlugin(Supplier<Agent> subAgentSupplier, int maxReplanCount, int maxSubTasks) {
-        this.loopAsyncInterceptor = new LoopAsyncInterceptor(subAgentSupplier, maxReplanCount, maxSubTasks);
-        this.loopFlowInterceptor = new LoopFlowInterceptor(subAgentSupplier, maxReplanCount, maxSubTasks);
+        this.loopInterceptor = new LoopInterceptor(subAgentSupplier, maxReplanCount, maxSubTasks);
     }
     
     @Override
     public List<ChatInterceptor> interceptors(Phases phases) {
         return switch (phases) {
             case PREPARATION -> List.of(settingInterceptor);
-            case INTERACTION -> List.of(loopAsyncInterceptor, loopFlowInterceptor);
+            case INTERACTION -> List.of(loopInterceptor);
         };
     }
 }
