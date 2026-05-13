@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.pe;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * 任务评估响应（JSON 格式）
@@ -10,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TaskEvaluationResponse(
-        boolean isSuccess,
-        String reason
+        @JsonProperty("isSuccess") boolean isSuccess,
+        @JsonProperty("reason") String reason
 ) {
 }

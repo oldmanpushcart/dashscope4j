@@ -110,7 +110,7 @@ public class DebugTestCase implements LoadingEnv {
 
         final var agent = PlanExecuteAgent.newBuilder()
                 .client(client)
-                .model(ChatModel.QWEN_MAX)
+                .model(ChatModel.QWEN_FLASH)
                 .plugins(plugins -> {
                     plugins.add(sessionPlugin);
                     plugins.add(toolboxPlugin);
@@ -131,25 +131,25 @@ public class DebugTestCase implements LoadingEnv {
 
                 .build();
 
-            {
-                final var outbound = Flux.from(agent.flow(sessionId, Message.user("""
-                                根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
-                                """)))
-                        .reduce(AssistantMessage::accumulate)
-                        .toFuture()
-                        .join();
-                System.out.println(outbound.text());
-            }
+//            {
+//                final var outbound = Flux.from(agent.flow(sessionId, Message.user("""
+//                                根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
+//                                """)))
+//                        .reduce(AssistantMessage::accumulate)
+//                        .toFuture()
+//                        .join();
+//                System.out.println(outbound.text());
+//            }
 
-//        {
-//            final var outbound = agent.async(sessionId, Message.user("""
-//                            根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
-//                            """))
-//                    .toCompletableFuture()
-//                    .join();
-//
-//            System.out.println(outbound.text());
-//        }
+        {
+            final var outbound = agent.async(sessionId, Message.user("""
+                            根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
+                            """))
+                    .toCompletableFuture()
+                    .join();
+
+            System.out.println(outbound.text());
+        }
 
     }
 

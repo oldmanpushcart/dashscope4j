@@ -25,9 +25,9 @@
 ```json
 {
   "thought": "更新后的思路和方法",
-  "newTasks": [
-    {"description": "修订后的主要阶段 1", "reason": "为什么需要这个变更"},
-    {"description": "修订后的主要阶段 2", "reason": "为什么需要这个变更"}
+  "tasks": [
+    {"taskId": "task-001", "description": "修订后的主要阶段 1"},
+    {"taskId": "task-002", "description": "修订后的主要阶段 2"}
   ]
 }
 ```
@@ -35,14 +35,15 @@
 **严格遵守以下规则：**
 - ✅ 必须输出有效的 JSON 对象
 - ✅ 使用双引号包裹键和字符串值
+- ✅ tasks 数组中的每个任务必须包含 taskId 和 description 字段
 - ✅ 不要包含 Markdown 代码块标记（如 ```json）
 - ✅ 不要添加任何额外的文本、解释或前缀
 - ❌ 禁止输出纯文本格式的计划
-- ❌ 禁止在 JSON 前后添加"好的"、"这是重规划"等内容
+- ❌ 禁止在 JSON 前后添加“好的”、“这是重规划”等内容
 
 ## 规则
 
-- 每个 newTask 必须包含 description 和 reason
+- 每个 task 必须包含 taskId 和 description
 - 即使重规划也要保持任务粗粒度
 - 从之前的失败中学习
 
@@ -51,4 +52,4 @@
 1. 保留已成功完成的任务
 2. 用宏观方案修复出错的地方
 3. 不要使新计划过于复杂
-4. 在 reason 字段中解释为什么每个变更是必要的
+4. 为每个任务生成唯一的 taskId（格式：task-XXX）

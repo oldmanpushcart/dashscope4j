@@ -1,5 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.pe;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,22 +15,24 @@ import java.util.concurrent.locks.ReentrantLock;
  * 管理整个任务的执行计划，包括任务列表、当前执行进度和执行历史。
  * </p>
  */
-public class ExecutionPlan {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class Plan {
     
     private final String thought;
-    private final List<SubTask> tasks;
+    private final List<Task> tasks;
     private volatile int currentTaskIndex;
     private final ReentrantLock lock;
     
     /**
-     * 构造执行计划
-     *
-     * @param thought 思考过程
-     * @param tasks   子任务列表
+     * Jackson 反序列化构造函数
      */
-    public ExecutionPlan(String thought, List<SubTask> tasks) {
-        this.thought = thought;
-        this.tasks = new ArrayList<>(tasks);
+    @JsonCreator
+    public Plan(
+            @JsonProperty("thought") String thought,
+            @JsonProperty("tasks") List<Task> tasks
+    ) {
+        this.thought = thought != null ? thought : "";
+        this.tasks = tasks != null ? new ArrayList<>(tasks) : new ArrayList<>();
         this.currentTaskIndex = 0;
         this.lock = new ReentrantLock();
     }
@@ -36,7 +42,7 @@ public class ExecutionPlan {
      *
      * @return 下一个任务，如果没有则返回 null
      */
-    public SubTask getNextTask() {
+    public Task getNextTask() {
         lock.lock();
         try {
             if (currentTaskIndex >= tasks.size()) {
@@ -86,7 +92,7 @@ public class ExecutionPlan {
     public boolean isAllTasksFinished() {
         lock.lock();
         try {
-            return tasks.stream().allMatch(SubTask::isFinished);
+            return tasks.stream().allMatch(Task::isFinished);
         } finally {
             lock.unlock();
         }
@@ -106,7 +112,7 @@ public class ExecutionPlan {
      *
      * @return 任务列表
      */
-    public List<SubTask> getTasks() {
+    public List<Task> getTasks() {
         return Collections.unmodifiableList(tasks);
     }
     
@@ -118,7 +124,7 @@ public class ExecutionPlan {
     public long getSuccessCount() {
         lock.lock();
         try {
-            return tasks.stream().filter(SubTask::isSuccess).count();
+            return tasks.stream().filter(Task::isSuccess).count();
         } finally {
             lock.unlock();
         }
@@ -147,13 +153,13 @@ public class ExecutionPlan {
         lock.lock();
         try {
             StringBuilder sb = new StringBuilder();
-            sb.append("=== Execution Plan Snapshot ===\n");
+            sb.append("=== Plan Snapshot ===\n");
             sb.append("Thought: ").append(thought).append("\n\n");
             sb.append("Progress: ").append(currentTaskIndex).append("/").append(tasks.size()).append("\n\n");
             sb.append("Tasks:\n");
             
             for (int i = 0; i < tasks.size(); i++) {
-                SubTask task = tasks.get(i);
+                Task task = tasks.get(i);
                 
                 if (i == currentTaskIndex) {
                     // Current task - this agent's responsibility
@@ -194,7 +200,7 @@ public class ExecutionPlan {
     
     @Override
     public String toString() {
-        return String.format("ExecutionPlan{thought='%s', tasks=%d, current=%d}", 
+        return String.format("Plan{thought='%s', tasks=%d, current=%d}", 
                 thought, tasks.size(), currentTaskIndex);
     }
 }

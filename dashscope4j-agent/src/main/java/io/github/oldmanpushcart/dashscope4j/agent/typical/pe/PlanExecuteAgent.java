@@ -15,9 +15,9 @@ import java.util.function.Supplier;
  * </p>
  */
 public class PlanExecuteAgent extends BaseAgent {
-    
+
     private final Plugin plugin;
-    
+
     /**
      * 构造 PlanExecuteAgent
      *
@@ -27,44 +27,42 @@ public class PlanExecuteAgent extends BaseAgent {
         super(builder);
         this.plugin = new PlanExecutePlugin(
                 builder.subAgentSupplier,
-                builder.maxReplanCount,
-                builder.maxSubTasks
+                builder.maxReplanCount
         );
     }
-    
+
     @Override
     public String toString() {
         return "dashscope4j-agent:/plan-execute";
     }
-    
+
     @Override
     protected List<Plugin> plugins() {
         final var merged = new ArrayList<>(super.plugins());
         merged.add(plugin);
         return merged;
     }
-    
+
     public static Builder newBuilder() {
         return new Builder();
     }
-    
+
     /**
      * PlanExecuteAgent 构建器
      */
     public static class Builder extends BaseAgent.Builder<PlanExecuteAgent, Builder> {
-        
+
         private Supplier<Agent> subAgentSupplier;
         private int maxReplanCount = 3;
-        private int maxSubTasks = 20;
-        
+
         protected Builder() {
-            
+
         }
-        
+
         protected Builder(PlanExecuteAgent agent) {
             super(agent);
         }
-        
+
         /**
          * 设置子 Agent 供应器
          * <p>
@@ -79,7 +77,7 @@ public class PlanExecuteAgent extends BaseAgent {
             this.subAgentSupplier = supplier;
             return this;
         }
-        
+
         /**
          * 设置最大重规划次数
          * <p>
@@ -93,21 +91,7 @@ public class PlanExecuteAgent extends BaseAgent {
             this.maxReplanCount = maxReplanCount;
             return this;
         }
-        
-        /**
-         * 设置最大子任务数量
-         * <p>
-         * 防止任务被过度拆分，默认值为 20。
-         * </p>
-         *
-         * @param maxSubTasks 最大子任务数
-         * @return this
-         */
-        public Builder maxSubTasks(int maxSubTasks) {
-            this.maxSubTasks = maxSubTasks;
-            return this;
-        }
-        
+
         @Override
         public PlanExecuteAgent build() {
             if (subAgentSupplier == null) {

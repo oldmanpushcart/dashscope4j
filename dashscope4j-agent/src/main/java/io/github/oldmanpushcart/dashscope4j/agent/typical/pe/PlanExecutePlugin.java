@@ -21,8 +21,8 @@ class PlanExecutePlugin implements Plugin {
     /**
      * 构造 PlanExecutePlugin
      */
-    PlanExecutePlugin(Supplier<Agent> subAgentSupplier, int maxReplanCount, int maxSubTasks) {
-        this.loopInterceptor = new LoopInterceptor(subAgentSupplier, maxReplanCount, maxSubTasks);
+    PlanExecutePlugin(Supplier<Agent> subAgentSupplier, int maxReplanCount) {
+        this.loopInterceptor = new LoopInterceptor(subAgentSupplier, maxReplanCount);
     }
     
     @Override

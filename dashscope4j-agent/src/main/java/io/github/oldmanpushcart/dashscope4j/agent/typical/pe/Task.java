@@ -1,15 +1,18 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.pe;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 子任务运行时状态
+ * 任务运行时状态
  * <p>
- * 管理单个子任务的执行状态、结果和元数据。
+ * 管理单个任务的执行状态、结果和元数据。
  * </p>
  */
-public class SubTask {
+public class Task {
     
     private final String taskId;
     private final String description;
@@ -20,14 +23,14 @@ public class SubTask {
     private volatile LocalDateTime endTime;
     
     /**
-     * 构造子任务
-     *
-     * @param taskId      任务ID
-     * @param description 任务描述
+     * Jackson 反序列化构造函数
      */
-    public SubTask(String taskId, String description) {
-        this.taskId = taskId;
-        this.description = description;
+    @JsonCreator
+    public Task(
+            @JsonProperty("taskId") String taskId,
+            @JsonProperty("description") String description) {
+        this.taskId = taskId != null ? taskId : "unknown";
+        this.description = description != null ? description : "";
         this.status = new AtomicReference<>(TaskStatus.PENDING);
     }
     
@@ -119,7 +122,7 @@ public class SubTask {
     
     @Override
     public String toString() {
-        return String.format("SubTask{taskId='%s', status=%s, description='%s'}", 
+        return String.format("Task{taskId='%s', status=%s, description='%s'}", 
                 taskId, status.get(), description);
     }
 }
