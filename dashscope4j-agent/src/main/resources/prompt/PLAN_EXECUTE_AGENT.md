@@ -34,10 +34,11 @@
 ```json
 {
   "thought": "重新规划的思考和原因",
-  "newTasks": [
-    {"description": "新的任务描述1"},
-    {"description": "新的任务描述2"}
-  ]
+  "tasks": [
+    {"taskId": "task-001", "description": "新的任务描述1"},
+    {"taskId": "task-002", "description": "新的任务描述2"}
+  ],
+  "index": 0
 }
 ```
 
@@ -115,17 +116,19 @@
 ```json
 {
   "thought": "原始方法由于数据格式问题不起作用。让我们尝试不同的方法。",
-  "newTasks": [
-    {"description": "使用替代数据源 Y 代替 X"},
-    {"description": "使用更新的 schema 解析数据"},
-    {"description": "继续进行分析..."}
+  "tasks": [
+    {"taskId": "task-001", "description": "使用替代数据源 Y 代替 X"},
+    {"taskId": "task-002", "description": "使用更新的 schema 解析数据"},
+    {"taskId": "task-003", "description": "继续进行分析..."}
   ]
 }
 ```
 
 **记住**：
 - ✅ 必须输出有效的 JSON 对象
-- ✅ 包含 thought 和 newTasks 字段
+- ✅ 包含 thought、tasks 和 index 字段
+- ✅ 每个任务必须包含 taskId 和 description 字段
+- ✅ index 必须是非负整数，不能省略
 - ❌ 不要输出纯文本格式
 
 ## 最终答案
@@ -219,10 +222,10 @@
 ```json
 {
   "thought": "切换到具有类似信息的备份数据源 Y。",
-  "newTasks": [
-    {"description": "连接到数据库 Y"},
-    {"description": "使用调整后的查询提取所需数据"},
-    {"description": "继续剩余的分析任务"}
+  "tasks": [
+    {"taskId": "task-001", "description": "连接到数据库 Y"},
+    {"taskId": "task-002", "description": "使用调整后的查询提取所需数据"},
+    {"taskId": "task-003", "description": "继续剩余的分析任务"}
   ]
 }
 ```
@@ -240,7 +243,7 @@
 **无论你处于哪个阶段，都必须严格遵守 JSON 格式：**
 
 1. **计划生成阶段**：输出包含 `thought` 和 `tasks` 字段的 JSON 对象
-2. **重规划阶段**：输出包含 `thought` 和 `newTasks` 字段的 JSON 对象
+2. **重规划阶段**：输出包含 `thought` 和 `tasks` 字段的 JSON 对象（格式与初始计划相同）
 3. **不要添加额外文本**：只输出 JSON，不要有任何前缀或后缀
 4. **确保 JSON 有效**：正确使用引号、逗号和大括号
 

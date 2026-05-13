@@ -1,7 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.pe;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
@@ -25,8 +23,6 @@ import java.util.function.Supplier;
 class LoopInterceptor implements ChatInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(LoopInterceptor.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private final Supplier<Agent> subAgentSupplier;
     private final int maxReplanCount;
@@ -63,7 +59,7 @@ class LoopInterceptor implements ChatInterceptor {
                 .thenCompose(plan -> {
 
                     // 如果执行计划中没有任何任务，则直接进行对话
-                    if (plan.getTasks().isEmpty()) {
+                    if (plan.tasks().isEmpty()) {
                         return chatAsync(chain, request);
                     }
 
@@ -78,9 +74,7 @@ class LoopInterceptor implements ChatInterceptor {
     private CompletionStage<Plan> generatePlan(Chain chain, AigcRequest<Input, Output> request, String sessionId) {
         final var planningRequest = AigcRequest.newBuilder(request)
                 .parameters(parameters -> {
-                    parameters.put("response_format", Map.of(
-                            "type", "json_object"
-                    ));
+                    parameters.put("response_format", Map.of("type", "json_object"));
                     return parameters;
                 })
                 .build();
@@ -93,7 +87,7 @@ class LoopInterceptor implements ChatInterceptor {
                 .thenApply(response -> {
                     final var resultJson = response.output().best().message().text();
                     final var plan = JacksonJsonUtils.toObject(resultJson, Plan.class);
-                    logger.debug("{}/{} generated plan. tasks={}", this, sessionId, plan.getTasks().size());
+                    logger.debug("{}/{} generated plan. tasks={}", this, sessionId, plan.tasks().size());
                     return plan;
                 });
     }
@@ -104,38 +98,38 @@ class LoopInterceptor implements ChatInterceptor {
     private CompletionStage<AigcResponse<Output>> executePlan(Chain chain, AigcRequest<Input, Output> originalRequest, String sessionId, Plan plan, int replanCount) {
 
         // 所有任务已经完成，则进行结果合成
-        if (plan.isAllTasksFinished()) {
-            logger.debug("{}/{}/plan all tasks finished, synthesizing final answer.", this, sessionId);
+        if (plan.isFinished()) {
+            logger.debug("{}/{} plan finished, synthesizing final answer.", this, sessionId);
             return synthesizeFinalAnswer(chain, originalRequest, plan);
         }
 
         // 最大重规划次数已 reached，则进行结果合成
         if (replanCount >= maxReplanCount) {
-            logger.debug("{}/{}/plan max replan count {} reached, synthesizing final answer.", this, sessionId, maxReplanCount);
+            logger.debug("{}/{} plan max replan count {} reached, synthesizing final answer.", this, sessionId, maxReplanCount);
             return synthesizeFinalAnswer(chain, originalRequest, plan);
         }
 
-        final var task = plan.getNextTask();
+        final var task = plan.current();
         if (task == null) {
             return synthesizeFinalAnswer(chain, originalRequest, plan);
         }
 
-        final var progress = "%s/%s".formatted(plan.getCurrentTaskIndex(), plan.getTasks().size());
-        logger.debug("{}/{}/plan progress [{}]; task={};begin!", this, sessionId, progress, task.getTaskId());
+        final var progress = "%s/%s".formatted(plan.index(), plan.tasks().size());
+        logger.debug("{}/{}/plan progress [{}] begin! task={};{}", this, sessionId, progress, task.taskId(), task.description());
 
         task.start();
         return executeTask(sessionId, plan, task)
                 .thenCompose(result ->
-                        evaluateTaskResult(originalRequest, chain, task.getDescription(), result)
+                        evaluateTaskResult(originalRequest, chain, task.description(), result)
                                 .thenCompose(evaluation -> {
                                     if (evaluation.isSuccess()) {
-                                        logger.debug("{}/{}/plan progress [{}]; task={};result={};", this, sessionId, progress, task.getTaskId(), "success");
+                                        logger.debug("{}/{}/plan progress [{}]; task={};result={};", this, sessionId, progress, task.taskId(), "success");
                                         task.complete(result);
-                                        plan.advanceToNextTask();
+                                        plan.advance();
                                         return executePlan(chain, originalRequest, sessionId, plan, replanCount);
                                     } else {
-                                        logger.debug("{}/{}/plan progress [{}]; task={};result={};reason={};", this, sessionId, progress, task.getTaskId(), "failure", evaluation.reason());
-                                        final var failureReason = "任务失败: %s\n详情: %s".formatted(task.getDescription(), evaluation.reason());
+                                        logger.debug("{}/{}/plan progress [{}]; task={};result={};reason={};", this, sessionId, progress, task.taskId(), "failure", evaluation.reason());
+                                        final var failureReason = "任务失败: %s\n详情: %s".formatted(task.description(), evaluation.reason());
                                         task.fail(failureReason);
                                         return replan(chain, originalRequest, sessionId, plan, replanCount);
                                     }
@@ -146,28 +140,32 @@ class LoopInterceptor implements ChatInterceptor {
      * 执行子任务
      */
     private CompletionStage<String> executeTask(String mainSessionId, Plan plan, Task task) {
-        final var taskIndex = plan.getCurrentTaskIndex();
+        final var taskIndex = plan.index();
         final var subSessionId = String.format("%s-%d", mainSessionId, taskIndex);
 
         final var subAgent = subAgentSupplier.get();
-        final var planSnapshot = plan.createSnapshot();
+        final var planJson = JacksonJsonUtils.toJson(plan);
+        final var currentIndex = plan.index();
         final var enhancedTaskDesc = """
                 **你的角色**: 你是一个专门的子智能体，只负责执行当前任务。
                 
                 **重要边界**:
-                - 你必须专注于下方标记为"当前任务"的任务
+                - 你只需要关注 currentTaskIndex=%d 的任务（即 tasks[%d]）
                 - 不要尝试执行计划中的其他任务
                 - 其他任务将由不同的智能体处理
                 - 你的工作仅完成当前任务并返回结果
                 
+                当前计划 (JSON格式):
                 %s
                 
                 === 你的当前任务 ===
                 
                 %s
                 """.formatted(
-                planSnapshot,
-                task.getDescription()
+                currentIndex,
+                currentIndex,
+                planJson,
+                task.description()
         );
 
         final var taskMessage = Message.user(enhancedTaskDesc);
@@ -212,7 +210,7 @@ class LoopInterceptor implements ChatInterceptor {
     /*
      * 重新生成计划
      */
-    private CompletionStage<AigcResponse<Output>> replan(Chain chain, AigcRequest<Input, Output> originalRequest, String sessionId, Plan oldPlan, int replanCount) {
+    private CompletionStage<AigcResponse<Output>> replan(Chain chain, AigcRequest<Input, Output> originalRequest, String sessionId, Plan plan, int replanCount) {
         logger.info("Replanning (attempt {}/{})", replanCount + 1, maxReplanCount);
 
         final var replanRequest = AigcRequest.newBuilder(originalRequest)
@@ -227,10 +225,10 @@ class LoopInterceptor implements ChatInterceptor {
                                         
                                         原因: 执行过程中某些任务失败。
                                         
-                                        当前进度:
+                                        当前计划状态 (JSON格式):
                                         %s
                                         
-                                        请为剩余工作生成新计划。返回格式必须与初始计划格式完全一致（包含 thought 和 tasks 字段）。""".formatted(oldPlan.createSnapshot())
+                                        请为剩余工作生成新计划。返回格式必须与初始计划格式完全一致（包含 thought 和 tasks 字段）。""".formatted(JacksonJsonUtils.toJson(plan))
                         ))
                         .build())
                 .parameters(params -> {
@@ -242,10 +240,9 @@ class LoopInterceptor implements ChatInterceptor {
         return chatAsync(chain, replanRequest)
                 .thenCompose(response -> {
                     final var jsonContent = response.output().best().message().text();
-                    logger.debug("{}/{}/replan JSON content: {}", this, sessionId, jsonContent);
                     final var newPlan = JacksonJsonUtils.toObject(jsonContent, Plan.class);
-                    logger.debug("{}/{}/replan generated new plan, thought={}, tasks={}", this, sessionId, newPlan.getThought(), newPlan.getTasks().size());
-                    if (newPlan.getTasks().isEmpty()) {
+                    logger.debug("{}/{}/replan generated new plan, thought={}, tasks={}", this, sessionId, newPlan.thought(), newPlan.tasks().size());
+                    if (newPlan.tasks().isEmpty()) {
                         logger.warn("{}/{}/replan WARNING: new plan has no tasks! This will cause immediate termination.", this, sessionId);
                     }
                     return executePlan(chain, originalRequest, sessionId, newPlan, replanCount + 1);
@@ -256,9 +253,10 @@ class LoopInterceptor implements ChatInterceptor {
      * 生成最终答案
      */
     private CompletionStage<AigcResponse<Output>> synthesizeFinalAnswer(Chain chain, AigcRequest<Input, Output> originalRequest, Plan plan) {
-        final var planSnapshot = plan.createSnapshot();
+        final var planJson = JacksonJsonUtils.toJson(plan);
         final var userMessage = Message.user(
-                "基于已完成的任务，请提供对原始问题的全面最终答案:\n\n" + planSnapshot
+                "基于已完成的任务，请提供对原始问题的全面最终答案。\n\n" +
+                        "当前计划状态 (JSON格式):\n" + planJson
         );
 
         final var synthesisRequest = AigcRequest.newBuilder(originalRequest)

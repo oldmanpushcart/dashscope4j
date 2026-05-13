@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical.pe;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -16,30 +15,33 @@ public class Task {
     
     private final String taskId;
     private final String description;
-    private final AtomicReference<TaskStatus> status;
+    private final AtomicReference<Status> status;
     private volatile String result;
     private volatile String error;
-    private volatile LocalDateTime startTime;
-    private volatile LocalDateTime endTime;
     
     /**
      * Jackson 反序列化构造函数
      */
     @JsonCreator
     public Task(
-            @JsonProperty("taskId") String taskId,
-            @JsonProperty("description") String description) {
-        this.taskId = taskId != null ? taskId : "unknown";
-        this.description = description != null ? description : "";
-        this.status = new AtomicReference<>(TaskStatus.PENDING);
+
+            @JsonProperty("taskId")
+            String taskId,
+
+            @JsonProperty("description")
+            String description
+
+    ) {
+        this.taskId = taskId;
+        this.description = description;
+        this.status = new AtomicReference<>(Status.PENDING);
     }
     
     /**
      * 标记任务开始执行
      */
     public void start() {
-        this.startTime = LocalDateTime.now();
-        this.status.set(TaskStatus.RUNNING);
+        this.status.set(Status.RUNNING);
     }
     
     /**
@@ -49,8 +51,7 @@ public class Task {
      */
     public void complete(String result) {
         this.result = result;
-        this.endTime = LocalDateTime.now();
-        this.status.set(TaskStatus.SUCCESS);
+        this.status.set(Status.SUCCESS);
     }
     
     /**
@@ -60,45 +61,36 @@ public class Task {
      */
     public void fail(String error) {
         this.error = error;
-        this.endTime = LocalDateTime.now();
-        this.status.set(TaskStatus.FAILED);
+        this.status.set(Status.FAILED);
     }
     
     /**
      * 标记任务被跳过
      */
     public void skip() {
-        this.status.set(TaskStatus.SKIPPED);
+        this.status.set(Status.SKIPPED);
     }
     
     // ==================== Getters ====================
     
-    public String getTaskId() {
+    public String taskId() {
         return taskId;
     }
     
-    public String getDescription() {
+    public String description() {
         return description;
     }
     
-    public TaskStatus getStatus() {
+    public Status status() {
         return status.get();
     }
     
-    public String getResult() {
+    public String result() {
         return result;
     }
     
-    public String getError() {
+    public String error() {
         return error;
-    }
-    
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-    
-    public LocalDateTime getEndTime() {
-        return endTime;
     }
     
     /**
@@ -107,8 +99,8 @@ public class Task {
      * @return true 如果任务已结束
      */
     public boolean isFinished() {
-        TaskStatus s = status.get();
-        return s == TaskStatus.SUCCESS || s == TaskStatus.FAILED || s == TaskStatus.SKIPPED;
+        Status s = status.get();
+        return s == Status.SUCCESS || s == Status.FAILED || s == Status.SKIPPED;
     }
     
     /**
@@ -117,12 +109,37 @@ public class Task {
      * @return true 如果任务成功
      */
     public boolean isSuccess() {
-        return status.get() == TaskStatus.SUCCESS;
+        return status.get() == Status.SUCCESS;
     }
-    
-    @Override
-    public String toString() {
-        return String.format("Task{taskId='%s', status=%s, description='%s'}", 
-                taskId, status.get(), description);
+
+    /**
+     * 任务状态枚举
+     */
+    public enum Status {
+
+        /**
+         * 待执行
+         */
+        PENDING,
+
+        /**
+         * 执行中
+         */
+        RUNNING,
+
+        /**
+         * 执行成功
+         */
+        SUCCESS,
+
+        /**
+         * 执行失败
+         */
+        FAILED,
+
+        /**
+         * 已跳过（Replan 时被移除或合并）
+         */
+        SKIPPED
     }
 }

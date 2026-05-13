@@ -28,22 +28,29 @@
   "tasks": [
     {"taskId": "task-001", "description": "修订后的主要阶段 1"},
     {"taskId": "task-002", "description": "修订后的主要阶段 2"}
-  ]
+  ],
+  "index": 0
 }
 ```
 
 **严格遵守以下规则：**
 - ✅ 必须输出有效的 JSON 对象
 - ✅ 使用双引号包裹键和字符串值
-- ✅ tasks 数组中的每个任务必须包含 taskId 和 description 字段
+- ✅ tasks 数组中的每个任务必须包含 taskId 和 description 字段（两者都不可为空）
+- ✅ taskId 和 description 必须是非空字符串，不能为 null 或空字符串
+- ✅ **必须包含 index 字段**，表示从哪个任务开始执行（通常为 0，或根据已完成任务数量设置）
+- ✅ index 必须是非负整数
 - ✅ 不要包含 Markdown 代码块标记（如 ```json）
 - ✅ 不要添加任何额外的文本、解释或前缀
 - ❌ 禁止输出纯文本格式的计划
-- ❌ 禁止在 JSON 前后添加“好的”、“这是重规划”等内容
+- ❌ 禁止在 JSON 前后添加"好的"、"这是重规划"等内容
+- ❌ 禁止将 taskId 或 description 设置为空值
+- ❌ **禁止省略 index 字段**
 
 ## 规则
 
-- 每个 task 必须包含 taskId 和 description
+- 每个 task 必须包含 taskId 和 description（两者都是必填字段，不可为空）
+- taskId 和 description 必须是非空字符串
 - 即使重规划也要保持任务粗粒度
 - 从之前的失败中学习
 

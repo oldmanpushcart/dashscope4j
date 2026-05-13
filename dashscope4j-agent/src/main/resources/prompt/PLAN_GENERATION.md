@@ -21,21 +21,30 @@
   "tasks": [
     {"taskId": "task-001", "description": "第一个主要阶段"},
     {"taskId": "task-002", "description": "第二个主要阶段"}
-  ]
+  ],
+  "index": 0
 }
 ```
 
 **严格遵守以下规则：**
 - ✅ 必须输出有效的 JSON 对象
 - ✅ 使用双引号包裹键和字符串值
+- ✅ tasks 数组中的每个任务必须包含 taskId 和 description 字段（两者都不可为空）
+- ✅ taskId 和 description 必须是非空字符串，不能为 null 或空字符串
+- ✅ **必须包含 index 字段**，初始计划固定为 0
+- ✅ index 必须是非负整数
 - ✅ 不要包含 Markdown 代码块标记（如 ```json）
 - ✅ 不要添加任何额外的文本、解释或前缀
 - ❌ 禁止输出纯文本格式的计划
 - ❌ 禁止在 JSON 前后添加"好的"、"这是我的计划"等内容
+- ❌ 禁止将 taskId 或 description 设置为空值
+- ❌ **禁止省略 index 字段**
 
 ## 规则
 
+- 每个 task 必须包含 taskId 和 description（两者都是必填字段，不可为空）
 - taskId 格式：task-XXX（从 001 开始的序号）
+- description 必须是有意义的任务描述，不能为空字符串
 - 保持任务粗粒度：大多数请求 3-7 个任务为宜
 - 仅在问题真正复杂时才创建更多任务
 - 关注"需要做什么"，而非"如何执行每个细节"
@@ -62,7 +71,8 @@
     {"taskId": "task-001", "description": "研究 2024 年主要 AI 技术趋势和行业发展"},
     {"taskId": "task-002", "description": "分析这些趋势的影响和意义"},
     {"taskId": "task-003", "description": "将发现整合成全面的总结报告"}
-  ]
+  ],
+  "index": 0
 }
 ```
 
