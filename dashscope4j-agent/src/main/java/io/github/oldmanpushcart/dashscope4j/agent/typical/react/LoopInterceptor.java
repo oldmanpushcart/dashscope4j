@@ -12,6 +12,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolResult;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -338,7 +339,8 @@ class LoopInterceptor implements ChatInterceptor {
                     if (request.input().failOnToolError()) {
                         return CompletableFuture.<String>failedStage(ex);
                     } else {
-                        final var result = ToolResult.ofError(name, ex);
+                        final var cause = CompletableFutureUtils.unwrapEx(ex);
+                        final var result = ToolResult.ofError(name, cause);
                         final var resultJson = JacksonJsonUtils.toJson(result);
                         return CompletableFuture.completedStage(resultJson);
                     }

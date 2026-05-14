@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.rewrite.RewritePlugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.SessionPlugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
@@ -108,22 +109,11 @@ public class DebugTestCase implements LoadingEnv {
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
                 .plugins(plugins -> {
+                    plugins.add(RewritePlugin.newBuilder().build());
                     plugins.add(sessionPlugin);
                     plugins.add(toolboxPlugin);
                     return plugins;
                 })
-
-//                .subAgentSupplier(() -> {
-//                    return ReActAgent.newBuilder()
-//                            .client(client)
-//                            .model(ChatModel.QWEN_FLASH)
-//                            .plugins(plugins -> {
-//                                plugins.add(sessionPlugin);
-//                                plugins.add(toolboxPlugin);
-//                                return plugins;
-//                            })
-//                            .build();
-//                })
 
                 .build();
 
@@ -139,11 +129,11 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(sessionId, Message.user("""
-                            使用Java的Swing编写一个带十分秒三根指针的圆形的钟。
+                            根据柳州明天天气生成一副山水图。
                             要求
-                            1. 时间和本地时间对应
-                            2. 三根指针能动
-                            3. 在本地编译通过并运行
+                            1. 山水图必须包含当地特色、著名景观
+                            2. 图中必须要有地名、天气信息
+                            3. 保存到本地文件./weather.png
                             """))
                     .toCompletableFuture()
                     .join();
