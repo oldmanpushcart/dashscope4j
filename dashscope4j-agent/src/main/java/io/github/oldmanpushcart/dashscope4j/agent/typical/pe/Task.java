@@ -13,22 +13,22 @@ import java.util.concurrent.atomic.AtomicReference;
  * </p>
  */
 public class Task {
-    
+
     @JsonProperty("taskId")
     private final String taskId;
-    
+
     @JsonProperty("description")
     private final String description;
-    
+
     @JsonProperty("status")
     private final AtomicReference<Status> status;
-    
+
     @JsonProperty("result")
     private volatile String result;
-    
+
     @JsonProperty("error")
     private volatile String error;
-    
+
     /**
      * Jackson 反序列化构造函数
      */
@@ -57,14 +57,14 @@ public class Task {
         this.result = result;
         this.error = error;
     }
-    
+
     /**
      * 标记任务开始执行
      */
     public void start() {
         this.status.set(Status.RUNNING);
     }
-    
+
     /**
      * 标记任务执行成功
      *
@@ -74,7 +74,7 @@ public class Task {
         this.result = result;
         this.status.set(Status.SUCCESS);
     }
-    
+
     /**
      * 标记任务执行失败
      *
@@ -84,51 +84,53 @@ public class Task {
         this.error = error;
         this.status.set(Status.FAILED);
     }
-    
+
     /**
      * 标记任务被跳过
      */
     public void skip() {
         this.status.set(Status.SKIPPED);
     }
-    
+
     // ==================== Getters ====================
-    
+
     public String taskId() {
         return taskId;
     }
-    
+
     public String description() {
         return description;
     }
-    
+
     public Status status() {
         return status.get();
     }
-    
+
     public String result() {
         return result;
     }
-    
+
     public String error() {
         return error;
     }
-    
+
     /**
      * 判断任务是否已完成（成功或失败）
      *
      * @return true 如果任务已结束
      */
+    @JsonIgnore
     public boolean isFinished() {
         Status s = status.get();
         return s == Status.SUCCESS || s == Status.FAILED || s == Status.SKIPPED;
     }
-    
+
     /**
      * 判断任务是否成功
      *
      * @return true 如果任务成功
      */
+    @JsonIgnore
     public boolean isSuccess() {
         return status.get() == Status.SUCCESS;
     }

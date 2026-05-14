@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical.pe;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
@@ -45,7 +46,7 @@ class LoopInterceptor implements ChatInterceptor {
         return processAsync(chain, request);
     }
 
-    private CompletionStage<AigcResponse<Output>> chatAsync(Chain chain, AigcRequest<Input, Output> request) {
+    private CompletionStage<AigcResponse<Output>> proceedChatAsync(Chain chain, AigcRequest<Input, Output> request) {
         return chain.proceed(request)
                 .thenApply(r -> {
                     //noinspection unchecked
@@ -60,7 +61,7 @@ class LoopInterceptor implements ChatInterceptor {
 
                     // 如果执行计划中没有任何任务，则直接进行对话
                     if (plan.isEmpty()) {
-                        return chatAsync(chain, request);
+                        return proceedChatAsync(chain, request);
                     }
 
                     return executePlan(chain, request, sessionId, plan, 0);
@@ -114,13 +115,15 @@ class LoopInterceptor implements ChatInterceptor {
             return synthesizeFinalAnswer(chain, originalRequest, plan);
         }
 
-        final var progress = "%s/%s".formatted(plan.index(), plan.tasks().size());
+        final var progress = "%s/%s".formatted(plan.index() + 1, plan.tasks().size());
         logger.debug("{}/{}/plan progress [{}] begin! task={};{}", this, sessionId, progress, task.taskId(), task.description());
 
+        final var taskSessionId = "%s-%s-%s".formatted(sessionId, replanCount, task.taskId());
+
         task.start();
-        return executeTask(sessionId, plan, task)
+        return executeTask(taskSessionId, plan, task)
                 .thenCompose(result ->
-                        evaluateTaskResult(originalRequest, chain, task.description(), result)
+                        evaluateTaskResult(chain, task.description(), result)
                                 .thenCompose(evaluation -> {
                                     if (evaluation.isSuccess()) {
                                         logger.debug("{}/{}/plan progress [{}]; task={};result={};", this, sessionId, progress, task.taskId(), "success");
@@ -139,57 +142,53 @@ class LoopInterceptor implements ChatInterceptor {
     /*
      * 执行子任务
      */
-    private CompletionStage<String> executeTask(String mainSessionId, Plan plan, Task task) {
-        final var taskIndex = plan.index();
-        final var subSessionId = String.format("%s-%d", mainSessionId, taskIndex);
-
+    private CompletionStage<String> executeTask(String taskSessionId, Plan plan, Task task) {
         final var subAgent = subAgentSupplier.get();
-        final var planJson = JacksonJsonUtils.toJson(plan);
-        final var enhancedTaskDesc = """
-                **你的角色**: 你是一个专门的子智能体，只负责执行当前任务。
-                
-                **重要边界**:
-                - 你只需要关注 taskId=%s的任务
-                - 不要尝试执行计划中的其他任务
-                - 其他任务将由不同的智能体处理
-                - 你的工作仅完成当前任务并返回结果
-                
-                当前计划 (JSON格式):
-                %s
-                
-                === 你的当前任务 ===
-                
-                %s
-                """.formatted(
-                task.taskId(),
-                planJson,
-                task.description()
-        );
-
-        final var taskMessage = Message.user(enhancedTaskDesc);
-        return subAgent.async(subSessionId, taskMessage)
+        return subAgent.async(taskSessionId, Message.user("""
+                        ### 你的角色**
+                        你是一个专门的子智能体，只负责执行当前任务。
+                        
+                        ### 重要边界
+                        - 你只需要关注当前任务(taskId=%s)
+                        - 不要尝试执行计划中的其他任务
+                        - 其他任务将由不同的智能体处理
+                        - 你的工作仅完成当前任务并返回结果
+                        
+                        ### 当前计划
+                        > JSON格式
+                        %s
+                        
+                        ### 你的当前任务
+                        %s
+                        """.formatted(
+                        task.taskId(),
+                        JacksonJsonUtils.toJson(plan),
+                        task.description()
+                )))
                 .thenApply(AssistantMessage::text);
     }
 
     /*
      * 验证任务执行结果
      */
-    private CompletionStage<TaskEvaluationResponse> evaluateTaskResult(AigcRequest<Input, Output> originalRequest, Chain chain, String taskDescription, String taskResult) {
-        final var evaluationRequest = AigcRequest.newBuilder(originalRequest)
-                .input(input -> Input.newBuilder(input)
+    private CompletionStage<TaskEvaluationResponse> evaluateTaskResult(Chain chain, String description, String result) {
+        final var client = chain.client();
+        final var evaluationRequest = AigcRequest.newBuilder(ChatModel.QWEN_FLASH)
+                .input(Input.newBuilder()
                         .addMessage(Message.system(PromptTemplate.newBuilder()
                                 .resource("/prompt/TASK_EVALUATION.md")
                                 .build()
                                 .render()))
                         .addMessage(Message.user("""
-                                任务: %s
-                                
-                                结果:
+                                ### 任务
                                 %s
                                 
-                                请评估这个任务是否真正成功。""".formatted(
-                                taskDescription,
-                                taskResult
+                                ### 结果
+                                %s
+                                
+                                请评估`结果`是否完成了`任务`的要求。""".formatted(
+                                description,
+                                result
                         )))
                         .build())
                 .parameters(params -> {
@@ -198,7 +197,7 @@ class LoopInterceptor implements ChatInterceptor {
                 })
                 .build();
 
-        return chatAsync(chain, evaluationRequest)
+        return client.async(evaluationRequest)
                 .thenApply(response -> {
                     final var resultJson = response.output().best().message().text();
                     return JacksonJsonUtils.toObject(resultJson, TaskEvaluationResponse.class);
@@ -209,8 +208,7 @@ class LoopInterceptor implements ChatInterceptor {
      * 重新生成计划
      */
     private CompletionStage<AigcResponse<Output>> replan(Chain chain, AigcRequest<Input, Output> originalRequest, String sessionId, Plan plan, int replanCount) {
-        logger.info("Replanning (attempt {}/{})", replanCount + 1, maxReplanCount);
-
+        logger.debug("{}/{} replaning at attempt {}/{}", this, sessionId, replanCount + 1, maxReplanCount);
         final var replanRequest = AigcRequest.newBuilder(originalRequest)
                 .input(input -> Input.newBuilder(input)
                         .addMessage(Message.system(PromptTemplate.newBuilder()
@@ -235,14 +233,11 @@ class LoopInterceptor implements ChatInterceptor {
                 })
                 .build();
 
-        return chatAsync(chain, replanRequest)
+        return proceedChatAsync(chain, replanRequest)
                 .thenCompose(response -> {
                     final var jsonContent = response.output().best().message().text();
                     final var newPlan = JacksonJsonUtils.toObject(jsonContent, Plan.class);
                     logger.debug("{}/{}/replan generated new plan, thought={}, tasks={}", this, sessionId, newPlan.thought(), newPlan.tasks().size());
-                    if (newPlan.tasks().isEmpty()) {
-                        logger.warn("{}/{}/replan WARNING: new plan has no tasks! This will cause immediate termination.", this, sessionId);
-                    }
                     return executePlan(chain, originalRequest, sessionId, newPlan, replanCount + 1);
                 });
     }
@@ -251,11 +246,12 @@ class LoopInterceptor implements ChatInterceptor {
      * 生成最终答案
      */
     private CompletionStage<AigcResponse<Output>> synthesizeFinalAnswer(Chain chain, AigcRequest<Input, Output> originalRequest, Plan plan) {
-        final var planJson = JacksonJsonUtils.toJson(plan);
-        final var userMessage = Message.user(
-                "基于已完成的任务，请提供对原始问题的全面最终答案。\n\n" +
-                        "当前计划状态 (JSON格式):\n" + planJson
-        );
+        final var userMessage = Message.user("""
+                基于已完成的任务，请提供对原始问题的全面最终答案。
+                ### 当前计划状态
+                > JSON格式
+                %s
+                """.formatted(JacksonJsonUtils.toJson(plan)));
 
         final var synthesisRequest = AigcRequest.newBuilder(originalRequest)
                 .input(input -> Input.newBuilder(input)
@@ -264,10 +260,9 @@ class LoopInterceptor implements ChatInterceptor {
                                 .build()
                                 .render()))
                         .addMessage(userMessage)
-                        .failOnToolError(false)
                         .build())
                 .build();
-        return chatAsync(chain, synthesisRequest);
+        return proceedChatAsync(chain, synthesisRequest);
     }
 
 }

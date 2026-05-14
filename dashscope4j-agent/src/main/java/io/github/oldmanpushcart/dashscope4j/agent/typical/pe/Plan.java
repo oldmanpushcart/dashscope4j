@@ -88,6 +88,7 @@ public class Plan {
      *
      * @return TRUE | FALSE
      */
+    @JsonIgnore
     public synchronized boolean isFinished() {
         return tasks.stream().allMatch(Task::isFinished);
     }
@@ -97,6 +98,7 @@ public class Plan {
      *
      * @return TRUE | FALSE
      */
+    @JsonIgnore
     public synchronized boolean isEmpty() {
         return tasks.isEmpty();
     }

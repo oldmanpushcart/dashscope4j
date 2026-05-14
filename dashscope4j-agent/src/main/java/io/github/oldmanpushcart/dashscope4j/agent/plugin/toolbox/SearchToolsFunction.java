@@ -64,7 +64,7 @@ class SearchToolsFunction implements Function<SearchToolsFunction.Search, Comple
      */
     public record Search(
 
-            @JsonPropertyDescription("意图")
+            @JsonPropertyDescription("意图：请描述你想完成的工作、期待的方式是什么，我们将会为你匹配合适的工具。")
             @JsonProperty("intent")
             String intent
 

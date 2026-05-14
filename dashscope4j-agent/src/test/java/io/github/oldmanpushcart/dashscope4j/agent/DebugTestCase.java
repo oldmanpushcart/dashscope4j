@@ -17,18 +17,14 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.GuiToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.RuntimeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.ShellToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.typical.pe.PlanExecuteAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Flux;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -108,7 +104,7 @@ public class DebugTestCase implements LoadingEnv {
         final var sessionPlugin = buildingSessionPlugin();
         final var toolboxPlugin = buildingToolboxPlugin();
 
-        final var agent = PlanExecuteAgent.newBuilder()
+        final var agent = ReActAgent.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
                 .plugins(plugins -> {
@@ -117,17 +113,17 @@ public class DebugTestCase implements LoadingEnv {
                     return plugins;
                 })
 
-                .subAgentSupplier(() -> {
-                    return ReActAgent.newBuilder()
-                            .client(client)
-                            .model(ChatModel.QWEN_MAX)
-                            .plugins(plugins -> {
-                                plugins.add(sessionPlugin);
-                                plugins.add(toolboxPlugin);
-                                return plugins;
-                            })
-                            .build();
-                })
+//                .subAgentSupplier(() -> {
+//                    return ReActAgent.newBuilder()
+//                            .client(client)
+//                            .model(ChatModel.QWEN_FLASH)
+//                            .plugins(plugins -> {
+//                                plugins.add(sessionPlugin);
+//                                plugins.add(toolboxPlugin);
+//                                return plugins;
+//                            })
+//                            .build();
+//                })
 
                 .build();
 
@@ -143,7 +139,11 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(sessionId, Message.user("""
-                            根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
+                            使用Java的Swing编写一个带十分秒三根指针的圆形的钟。
+                            要求
+                            1. 时间和本地时间对应
+                            2. 三根指针能动
+                            3. 在本地编译通过并运行
                             """))
                     .toCompletableFuture()
                     .join();
