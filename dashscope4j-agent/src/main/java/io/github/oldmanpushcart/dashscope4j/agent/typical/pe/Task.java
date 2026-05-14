@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.pe;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -13,10 +14,19 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class Task {
     
+    @JsonProperty("taskId")
     private final String taskId;
+    
+    @JsonProperty("description")
     private final String description;
+    
+    @JsonProperty("status")
     private final AtomicReference<Status> status;
+    
+    @JsonProperty("result")
     private volatile String result;
+    
+    @JsonProperty("error")
     private volatile String error;
     
     /**
@@ -29,12 +39,23 @@ public class Task {
             String taskId,
 
             @JsonProperty("description")
-            String description
+            String description,
+
+            @JsonProperty("status")
+            Status status,
+
+            @JsonProperty("result")
+            String result,
+
+            @JsonProperty("error")
+            String error
 
     ) {
         this.taskId = taskId;
         this.description = description;
-        this.status = new AtomicReference<>(Status.PENDING);
+        this.status = new AtomicReference<>(status != null ? status : Status.PENDING);
+        this.result = result;
+        this.error = error;
     }
     
     /**

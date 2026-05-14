@@ -26,19 +26,41 @@
 {
   "thought": "更新后的思路和方法",
   "tasks": [
-    {"taskId": "task-001", "description": "修订后的主要阶段 1"},
-    {"taskId": "task-002", "description": "修订后的主要阶段 2"}
+    {
+      "taskId": "task-001",
+      "description": "已完成的任务（保持原样）",
+      "status": "SUCCESS",
+      "result": "之前的执行结果",
+      "error": null
+    },
+    {
+      "taskId": "task-002",
+      "description": "修订后的主要阶段 2",
+      "status": "PENDING",
+      "result": null,
+      "error": null
+    },
+    {
+      "taskId": "task-003",
+      "description": "新的任务描述",
+      "status": "PENDING",
+      "result": null,
+      "error": null
+    }
   ],
-  "index": 0
+  "index": 1
 }
 ```
 
 **严格遵守以下规则：**
 - ✅ 必须输出有效的 JSON 对象
 - ✅ 使用双引号包裹键和字符串值
-- ✅ tasks 数组中的每个任务必须包含 taskId 和 description 字段（两者都不可为空）
+- ✅ tasks 数组中的每个任务必须包含 taskId、description、status、result、error 字段
 - ✅ taskId 和 description 必须是非空字符串，不能为 null 或空字符串
-- ✅ **必须包含 index 字段**，表示从哪个任务开始执行（通常为 0，或根据已完成任务数量设置）
+- ✅ **必须保留已成功完成的任务，并保持其 status 为 "SUCCESS" 和 result 不变**
+- ✅ **失败的任务可以标记为 "FAILED" 或被移除**
+- ✅ **新任务的 status 应该是 "PENDING"**
+- ✅ **必须包含 index 字段**，指向第一个未完成的任务（通常是第一个 status 为 "PENDING" 的任务）
 - ✅ index 必须是非负整数
 - ✅ 不要包含 Markdown 代码块标记（如 ```json）
 - ✅ 不要添加任何额外的文本、解释或前缀

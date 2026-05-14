@@ -59,7 +59,7 @@ class LoopInterceptor implements ChatInterceptor {
                 .thenCompose(plan -> {
 
                     // 如果执行计划中没有任何任务，则直接进行对话
-                    if (plan.tasks().isEmpty()) {
+                    if (plan.isEmpty()) {
                         return chatAsync(chain, request);
                     }
 
@@ -145,12 +145,11 @@ class LoopInterceptor implements ChatInterceptor {
 
         final var subAgent = subAgentSupplier.get();
         final var planJson = JacksonJsonUtils.toJson(plan);
-        final var currentIndex = plan.index();
         final var enhancedTaskDesc = """
                 **你的角色**: 你是一个专门的子智能体，只负责执行当前任务。
                 
                 **重要边界**:
-                - 你只需要关注 currentTaskIndex=%d 的任务（即 tasks[%d]）
+                - 你只需要关注 taskId=%s的任务
                 - 不要尝试执行计划中的其他任务
                 - 其他任务将由不同的智能体处理
                 - 你的工作仅完成当前任务并返回结果
@@ -162,8 +161,7 @@ class LoopInterceptor implements ChatInterceptor {
                 
                 %s
                 """.formatted(
-                currentIndex,
-                currentIndex,
+                task.taskId(),
                 planJson,
                 task.description()
         );

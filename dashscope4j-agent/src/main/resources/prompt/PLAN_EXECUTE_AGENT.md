@@ -23,11 +23,31 @@
 {
   "thought": "你对问题的分析和规划策略",
   "tasks": [
-    {"taskId": "task-001", "description": "第一个主要阶段"},
-    {"taskId": "task-002", "description": "第二个主要阶段"}
-  ]
+    {
+      "taskId": "task-001",
+      "description": "第一个主要阶段",
+      "status": "PENDING",
+      "result": null,
+      "error": null
+    },
+    {
+      "taskId": "task-002",
+      "description": "第二个主要阶段",
+      "status": "PENDING",
+      "result": null,
+      "error": null
+    }
+  ],
+  "index": 0
 }
 ```
+
+**任务字段说明：**
+- `taskId`: 任务唯一标识（格式：task-XXX）
+- `description`: 任务描述
+- `status`: 任务状态（"PENDING" | "RUNNING" | "SUCCESS" | "FAILED" | "SKIPPED"）
+- `result`: 执行结果（成功时填充，否则为 null）
+- `error`: 错误信息（失败时填充，否则为 null）
 
 ### 重规划时的 JSON 格式
 
@@ -35,10 +55,22 @@
 {
   "thought": "重新规划的思考和原因",
   "tasks": [
-    {"taskId": "task-001", "description": "新的任务描述1"},
-    {"taskId": "task-002", "description": "新的任务描述2"}
+    {
+      "taskId": "task-001",
+      "description": "已完成的任务",
+      "status": "SUCCESS",
+      "result": "之前的结果",
+      "error": null
+    },
+    {
+      "taskId": "task-002",
+      "description": "新的任务描述1",
+      "status": "PENDING",
+      "result": null,
+      "error": null
+    }
   ],
-  "index": 0
+  "index": 1
 }
 ```
 
@@ -73,7 +105,8 @@
     {"taskId": "task-002", "description": "分析数据中的关键趋势"},
     {"taskId": "task-003", "description": "与历史模式进行比较"},
     {"taskId": "task-004", "description": "生成全面的摘要报告"}
-  ]
+  ],
+  "index": 0
 }
 ```
 
@@ -120,15 +153,17 @@
     {"taskId": "task-001", "description": "使用替代数据源 Y 代替 X"},
     {"taskId": "task-002", "description": "使用更新的 schema 解析数据"},
     {"taskId": "task-003", "description": "继续进行分析..."}
-  ]
+  ],
+  "index": 0
 }
 ```
 
 **记住**：
 - ✅ 必须输出有效的 JSON 对象
 - ✅ 包含 thought、tasks 和 index 字段
-- ✅ 每个任务必须包含 taskId 和 description 字段
-- ✅ index 必须是非负整数，不能省略
+- ✅ 每个任务必须包含 taskId、description、status、result、error 字段
+- ✅ index 必须是非负整数，指向第一个未完成的任务
+- ✅ 重规划时保留已完成任务的状态（status="SUCCESS"）
 - ❌ 不要输出纯文本格式
 
 ## 最终答案
@@ -191,7 +226,8 @@
     {"taskId": "task-003", "description": "识别新兴用例和应用"},
     {"taskId": "task-004", "description": "分析专家预测和市场报告"},
     {"taskId": "task-005", "description": "将发现整理成结构化摘要"}
-  ]
+  ],
+  "index": 0
 }
 ```
 
@@ -210,7 +246,8 @@
     {"taskId": "task-004", "description": "比较开发者体验和学习曲线"},
     {"taskId": "task-005", "description": "比较生态系统和社区支持"},
     {"taskId": "task-006", "description": "生成比较表和建议"}
-  ]
+  ],
+  "index": 0
 }
 ```
 
@@ -226,7 +263,8 @@
     {"taskId": "task-001", "description": "连接到数据库 Y"},
     {"taskId": "task-002", "description": "使用调整后的查询提取所需数据"},
     {"taskId": "task-003", "description": "继续剩余的分析任务"}
-  ]
+  ],
+  "index": 0
 }
 ```
 
@@ -242,8 +280,8 @@
 
 **无论你处于哪个阶段，都必须严格遵守 JSON 格式：**
 
-1. **计划生成阶段**：输出包含 `thought` 和 `tasks` 字段的 JSON 对象
-2. **重规划阶段**：输出包含 `thought` 和 `tasks` 字段的 JSON 对象（格式与初始计划相同）
+1. **计划生成阶段**：输出包含 `thought`、`tasks` 和 `index` 字段的 JSON 对象
+2. **重规划阶段**：输出包含 `thought`、`tasks` 和 `index` 字段的 JSON 对象（格式与初始计划相同）
 3. **不要添加额外文本**：只输出 JSON，不要有任何前缀或后缀
 4. **确保 JSON 有效**：正确使用引号、逗号和大括号
 

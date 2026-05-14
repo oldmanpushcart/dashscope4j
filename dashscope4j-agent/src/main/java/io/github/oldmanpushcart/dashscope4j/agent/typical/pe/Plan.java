@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.pe;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -15,8 +16,13 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Plan {
 
+    @JsonProperty("thought")
     private final String thought;
+    
+    @JsonProperty("tasks")
     private final List<Task> tasks;
+    
+    @JsonProperty("index")
     private volatile int index;
 
     /**
@@ -37,7 +43,7 @@ public class Plan {
     ) {
         this.thought = thought;
         this.tasks = tasks;
-        this.index = index;
+        this.index = index != null ? index : 0;
     }
 
     /**
@@ -64,7 +70,6 @@ public class Plan {
      *
      * @return 当前任务索引（从0开始）
      */
-    @JsonProperty("index")
     public int index() {
         return index;
     }
@@ -99,7 +104,6 @@ public class Plan {
     /**
      * @return 思考过程
      */
-    @JsonProperty("thought")
     public String thought() {
         return thought;
     }
@@ -107,7 +111,6 @@ public class Plan {
     /**
      * @return 任务列表
      */
-    @JsonProperty("tasks")
     public List<Task> tasks() {
         return tasks;
     }
