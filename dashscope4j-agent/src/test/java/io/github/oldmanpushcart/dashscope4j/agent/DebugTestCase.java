@@ -129,7 +129,7 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(sessionId, Message.user("""
-                            根据柳州明天天气生成一副山水图。
+                            根据杭州明天天气生成一副山水图。
                             要求
                             1. 山水图必须包含当地特色、著名景观
                             2. 图中必须要有地名、天气信息
