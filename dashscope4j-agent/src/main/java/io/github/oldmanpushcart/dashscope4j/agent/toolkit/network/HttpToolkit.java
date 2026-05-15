@@ -312,8 +312,8 @@ public class HttpToolkit implements Toolkit {
                                     result.put("file_uri", fileUri);
                                     result.put("saved_to_file", true);
                                     result.put("message", isText
-                                            ? "Large text saved to file. Use file$info or file$view to view."
-                                            : "Binary file saved. Use file$info to view file information.");
+                                            ? "Large text saved to file. Use appropriate file reading tools to view."
+                                            : "Binary file saved. Use file information tools to view details.");
 
                                 } catch (IOException ex) {
                                     throw new IOException("Failed to save response to file!", ex);
@@ -611,7 +611,7 @@ public class HttpToolkit implements Toolkit {
                         - 文件保存在 workspace 范围内
                         - 默认不覆盖已存在文件
                         - 最大下载大小可配置（默认 50MB）
-                        - 下载完成后可用 file$view 查看文本文件
+                        - 下载完成后可使用相应的文件读取工具查看内容
                         """)
                 .parameterType(DownloadSpec.class)
                 .<DownloadSpec>function((caller, spec) -> {

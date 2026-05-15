@@ -178,13 +178,13 @@ public class TextFileOpsToolkit implements Toolkit {
                         - last_modified: 最后修改时间戳（毫秒），用于后续编辑的并发控制
                         
                         【注意事项】
-                        - viewRange 从1开始计数，如 [10, 20] 表示第10-20行
-                        - 不指定 viewRange 时返回全部内容
+                        - readRange 从1开始计数，如 [10, 20] 表示第10-20行
+                        - 不指定 readRange 时返回全部内容
                         - 超出范围的行号会自动截断
                         - 仅支持文本文件，二进制文件会被拒绝
                         """)
-                .parameterType(ViewSpec.class)
-                .<ViewSpec>function((caller, spec) -> {
+                .parameterType(ReadSpec.class)
+                .<ReadSpec>function((caller, spec) -> {
                     try {
                         final Path resolved = FileUtils.checkPathEscape(workspace, spec.path());
 
@@ -210,7 +210,7 @@ public class TextFileOpsToolkit implements Toolkit {
                             throw ToolExecutionException.callFailed(
                                     "text_file$read",
                                     "File size %.2f MB exceeds limit %.2f MB".formatted(fileSize / 1024.0 / 1024.0, maxFileSize / 1024.0 / 1024.0),
-                                    "The file is too large to view. Try viewing a specific range with view_range parameter."
+                                    "The file is too large to view. Try viewing a specific range with read_range parameter."
                             );
                         }
 
@@ -219,7 +219,7 @@ public class TextFileOpsToolkit implements Toolkit {
                             throw ToolExecutionException.callFailed(
                                     "text_file$read",
                                     "Cannot view binary file: " + spec.path(),
-                                    "This tool only supports text files. Use file$info to check file type."
+                                    "This tool only supports text files. Binary files cannot be processed."
                             );
                         }
 
@@ -236,9 +236,9 @@ public class TextFileOpsToolkit implements Toolkit {
                         int startLine = 1;
                         int endLine = totalLines;
 
-                        if (spec.viewRange() != null && spec.viewRange().length == 2) {
-                            startLine = Math.max(1, spec.viewRange()[0]);
-                            endLine = Math.min(totalLines, spec.viewRange()[1]);
+                        if (spec.readRange() != null && spec.readRange().length == 2) {
+                            startLine = Math.max(1, spec.readRange()[0]);
+                            endLine = Math.min(totalLines, spec.readRange()[1]);
                         }
 
                         // 提取指定范围的行
@@ -357,7 +357,7 @@ public class TextFileOpsToolkit implements Toolkit {
                             throw ToolExecutionException.callFailed(
                                     "text_file$search",
                                     "Cannot search binary file: " + spec.path(),
-                                    "This tool only supports text files. Use file$info to check file type."
+                                    "This tool only supports text files. Binary files cannot be processed."
                             );
                         }
 
@@ -435,9 +435,9 @@ public class TextFileOpsToolkit implements Toolkit {
                         - 修复代码中的特定文本
                         
                         【工作流程】
-                        1. 使用 file$search 定位目标内容
-                        2. 使用 file$view 确认上下文
-                        3. 调用 file$str_replace 执行替换（提供足够的上下文使 oldStr 唯一）
+                        1. 使用 text_file$search 定位目标内容
+                        2. 使用 text_file$read 确认上下文
+                        3. 调用 text_file$str_replace 执行替换（提供足够的上下文使 oldStr 唯一）
                         
                         【返回结果】
                         - operation: 操作类型（str_replace）
@@ -446,7 +446,7 @@ public class TextFileOpsToolkit implements Toolkit {
                         
                         【注意事项】
                         - oldStr 必须在文件中唯一匹配，否则报错
-                        - 必须提供 lastModified（从 file$view 获取）
+                        - 必须提供 lastModified（从 text_file$read 获取）
                         - 大小写敏感，空格和缩进必须完全匹配
                         - 如果文件已被修改（lastModified 不匹配），操作会失败
                         """)
@@ -489,7 +489,7 @@ public class TextFileOpsToolkit implements Toolkit {
                             throw ToolExecutionException.callFailed(
                                     "text_file$str_replace",
                                     "Text not found in file",
-                                    "Use file$search to locate the text, and provide more context to make oldStr unique."
+                                    "Use text_file$search to locate the text, and provide more context to make oldStr unique."
                             );
                         }
 
@@ -566,8 +566,8 @@ public class TextFileOpsToolkit implements Toolkit {
                         - last_modified: 修改后的时间戳
                         
                         【注意事项】
-                        - 必须提供 lastModified（从 file$view 获取）
-                        - content 可以包含多行（用 \\n 分隔）
+                        - 必须提供 lastModified（从 text_file$read 获取）
+                        - content 可以包含多行（用 \n 分隔）
                         - 如果文件已被修改（lastModified 不匹配），操作会失败
                         """)
                 .parameterType(InsertLineSpec.class)
@@ -682,8 +682,8 @@ public class TextFileOpsToolkit implements Toolkit {
                         - 新文件不需要 lastModified
                         - 仅支持文本文件，不要用于写入二进制数据
                         """)
-                .parameterType(CreateFileSpec.class)
-                .<CreateFileSpec>function((caller, spec) -> {
+                .parameterType(WriteFileSpec.class)
+                .<WriteFileSpec>function((caller, spec) -> {
                     // 验证内容
                     if (spec.fileText() == null || spec.fileText().isEmpty()) {
                         throw ToolExecutionException.callFailed(
@@ -745,14 +745,14 @@ public class TextFileOpsToolkit implements Toolkit {
 
     // ==================== Spec 数据结构 ====================
 
-    record ViewSpec(
+    record ReadSpec(
             @JsonPropertyDescription("文件的相对路径，例如：src/main.java")
             @JsonProperty(value = "path", required = true)
             String path,
 
-            @JsonPropertyDescription("查看的行范围 [start, end]，从1开始计数（可选，不填则查看全部）")
-            @JsonProperty("view_range")
-            int[] viewRange,
+            @JsonPropertyDescription("读取的行范围 [start, end]，从1开始计数（可选，不填则查看全部）")
+            @JsonProperty("read_range")
+            int[] readRange,
 
             @JsonPropertyDescription("文件编码（可选，默认UTF-8）")
             @JsonProperty("encoding")
@@ -792,7 +792,7 @@ public class TextFileOpsToolkit implements Toolkit {
             @JsonProperty(value = "new_str", required = true)
             String newStr,
 
-            @JsonPropertyDescription("最后修改时间戳（从 file$view 获取）")
+            @JsonPropertyDescription("最后修改时间戳（从 text_file$read 获取）")
             @JsonProperty(value = "last_modified", required = true)
             long lastModified,
 
@@ -815,7 +815,7 @@ public class TextFileOpsToolkit implements Toolkit {
             @JsonProperty(value = "content", required = true)
             String content,
 
-            @JsonPropertyDescription("最后修改时间戳（从 file$view 获取）")
+            @JsonPropertyDescription("最后修改时间戳（从 text_file$read 获取）")
             @JsonProperty(value = "last_modified", required = true)
             long lastModified,
 
@@ -825,7 +825,7 @@ public class TextFileOpsToolkit implements Toolkit {
     ) {
     }
 
-    record CreateFileSpec(
+    record WriteFileSpec(
             @JsonPropertyDescription("文件的相对路径")
             @JsonProperty(value = "path", required = true)
             String path,
