@@ -2,12 +2,14 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolLookup;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
@@ -50,6 +52,7 @@ public abstract class BaseAgent implements Agent {
     private final DashscopeClient client;
     private final ChatModel model;
     private final List<Plugin> plugins;
+    private final List<Toolkit> toolkits;
 
     /**
      * 构造 BaseAgent
@@ -62,6 +65,7 @@ public abstract class BaseAgent implements Agent {
         this.client = builder.client;
         this.model = builder.model;
         this.plugins = CommonUtils.unmodifiableCopy(builder.plugins);
+        this.toolkits = CommonUtils.unmodifiableCopy(builder.toolkits);
     }
 
     @Override
@@ -95,8 +99,25 @@ public abstract class BaseAgent implements Agent {
 
                 // 组装对话输入
                 .input(Input.newBuilder()
-                        .messages(List.of(inbound))
+
+                        // 工具调用不失败
                         .failOnToolError(false)
+
+                        // 用户输入
+                        .messages(List.of(inbound))
+
+                        // 添加工具
+                        .lookups(lookups -> {
+                            final var tools = toolkits.stream()
+                                    .map(Toolkit::tools)
+                                    .flatMap(List::stream)
+                                    .toList();
+                            final var lookup = ToolLookup.tools(tools);
+                            lookups.add(lookup);
+                            return lookups;
+                        })
+
+                        // 构建
                         .build())
 
                 // 组装拦截器
@@ -187,6 +208,7 @@ public abstract class BaseAgent implements Agent {
         private ChatModel model;
 
         private List<Plugin> plugins;
+        private List<Toolkit> toolkits;
 
 
         protected Builder() {
@@ -201,6 +223,7 @@ public abstract class BaseAgent implements Agent {
             this.client = agent.client;
             this.model = agent.model;
             this.plugins = agent.plugins;
+            this.toolkits = agent.toolkits;
 
         }
 
@@ -231,6 +254,16 @@ public abstract class BaseAgent implements Agent {
 
         public B plugins(UnaryOperator<List<Plugin>> operator) {
             this.plugins = operator.apply(CommonUtils.mutableCopy(this.plugins));
+            return self();
+        }
+
+        public B toolkits(List<Toolkit> toolkits) {
+            this.toolkits = toolkits;
+            return self();
+        }
+
+        public B toolkits(UnaryOperator<List<Toolkit>> operator) {
+            this.toolkits = operator.apply(CommonUtils.mutableCopy(this.toolkits));
             return self();
         }
 

@@ -1,7 +1,9 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit;
+package io.github.oldmanpushcart.dashscope4j.agent.toolkit;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.file.FileOpsToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.*;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.FileOpsToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.GuiToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.RuntimeToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 

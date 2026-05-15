@@ -11,13 +11,13 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.mcp.McpL
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.mcp.RecoverableMcpClientTransport;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.skill.SkillLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.ToolkitLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.dashscope.DashscopeToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.file.FileOpsToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.file.TextFileOpsToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.network.HttpToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.GuiToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.RuntimeToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.system.ShellToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.dashscope.DashscopeToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.FileOpsToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.TextFileOpsToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.network.HttpToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.GuiToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.RuntimeToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
@@ -66,7 +66,7 @@ public class DebugTestCase implements LoadingEnv {
                         GuiToolkit.create(),
                         HttpToolkit.create()
                 ))
-                .append(ToolUse.Mode.DYNAMIC, List.of(
+                .append(ToolUse.Mode.FIXED, List.of(
                         RuntimeToolkit.create(),
                         ShellToolkit.create(),
                         FileOpsToolkit.create(),
@@ -109,7 +109,7 @@ public class DebugTestCase implements LoadingEnv {
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
                 .plugins(plugins -> {
-                    plugins.add(RewritePlugin.newBuilder().build());
+                    //plugins.add(RewritePlugin.newBuilder().build());
                     plugins.add(sessionPlugin);
                     plugins.add(toolboxPlugin);
                     return plugins;
@@ -129,11 +129,11 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(sessionId, Message.user("""
-                            根据杭州明天天气生成一副山水图。
-                            要求
-                            1. 山水图必须包含当地特色、著名景观
-                            2. 图中必须要有地名、天气信息
-                            3. 保存到本地文件./weather.png
+                            用JavaSwing写一个钟的应用，编译并运行起来。
+                            要求：
+                            1. 有时分秒三根指针
+                            2. 能根据本地当前时间移动。
+                            3. 你可以用命令完成编译和运行
                             """))
                     .toCompletableFuture()
                     .join();
