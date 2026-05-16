@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.rewrite.RewritePlugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.SessionPlugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
@@ -109,7 +108,6 @@ public class DebugTestCase implements LoadingEnv {
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
                 .plugins(plugins -> {
-                    //plugins.add(RewritePlugin.newBuilder().build());
                     plugins.add(sessionPlugin);
                     plugins.add(toolboxPlugin);
                     return plugins;
@@ -129,11 +127,7 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(sessionId, Message.user("""
-                            用JavaSwing写一个钟的应用，编译并运行起来。
-                            要求：
-                            1. 有时分秒三根指针
-                            2. 能根据本地当前时间移动。
-                            3. 你可以用命令完成编译和运行
+                            根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
                             """))
                     .toCompletableFuture()
                     .join();

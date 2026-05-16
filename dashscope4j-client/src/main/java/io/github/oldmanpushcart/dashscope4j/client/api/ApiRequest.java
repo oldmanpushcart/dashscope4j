@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class ApiRequest<R extends ApiResponse> {
 
+    private final Map<String, String> headers;
     private final Type responseType;
     private final List<Interceptor> interceptors;
     private final Map<String, Object> context;
@@ -34,6 +35,7 @@ public abstract class ApiRequest<R extends ApiResponse> {
      */
     protected ApiRequest(Type responseType) {
         requireNonNull(responseType, "responseType must not be null");
+        this.headers = Map.of();
         this.responseType = responseType;
         this.interceptors = List.of();
         this.context = new ConcurrentHashMap<>();
@@ -48,11 +50,19 @@ public abstract class ApiRequest<R extends ApiResponse> {
     protected ApiRequest(Type responseType, Builder<?, ?> builder) {
         requireNonNull(responseType, "responseType must not be null");
         requireNonNull(builder, "builder must not be null");
+        this.headers = CommonUtils.unmodifiableCopy(builder.headers);
         this.responseType = responseType;
         this.interceptors = CommonUtils.unmodifiableCopy(builder.interceptors);
         this.context = null != builder.context
                 ? builder.context
                 : new ConcurrentHashMap<>();
+    }
+
+    /**
+     * @return HTTP请求头
+     */
+    public Map<String, String> headers() {
+        return headers;
     }
 
     /**
@@ -109,6 +119,7 @@ public abstract class ApiRequest<R extends ApiResponse> {
      */
     public static abstract class Builder<T extends ApiRequest<?>, B extends Builder<T, B>> implements Buildable<T, B> {
 
+        private Map<String, String> headers;
         private List<Interceptor> interceptors;
         private Map<String, Object> context;
 
@@ -116,6 +127,7 @@ public abstract class ApiRequest<R extends ApiResponse> {
         }
 
         protected Builder(ApiRequest<?> request) {
+            this.headers = request.headers;
             this.interceptors = request.interceptors;
             this.context = request.context;
         }
@@ -157,6 +169,16 @@ public abstract class ApiRequest<R extends ApiResponse> {
 
         public B context(UnaryOperator<Map<String, Object>> operator) {
             this.context = operator.apply(CommonUtils.mutableCopy(this.context));
+            return self();
+        }
+
+        public B headers(Map<String, String> headers) {
+            this.headers = headers;
+            return self();
+        }
+
+        public B headers(UnaryOperator<Map<String, String>> operator) {
+            this.headers = operator.apply(CommonUtils.mutableCopy(this.headers));
             return self();
         }
 

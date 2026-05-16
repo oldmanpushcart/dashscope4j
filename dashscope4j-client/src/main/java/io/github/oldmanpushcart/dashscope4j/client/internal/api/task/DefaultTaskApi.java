@@ -44,11 +44,15 @@ public class DefaultTaskApi implements TaskApi, InternalContents {
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<? extends Task.Half<R>> execute(T request) {
 
         final var httpRequest = new Request.Builder(request.toHttpRequest(host))
-                .addHeader(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
-                .addHeader(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
-                .addHeader(HTTP_HEADER_X_DASHSCOPE_SSE, DISABLE)
-                .addHeader(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
-                .addHeader(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
+                .headers(new Headers.Builder()
+                        .add(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
+                        .add(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
+                        .add(HTTP_HEADER_X_DASHSCOPE_SSE, DISABLE)
+                        .add(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
+                        .add(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
+                        .addAll(Headers.of(request.headers()))
+                        .build())
+
                 .build();
 
         // 第1步：OkHttp 内部线程执行网络请求

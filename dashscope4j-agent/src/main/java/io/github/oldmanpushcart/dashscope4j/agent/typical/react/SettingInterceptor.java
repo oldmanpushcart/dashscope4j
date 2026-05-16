@@ -20,7 +20,8 @@ class SettingInterceptor implements ChatInterceptor {
                     .resource("/prompt/REACT_AGENT.md")
                     .build()
                     .render())
-            .withCache();
+            .withCache()
+            ;
 
     @Override
     public CompletionStage<?> intercept(Chain chain, AigcRequest<Input, Output> request) {
@@ -59,6 +60,12 @@ class SettingInterceptor implements ChatInterceptor {
 
                     return parameters;
                 })
+
+//                .headers(headers -> {
+//                    headers.put("X-DashScope-Session-Cache", "enable");
+//                    return headers;
+//                })
+
                 .build();
     }
 

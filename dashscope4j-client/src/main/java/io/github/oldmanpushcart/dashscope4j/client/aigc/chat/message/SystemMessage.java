@@ -75,6 +75,7 @@ public record SystemMessage(
 
         public Builder(SystemMessage message) {
             this.contents = message.contents;
+            this.tags = message.tags;
         }
 
         public Builder contents(List<Content> contents) {

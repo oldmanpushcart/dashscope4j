@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents;
+import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -42,11 +43,14 @@ public class DefaultFlowApi implements FlowApi, InternalContents {
         Flux<R> flux = Flux.create(sink -> {
 
             final var httpRequest = new Request.Builder(request.toHttpRequest(host))
-                    .addHeader(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
-                    .addHeader(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
-                    .addHeader(HTTP_HEADER_X_DASHSCOPE_SSE, ENABLE)
-                    .addHeader(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
-                    .addHeader(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
+                    .headers(new Headers.Builder()
+                            .add(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
+                            .add(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
+                            .add(HTTP_HEADER_X_DASHSCOPE_SSE, ENABLE)
+                            .add(HTTP_HEADER_X_DASHSCOPE_ASYNC, DISABLE)
+                            .add(HTTP_HEADER_X_DASHSCOPE_OSS_RESOURCE_RESOLVE, ENABLE)
+                            .addAll(Headers.of(request.headers()))
+                            .build())
                     .build();
 
             final var listener = new EventSourceListener() {
@@ -135,7 +139,7 @@ public class DefaultFlowApi implements FlowApi, InternalContents {
                     .newEventSource(httpRequest, listener);
 
         }, FluxSink.OverflowStrategy.ERROR);
-        
+
         // 在接收到数据后切换到自定义 scheduler
         return flux.publishOn(scheduler);
 

@@ -72,7 +72,8 @@ public record UserMessage(
         }
 
         public Builder(UserMessage message) {
-            this.contents.addAll(message.contents);
+            this.contents = message.contents;
+            this.tags = message.tags;
         }
 
         public Builder contents(List<Content> contents) {

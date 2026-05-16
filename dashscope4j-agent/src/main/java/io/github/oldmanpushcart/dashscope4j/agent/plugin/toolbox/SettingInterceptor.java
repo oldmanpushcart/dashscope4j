@@ -21,7 +21,8 @@ class SettingInterceptor implements ChatInterceptor {
                     .resource("/prompt/SEARCH_TOOLS.md")
                     .build()
                     .render())
-            .withCache();
+            .withCache()
+            ;
 
     private final Toolbox toolbox;
     private final Tool searchToolsTool;

@@ -108,6 +108,7 @@ class LoopInterceptor implements ChatInterceptor {
                                                     messages.addAll(List.of(
                                                             responseMessage,
                                                             Message.user("%s: %s".formatted(ReAct.OBSERVATION, resultJson))
+                                                                    .withCache()
                                                     ));
                                                     return messages;
                                                 })
@@ -232,7 +233,7 @@ class LoopInterceptor implements ChatInterceptor {
                                 final var nextRequest = AigcRequest.newBuilder(request)
                                         .input(input -> Input.newBuilder(input)
                                                 .addMessage(message)
-                                                .addMessage(Message.user("%s: %s".formatted(ReAct.OBSERVATION, resultJson)))
+                                                .addMessage(Message.user("%s: %s".formatted(ReAct.OBSERVATION, resultJson)).withCache())
                                                 .build())
                                         .build();
                                 return chain.proceed(nextRequest)
