@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,6 +17,8 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 
 /**
  * 助手消息
@@ -36,7 +39,7 @@ public record AssistantMessage(
         @JsonDeserialize(using = ContentListJsonDeserializer.class)
         List<Content> contents,
 
-        @JsonProperty("reasoning_content")
+        @JsonProperty(value = "reasoning_content", access = READ_ONLY)
         String reasoningContent,
 
         @JsonProperty("partial")
