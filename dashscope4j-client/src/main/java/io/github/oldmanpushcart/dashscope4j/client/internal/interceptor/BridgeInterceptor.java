@@ -39,6 +39,10 @@ public class BridgeInterceptor implements Interceptor {
                             parameters.put("incremental_output", true);
                             return parameters;
                         })
+                        .tags(tags-> {
+                            tags.add("bridge:a2f");
+                            return tags;
+                        })
                         .build();
                 return Flux.from(chain.client().flow(newRequest))
                         .reduce(AigcResponse::accumulate)
@@ -47,7 +51,13 @@ public class BridgeInterceptor implements Interceptor {
 
             // bridge async to task
             else if (model.tags().contains(AigcModelTags.RESPONSE_MODE_TASK)) {
-                return chain.client().task(request)
+                final var newRequest = AigcRequest.newBuilder(request)
+                        .tags(tags-> {
+                            tags.add("bridge:a2t");
+                            return tags;
+                        })
+                        .build();
+                return chain.client().task(newRequest)
                         .thenCompose(half -> half.waitingFor(always(ofSeconds(1L))));
             }
 
@@ -56,12 +66,12 @@ public class BridgeInterceptor implements Interceptor {
         // process flow request
         else if (chain.type() == Type.FLOW) {
 
-            // bridge flow to async
+            // bridge flow to flow
             if (model.tags().contains(AigcModelTags.RESPONSE_MODE_FLOW)) {
                 return chain.proceed();
             }
 
-            // bridge flow to flow
+            // bridge flow to async
             else if (model.tags().contains(AigcModelTags.RESPONSE_MODE_ASYNC)) {
                 final var flow = Flux.defer(() -> {
                     final var newRequest = AigcRequest.newBuilder(request)
@@ -75,6 +85,11 @@ public class BridgeInterceptor implements Interceptor {
                                 parameters.put("incremental_output", false);
 
                                 return parameters;
+                            })
+
+                            .tags(tags-> {
+                                tags.add("bridge:f2a");
+                                return tags;
                             })
 
                             .build();
@@ -97,6 +112,12 @@ public class BridgeInterceptor implements Interceptor {
 
                                 return parameters;
                             })
+
+                            .tags(tags-> {
+                                tags.add("bridge:f2t");
+                                return tags;
+                            })
+
                             .build();
                     final var stage = chain.client().task(newRequest)
                             .thenCompose(half -> half.waitingFor(always(ofSeconds(1L))));

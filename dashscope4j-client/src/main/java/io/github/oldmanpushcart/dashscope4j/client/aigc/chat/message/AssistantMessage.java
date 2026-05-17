@@ -92,13 +92,32 @@ public record AssistantMessage(
         return calls != null && !calls.isEmpty();
     }
 
+    private static List<Content> accumulateContents(List<Content> current, List<Content> next) {
+
+        final Content newTextContent = Stream.of(current, next)
+                .flatMap(Collection::stream)
+                .filter(c -> c instanceof TextContent)
+                .map(TextContent.class::cast)
+                .map(TextContent::text)
+                .reduce(String::concat)
+                .map(Content::text)
+                .orElseGet(() -> Content.text(""));
+
+        final var nonTextContents = Stream.of(current, next)
+                .flatMap(Collection::stream)
+                .filter(c -> !(c instanceof TextContent))
+                .toList();
+
+        return Stream.of(List.of(newTextContent), nonTextContents)
+                .flatMap(Collection::stream)
+                .toList();
+    }
+
     @Override
     public AssistantMessage accumulate(AssistantMessage next) {
 
         // 合并所有内容
-        final var newContents = Stream.of(contents, next.contents)
-                .flatMap(Collection::stream)
-                .toList();
+        final var newContents = accumulateContents(contents, next.contents);
 
         // 合并理论推理内容
         final var newReasoningContent = CommonUtils.joinStrings(reasoningContent, next.reasoningContent);

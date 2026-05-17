@@ -2,8 +2,6 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseAgent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +11,6 @@ import java.util.List;
  */
 public class ReActAgent extends BaseAgent {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Plugin plugin = new ReActPlugin();
 
     protected ReActAgent(Builder builder) {

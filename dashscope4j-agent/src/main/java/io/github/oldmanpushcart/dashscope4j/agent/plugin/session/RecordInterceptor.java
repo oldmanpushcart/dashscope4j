@@ -31,16 +31,40 @@ class RecordInterceptor implements ChatInterceptor {
     @Override
     public CompletionStage<?> intercept(Chain chain, AigcRequest<Input, Output> request) {
 
-        final var lastMessage = request.input().lastMessage();
-        if(lastMessage instanceof ToolMessage) {
+        /*
+         * 不记录被转发的请求
+         *
+         * 转发的请求通常出现在模型兼容的场景下，由 BridgeInterceptor 进行转换。
+         * 因为原始请求原本就会被记录，所以这里就主动忽略了被转发的请求，否则会出现重复记录的情况。
+         */
+        if (request.tags().stream()
+                .anyMatch(tag -> tag.startsWith("bridge:"))) {
             return chain.proceed(request);
         }
 
+        /*
+         * 不记录工具调用
+         *
+         * 工具调用大多没有被记录的价值
+         */
+        final var lastMessage = request.input().lastMessage();
+        if (lastMessage instanceof ToolMessage) {
+            return chain.proceed(request);
+        }
+
+        /*
+         * 不记录没有会话的请求
+         *
+         * 这里是一个容错判断，虽然不应该会出现没有session的请求，但是为了避免出现异常，这里进行了一个判断。
+         */
         final var session = (Session) (request.context().get("session"));
         if (null == session) {
             return chain.proceed(request);
         }
 
+        /*
+         * 记录请求和应答
+         */
         return CompletableFuture.completedStage(null)
                 .thenCompose(u -> recall(session, request))
                 .thenCompose(chain::proceed)

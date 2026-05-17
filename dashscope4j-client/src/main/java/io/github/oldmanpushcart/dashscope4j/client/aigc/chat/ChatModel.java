@@ -39,6 +39,14 @@ import static io.github.oldmanpushcart.dashscope4j.client.Constants.*;
 public record ChatModel(String name, String path, Set<String> tags)
         implements AigcModel<ChatModel.Input, ChatModel.Output> {
 
+    public static final ChatModel QWEN_FLASH_3_6 = new ChatModel("qwen3.6-flash", MULTIMODAL_GENERATION_PATH, Set.of(
+            AigcModelTags.RESPONSE_MODE_FLOW
+    ));
+
+    public static final ChatModel QWEN_PLUS_3_6 = new ChatModel("qwen3.6-plus", MULTIMODAL_GENERATION_PATH, Set.of(
+            AigcModelTags.RESPONSE_MODE_FLOW
+    ));
+
     public static final ChatModel QWEN_FLASH = new ChatModel("qwen-flash", TEXT_GENERATION_PATH);
     public static final ChatModel QWEN_PLUS = new ChatModel("qwen-plus", TEXT_GENERATION_PATH);
     public static final ChatModel QWEN_MAX = new ChatModel("qwen-max", TEXT_GENERATION_PATH);
@@ -226,10 +234,10 @@ public record ChatModel(String name, String path, Set<String> tags)
             return new Builder(input);
         }
 
-    /**
-     * 输入参数构建器
-     */
-    public static class Builder implements Buildable<Input, Builder> {
+        /**
+         * 输入参数构建器
+         */
+        public static class Builder implements Buildable<Input, Builder> {
 
             private List<Message> messages;
             private List<ToolLookup> lookups;
@@ -336,14 +344,11 @@ public record ChatModel(String name, String path, Set<String> tags)
 
 
     /**
-     * 输出参数
+     * 输出结果
+     *
+     * @param search  搜索信息
+     * @param choices 候选结果列表
      */
-        /**
-         * 输出结果
-         *
-         * @param search   搜索信息
-         * @param choices 候选结果列表
-         */
     public record Output(
 
             @JsonProperty("search_info")
@@ -426,14 +431,8 @@ public record ChatModel(String name, String path, Set<String> tags)
          * 候选结果
          *
          * @param finish  结束类型
-         * @param message 消息
+         * @param message 助手消息
          */
-            /**
-             * 候选结果
-             *
-             * @param finish  结束类型
-             * @param message 助手消息
-             */
         public record Choice(
 
                 @JsonProperty("finish_reason")
@@ -487,15 +486,13 @@ public record ChatModel(String name, String path, Set<String> tags)
 
         }
 
+
         /**
-         * 结束类型
+         * 结束类型枚举
+         * <p>
+         * 权重值越小，优先级越高
+         * </p>
          */
-            /**
-             * 结束类型枚举
-             * <p>
-             * 权重值越小，优先级越高
-             * </p>
-             */
         public enum Finish {
 
             /**
@@ -535,13 +532,10 @@ public record ChatModel(String name, String path, Set<String> tags)
 
 
         /**
-         * 搜索信息
+         * 搜索结果信息
+         *
+         * @param results 搜索结果列表
          */
-            /**
-             * 搜索结果信息
-             *
-             * @param results 搜索结果列表
-             */
         public record Search(
 
                 @JsonProperty("search_results")
@@ -550,17 +544,14 @@ public record ChatModel(String name, String path, Set<String> tags)
         ) {
 
             /**
-             * 搜索结果
+             * 单个搜索结果
+             *
+             * @param index 序号
+             * @param name  站点名称
+             * @param title 标题
+             * @param icon  图标URL
+             * @param site  站点URL
              */
-                /**
-                 * 单个搜索结果
-                 *
-                 * @param index 序号
-                 * @param name  站点名称
-                 * @param title 标题
-                 * @param icon  图标URL
-                 * @param site  站点URL
-                 */
             public record Result(
 
                     @JsonProperty("index")

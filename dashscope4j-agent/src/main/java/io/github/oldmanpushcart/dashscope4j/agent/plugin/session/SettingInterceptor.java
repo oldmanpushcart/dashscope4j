@@ -12,9 +12,9 @@ import java.nio.file.Path;
 import java.util.concurrent.CompletionStage;
 
 /**
- * 拦截器，用于注入会话
+ * 拦截器，设置会话
  */
-class InjectInterceptor implements ChatInterceptor {
+class SettingInterceptor implements ChatInterceptor {
 
     private final ChatModel model;
     private final int maxTokens;
@@ -22,7 +22,7 @@ class InjectInterceptor implements ChatInterceptor {
 
     private final FragmentStore store;
 
-    public InjectInterceptor(ChatModel model, Path directory, int maxTokens, double gcRatio) {
+    public SettingInterceptor(ChatModel model, Path directory, int maxTokens, double gcRatio) {
         this.model = model;
         this.maxTokens = maxTokens;
         this.retainTokens = (int) (maxTokens * gcRatio);

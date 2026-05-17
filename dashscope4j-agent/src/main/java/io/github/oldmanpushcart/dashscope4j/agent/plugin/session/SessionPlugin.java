@@ -16,18 +16,18 @@ import java.util.List;
  */
 public class SessionPlugin implements Plugin {
 
-    private final InjectInterceptor injectInterceptor;
+    private final SettingInterceptor settingInterceptor;
     private final RecordInterceptor recordInterceptor;
 
     private SessionPlugin(Builder builder) {
-        this.injectInterceptor = new InjectInterceptor(builder.model, builder.directory, builder.maxTokens, builder.gcRatio);
+        this.settingInterceptor = new SettingInterceptor(builder.model, builder.directory, builder.maxTokens, builder.gcRatio);
         this.recordInterceptor = new RecordInterceptor();
     }
 
     @Override
     public List<ChatInterceptor> interceptors(Phases phases) {
         return switch (phases) {
-            case PREPARATION -> List.of(injectInterceptor);
+            case PREPARATION -> List.of(settingInterceptor);
             case INTERACTION -> List.of(recordInterceptor);
         };
     }

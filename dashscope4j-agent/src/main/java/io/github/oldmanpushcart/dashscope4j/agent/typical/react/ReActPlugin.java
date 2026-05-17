@@ -6,10 +6,9 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatIntercept
 import java.util.List;
 
 class ReActPlugin implements Plugin {
-    
+
     private final ChatInterceptor settingInterceptor = new SettingInterceptor();
     private final ChatInterceptor loopInterceptor = new LoopInterceptor();
-    private final ChatInterceptor compactMessagesInterceptor = new CompactMessagesInterceptor();
 
     @Override
     public List<ChatInterceptor> interceptors(Phases phases) {

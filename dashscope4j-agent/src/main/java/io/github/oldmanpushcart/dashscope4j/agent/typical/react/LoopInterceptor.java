@@ -102,17 +102,10 @@ class LoopInterceptor implements ChatInterceptor {
                         final var nextRequest = AigcRequest.newBuilder(request)
 
                                 // 将函数调用结果作为观察结果写回到对话流中
-                                .input(input ->
-                                        Input.newBuilder(input)
-                                                .messages(messages -> {
-                                                    messages.addAll(List.of(
-                                                            responseMessage,
-                                                            Message.user("%s: %s".formatted(ReAct.OBSERVATION, resultJson))
-                                                                    .withCache()
-                                                    ));
-                                                    return messages;
-                                                })
-                                                .build())
+                                .input(input -> Input.newBuilder(input)
+                                        .addMessage(responseMessage)
+                                        .addMessage(Message.user("%s: %s".formatted(ReAct.OBSERVATION, resultJson)).withCache())
+                                        .build())
                                 .build();
                         return chain.proceed(nextRequest)
                                 .thenApply(r -> {
@@ -215,11 +208,6 @@ class LoopInterceptor implements ChatInterceptor {
                     // 如果有最终答案，直接返回
                     if (reAct.hasFinalAnswer()) {
                         return Flux.empty();
-                    }
-
-                    // 没有答案你就必须得有动作，如果没有动作则不符合对 ReAct 模式的预期
-                    if (!reAct.hasAction()) {
-                        return Flux.error(new IllegalStateException("No action"));
                     }
 
                     /*

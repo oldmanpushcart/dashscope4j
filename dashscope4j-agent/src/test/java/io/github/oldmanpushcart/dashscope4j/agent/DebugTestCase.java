@@ -20,9 +20,8 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +33,7 @@ public class DebugTestCase implements LoadingEnv {
 
     private Plugin buildingSessionPlugin() {
         return SessionPlugin.newBuilder()
-                .maxTokens(50 * 10000)
+                .maxTokens(50 * 100)
                 .gcRatio(0.3)
                 .build();
     }
@@ -99,14 +98,14 @@ public class DebugTestCase implements LoadingEnv {
         final var sessionId =
                 //"SESSION-snake"
                 UUID.randomUUID().toString()
-                // "SESSION-001"
+                //"SESSION-001"
                 ;
         final var sessionPlugin = buildingSessionPlugin();
         final var toolboxPlugin = buildingToolboxPlugin();
 
         final var agent = ReActAgent.newBuilder()
                 .client(client)
-                .model(ChatModel.QWEN_FLASH)
+                .model(ChatModel.QWEN_PLUS_3_6)
                 .plugins(plugins -> {
                     plugins.add(sessionPlugin);
                     plugins.add(toolboxPlugin);
@@ -140,9 +139,17 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug$3() {
 
-        FunctionTool.Call call = new FunctionTool.Call(0, "call-id", new FunctionTool.Call.Stub("function-name", "{\"name\":\"张三\"}"));
-        final var json = JacksonJsonUtils.toJson(call);
-        System.out.println(json);
+        final var request = AigcRequest.newBuilder(ChatModel.QWEN_PLUS)
+                .input(ChatModel.Input.newBuilder()
+                        .addMessage(Message.user("你好!"))
+                        .build())
+                .build();
+
+        final var response = client.async(request)
+                .toCompletableFuture()
+                .join();
+
+        System.out.println(response.output().best().message().text());
 
     }
 
