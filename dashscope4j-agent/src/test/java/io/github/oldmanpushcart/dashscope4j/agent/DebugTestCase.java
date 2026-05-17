@@ -126,7 +126,9 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(sessionId, Message.user("""
-                            根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
+                            用JavaSwing编写一个钟，有时分秒三根指针，根据本地时间移动。
+                            编译通过并运行。
+                            提示：你可以使用命令行工具编译和运行。
                             """))
                     .toCompletableFuture()
                     .join();
