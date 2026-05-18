@@ -17,6 +17,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolkit.network.HttpToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.GuiToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.RuntimeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
@@ -126,9 +127,11 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(sessionId, Message.user("""
-                            用JavaSwing编写一个钟，有时分秒三根指针，根据本地时间移动。
-                            编译通过并运行。
-                            提示：你可以使用命令行工具编译和运行。
+                            用“在阳光下成长”为主题，生成一张图片。
+                            
+                            要求：
+                            1. 小孩子手画卡通风格
+                            2. 有阳光、树木和2个小孩子
                             """))
                     .toCompletableFuture()
                     .join();
