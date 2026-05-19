@@ -14,6 +14,10 @@ public class Plan {
     @JsonProperty("tasks")
     private final List<Task> tasks;
 
+    public Plan(String goal) {
+        this(goal, Collections.emptyList());
+    }
+
     @JsonCreator
     private Plan(
 
