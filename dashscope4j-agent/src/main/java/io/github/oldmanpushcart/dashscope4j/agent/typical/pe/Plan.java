@@ -8,24 +8,31 @@ import java.util.List;
 
 public class Plan {
 
+    @JsonProperty("goal")
+    private final String goal;
+
     @JsonProperty("tasks")
     private final List<Task> tasks;
 
     @JsonCreator
     private Plan(
 
+            @JsonProperty("goal")
+            String goal,
+
             @JsonProperty("tasks")
             List<Task> tasks
 
     ) {
+        this.goal = goal;
         this.tasks = Collections.unmodifiableList(tasks);
     }
 
-    public synchronized boolean hasNext() {
+    public boolean hasNext() {
         return next() != null;
     }
 
-    public synchronized Task next() {
+    public Task next() {
         if (isEmpty()) {
             return null;
         }
@@ -43,45 +50,31 @@ public class Plan {
         return null;
     }
 
-    public synchronized boolean taskSuccess(Task task, String result) {
-        if (task.status() != Task.Status.PENDING) {
-            return false;
-        }
-        task.status = Task.Status.SUCCESS;
-        task.result = result;
-        return true;
-    }
-
-    public synchronized boolean taskFailure(Task task, String error) {
-        if (task.status() != Task.Status.PENDING) {
-            return false;
-        }
-        task.status = Task.Status.FAILURE;
-        task.result = error;
-        return true;
-    }
-
-    public synchronized boolean isFailure() {
+    public boolean isFailure() {
         return tasks.stream()
                 .anyMatch(task -> task.status() == Task.Status.FAILURE);
     }
 
-    public synchronized boolean isSuccess() {
+    public boolean isSuccess() {
         return tasks.stream()
                 .allMatch(task -> task.status() == Task.Status.SUCCESS);
     }
 
-    public synchronized boolean isEmpty() {
+    public boolean isEmpty() {
         return tasks.isEmpty();
     }
 
-    public synchronized List<Task> tasks() {
+    public String goal() {
+        return goal;
+    }
+
+    public List<Task> tasks() {
         return tasks;
     }
 
     public static class Task {
 
-        private final String taskId;
+        private final String name;
         private final String goal;
 
         private String result;
@@ -90,8 +83,8 @@ public class Plan {
         @JsonCreator
         private Task(
 
-                @JsonProperty("task_id")
-                String taskId,
+                @JsonProperty("name")
+                String name,
 
                 @JsonProperty("goal")
                 String goal,
@@ -102,15 +95,15 @@ public class Plan {
                 @JsonProperty("status")
                 Status status
         ) {
-            this.taskId = taskId;
+            this.name = name;
             this.goal = goal;
             this.result = result;
             this.status = status;
         }
 
-        @JsonProperty("task_id")
-        public String taskId() {
-            return taskId;
+        @JsonProperty("name")
+        public String name() {
+            return name;
         }
 
         @JsonProperty("goal")
@@ -126,6 +119,24 @@ public class Plan {
         @JsonProperty("status")
         public Status status() {
             return status;
+        }
+
+        public boolean success(String result) {
+            if (status != Status.PENDING) {
+                return false;
+            }
+            status = Status.SUCCESS;
+            this.result = result;
+            return true;
+        }
+
+        public boolean failure(String error) {
+            if (status != Status.PENDING) {
+                return false;
+            }
+            status = Status.FAILURE;
+            this.result = error;
+            return true;
         }
 
         public enum Status {
