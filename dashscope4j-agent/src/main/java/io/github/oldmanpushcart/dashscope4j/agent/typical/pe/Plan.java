@@ -8,27 +8,16 @@ import java.util.List;
 
 public class Plan {
 
-    @JsonProperty("goal")
-    private final String goal;
-
     @JsonProperty("tasks")
     private final List<Task> tasks;
 
-    public Plan(String goal) {
-        this(goal, Collections.emptyList());
-    }
-
     @JsonCreator
     private Plan(
-
-            @JsonProperty("goal")
-            String goal,
 
             @JsonProperty("tasks")
             List<Task> tasks
 
     ) {
-        this.goal = goal;
         this.tasks = Collections.unmodifiableList(tasks);
     }
 
@@ -66,10 +55,6 @@ public class Plan {
 
     public boolean isEmpty() {
         return tasks.isEmpty();
-    }
-
-    public String goal() {
-        return goal;
     }
 
     public List<Task> tasks() {
