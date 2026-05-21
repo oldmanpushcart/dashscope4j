@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.pe;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Collections;
@@ -8,7 +9,6 @@ import java.util.List;
 
 public class Plan {
 
-    @JsonProperty("tasks")
     private final List<Task> tasks;
 
     @JsonCreator
@@ -43,20 +43,24 @@ public class Plan {
         return null;
     }
 
+    @JsonIgnore
     public boolean isFailure() {
         return tasks.stream()
                 .anyMatch(task -> task.status() == Task.Status.FAILURE);
     }
 
+    @JsonIgnore
     public boolean isSuccess() {
         return tasks.stream()
                 .allMatch(task -> task.status() == Task.Status.SUCCESS);
     }
 
+    @JsonIgnore
     public boolean isEmpty() {
         return tasks.isEmpty();
     }
 
+    @JsonProperty("tasks")
     public List<Task> tasks() {
         return tasks;
     }

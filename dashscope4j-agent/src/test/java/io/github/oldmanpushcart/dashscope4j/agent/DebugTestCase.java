@@ -173,10 +173,9 @@ public class DebugTestCase implements LoadingEnv {
                 .join();
 
         final var json = response.output().best().message().text();
-        System.out.println(json);
 
         final var plan = JacksonJsonUtils.toObject(json, Plan.class);
-        System.out.println(plan);
+        System.out.println(JacksonJsonUtils.toJson(plan));
 
     }
 
