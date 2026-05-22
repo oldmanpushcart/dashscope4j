@@ -39,13 +39,12 @@ import static io.github.oldmanpushcart.dashscope4j.client.Constants.*;
 public record ChatModel(String name, String path, Set<String> tags)
         implements AigcModel<ChatModel.Input, ChatModel.Output> {
 
-    public static final ChatModel QWEN_FLASH_3_6 = new ChatModel("qwen3.6-flash", MULTIMODAL_GENERATION_PATH, Set.of(
-            AigcModelTags.RESPONSE_MODE_FLOW
-    ));
+    public static final ChatModel QWEN_MAX_3_7 = new ChatModel("qwen3.7-max", TEXT_GENERATION_PATH);
 
-    public static final ChatModel QWEN_PLUS_3_6 = new ChatModel("qwen3.6-plus", MULTIMODAL_GENERATION_PATH, Set.of(
-            AigcModelTags.RESPONSE_MODE_FLOW
-    ));
+    public static final ChatModel QWEN_FLASH_3_6 = new ChatModel("qwen3.6-flash", MULTIMODAL_GENERATION_PATH);
+    public static final ChatModel QWEN_PLUS_3_6 = new ChatModel("qwen3.6-plus", MULTIMODAL_GENERATION_PATH);
+    public static final ChatModel QWEN_MAX_3_6 = new ChatModel("qwen3.6-max-preview", TEXT_GENERATION_PATH);
+
 
     public static final ChatModel QWEN_FLASH = new ChatModel("qwen-flash", TEXT_GENERATION_PATH);
     public static final ChatModel QWEN_PLUS = new ChatModel("qwen-plus", TEXT_GENERATION_PATH);
@@ -117,14 +116,14 @@ public record ChatModel(String name, String path, Set<String> tags)
     public static class Input {
 
         private final List<Message> messages;
-        private final List<ToolLookup> lookups;
+        private final List<ToolLookup> toolLookups;
         private final boolean uploadEnabled;
         private final boolean inlineEnabled;
         private final boolean failOnToolError;
 
         private Input(Builder builder) {
             this.messages = CommonUtils.unmodifiableCopy(builder.messages);
-            this.lookups = CommonUtils.unmodifiableCopy(builder.lookups);
+            this.toolLookups = CommonUtils.unmodifiableCopy(builder.toolLookups);
             this.uploadEnabled = builder.uploadEnabled;
             this.inlineEnabled = builder.inlineEnabled;
             this.failOnToolError = builder.failOnToolError;
@@ -221,8 +220,8 @@ public record ChatModel(String name, String path, Set<String> tags)
          * @return 工具查找器
          */
         @JsonIgnore
-        public ToolLookup lookup() {
-            return ToolLookup.group(lookups);
+        public ToolLookup toolLookup() {
+            return ToolLookup.group(toolLookups);
         }
 
 
@@ -240,7 +239,7 @@ public record ChatModel(String name, String path, Set<String> tags)
         public static class Builder implements Buildable<Input, Builder> {
 
             private List<Message> messages;
-            private List<ToolLookup> lookups;
+            private List<ToolLookup> toolLookups;
             private boolean uploadEnabled;
             private boolean inlineEnabled;
             private boolean failOnToolError;
@@ -251,7 +250,7 @@ public record ChatModel(String name, String path, Set<String> tags)
 
             public Builder(Input input) {
                 this.messages = input.messages;
-                this.lookups = input.lookups;
+                this.toolLookups = input.toolLookups;
                 this.uploadEnabled = input.uploadEnabled;
                 this.inlineEnabled = input.inlineEnabled;
                 this.failOnToolError = input.failOnToolError;
@@ -296,16 +295,16 @@ public record ChatModel(String name, String path, Set<String> tags)
             /**
              * 设置工具查找器列表
              */
-            public Builder lookups(List<ToolLookup> lookups) {
-                this.lookups = lookups;
+            public Builder toolLookups(List<ToolLookup> lookups) {
+                this.toolLookups = lookups;
                 return this;
             }
 
             /**
              * 修改工具查找器列表
              */
-            public Builder lookups(UnaryOperator<List<ToolLookup>> operator) {
-                this.lookups = operator.apply(CommonUtils.mutableCopy(this.lookups));
+            public Builder toolLookups(UnaryOperator<List<ToolLookup>> operator) {
+                this.toolLookups = operator.apply(CommonUtils.mutableCopy(this.toolLookups));
                 return this;
             }
 

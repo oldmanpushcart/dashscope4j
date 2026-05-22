@@ -137,7 +137,7 @@ public class ChatTestCase implements LoadingEnv {
         final var request = AigcRequest.newBuilder(data.model)
                 .input(ChatModel.Input.newBuilder()
                         .addMessage(Message.user("请问英语和物理分别是多少分?"))
-                        .lookups(List.of(
+                        .toolLookups(List.of(
                                 ToolLookup.single(new QueryScoreFunction() {
 
                                     @Override

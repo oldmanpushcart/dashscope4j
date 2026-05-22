@@ -107,7 +107,7 @@ public abstract class BaseAgent implements Agent {
                         .messages(List.of(inbound))
 
                         // 添加工具
-                        .lookups(lookups -> {
+                        .toolLookups(lookups -> {
                             final var tools = toolkits.stream()
                                     .map(Toolkit::tools)
                                     .flatMap(List::stream)

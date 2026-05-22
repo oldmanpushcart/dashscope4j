@@ -6,6 +6,9 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 
 import java.util.concurrent.CompletionStage;
 
+/**
+ * 功能拦截器：设置对话模型的必要参数
+ */
 public class SettingInterceptor implements Interceptor {
 
     @Override
@@ -25,7 +28,7 @@ public class SettingInterceptor implements Interceptor {
                     parameters.put("result_format", "message");
 
                     // 设置工具集
-                    final var lookup = chatRequest.input().lookup();
+                    final var lookup = chatRequest.input().toolLookup();
                     parameters.put("tools", lookup.lookupAll());
 
                     return parameters;

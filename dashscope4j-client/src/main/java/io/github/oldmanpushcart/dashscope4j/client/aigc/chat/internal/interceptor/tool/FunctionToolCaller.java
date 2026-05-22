@@ -177,7 +177,7 @@ class FunctionToolCaller implements Tool.Caller {
     // 找到函数工具
     private Tool requireTool(FunctionTool.Call functionCall) {
         final var name = functionCall.stub().name();
-        return request.input().lookup().lookupByName(name)
+        return request.input().toolLookup().lookupByName(name)
                 .orElseThrow(() -> ToolExecutionException.notFound(name));
     }
 

@@ -15,6 +15,12 @@ import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils.isFileURI;
 
+/**
+ * 功能拦截器：文件上传
+ * <p>
+ * 负责处理多模态对话中，本地文件上传到通义千问的临时OSS空间
+ * </p>
+ */
 public class UploadFilesInterceptor implements RewriteUserInputInterceptor {
 
     @Override

@@ -11,6 +11,12 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * 功能拦截器接口：重写用户输入消息拦截器
+ * <p>
+ * 方便改写和处理用户输入消息，比如上传文件等
+ * </p>
+ */
 public interface RewriteUserInputInterceptor extends Interceptor {
 
     @Override

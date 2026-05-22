@@ -13,9 +13,7 @@ public class ToolboxPlugin implements Plugin {
 
     private ToolboxPlugin(Builder builder) {
         Objects.requireNonNull(builder.toolbox, "toolbox must not be null!");
-        final var toolbox = builder.toolbox;
-        final var searchToolsTool = new SearchToolsFunction(toolbox).asTool();
-        this.injectInterceptor = new SettingInterceptor(toolbox, searchToolsTool);
+        this.injectInterceptor = new SettingInterceptor(builder.toolbox, builder.enableSearchTools);
     }
 
     @Override
@@ -34,9 +32,15 @@ public class ToolboxPlugin implements Plugin {
     public static class Builder implements Buildable<ToolboxPlugin, Builder> {
 
         private Toolbox toolbox;
+        private boolean enableSearchTools;
 
         public Builder toolbox(Toolbox toolbox) {
             this.toolbox = toolbox;
+            return this;
+        }
+
+        public Builder enableSearchTools(boolean enableSearchTools) {
+            this.enableSearchTools = enableSearchTools;
             return this;
         }
 

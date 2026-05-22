@@ -21,29 +21,41 @@ class SettingInterceptor implements ChatInterceptor {
                     .resource("/prompt/SEARCH_TOOLS.md")
                     .build()
                     .render())
-            .withCache()
-            ;
+            .withCache();
 
     private final Toolbox toolbox;
     private final Tool searchToolsTool;
+    private final boolean enableSearchTools;
 
-    public SettingInterceptor(Toolbox toolbox, Tool searchToolsTool) {
+    public SettingInterceptor(Toolbox toolbox, boolean enableSearchTools) {
         this.toolbox = toolbox;
-        this.searchToolsTool = searchToolsTool;
+        this.searchToolsTool = new SearchToolsFunction(toolbox).asTool();
+        this.enableSearchTools = enableSearchTools;
     }
 
     @Override
     public CompletionStage<?> intercept(Chain chain, AigcRequest<Input, Output> request) {
         final var newRequest = AigcRequest.newBuilder(request)
                 .input(input -> Input.newBuilder(input)
-                        .messages(messages-> {
-                            messages.add(0, SEARCH_TOOLS_MESSAGE);
-                            return messages;
-                        })
-                        .lookups(lookups -> {
+                        .toolLookups(lookups -> {
                             lookups.add(toolbox);
-                            lookups.add(ToolLookup.single(searchToolsTool));
                             return lookups;
+                        })
+                        .building(inputBuilder -> {
+
+                            // 如果设置了启用搜索工具，则需要设置上搜索工具的相关配置
+                            if (enableSearchTools) {
+                                inputBuilder
+                                        .messages(messages -> {
+                                            messages.add(0, SEARCH_TOOLS_MESSAGE);
+                                            return messages;
+                                        })
+                                        .toolLookups(lookups -> {
+                                            lookups.add(ToolLookup.single(searchToolsTool));
+                                            return lookups;
+                                        });
+                            }
+
                         })
                         .build())
                 .build();

@@ -290,7 +290,7 @@ class LoopInterceptor implements ChatInterceptor {
      * @return 工具
      */
     private Tool requireTool(AigcRequest<Input, Output> request, String name) {
-        return request.input().lookup().lookupByName(name)
+        return request.input().toolLookup().lookupByName(name)
                 .orElseThrow(() -> ToolExecutionException.notFound(name));
     }
 

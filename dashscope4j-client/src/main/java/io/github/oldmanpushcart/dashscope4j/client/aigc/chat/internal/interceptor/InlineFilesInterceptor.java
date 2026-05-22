@@ -20,6 +20,12 @@ import java.util.concurrent.CompletionStage;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils.isFileURI;
 
+/**
+ * 功能拦截器：内联本地二进制文件
+ * <p>
+ * 将本地的二进制文件转换为 Data URI，编码格式为BASE64
+ * </p>
+ */
 public class InlineFilesInterceptor implements RewriteUserInputInterceptor {
 
     @Override

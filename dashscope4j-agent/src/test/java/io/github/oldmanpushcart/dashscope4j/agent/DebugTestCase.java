@@ -17,21 +17,16 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolkit.network.HttpToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.GuiToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.RuntimeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
-import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.typical.pe.Plan;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class DebugTestCase implements LoadingEnv {
@@ -146,36 +141,19 @@ public class DebugTestCase implements LoadingEnv {
     }
 
     @Test
-    public void debug$3() {
+    public void test$debug3() {
 
-        final var PLAN_GENERATOR_MESSAGE = Message.system(PromptTemplate.newBuilder()
-                .resource("/prompt/PLAN_GENERATOR.md")
-                .build()
-                .render());
-
-        final var request = AigcRequest.newBuilder(ChatModel.QWEN_PLUS_3_6)
+        final var request = AigcRequest.newBuilder(ChatModel.QWEN_MAX_3_6)
                 .input(ChatModel.Input.newBuilder()
-                        .messages(List.of(
-                                PLAN_GENERATOR_MESSAGE,
-                                Message.user("根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png")
-                        ))
+                        .addMessage(Message.user("你好呀!"))
                         .build())
-                .parameters(parameters -> {
-                    parameters.put("response_format", Map.of(
-                            "type", "json_object"
-                    ));
-                    return parameters;
-                })
                 .build();
 
         final var response = client.async(request)
                 .toCompletableFuture()
                 .join();
 
-        final var json = response.output().best().message().text();
-
-        final var plan = JacksonJsonUtils.toObject(json, Plan.class);
-        System.out.println(JacksonJsonUtils.toJson(plan));
+        System.out.println(response.output().best().message().text());
 
     }
 
