@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.internal.intercept
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
 import java.util.concurrent.CompletionStage;
 
@@ -29,7 +30,10 @@ public class SettingInterceptor implements Interceptor {
 
                     // 设置工具集
                     final var lookup = chatRequest.input().toolLookup();
-                    parameters.put("tools", lookup.lookupAll());
+                    final var tools = lookup.lookupAll();
+                    if(CommonUtils.isNotEmpty(tools)) {
+                        parameters.put("tools", lookup.lookupAll());
+                    }
 
                     return parameters;
                 })

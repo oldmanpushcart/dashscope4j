@@ -27,6 +27,7 @@ class OpenAiChatResponse extends OpenAiResponse {
             OpenAiChatRequest request,
 
             @JsonProperty("id")
+            @JacksonInject("http/header/x-request-id")
             String uuid,
 
             @JsonProperty("choices")

@@ -57,7 +57,7 @@ public class FunAsrTestCase implements LoadingEnv {
         completeF.join();
 
         final var text = stringBuf.toString();
-        DashscopeAssertions.dashscopeAssertText(client, text, "朗读诗《悯农》，有可能有错别字。");
+        DashscopeAssertions.dashscopeAssertText(client, text, "内容是《悯农》，有可能有错别字。");
 
 
     }
