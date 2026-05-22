@@ -89,6 +89,7 @@ public class DebugTestCase implements LoadingEnv {
 
         return ToolboxPlugin.newBuilder()
                 .toolbox(toolbox)
+                .enableSearchTools(true)
                 .build();
     }
 
@@ -105,7 +106,7 @@ public class DebugTestCase implements LoadingEnv {
 
         final var agent = ReActAgent.newBuilder()
                 .client(client)
-                .model(ChatModel.QWEN_PLUS_3_6)
+                .model(ChatModel.QWEN_PLUS)
                 .plugins(plugins -> {
                     plugins.add(sessionPlugin);
                     plugins.add(toolboxPlugin);
@@ -143,7 +144,7 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void test$debug3() {
 
-        final var request = AigcRequest.newBuilder(ChatModel.QWEN_MAX_3_6)
+        final var request = AigcRequest.newBuilder(ChatModel.QWEN_MAX)
                 .input(ChatModel.Input.newBuilder()
                         .addMessage(Message.user("你好呀!"))
                         .build())

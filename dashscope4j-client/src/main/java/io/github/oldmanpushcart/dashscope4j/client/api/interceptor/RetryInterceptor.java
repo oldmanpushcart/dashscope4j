@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.interceptor;
 
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.retry.RetryStrategies;
 import io.github.oldmanpushcart.dashscope4j.client.util.retry.RetryStrategy;
 import org.slf4j.Logger;
@@ -55,7 +56,10 @@ public class RetryInterceptor implements Interceptor {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private CompletionStage<?> doRetry(Chain chain, int attempt) {
         return chain.proceed()
-                .exceptionallyCompose(ex -> {
+                .exceptionallyCompose(_ex -> {
+
+                    final var ex = CompletableFutureUtils.unwrapEx(_ex);
+
                     // 计算是否重试及延迟时间
                     final var delay = strategy.decide(attempt, ex);
 
@@ -71,10 +75,10 @@ public class RetryInterceptor implements Interceptor {
 
                     // 记录重试决策
                     if (delay.isZero() || delay.isNegative()) {
-                        logger.debug("{} attempt {} failed, retrying immediately (attempt={})", this, attempt + 1, attempt);
+                        logger.debug("{} attempt {} failed, retrying immediately (attempt={})", this, attempt + 1, attempt, ex);
                         return (CompletionStage) doRetry(chain, attempt + 1);
                     } else {
-                        logger.debug("{} attempt {} failed, retrying in {}ms (attempt={})", this, attempt + 1, delay.toMillis(), attempt);
+                        logger.debug("{} attempt {} failed, retrying in {}ms (attempt={})", this, attempt + 1, delay.toMillis(), attempt, ex);
                         // 延迟后重试
                         return CompletableFuture.supplyAsync(() -> null, CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS, chain.client().executor()))
                                 .thenCompose(v -> (CompletionStage) doRetry(chain, attempt + 1));

@@ -266,7 +266,7 @@ public class DashscopeToolkit implements Toolkit {
      * 图像编辑工具
      */
     private FunctionTool imageEdit() {
-        final ChatModel IMAGE_EDIT_MODEL = new ChatModel("qwen-image-edit-max", "/api/v1/services/aigc/multimodal-generation/generation");
+        final ChatModel IMAGE_EDIT_MODEL = ChatModel.of("qwen-image-edit-max", "/api/v1/services/aigc/multimodal-generation/generation");
 
         return FunctionTool.newBuilder()
                 .name("dashscope$edit_image")

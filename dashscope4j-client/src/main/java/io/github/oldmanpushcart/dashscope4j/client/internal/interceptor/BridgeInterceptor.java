@@ -13,6 +13,9 @@ import java.util.concurrent.CompletionStage;
 import static io.github.oldmanpushcart.dashscope4j.client.api.task.Task.WaitStrategies.always;
 import static java.time.Duration.ofSeconds;
 
+/**
+ * 桥接拦截器
+ */
 public class BridgeInterceptor implements Interceptor {
 
     @Override

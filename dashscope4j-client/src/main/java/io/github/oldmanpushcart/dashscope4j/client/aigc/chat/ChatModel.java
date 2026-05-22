@@ -20,63 +20,29 @@ import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import static io.github.oldmanpushcart.dashscope4j.client.Constants.*;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils.unmodifiableCopy;
 
 /**
  * 对话模型，支持文本和多模态对话
  *
- * @param name 模型名称
- * @param path API路径
- * @param tags 模型标签
+ * @param name         名称
+ * @param path         路径
+ * @param tags         标签
+ * @param interceptors 拦截器列表
+ * @param parameters   参数
  */
-public record ChatModel(String name, String path, Set<String> tags)
-        implements AigcModel<ChatModel.Input, ChatModel.Output> {
-
-    public static final ChatModel QWEN_MAX_3_7 = new ChatModel("qwen3.7-max", TEXT_GENERATION_PATH);
-
-    public static final ChatModel QWEN_FLASH_3_6 = new ChatModel("qwen3.6-flash", MULTIMODAL_GENERATION_PATH);
-    public static final ChatModel QWEN_PLUS_3_6 = new ChatModel("qwen3.6-plus", MULTIMODAL_GENERATION_PATH);
-    public static final ChatModel QWEN_MAX_3_6 = new ChatModel("qwen3.6-max-preview", TEXT_GENERATION_PATH);
-
-
-    public static final ChatModel QWEN_FLASH = new ChatModel("qwen-flash", TEXT_GENERATION_PATH);
-    public static final ChatModel QWEN_PLUS = new ChatModel("qwen-plus", TEXT_GENERATION_PATH);
-    public static final ChatModel QWEN_MAX = new ChatModel("qwen-max", TEXT_GENERATION_PATH);
-    public static final ChatModel QWEN_LONG = new ChatModel("qwen-long", TEXT_GENERATION_PATH, Set.of(
-            ChatModelTags.COMPAT_PLAINTEXT
-    ));
-
-    public static final ChatModel QWEN_VL_PLUS = new ChatModel("qwen-vl-plus", MULTIMODAL_GENERATION_PATH);
-    public static final ChatModel QWEN_VL_MAX = new ChatModel("qwen-vl-max", MULTIMODAL_GENERATION_PATH);
-
-    public static final ChatModel QWQ_PLUS = new ChatModel("qwq-plus", TEXT_GENERATION_PATH, Set.of(
-            AigcModelTags.RESPONSE_MODE_FLOW,
-            AigcModelTags.INCREMENTAL_OUTPUT_ONLY
-    ));
-    public static final ChatModel QVQ_MAX = new ChatModel("qvq-max", MULTIMODAL_GENERATION_PATH, Set.of(
-            AigcModelTags.RESPONSE_MODE_FLOW,
-            AigcModelTags.INCREMENTAL_OUTPUT_ONLY
-    ));
-    public static final ChatModel QWEN3_OMNI_FLASH = new ChatModel("qwen3-omni-flash", COMPAT_OPENAI_PATH, Set.of(
-            ChatModelTags.COMPAT_OPENAI,
-            AigcModelTags.RESPONSE_MODE_FLOW,
-            AigcModelTags.INCREMENTAL_OUTPUT_ONLY
-    ));
-
-    public static final ChatModel QWEN_IMAGE_MAX = new ChatModel("qwen-image-max", MULTIMODAL_GENERATION_PATH);
-
-    public static final ChatModel WAN_T2I = new ChatModel("wan2.6-t2i", MULTIMODAL_GENERATION_PATH, Set.of(
-            AigcModelTags.RESPONSE_MODE_ASYNC,
-            AigcModelTags.RESPONSE_MODE_TASK
-    ));
-
+public record ChatModel(
+        String name,
+        String path,
+        Set<String> tags,
+        List<Interceptor> interceptors,
+        Map<String, Object> parameters
+) implements AigcModel<ChatModel.Input, ChatModel.Output> {
 
     /*
      * 对话模型的拦截器列表
@@ -84,7 +50,7 @@ public record ChatModel(String name, String path, Set<String> tags)
      *
      * PS：请务必注意拦截器的顺序
      */
-    private static final List<Interceptor> interceptors = List.of(
+    private static final List<Interceptor> SELF_INTERCEPTORS = List.of(
             new SettingInterceptor(),
             new ToolCallInterceptor(),
             new InlineFilesInterceptor(),
@@ -93,21 +59,96 @@ public record ChatModel(String name, String path, Set<String> tags)
             new CompatOpenAiInterceptor()
     );
 
-    /**
-     * 构造对话模型
-     *
-     * @param name 名称
-     * @param path 路径
-     */
-    public ChatModel(String name, String path) {
-        this(name, path, Set.of());
-    }
+    // --------------------------- 特殊用途模型 ---------------------------
 
-    @Override
-    public List<Interceptor> interceptors() {
-        return Stream.of(AigcModel.super.interceptors(), interceptors)
+    public static final ChatModel QWEN_LONG = ChatModel.of("qwen-long", TEXT_GENERATION_PATH)
+            .tag(ChatModelTags.COMPAT_PLAINTEXT);
+
+    public static final ChatModel QWEN_VL_PLUS = ChatModel.of("qwen-vl-plus", MULTIMODAL_GENERATION_PATH);
+    public static final ChatModel QWEN_VL_MAX = ChatModel.of("qwen-vl-max", MULTIMODAL_GENERATION_PATH);
+
+    public static final ChatModel QWQ_PLUS = ChatModel.of("qwq-plus", TEXT_GENERATION_PATH)
+            .tag(AigcModelTags.RESPONSE_MODE_FLOW)
+            .tag(AigcModelTags.INCREMENTAL_OUTPUT_ONLY);
+
+    public static final ChatModel QVQ_MAX = ChatModel.of("qvq-max", MULTIMODAL_GENERATION_PATH)
+            .tag(AigcModelTags.RESPONSE_MODE_FLOW)
+            .tag(AigcModelTags.INCREMENTAL_OUTPUT_ONLY);
+
+    public static final ChatModel QWEN3_OMNI_FLASH = ChatModel.of("qwen3-omni-flash", COMPAT_OPENAI_PATH)
+            .tag(ChatModelTags.COMPAT_OPENAI)
+            .tag(AigcModelTags.RESPONSE_MODE_FLOW)
+            .tag(AigcModelTags.INCREMENTAL_OUTPUT_ONLY);
+
+    public static final ChatModel QWEN_IMAGE_MAX = ChatModel.of("qwen-image-max", MULTIMODAL_GENERATION_PATH);
+
+    public static final ChatModel WAN_T2I = ChatModel.of("wan2.6-t2i", MULTIMODAL_GENERATION_PATH)
+            .tag(AigcModelTags.RESPONSE_MODE_ASYNC)
+            .tag(AigcModelTags.RESPONSE_MODE_TASK);
+
+
+    // --------------------------- 特定版本模型 ---------------------------
+
+    public static final ChatModel QWEN_MAX_3_7 = ChatModel.of("qwen3.7-max", TEXT_GENERATION_PATH);
+
+    public static final ChatModel QWEN_MAX_3_6 = ChatModel.of("qwen3.6-max-preview", TEXT_GENERATION_PATH);
+    public static final ChatModel QWEN_FLASH_3_6 = ChatModel.of("qwen3.6-flash", MULTIMODAL_GENERATION_PATH);
+    public static final ChatModel QWEN_PLUS_3_6 = ChatModel.of("qwen3.6-plus", MULTIMODAL_GENERATION_PATH);
+
+    public static final ChatModel QWEN_FLASH_3_5 = ChatModel.of("qwen3.5-flash", MULTIMODAL_GENERATION_PATH);
+    public static final ChatModel QWEN_PLUS_3_5 = ChatModel.of("qwen3.5-plus", MULTIMODAL_GENERATION_PATH);
+
+
+    // --------------------------- 最新标准模型 ---------------------------
+
+    public static final ChatModel QWEN_FLASH = QWEN_FLASH_3_6;
+    public static final ChatModel QWEN_PLUS = QWEN_PLUS_3_6;
+    public static final ChatModel QWEN_MAX = QWEN_MAX_3_7;
+
+    public ChatModel(String name, String path, Set<String> tags, List<Interceptor> interceptors, Map<String, Object> parameters) {
+        this.name = name;
+        this.path = path;
+        this.tags = unmodifiableCopy(tags);
+        this.interceptors = Stream.of(unmodifiableCopy(interceptors), SELF_INTERCEPTORS)
                 .flatMap(List::stream)
                 .toList();
+        this.parameters = unmodifiableCopy(parameters);
+    }
+
+    /**
+     * 增加标签
+     *
+     * @param tag 标签
+     * @return 新的模型
+     */
+    public ChatModel tag(String tag) {
+        final var newTags = CommonUtils.mutableCopy(tags);
+        newTags.add(tag);
+        return new ChatModel(name, path, newTags, interceptors, parameters);
+    }
+
+    /**
+     * 增加参数
+     *
+     * @param key   参数名
+     * @param value 参数值
+     * @return 新的模型
+     */
+    public ChatModel parameter(String key, Object value) {
+        final var newParameters = CommonUtils.mutableCopy(parameters);
+        newParameters.put(key, value);
+        return new ChatModel(name, path, tags, interceptors, newParameters);
+    }
+
+    /**
+     * 创建对话模型
+     *
+     * @param name 模型名称
+     * @param path 模型路径
+     * @return 模型
+     */
+    public static ChatModel of(String name, String path) {
+        return new ChatModel(name, path, null, null, null);
     }
 
     /**
@@ -122,8 +163,8 @@ public record ChatModel(String name, String path, Set<String> tags)
         private final boolean failOnToolError;
 
         private Input(Builder builder) {
-            this.messages = CommonUtils.unmodifiableCopy(builder.messages);
-            this.toolLookups = CommonUtils.unmodifiableCopy(builder.toolLookups);
+            this.messages = unmodifiableCopy(builder.messages);
+            this.toolLookups = unmodifiableCopy(builder.toolLookups);
             this.uploadEnabled = builder.uploadEnabled;
             this.inlineEnabled = builder.inlineEnabled;
             this.failOnToolError = builder.failOnToolError;

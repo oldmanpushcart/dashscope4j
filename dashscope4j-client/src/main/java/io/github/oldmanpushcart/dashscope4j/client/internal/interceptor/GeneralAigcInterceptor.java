@@ -19,6 +19,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * 通用模型拦截器
+ * <p>
+ * 处理通用模型的请求，比如{@code inline}、{@code upload}等
+ * </p>
+ */
 public class GeneralAigcInterceptor implements Interceptor {
 
     @Override
@@ -58,15 +64,15 @@ public class GeneralAigcInterceptor implements Interceptor {
                         processMap(inputMap, value -> {
                             if (value instanceof File file) {
                                 return chain.client().base().store().upload(file.toURI(), model)
-                                        .thenApply(v->v);
+                                        .thenApply(v -> v);
                             }
                             if (value instanceof Path path) {
                                 return chain.client().base().store().upload(path.toUri(), model)
-                                        .thenApply(v->v);
+                                        .thenApply(v -> v);
                             }
                             if (value instanceof URI uri && IOUtils.isFileURI(uri)) {
                                 return chain.client().base().store().upload(uri, model)
-                                        .thenApply(v->v);
+                                        .thenApply(v -> v);
                             }
                             return CompletableFuture.completedStage(value);
                         }))
