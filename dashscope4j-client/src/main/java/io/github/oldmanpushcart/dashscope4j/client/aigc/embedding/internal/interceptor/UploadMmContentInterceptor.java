@@ -4,7 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.embedding.MmContent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.embedding.MmEmbeddingModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 
 import java.util.concurrent.CompletableFuture;

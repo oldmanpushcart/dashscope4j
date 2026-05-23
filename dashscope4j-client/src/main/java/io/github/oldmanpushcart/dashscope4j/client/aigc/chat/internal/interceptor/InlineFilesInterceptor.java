@@ -18,7 +18,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import static io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils.isFileURI;
+import static io.github.oldmanpushcart.dashscope4j.client.util.IOUtils.isFileURI;
 
 /**
  * 功能拦截器：内联本地二进制文件

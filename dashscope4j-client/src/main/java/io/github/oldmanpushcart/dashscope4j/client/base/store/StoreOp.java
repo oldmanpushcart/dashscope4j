@@ -19,6 +19,6 @@ public interface StoreOp {
      * @param model    模型
      * @return 存储地址
      */
-    CompletionStage<URI> upload(URI resource, Model model);
+    CompletionStage<URI> upload(URI resource, Model<?,?> model);
 
 }

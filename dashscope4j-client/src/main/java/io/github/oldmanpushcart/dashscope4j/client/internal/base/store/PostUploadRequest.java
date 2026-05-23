@@ -12,15 +12,11 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 import static io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents.HTTP_HEADER_X_OSS_OBJECT_ACL;
 
 public class PostUploadRequest extends ApiRequest<PostUploadResponse> {
-
-    private static final int SUCCESS_CODE = 200;
-    private static final AtomicInteger sequencer = new AtomicInteger(1000);
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Policy policy;

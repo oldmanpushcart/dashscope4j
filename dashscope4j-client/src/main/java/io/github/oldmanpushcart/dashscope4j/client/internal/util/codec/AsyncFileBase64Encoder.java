@@ -11,7 +11,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils.closeQuietly;
+import static io.github.oldmanpushcart.dashscope4j.client.util.IOUtils.closeQuietly;
 
 /**
  * 异步文件内容 Base64 编码工具类。

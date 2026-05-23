@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.skill;
 
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.AbstractToolLoader;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.IOUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 import org.slf4j.Logger;

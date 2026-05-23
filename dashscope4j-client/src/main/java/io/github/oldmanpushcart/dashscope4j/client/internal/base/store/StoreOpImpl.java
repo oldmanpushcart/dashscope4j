@@ -24,13 +24,13 @@ public class StoreOpImpl implements StoreOp {
     }
 
     @Override
-    public CompletionStage<URI> upload(URI resource, Model model) {
+    public CompletionStage<URI> upload(URI resource, Model<?,?> model) {
         return CompletableFuture.completedStage(null)
                 .thenCompose(unused -> fetchPolicy(model))
                 .thenCompose(policy -> upload(policy, resource));
     }
 
-    private CompletionStage<Policy> fetchPolicy(Model model) {
+    private CompletionStage<Policy> fetchPolicy(Model<?,?> model) {
         final Policy policy = policiesCache.get(model.name());
         if (nonNull(policy) && !policy.isExpired()) {
             return completedFuture(policy);

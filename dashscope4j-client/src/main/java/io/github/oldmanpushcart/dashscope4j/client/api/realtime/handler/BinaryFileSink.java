@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler;
 
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
-import io.github.oldmanpushcart.dashscope4j.client.internal.util.IOUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
