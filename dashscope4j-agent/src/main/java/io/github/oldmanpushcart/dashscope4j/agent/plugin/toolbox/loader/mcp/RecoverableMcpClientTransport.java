@@ -599,34 +599,22 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
      * <p>
      * 封装了底层的 MCP 传输层和消息处理器。
      * </p>
+     *
+     * @param transport 底层传输层
+     * @param handler   消息处理器
      */
-    private static class Hold {
+        private record Hold(McpClientTransport transport, Handler handler) {
 
         /**
-         * 底层传输层
-         */
-        private final McpClientTransport transport;
-        
-        /**
-         * 消息处理器
-         */
-        private final Handler handler;
+             * 优雅关闭传输层
+             *
+             * @return 关闭完成的 Mono
+             */
+            public Mono<Void> closeGracefully() {
+                return transport.closeGracefully();
+            }
 
-        private Hold(McpClientTransport transport, Handler handler) {
-            this.transport = transport;
-            this.handler = handler;
         }
-
-        /**
-         * 优雅关闭传输层
-         *
-         * @return 关闭完成的 Mono
-         */
-        public Mono<Void> closeGracefully() {
-            return transport.closeGracefully();
-        }
-
-    }
 
     /**
      * 网络健康状态跟踪器

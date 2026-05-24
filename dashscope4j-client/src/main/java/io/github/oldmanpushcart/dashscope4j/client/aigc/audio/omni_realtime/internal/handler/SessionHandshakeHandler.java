@@ -98,7 +98,6 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
             }
             case HANDSHAKE_COMPLETED -> delegate.onData(output);
         }
-        ;
     }
 
     @Override
