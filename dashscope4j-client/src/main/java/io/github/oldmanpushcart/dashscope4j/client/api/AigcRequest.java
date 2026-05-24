@@ -12,9 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -60,7 +58,18 @@ public class AigcRequest<I, O> extends ApiRequest<AigcResponse<O>> {
         Objects.requireNonNull(builder.input, "input must not be null");
         this.model = builder.model;
         this.input = builder.input;
-        this.parameters = CommonUtils.unmodifiableCopy(builder.parameters);
+        this.parameters = mergeParameters(model, builder);
+    }
+
+    private static Map<String, Object> mergeParameters(Model<?,?> model, Builder<?,?> builder) {
+        final var newParameters = new HashMap<String, Object>();
+        if(null != model && null != model.parameters()) {
+            newParameters.putAll(model.parameters());
+        }
+        if(null != builder && null != builder.parameters) {
+            newParameters.putAll(builder.parameters);
+        }
+        return Collections.unmodifiableMap(newParameters);
     }
 
     @Override

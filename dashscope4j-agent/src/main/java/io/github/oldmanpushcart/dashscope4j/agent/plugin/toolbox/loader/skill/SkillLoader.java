@@ -84,7 +84,7 @@ public class SkillLoader extends AbstractToolLoader {
                                 final var skill = Skill.of(skillDir);
                                 final var name = skill.header().name();
                                 skills.put(name, skill);
-                                logger.debug("{} loaded skill: {} from {}", this, name, skillDir);
+                                logger.debug("{} loaded {} from {}", this, name, skillDir);
                             } catch (IOException e) {
                                 logger.warn("{} skipping invalid skill directory {}", this, skillDir, e);
                             }

@@ -89,11 +89,17 @@ public record ChatModel(
 
     // --------------------------- 特定版本模型 ---------------------------
 
-    public static final ChatModel QWEN_MAX_3_7 = ChatModel.of("qwen3.7-max", TEXT_GENERATION_PATH);
+    public static final ChatModel QWEN_MAX_3_7 = ChatModel.of("qwen3.7-max", TEXT_GENERATION_PATH)
+            .parameter("enable_thinking", false);
 
-    public static final ChatModel QWEN_MAX_3_6 = ChatModel.of("qwen3.6-max-preview", TEXT_GENERATION_PATH);
-    public static final ChatModel QWEN_FLASH_3_6 = ChatModel.of("qwen3.6-flash", MULTIMODAL_GENERATION_PATH);
-    public static final ChatModel QWEN_PLUS_3_6 = ChatModel.of("qwen3.6-plus", MULTIMODAL_GENERATION_PATH);
+    public static final ChatModel QWEN_MAX_3_6 = ChatModel.of("qwen3.6-max-preview", TEXT_GENERATION_PATH)
+            .parameter("enable_thinking", false);
+
+    public static final ChatModel QWEN_FLASH_3_6 = ChatModel.of("qwen3.6-flash", MULTIMODAL_GENERATION_PATH)
+            .parameter("enable_thinking", false);
+
+    public static final ChatModel QWEN_PLUS_3_6 = ChatModel.of("qwen3.6-plus", MULTIMODAL_GENERATION_PATH)
+            .parameter("enable_thinking", false);
 
     public static final ChatModel QWEN_FLASH_3_5 = ChatModel.of("qwen3.5-flash", MULTIMODAL_GENERATION_PATH);
     public static final ChatModel QWEN_PLUS_3_5 = ChatModel.of("qwen3.5-plus", MULTIMODAL_GENERATION_PATH);

@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class DashscopePlugin implements Plugin {
+class DashscopePlugin implements Plugin {
 
     @Override
     public CompletionStage<Extension> install(Agent agent) {

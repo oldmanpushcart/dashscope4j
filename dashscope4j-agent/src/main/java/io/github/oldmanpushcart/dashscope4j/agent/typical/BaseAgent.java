@@ -93,7 +93,7 @@ public abstract class BaseAgent implements Agent {
      * @return 完成信号
      */
     protected CompletionStage<Void> initAsync() {
-        return CompletableFutureUtils.sequentialMap(plugins, plugin -> plugin.install(this))
+        return CompletableFutureUtils.sequentialMap(plugins(), plugin -> plugin.install(this))
                 .thenAccept(extensions -> {
                     this.extensions.clear();
                     this.extensions.addAll(extensions);
