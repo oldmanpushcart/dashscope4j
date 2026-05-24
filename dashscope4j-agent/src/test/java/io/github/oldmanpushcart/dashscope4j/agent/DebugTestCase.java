@@ -35,7 +35,7 @@ public class DebugTestCase implements LoadingEnv {
     private Plugin buildingSessionPlugin() {
         return SessionPlugin.newBuilder()
                 .store(FileFragmentStore.newBuilder()
-                        .directory(Path.of("./session"))
+                        .directory(Path.of(".session"))
                         .build())
                 .maxTokens(50 * 100)
                 .gcRatio(0.3)
