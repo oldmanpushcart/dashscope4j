@@ -107,9 +107,8 @@ public record Skill(Path home, Header header, String body) {
      * @param relativePath 相对路径
      * @return 解析后的绝对路径
      * @throws SecurityException 路径非法或尝试穿越
-     * @throws IOException       路径解析失败
      */
-    private Path resolveAndValidate(String relativePath) throws IOException {
+    private Path resolveAndValidate(String relativePath) {
         CheckUtils.requireNonBlankString(relativePath, "Relative path cannot be blank");
 
         // 解析路径

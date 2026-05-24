@@ -697,7 +697,7 @@ public class HttpToolkit implements Toolkit {
     /**
      * 构建 multipart 请求体（POST）
      */
-    private MultipartBody buildMultipartBody(PostSpec spec) throws IOException {
+    private MultipartBody buildMultipartBody(PostSpec spec) {
         final MultipartBody.Builder builder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM);
 
@@ -745,7 +745,7 @@ public class HttpToolkit implements Toolkit {
     /**
      * 构建 multipart 请求体（PUT）
      */
-    private MultipartBody buildMultipartBodyForPut(PutSpec spec) throws IOException {
+    private MultipartBody buildMultipartBodyForPut(PutSpec spec) {
         final MultipartBody.Builder builder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM);
 

@@ -9,7 +9,6 @@ import java.util.List;
 /**
  * 工具调用结果
  *
- * @param success    调用是否成功
  * @param data       调用结果
  * @param error      调用失败原因
  * @param suggestion 建议

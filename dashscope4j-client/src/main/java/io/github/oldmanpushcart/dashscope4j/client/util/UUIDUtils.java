@@ -5,7 +5,7 @@ import java.util.UUID;
 public class UUIDUtils {
 
     public static String genUUID32() {
-        return UUID.randomUUID().toString().replaceAll("-", "");
+        return UUID.randomUUID().toString().replace("-", "");
     }
 
     public static String genUUID22() {

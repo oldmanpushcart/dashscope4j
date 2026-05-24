@@ -7,6 +7,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -29,12 +30,12 @@ class McpToolFunctionTool implements McpFunctionTool {
      * MCP 异步客户端
      */
     private final McpAsyncClient mcpClient;
-    
+
     /**
      * MCP 工具定义
      */
     private final McpSchema.Tool mcpTool;
-    
+
     /**
      * 工具元数据
      */
@@ -90,11 +91,22 @@ class McpToolFunctionTool implements McpFunctionTool {
         // 将 JSON 参数转换为 Map
         final var argumentMap = JacksonJsonUtils.<Map<String, Object>>toObject(argumentJson, mapType.getType());
         final var name = mcpTool.name();
-        final var request = new McpSchema.CallToolRequest(name, argumentMap);
+
+
+        final var request = McpSchema.CallToolRequest.builder(name)
+                .arguments(argumentMap)
+                .build();
 
         return mcpClient.callTool(request)
                 .toFuture()
                 .thenApply(result -> {
+
+                    if (null == result) {
+                        throw new IllegalStateException("Calling too: /%s failed: result is null!".formatted(
+                                prefix
+                        ));
+                    }
+
                     // 检查是否为错误结果
                     if (isErrorResult(result)) {
                         throw new IllegalStateException("Calling tool: /%s failed: %s".formatted(
@@ -105,7 +117,7 @@ class McpToolFunctionTool implements McpFunctionTool {
                     return result;
                 })
                 // 提取内容并转换为 JSON
-                .thenApply(McpSchema.CallToolResult::content)
+                .thenApply(callToolResult -> Objects.requireNonNull(callToolResult).content())
                 .thenApply(JacksonJsonUtils::toJson);
     }
 
@@ -116,8 +128,7 @@ class McpToolFunctionTool implements McpFunctionTool {
      * @return TRUE | FALSE
      */
     private static boolean isErrorResult(McpSchema.CallToolResult result) {
-        return null != result
-                && null != result.isError()
+        return null != result.isError()
                 && result.isError();
     }
 

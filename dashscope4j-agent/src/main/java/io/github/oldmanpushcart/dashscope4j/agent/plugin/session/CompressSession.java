@@ -237,7 +237,6 @@ class CompressSession implements Session {
                     // 压缩失败，使用非压缩结果
                     if (ex != null) {
                         logger.warn("{}/compress failed. non-compress used.", this, ex);
-                        return null;
                     }
 
                     // 压缩成功,使用压缩结果
@@ -258,8 +257,8 @@ class CompressSession implements Session {
                         // 压缩率
                         final var rate = String.format("%.2f", after * 100.0f / tokens );
                         logger.debug("{}/compress {} -> {} tokens, rate={}%", this, tokens, after, rate);
-                        return null;
                     }
+                    return null;
 
                 });
 

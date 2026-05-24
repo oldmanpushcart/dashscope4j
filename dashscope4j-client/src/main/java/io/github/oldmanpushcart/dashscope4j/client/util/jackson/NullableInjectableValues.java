@@ -17,12 +17,15 @@ class NullableInjectableValues extends InjectableValues.Std {
     }
 
     @Override
-    public Object findInjectableValue(final Object valueId,
-                                      final DeserializationContext context,
+    public Object findInjectableValue(final DeserializationContext ctxt,
+                                      final Object valueId,
                                       final BeanProperty forProperty,
-                                      final Object beanInstance) throws JsonMappingException {
+                                      final Object beanInstance,
+                                      final Boolean optional,
+                                      final Boolean useInput
+    ) throws JsonMappingException {
         try {
-            return super.findInjectableValue(valueId, context, forProperty, beanInstance);
+            return super.findInjectableValue(ctxt, valueId, forProperty, beanInstance, optional, useInput);
         } catch (IllegalArgumentException ex) {
 
             // 如果找不到 injectable value，则返回 null

@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -80,11 +81,19 @@ class McpResourceFunctionTool implements McpFunctionTool {
         final var uri = (String) argumentMap.getOrDefault("uri", mcpResource.uri());
 
         // 调用 MCP 服务器的 readResource API
-        final var request = new McpSchema.ReadResourceRequest(uri);
+        final var request = McpSchema.ReadResourceRequest.builder(uri)
+                .build();
 
         return mcpClient.readResource(request)
                 .toFuture()
                 .thenApply(result -> {
+
+                    if (null == result) {
+                        throw new IllegalStateException("Reading resource: /%s failed: result is null!".formatted(
+                                prefix
+                        ));
+                    }
+
                     // 检查是否有错误
                     if (isErrorResult(result)) {
                         throw new IllegalStateException("Reading resource: /%s failed: %s".formatted(
@@ -95,7 +104,7 @@ class McpResourceFunctionTool implements McpFunctionTool {
                     return result;
                 })
                 // 处理资源内容，保存到临时文件
-                .thenApply(McpSchema.ReadResourceResult::contents)
+                .thenApply(readResourceResult -> Objects.requireNonNull(readResourceResult).contents())
                 .thenApply(this::processContents);
     }
 

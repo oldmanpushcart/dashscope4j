@@ -7,6 +7,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -73,11 +74,21 @@ class McpPromptFunctionTool implements McpFunctionTool {
         final var argumentMap = JacksonJsonUtils.<Map<String, Object>>toObject(argumentJson, mapTypeRef.getType());
 
         // 调用 MCP 服务器的 getPrompt API
-        final var request = new McpSchema.GetPromptRequest(mcpPrompt.name(), argumentMap);
+        final var request = McpSchema.GetPromptRequest.builder(mcpPrompt.name())
+                .arguments(argumentMap)
+                .build();
+        ;
 
         return client.getPrompt(request)
                 .toFuture()
                 .thenApply(result -> {
+
+                    if (null == result) {
+                        throw new IllegalStateException("Getting prompt: /%s failed: result is null!".formatted(
+                                prefix
+                        ));
+                    }
+
                     // 检查是否有错误
                     if (isErrorResult(result)) {
                         throw new IllegalStateException("Getting prompt: /%s failed: %s".formatted(
@@ -88,7 +99,7 @@ class McpPromptFunctionTool implements McpFunctionTool {
                     return result;
                 })
                 // 提取并拼接 prompt 消息内容
-                .thenApply(McpSchema.GetPromptResult::messages)
+                .thenApply(getPromptResult -> Objects.requireNonNull(getPromptResult).messages())
                 .thenApply(messages -> messages.stream()
                         .map(McpSchema.PromptMessage::content)
                         .filter(content -> content instanceof McpSchema.TextContent)
