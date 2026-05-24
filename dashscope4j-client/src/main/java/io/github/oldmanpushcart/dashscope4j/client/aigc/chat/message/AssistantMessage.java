@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

@@ -1,6 +1,5 @@
 package io.github.oldmanpushcart.dashscope4j.agent.plugin.session;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store.FileFragmentStore;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store.FragmentStore;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
@@ -8,7 +7,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
 
-import java.nio.file.Path;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -22,13 +20,11 @@ class SettingInterceptor implements ChatInterceptor {
 
     private final FragmentStore store;
 
-    public SettingInterceptor(ChatModel model, Path directory, int maxTokens, double gcRatio) {
+    public SettingInterceptor(ChatModel model, FragmentStore store, int maxTokens, double gcRatio) {
         this.model = model;
         this.maxTokens = maxTokens;
         this.retainTokens = (int) (maxTokens * gcRatio);
-        this.store = FileFragmentStore.newBuilder()
-                .directory(directory)
-                .build();
+        this.store = store;
     }
 
     @Override

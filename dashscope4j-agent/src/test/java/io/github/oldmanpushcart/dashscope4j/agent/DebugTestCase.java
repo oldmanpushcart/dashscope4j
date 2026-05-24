@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.SessionPlugin;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store.FileFragmentStore;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolboxPlugin;
@@ -20,9 +21,9 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
-import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -33,6 +34,9 @@ public class DebugTestCase implements LoadingEnv {
 
     private Plugin buildingSessionPlugin() {
         return SessionPlugin.newBuilder()
+                .store(FileFragmentStore.newBuilder()
+                        .directory(Path.of("./session"))
+                        .build())
                 .maxTokens(50 * 100)
                 .gcRatio(0.3)
                 .build();
@@ -93,6 +97,7 @@ public class DebugTestCase implements LoadingEnv {
                 .build();
     }
 
+    @Disabled
     @Test
     public void debug$1() {
 
@@ -127,34 +132,13 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = agent.async(sessionId, Message.user("""
-                            用“在阳光下成长”为主题，生成一张图片。
-                            
-                            要求：
-                            1. 小孩子手画卡通风格
-                            2. 有阳光、树木和2个小孩子
+                            根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
                             """))
                     .toCompletableFuture()
                     .join();
 
             System.out.println(outbound.text());
         }
-
-    }
-
-    @Test
-    public void test$debug3() {
-
-        final var request = AigcRequest.newBuilder(ChatModel.QWEN_MAX)
-                .input(ChatModel.Input.newBuilder()
-                        .addMessage(Message.user("你好呀!"))
-                        .build())
-                .build();
-
-        final var response = client.async(request)
-                .toCompletableFuture()
-                .join();
-
-        System.out.println(response.output().best().message().text());
 
     }
 
