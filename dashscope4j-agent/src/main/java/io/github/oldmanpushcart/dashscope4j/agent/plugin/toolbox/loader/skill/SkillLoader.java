@@ -106,7 +106,7 @@ public class SkillLoader extends AbstractToolLoader {
                 new ExecuteScriptFunction(skills, Duration.ofSeconds(30)).asTool()
         ).forEach(tool -> {
             final var name = tool.meta().name();
-            final var use = new ToolUse(mode, tool, this);
+            final var use = new ToolUse(ToolUse.Mode.FIXED, tool, this);
             uses.put(name, use);
         });
 
@@ -116,7 +116,7 @@ public class SkillLoader extends AbstractToolLoader {
                 .map(skill -> new LoadSkillFunction(skill).asTool())
                 .forEach(tool -> {
                     final var name = tool.meta().name();
-                    final var use = new ToolUse(ToolUse.Mode.DYNAMIC, tool, this);
+                    final var use = new ToolUse(mode, tool, this);
                     uses.put(name, use);
                 });
 
