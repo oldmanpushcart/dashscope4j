@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.Toolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
@@ -14,10 +15,12 @@ import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -53,6 +56,7 @@ public abstract class BaseAgent implements Agent {
     private final ChatModel model;
     private final List<Plugin> plugins;
     private final List<Toolkit> toolkits;
+    private final List<Plugin.Extension> extensions = new ArrayList<>();
 
     /**
      * 构造 BaseAgent
@@ -76,6 +80,24 @@ public abstract class BaseAgent implements Agent {
     @Override
     public String description() {
         return description;
+    }
+
+    @Override
+    public DashscopeClient client() {
+        return client;
+    }
+
+    /**
+     * 异步初始化Agent，安装所有插件
+     *
+     * @return 完成信号
+     */
+    protected CompletionStage<Void> initAsync() {
+        return CompletableFutureUtils.sequentialMap(plugins, plugin -> plugin.install(this))
+                .thenAccept(extensions -> {
+                    this.extensions.clear();
+                    this.extensions.addAll(extensions);
+                });
     }
 
     /**
@@ -131,8 +153,8 @@ public abstract class BaseAgent implements Agent {
     }
 
     private List<Interceptor> interceptors(Plugin.Phases phases) {
-        return plugins().stream()
-                .map(plugin -> plugin.interceptors(phases))
+        return extensions.stream()
+                .map(extension -> extension.interceptors(phases))
                 .flatMap(List::stream)
                 .map(Interceptor.class::cast)
                 .toList();
@@ -173,21 +195,20 @@ public abstract class BaseAgent implements Agent {
     }
 
     /**
-     * 获取 DashScope 客户端
-     *
-     * @return DashScope 客户端实例
-     */
-    protected DashscopeClient client() {
-        return client;
-    }
-
-    /**
      * 获取对话模型
      *
      * @return 对话模型实例
      */
     protected ChatModel model() {
         return model;
+    }
+
+    @Override
+    public void close() {
+        CompletableFutureUtils.sequentialMap(plugins, Plugin::uninstall)
+                .exceptionally(ex -> null)
+                .toCompletableFuture()
+                .join();
     }
 
     /**
@@ -199,13 +220,13 @@ public abstract class BaseAgent implements Agent {
      * @param <T> Agent 类型
      * @param <B> Builder 类型
      */
-    public static abstract class Builder<T extends BaseAgent, B extends Builder<T, B>> implements Buildable<T, B> {
+    public static abstract class Builder<T extends BaseAgent, B extends Builder<T, B>> implements Buildable<T, B>, Agent.Builder<T,B> {
 
         private String name;
         private String description;
 
         private DashscopeClient client;
-        private ChatModel model;
+        private ChatModel model = ChatModel.QWEN_FLASH;
 
         private List<Plugin> plugins;
         private List<Toolkit> toolkits;
@@ -265,6 +286,13 @@ public abstract class BaseAgent implements Agent {
         public B toolkits(UnaryOperator<List<Toolkit>> operator) {
             this.toolkits = operator.apply(CommonUtils.mutableCopy(this.toolkits));
             return self();
+        }
+
+        @Override
+        public T build() {
+            return buildAsync()
+                    .toCompletableFuture()
+                    .join();
         }
 
     }

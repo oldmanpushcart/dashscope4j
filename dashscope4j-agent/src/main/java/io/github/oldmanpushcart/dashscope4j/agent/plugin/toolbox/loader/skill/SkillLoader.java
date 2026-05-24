@@ -34,6 +34,7 @@ public class SkillLoader extends AbstractToolLoader {
     private static final Logger logger = LoggerFactory.getLogger(SkillLoader.class);
     private static final String SKILL_MD_FILE = "SKILL.md";
 
+    private final ToolUse.Mode mode;
     private final List<Path> directories;
     private final DirectoryWatcher watcher;
 
@@ -42,6 +43,7 @@ public class SkillLoader extends AbstractToolLoader {
     private final CompletableFuture<?> closeF = new CompletableFuture<>();
 
     private SkillLoader(Builder builder) {
+        this.mode = builder.mode;
         this.directories = CommonUtils.unmodifiableCopy(builder.directories);
         this.watcher = new DirectoryWatcher(directories, this::changeSkill);
     }
@@ -104,7 +106,7 @@ public class SkillLoader extends AbstractToolLoader {
                 new ExecuteScriptFunction(skills, Duration.ofSeconds(30)).asTool()
         ).forEach(tool -> {
             final var name = tool.meta().name();
-            final var use = new ToolUse(ToolUse.Mode.DYNAMIC, tool, this);
+            final var use = new ToolUse(mode, tool, this);
             uses.put(name, use);
         });
 
@@ -258,7 +260,13 @@ public class SkillLoader extends AbstractToolLoader {
      */
     public static class Builder implements Buildable<SkillLoader, Builder> {
 
+        private ToolUse.Mode mode = ToolUse.Mode.DYNAMIC;
         private List<Path> directories = Collections.emptyList();
+
+        public Builder mode(ToolUse.Mode mode) {
+            this.mode = mode;
+            return this;
+        }
 
         public Builder directories(List<Path> directories) {
             this.directories = directories;

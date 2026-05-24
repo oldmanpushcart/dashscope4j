@@ -5,6 +5,8 @@ import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseAgent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * ReAct 智能助手
@@ -39,23 +41,12 @@ public class ReActAgent extends BaseAgent {
         return new Builder();
     }
 
-    public static Builder newBuilder(ReActAgent agent) {
-        return new Builder(agent);
-    }
-
     public static class Builder extends BaseAgent.Builder<ReActAgent, ReActAgent.Builder> {
 
-        protected Builder() {
-
-        }
-
-        protected Builder(ReActAgent agent) {
-            super(agent);
-        }
-
-        @Override
-        public ReActAgent build() {
-            return new ReActAgent(this);
+        public CompletionStage<ReActAgent> buildAsync() {
+            return CompletableFuture.completedStage(null)
+                    .thenApply(u -> new ReActAgent(this))
+                    .thenCompose(agent -> agent.initAsync().thenApply(u -> agent));
         }
 
     }

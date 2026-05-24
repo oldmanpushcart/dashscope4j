@@ -33,21 +33,13 @@ public interface FragmentStore {
     Publisher<Fragment> flow(String sessionId, long after);
 
     /**
-     * 插入会话片段
+     * 添加会话片段
      *
      * @param sessionId 会话 ID
      * @param messages  消息列表（包含用户输入和助手输出）
      * @return 会话片段
      */
-    CompletionStage<Fragment> insert(String sessionId, List<Message> messages);
-
-    /**
-     * 删除会话片段
-     *
-     * @param fragmentId 会话片段 ID
-     * @return 删除结果
-     */
-    CompletionStage<Void> remove(long fragmentId);
+    CompletionStage<Fragment> append(String sessionId, List<Message> messages);
 
     /**
      * 会话片段

@@ -116,7 +116,7 @@ public class FileFragmentStore implements FragmentStore {
      * 追加会话片段（线程安全）
      */
     @Override
-    public CompletionStage<Fragment> insert(String sessionId, List<Message> messages) {
+    public CompletionStage<Fragment> append(String sessionId, List<Message> messages) {
         Objects.requireNonNull(sessionId, "sessionId must not be null");
         Objects.requireNonNull(messages, "messages must not be null");
 
@@ -150,16 +150,6 @@ public class FileFragmentStore implements FragmentStore {
         } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
-    }
-
-    /**
-     * 不支持物理删除（使用 TTL 或 GC 代替）
-     */
-    @Override
-    public CompletionStage<Void> remove(long fragmentId) {
-        return CompletableFuture.failedFuture(
-            new UnsupportedOperationException("Remove not supported. Use TTL or GC instead.")
-        );
     }
 
     /**

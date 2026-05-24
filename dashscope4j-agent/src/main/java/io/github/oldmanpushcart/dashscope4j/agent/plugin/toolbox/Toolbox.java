@@ -54,6 +54,14 @@ public interface Toolbox extends AutoCloseable, ToolLookup {
      */
     boolean isClosed();
 
+    /**
+     * @return 是否为共享模式
+     * <p>
+     * 共享模式下，ToolboxPlugin关闭时不会联动关闭Toolbox
+     * </p>
+     */
+    boolean isShared();
+
     @Override
     void close();
 

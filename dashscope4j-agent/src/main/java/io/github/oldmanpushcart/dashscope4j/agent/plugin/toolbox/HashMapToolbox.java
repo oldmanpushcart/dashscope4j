@@ -20,12 +20,19 @@ import java.util.stream.Collectors;
 import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalState;
 import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.unwrapEx;
 
+/**
+ * HashMap 工具箱
+ * <p>
+ * 线程安全，支持多线程并发访问。
+ * </p>
+ */
 public class HashMapToolbox implements Toolbox {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ToolIndexer indexer;
     private final Map<String, Entry> registry = new ConcurrentHashMap<>();
     private final CompletableFuture<?> closeF = new CompletableFuture<>();
+    private final boolean shared;
 
     // 变更同步器
     private final Syncer syncer;
@@ -34,6 +41,7 @@ public class HashMapToolbox implements Toolbox {
         Objects.requireNonNull(builder.indexer, "indexer cannot be null!");
         Objects.requireNonNull(builder.syncInterval, "syncInterval cannot be null!");
         this.indexer = builder.indexer;
+        this.shared = builder.shared;
         this.syncer = new Syncer(builder.syncInterval);
         this.syncer.start();
     }
@@ -83,7 +91,7 @@ public class HashMapToolbox implements Toolbox {
         return registry.values()
                 .stream()
                 .map(Entry::use)
-                .filter(use->use.mode() == ToolUse.Mode.FIXED)
+                .filter(use -> use.mode() == ToolUse.Mode.FIXED)
                 .map(ToolUse::tool)
                 .toList();
     }
@@ -91,6 +99,11 @@ public class HashMapToolbox implements Toolbox {
     @Override
     public boolean isClosed() {
         return closeF.isDone();
+    }
+
+    @Override
+    public boolean isShared() {
+        return shared;
     }
 
     @Override
@@ -357,21 +370,53 @@ public class HashMapToolbox implements Toolbox {
         return new Builder();
     }
 
+    /**
+     * 构建器
+     */
     public static class Builder {
 
         private ToolIndexer indexer;
         private Duration syncInterval = Duration.ofSeconds(5);
+        private boolean shared = false;
 
+        /**
+         * 设置工具索引器
+         *
+         * @param indexer 工具索引器
+         * @return this
+         */
         public Builder indexer(ToolIndexer indexer) {
             this.indexer = indexer;
             return this;
         }
 
+        /**
+         * 设置同步周期
+         *
+         * @param syncInterval 同步周期
+         * @return this
+         */
         public Builder syncInterval(Duration syncInterval) {
             this.syncInterval = syncInterval;
             return this;
         }
 
+        /**
+         * 设置为共享模式
+         *
+         * @param shared 是否共享
+         * @return this
+         */
+        public Builder shared(boolean shared) {
+            this.shared = shared;
+            return this;
+        }
+
+        /**
+         * 构建工具箱
+         *
+         * @return 工具箱
+         */
         public HashMapToolbox build() {
             return new HashMapToolbox(this);
         }

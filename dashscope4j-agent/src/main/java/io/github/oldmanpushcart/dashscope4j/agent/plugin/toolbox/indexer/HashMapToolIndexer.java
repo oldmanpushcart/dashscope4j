@@ -32,6 +32,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 
+/**
+ * {@code HashMap}工具索引器
+ * <p>
+ * 索引缓存在本地文件的工具索引器
+ * </p>
+ */
 public class HashMapToolIndexer implements ToolIndexer {
 
     /**
@@ -206,38 +212,6 @@ public class HashMapToolIndexer implements ToolIndexer {
                 .exceptionallyCompose(ex -> illegalState(ex, "Indexing tools by intent occur error!"));
     }
 
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-
-        private DashscopeClient client;
-        private ChatModel model;
-        private Path cacheFile;
-
-        public Builder client(DashscopeClient client) {
-            this.client = client;
-            return this;
-        }
-
-        public Builder model(ChatModel model) {
-            this.model = model;
-            return this;
-        }
-
-        public Builder cacheFile(Path cacheFile) {
-            this.cacheFile = cacheFile;
-            return this;
-        }
-
-        public HashMapToolIndexer build() {
-            return new HashMapToolIndexer(this);
-        }
-
-    }
-
-
     // ---- 内部类定义 ----
 
     /**
@@ -409,6 +383,64 @@ public class HashMapToolIndexer implements ToolIndexer {
 
         ) {
 
+        }
+
+    }
+
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    /**
+     * 构建器
+     */
+    public static class Builder {
+
+        private DashscopeClient client;
+        private ChatModel model = ChatModel.QWEN_FLASH;
+        private Path cacheFile = Path.of(".tool-index-cache.jsonl");
+
+        /**
+         * 设置Dashscope客户端
+         *
+         * @param client Dashscope客户端
+         * @return this
+         */
+        public Builder client(DashscopeClient client) {
+            this.client = client;
+            return this;
+        }
+
+        /**
+         * 设置模型
+         *
+         * @param model 模型
+         * @return this
+         */
+        public Builder model(ChatModel model) {
+            this.model = model;
+            return this;
+        }
+
+        /**
+         * 缓存文件
+         *
+         * @param cacheFile 缓存文件
+         * @return this
+         */
+        public Builder cacheFile(Path cacheFile) {
+            this.cacheFile = cacheFile;
+            return this;
+        }
+
+        /**
+         * 构建工具索引器
+         *
+         * @return 工具索引器
+         */
+        public HashMapToolIndexer build() {
+            return new HashMapToolIndexer(this);
         }
 
     }
