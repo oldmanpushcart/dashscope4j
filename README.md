@@ -1,147 +1,186 @@
-# Dashscope4j：灵积 / 通义千问 Java SDK
+# Dashscope4j
 
 ![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)
-![JDK8+](https://img.shields.io/badge/JDK-8+-blue.svg)
-![LLM-通义千问](https://img.shields.io/badge/LLM-%E9%80%9A%E4%B9%89%E5%8D%83%E9%97%AE-blue.svg)
+![JDK17+](https://img.shields.io/badge/JDK-17+-blue.svg)
+![Maven Central](https://img.shields.io/maven-central/v/io.github.oldmanpushcart/dashscope4j)
 
-**Dashscope4j** 是一个开源的灵积非官方 Java SDK，基于 JDK8 构建。 它旨在提供一个功能丰富、易于集成和使用的Java库，
-以便Java开发者能轻松调用灵积平台的多模态对话、向量嵌入和图像处理等模型API。
+> 阿里云百炼平台（灵积）的 Java SDK，提供客户端库和智能体框架两个模块。
 
-我个人使用于自己的智能助理项目：[MOSS-桌面个人助手](https://github.com/oldmanpushcart/moss)
+## ✨ 核心特性
 
-> 请注意：在使用 Dashscope4j 时，你需要遵守灵积的使用条款和条件。
+### dashscope4j-client
 
-## 一、功能特性
+- **拦截器链机制** - 在请求生命周期中注入自定义逻辑，实现关注点分离
+- **响应式编程模型** - 支持 async/flow/task/realtime 四种调用模式
+- **类型安全设计** - 泛型贯穿全程，编译时检查杜绝运行时错误
+- **多协议兼容** - 内置 OpenAI 格式转换、响应模式桥接等兼容层
+- **基础操作接口** - 文件管理、存储上传、Token 计算等辅助功能
 
-### Dashscope4j 独有功能特性
+👉 [查看详细文档](dashscope4j-client/README.md)
 
-- **增强FunctionCall**
-  - 本地函数：注解或构造器方式声明 FunctionCall
-  - 多级调用：当大模型需要串联、并行调用多个函数时，自动帮你完成多级请求串联
-- **支持请求拦截器**
-  - OkHttp拦截器
-  - Dashscope请求拦截器（请求、全局）
-- 增强对话请求：多模态的对话生成编码统一风格
-- 响应式编程风格：友好的任务、同步、异步、流、数据双工通讯请求API
-- 支持请求上下文透传
+### dashscope4j-agent
 
-### Dashscope4j 支持以下阿里云百炼平台以下API功能
+- **插件化架构** - 基于 Plugin 系统的模块化设计，灵活扩展
+- **ReAct 推理引擎** - 思维链与行动交替的推理循环机制
+- **动态工具管理** - 支持 MCP、Skills、Toolkit 多种工具来源
+- **会话记忆管理** - 历史记录自动压缩与持久化存储
+- **完全异步设计** - 基于 CompletionStage + Reactor 的非阻塞架构
 
-- **对话（Chat）**
-  - 提供用户与灵积进行多模态(图、音、文)对话
-  - 函数、插件调用
+👉 [查看详细文档](dashscope4j-agent/README.md)
 
-- **向量（Embeddings）**
-  - 将文本转换为向量表示，用于文本相似度比较、聚类等任务
-  - 将图音文本转换为向量表示，用于图音文相似度比较、聚类等任务
+---
 
-- **图像（Images）**
-  - **文生图：** 将文本描述转换为相应的图像
-  - **图生图：** 将文本描述和参考图片转换为相应的图像
+## 📦 项目组成
 
-- **视频（Video）**
-  - **文生视频：** 将文本描述转换为相应的视频
-  - **图生视频：** 将文本描述和参考图片转换为相应的视频
+Dashscope4j 包含两个独立但互补的模块：
 
-- **语音识别与合成**
-  - 实时、非实时语音识别、合成
-  - 音视频文件语音转录文本
-  - 语音识别热词管理
-  - 语音合成音色管理
+| 模块 | 说明 | 适用场景 |
+|------|------|----------|
+| **[dashscope4j-client](dashscope4j-client/README.md)** | 灵积平台 Java 客户端库 | API 调用、响应式编程、类型安全访问 |
+| **[dashscope4j-agent](dashscope4j-agent/README.md)** | 智能体框架 | ReAct 推理、工具管理、会话记忆 |
 
-- **基础功能**
-  - Tokenizer计算（远程、本地）
-  - 灵积提供的临时空间、文件管理
-  - 拦截器
+---
 
-## 二、快速使用
+## 🚀 快速开始
 
-### 申请灵积账号
+### 添加依赖
 
-> 如已申请则可跳过
-
-到阿里云的 [模型服务-灵积](https://dashscope.console.aliyun.com/) 中开通服务，
-然后到 [API-KEY管理](https://dashscope.console.aliyun.com/apiKey) 页面中创建并获取`AK`。
-
-### 添加 Maven 依赖
+**仅使用客户端：**
 
 ```xml
-
 <dependency>
     <groupId>io.github.oldmanpushcart</groupId>
-    <artifactId>dashscope4j</artifactId>
-    <version>3.1.2</version>
+    <artifactId>dashscope4j-client</artifactId>
+    <version>4.0.0</version>
 </dependency>
 ```
 
-### 简单对话示例
+**使用智能体框架（自动包含 client）：**
+
+```xml
+<dependency>
+    <groupId>io.github.oldmanpushcart</groupId>
+    <artifactId>dashscope4j-agent</artifactId>
+    <version>4.0.0</version>
+</dependency>
+```
+
+### 最简示例
+
+#### Client - 发起对话
 
 ```java
-public static void main(String... args) {
+import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 
-    // 初始化客户端
-    final DashScopeClient client = DashScopeClient.newBuilder()
-            .ak("...") // 请替换为你自己的AK
-            .build();
+var client = DashscopeClient.newBuilder()
+    .ak(System.getenv("DASHSCOPE_API_KEY"))
+    .build();
 
-    final ChatRequest request = ChatRequest.newBuilder()
-            .model(ChatModel.QWEN_TURBO)
-            .addMessage(Message.ofUser("你好呀!"))
-            .build();
+var request = AigcRequest.newBuilder(ChatModel.QWEN_PLUS)
+    .input(ChatModel.Input.newBuilder()
+        .addMessage(Message.user("你好！"))
+        .build())
+    .build();
 
-    final ChatResponse response = client.chat().async(request)
-            .toCompletableFuture()
-            .join();
+String reply = client.async(request)
+    .toCompletableFuture().join()
+    .output().best().message().text();
 
-    System.out.println(response.output().best().message().text());
-
-    // 销毁客户端
-    client.shutdown();
-
-}
+System.out.println(reply);
 ```
 
-运行这段代码后,我可以得到如下的输出日志
+#### Agent - 智能对话
+
+```java
+import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.SimpleToolboxPlugin;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
+
+var agent = ReActAgent.newBuilder()
+    .client(client)
+    .model(ChatModel.QWEN_PLUS)
+    .plugins(plugins -> {
+        plugins.add(SimpleToolboxPlugin.newBuilder()
+            .toolkit(ToolUse.Mode.FIXED, ShellToolkit.create())
+            .build());
+        return plugins;
+    })
+    .build();
+
+var response = agent.async("session-001", Message.user("查询当前目录文件"))
+    .toCompletableFuture().join();
+
+System.out.println(response.text());
+```
+
+---
+
+## 📖 使用场景
+
+### 选择 Client
+
+当你需要：
+- ✅ 直接调用灵积 API（对话、向量化、音频等）
+- ✅ 精细控制请求处理流程
+- ✅ 实现自定义的 Agent 逻辑
+- ✅ 高并发批量处理任务
+
+### 选择 Agent
+
+当你需要：
+- ✅ 开箱即用的 ReAct 智能体
+- ✅ 自动化工具调用序列
+- ✅ 会话记忆和历史管理
+- ✅ 企业级应用集成
+
+### 组合使用
+
+典型的企业级应用架构：
 
 ```
-2024-12-28 01:35:23 DEBUG dashscope://algo/qwen-turbo >>> {"model":"qwen-turbo","input":{"messages":[{"role":"user","content":"你好呀!"}]},"parameters":{}}
-2024-12-28 01:35:23 TRACE HTTP:// >>> POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation Content-Type: application/json, Authorization: Bearer ******, X-DashScope-Client: dashscope4j@3.0.0-SNAPSHOT, X-DashScope-SSE: disable, X-DashScope-Async: disable, X-DashScope-OssResourceResolve: enable
-2024-12-28 01:35:24 TRACE HTTP:// <<< 200  eagleeye-traceid: 5ed0561e54849bd4d1af8d32703a0cf3, vary: Origin,Access-Control-Request-Method,Access-Control-Request-Headers, Accept-Encoding, content-type: application/json, x-request-id: db13c38b-4291-9f90-9117-a6be2d823ee5, x-dashscope-timeout: 180, x-dashscope-call-gateway: true, x-dashscope-finished: true, req-cost-time: 427, req-arrive-time: 1735320910529, resp-start-time: 1735320910957, x-envoy-upstream-service-time: 421, set-cookie: acw_tc=db13c38b-4291-9f90-9117-a6be2d823ee5e00679cda1184bc0403ad232d70f1ab7;path=/;HttpOnly;Max-Age=1800, date: Fri, 27 Dec 2024 17:35:10 GMT, server: istio-envoy
-2024-12-28 01:35:24 DEBUG dashscope://algo/qwen-turbo <<< {"output":{"finish_reason":"stop","text":"你好！很高兴为你提供帮助。"},"usage":{"total_tokens":18,"output_tokens":7,"input_tokens":11},"request_id":"db13c38b-4291-9f90-9117-a6be2d823ee5"}
-你好！很高兴为你提供帮助。
+┌─────────────────────────┐
+│   业务应用层             │
+├─────────────────────────┤
+│  dashscope4j-agent      │  ← 智能体编排、工具管理
+├─────────────────────────┤
+│  dashscope4j-client     │  ← API 调用、拦截器链
+├─────────────────────────┤
+│   灵积平台 API           │
+└─────────────────────────┘
 ```
 
-## 三、使用说明
+---
 
-- [多模态对话生成](https://github.com/oldmanpushcart/dashscope4j/wiki/Chat)
-- 多模态向量计算
-- 文生图
-- 语音处理
+## 🔗 相关链接
 
-## 四、关于软件
+- **客户端文档**: [dashscope4j-client/README.md](dashscope4j-client/README.md)
+- **智能体文档**: [dashscope4j-agent/README.md](dashscope4j-agent/README.md)
+- **阿里云灵积**: https://dashscope.aliyun.com
+- **帮助文档**: https://help.aliyun.com/zh/dashscope/
+- **GitHub Issues**: https://github.com/oldmanpushcart/dashscope4j/issues
 
-### 版本号声明
+---
 
-软件版本号采用：`大版本`.`小版本`.`漏洞修复`的格式
+## 📄 许可证
 
-- **大版本：** 程序的架构设计进行重大升级或重大改造
+本项目采用 Apache License 2.0 许可证。
 
-- **小版本：**
-    1. 增加新的API功能
-    2. 在现有架构下完成局部架构的微调
+---
 
-- **漏洞修复：** 在不改变现有架构和API情况下，对漏洞修复和增强
+## 🙏 致谢
 
-### 写在最后
+感谢以下开源项目：
 
-灵积是有官方的Java客户端的，我之所以还需要开发这个 Dashscope4j 主要是基于以下几点考虑
+- [OkHttp](https://square.github.io/okhttp/) - HTTP/WebSocket 客户端
+- [Reactor](https://projectreactor.io/) - 响应式编程支持
+- [Jackson](https://github.com/FasterXML/jackson) - JSON/XML 处理
+- [OpenTelemetry](https://opentelemetry.io/) - 分布式追踪
+- [Model Context Protocol](https://modelcontextprotocol.io/) - 标准化工具协议
 
-1. ~~官方的SDK并不开源，你无法查看其源码，也无法自行修改和定制~~
-   > 官方的SDK已经开源了，你可以查看 [dashscope-sdk-java](https://github.com/dashscope/dashscope-sdk-java)
-2. 我个人更喜欢响应式的编程风格，也更喜欢chain式的API声明
-3. 个人练手习惯，反正也不花我多少时间
+---
 
-## 七、相关链接
-
-- [模型服务-灵积](https://dashscope.aliyun.com)
-- [帮助文档-灵积](https://help.aliyun.com/zh/dashscope/)
+**⭐ 如果这个项目对你有帮助，请给我们一个 Star！**

@@ -1,0 +1,44 @@
+package io.github.oldmanpushcart.dashscope4j.client.aigc.chat.internal.interceptor.tool;
+
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
+import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
+import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
+import org.reactivestreams.Publisher;
+
+import java.util.concurrent.CompletionStage;
+
+public class ToolCallInterceptor implements Interceptor {
+
+    @Override
+    public CompletionStage<?> intercept(Chain chain) {
+
+        if (!(chain.request() instanceof AigcRequest<?, ?> aigcRequest)
+                || !(aigcRequest.model() instanceof ChatModel)) {
+            return chain.proceed();
+        }
+
+        return switch (chain.type()) {
+
+            case ASYNC -> chain.proceed()
+                    .thenApply(r -> {
+                        //noinspection unchecked
+                        return (AigcResponse<Output>) r;
+                    })
+                    .thenCompose(new ToolCallHandler(chain.client()));
+
+            case FLOW -> chain.proceed()
+                    .thenApply(r -> {
+                        //noinspection unchecked
+                        return (Publisher<AigcResponse<Output>>) r;
+                    })
+                    .thenApply(new ToolCallFlowHandler(chain.client()));
+
+            default -> chain.proceed();
+
+        };
+
+    }
+
+}
