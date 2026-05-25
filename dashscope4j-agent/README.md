@@ -171,7 +171,6 @@ public interface Plugin {
 | `SimpleToolboxPlugin` | 简易工具箱插件 | 快速配置工具集合 |
 | `ToolboxPlugin` | 高级工具箱插件 | 精细控制工具箱行为 |
 | `SessionPlugin` | 会话管理插件 | 历史记录与记忆压缩 |
-| `ReActPlugin` | ReAct 推理插件 | 思维链推理循环 |
 
 #### 3. Toolbox 工具箱
 
@@ -202,7 +201,7 @@ public interface Toolbox extends AutoCloseable, ToolLookup {
 ```java
 public interface ToolLoader extends AutoCloseable {
     CompletionStage<Void> subscribe(ToolSubscription subscription, 
-                                   ToolSubscriptionHandler handler);
+                                    ToolSubscriptionHandler handler);
     void unsubscribe(ToolSubscription subscription);
     List<ToolUse> loaded();
 }
@@ -252,9 +251,8 @@ var agent = ReActAgent.newBuilder()
     .plugins(plugins -> {
         plugins.add(SimpleToolboxPlugin.newBuilder()
             // 添加工具包（FIXED 模式）
-            .toolkit(ToolUse.Mode.FIXED, 
-                ShellToolkit.create(),
-                FileOpsToolkit.create())
+            .toolkit(ToolUse.Mode.FIXED, ShellToolkit.create())
+            .toolkit(ToolUse.Mode.FIXED, FileOpsToolkit.create())    
             
             // 添加 Skill 技能包（DYNAMIC 模式）
             .skill(ToolUse.Mode.DYNAMIC, Path.of("./skills"))
