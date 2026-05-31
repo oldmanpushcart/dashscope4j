@@ -191,9 +191,10 @@ public abstract class ApiRequest<R extends ApiResponse> {
         private Map<String, String> headers;
         private List<Interceptor> interceptors;
         private Set<String> tags;
-        private Map<String, Object> context;
+        private final Map<String, Object> context;
 
         protected Builder() {
+            this.context = new ConcurrentHashMap<>();
         }
 
         /**
@@ -291,7 +292,10 @@ public abstract class ApiRequest<R extends ApiResponse> {
          * @return this
          */
         public B context(Map<String, Object> context) {
-            this.context = context;
+            if (this.context != context) {
+                this.context.clear();
+                this.context.putAll(context);
+            }
             return self();
         }
 
@@ -306,8 +310,7 @@ public abstract class ApiRequest<R extends ApiResponse> {
          * @return this
          */
         public B context(UnaryOperator<Map<String, Object>> operator) {
-            this.context = operator.apply(CommonUtils.mutableCopy(this.context));
-            return self();
+            return context(operator.apply(this.context));
         }
 
         /**

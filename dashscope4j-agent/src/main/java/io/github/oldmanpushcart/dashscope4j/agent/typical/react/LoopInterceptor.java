@@ -104,7 +104,7 @@ class LoopInterceptor implements ChatInterceptor {
                                 // 将函数调用结果作为观察结果写回到对话流中
                                 .input(input -> Input.newBuilder(input)
                                         .addMessage(responseMessage)
-                                        .addMessage(Message.user("%s: %s".formatted(ReAct.OBSERVATION, resultJson)).withCache())
+                                        .addMessage(Message.user("%s: %s".formatted(ReAct.OBSERVATION, resultJson)))
                                         .build())
                                 .build();
                         return chain.proceed(nextRequest)
@@ -221,7 +221,7 @@ class LoopInterceptor implements ChatInterceptor {
                                 final var nextRequest = AigcRequest.newBuilder(request)
                                         .input(input -> Input.newBuilder(input)
                                                 .addMessage(message)
-                                                .addMessage(Message.user("%s: %s".formatted(ReAct.OBSERVATION, resultJson)).withCache())
+                                                .addMessage(Message.user("%s: %s".formatted(ReAct.OBSERVATION, resultJson)))
                                                 .build())
                                         .build();
                                 return chain.proceed(nextRequest)
