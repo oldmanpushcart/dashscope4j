@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 public class SimpleToolboxPlugin implements Plugin {
 
     private final Duration syncInterval;
+    private final Path dataspace;
     private final boolean enableSearchTools;
     private final List<Supplier<CompletionStage<? extends ToolLoader>>> suppliers;
 
@@ -34,6 +35,7 @@ public class SimpleToolboxPlugin implements Plugin {
 
     private SimpleToolboxPlugin(Builder builder) {
         this.syncInterval = builder.syncInterval;
+        this.dataspace = builder.dataspace;
         this.enableSearchTools = builder.enableSearchTools;
         this.suppliers = builder.suppliers;
     }
@@ -45,7 +47,7 @@ public class SimpleToolboxPlugin implements Plugin {
         this.toolbox = HashMapToolbox.newBuilder()
                 .indexer(HashMapToolIndexer.newBuilder()
                         .client(agent.client())
-                        .cacheFile(Path.of(".toolbox-index-cache.jsonl"))
+                        .cacheFile(dataspace.resolve(Path.of(".toolbox-index-cache.jsonl")))
                         .build())
                 .syncInterval(syncInterval)
                 .shared(false)
@@ -98,6 +100,7 @@ public class SimpleToolboxPlugin implements Plugin {
     public static class Builder implements Buildable<SimpleToolboxPlugin, Builder> {
 
         private Duration syncInterval = Duration.ofSeconds(5);
+        private Path dataspace = Path.of("./");
         private boolean enableSearchTools = true;
         private final List<Supplier<CompletionStage<? extends ToolLoader>>> suppliers = new ArrayList<>();
 
@@ -109,6 +112,17 @@ public class SimpleToolboxPlugin implements Plugin {
          */
         public Builder syncInterval(Duration syncInterval) {
             this.syncInterval = syncInterval;
+            return this;
+        }
+
+        /**
+         * 添加数据空间
+         *
+         * @param dataspace 数据空间
+         * @return this
+         */
+        public Builder dataspace(Path dataspace) {
+            this.dataspace = dataspace;
             return this;
         }
 
