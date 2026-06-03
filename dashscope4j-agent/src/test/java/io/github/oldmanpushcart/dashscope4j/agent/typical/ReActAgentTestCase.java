@@ -18,7 +18,7 @@ public class ReActAgentTestCase implements LoadingEnv {
     @Test
     public void test$skill() {
 
-        try(final var agent = ReActAgent.newBuilder()
+        try (final var agent = ReActAgent.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
                 .plugins(plugins -> {

@@ -6,7 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store.FileFragm
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolboxPlugin;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.HashMapToolIndexer;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.LlmToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.mcp.McpLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.mcp.RecoverableMcpClientTransport;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.skill.SkillLoader;
@@ -76,7 +76,7 @@ public class DebugTestCase implements LoadingEnv {
                 ));
 
         final var toolbox = HashMapToolbox.newBuilder()
-                .indexer(HashMapToolIndexer.newBuilder()
+                .indexer(LlmToolIndexer.newBuilder()
                         .client(client)
                         .model(ChatModel.QWEN_FLASH)
                         .cacheFile(Path.of(".toolbox-index-cache.jsonl"))

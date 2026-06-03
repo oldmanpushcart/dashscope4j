@@ -33,12 +33,12 @@ import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 
 /**
- * {@code HashMap}工具索引器
+ * {@code LLM}工具索引器
  * <p>
  * 索引缓存在本地文件的工具索引器
  * </p>
  */
-public class HashMapToolIndexer implements ToolIndexer {
+public class LlmToolIndexer implements ToolIndexer {
 
     /**
      * 工具路由匹配 PromptMessage
@@ -67,7 +67,7 @@ public class HashMapToolIndexer implements ToolIndexer {
     private final IndexCache cache;
     private final Map<String, Document> documentMap = new ConcurrentHashMap<>();
 
-    private HashMapToolIndexer(Builder builder) {
+    private LlmToolIndexer(Builder builder) {
         Objects.requireNonNull(builder.client, "client must not be null!");
         Objects.requireNonNull(builder.model, "model must not be null!");
         this.client = builder.client;
@@ -305,7 +305,7 @@ public class HashMapToolIndexer implements ToolIndexer {
 
         private final Path cacheFile;
         private final Map<String, Entry> entries = new ConcurrentHashMap<>();
-        private final Object superThis = HashMapToolIndexer.this;
+        private final Object superThis = LlmToolIndexer.this;
 
         private IndexCache(Path cacheFile) {
             this.cacheFile = cacheFile;
@@ -399,7 +399,7 @@ public class HashMapToolIndexer implements ToolIndexer {
 
         private DashscopeClient client;
         private ChatModel model = ChatModel.QWEN_FLASH;
-        private Path cacheFile = Path.of(".tool-index-cache.jsonl");
+        private Path cacheFile = Path.of(".llm-tool-index-cache.jsonl");
 
         /**
          * 设置Dashscope客户端
@@ -439,8 +439,8 @@ public class HashMapToolIndexer implements ToolIndexer {
          *
          * @return 工具索引器
          */
-        public HashMapToolIndexer build() {
-            return new HashMapToolIndexer(this);
+        public LlmToolIndexer build() {
+            return new LlmToolIndexer(this);
         }
 
     }

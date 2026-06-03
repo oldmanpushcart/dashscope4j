@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.HashMapToolIndexer;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.EmbeddingToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.ToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.ToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.mcp.McpLoader;
@@ -48,9 +48,9 @@ public class SimpleToolboxPlugin implements Plugin {
     // 创建工具索引
     private ToolIndexer createToolIndexer(Agent agent) {
         final var factory = Optional.ofNullable(indexerFactory)
-                .orElseGet(() -> a -> HashMapToolIndexer.newBuilder()
+                .orElseGet(() -> a -> EmbeddingToolIndexer.newBuilder()
                         .client(agent.client())
-                        .cacheFile(dataspace.resolve(Path.of(".toolbox-index-cache.jsonl")))
+                        .cacheFile(dataspace.resolve(Path.of(".embedding-toolbox-index-cache.jsonl")))
                         .build());
         return Optional.ofNullable(factory.apply(agent))
                 .orElseThrow(() -> new IllegalStateException("indexer must not be null!"));
