@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.HashMapToolIndexer;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.ToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.ToolLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.mcp.McpLoader;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.skill.SkillLoader;
@@ -17,8 +18,10 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -29,7 +32,8 @@ public class SimpleToolboxPlugin implements Plugin {
     private final Duration syncInterval;
     private final Path dataspace;
     private final boolean enableSearchTools;
-    private final List<Supplier<CompletionStage<? extends ToolLoader>>> suppliers;
+    private final Function<Agent, ToolIndexer> indexerFactory;
+    private final List<Supplier<CompletionStage<? extends ToolLoader>>> loaderSuppliers;
 
     private volatile Toolbox toolbox;
 
@@ -37,7 +41,19 @@ public class SimpleToolboxPlugin implements Plugin {
         this.syncInterval = builder.syncInterval;
         this.dataspace = builder.dataspace;
         this.enableSearchTools = builder.enableSearchTools;
-        this.suppliers = builder.suppliers;
+        this.indexerFactory = builder.indexerFactory;
+        this.loaderSuppliers = builder.loaderSuppliers;
+    }
+
+    // 创建工具索引
+    private ToolIndexer createToolIndexer(Agent agent) {
+        final var factory = Optional.ofNullable(indexerFactory)
+                .orElseGet(() -> a -> HashMapToolIndexer.newBuilder()
+                        .client(agent.client())
+                        .cacheFile(dataspace.resolve(Path.of(".toolbox-index-cache.jsonl")))
+                        .build());
+        return Optional.ofNullable(factory.apply(agent))
+                .orElseThrow(() -> new IllegalStateException("indexer must not be null!"));
     }
 
     @Override
@@ -45,20 +61,16 @@ public class SimpleToolboxPlugin implements Plugin {
 
         // 创建工具箱
         this.toolbox = HashMapToolbox.newBuilder()
-                .indexer(HashMapToolIndexer.newBuilder()
-                        .client(agent.client())
-                        .cacheFile(dataspace.resolve(Path.of(".toolbox-index-cache.jsonl")))
-                        .build())
+                .indexer(createToolIndexer(agent))
                 .syncInterval(syncInterval)
                 .shared(false)
                 .build();
 
-
         // 订阅所有工具加载器
         CompletionStage<Void> stage = CompletableFuture.completedStage(null);
-        for (var supplier : suppliers) {
+        for (final var loaderSupplier : loaderSuppliers) {
             stage = stage
-                    .thenCompose(unused -> supplier.get())
+                    .thenCompose(unused -> loaderSupplier.get())
                     .thenAccept(toolbox::subscribe);
         }
 
@@ -102,7 +114,8 @@ public class SimpleToolboxPlugin implements Plugin {
         private Duration syncInterval = Duration.ofSeconds(5);
         private Path dataspace = Path.of("./");
         private boolean enableSearchTools = true;
-        private final List<Supplier<CompletionStage<? extends ToolLoader>>> suppliers = new ArrayList<>();
+        private Function<Agent, ToolIndexer> indexerFactory;
+        private final List<Supplier<CompletionStage<? extends ToolLoader>>> loaderSuppliers = new ArrayList<>();
 
         /**
          * 设置同步间隔
@@ -138,6 +151,17 @@ public class SimpleToolboxPlugin implements Plugin {
         }
 
         /**
+         * 工具索引工厂
+         *
+         * @param factory 工具索引工厂
+         * @return this
+         */
+        public Builder indexerFactory(Function<Agent, ToolIndexer> factory) {
+            this.indexerFactory = factory;
+            return this;
+        }
+
+        /**
          * 添加一个MCP工具
          *
          * @param mode      模式
@@ -146,7 +170,7 @@ public class SimpleToolboxPlugin implements Plugin {
          * @return this
          */
         public Builder mcp(ToolUse.Mode mode, String name, McpClientTransport transport) {
-            suppliers.add(() -> McpLoader.newBuilder()
+            loaderSuppliers.add(() -> McpLoader.newBuilder()
                     .mode(mode)
                     .name(name)
                     .transport(transport)
@@ -162,7 +186,7 @@ public class SimpleToolboxPlugin implements Plugin {
          * @return this
          */
         public Builder skill(ToolUse.Mode mode, Path home) {
-            suppliers.add(() -> CompletableFuture.completedStage(null)
+            loaderSuppliers.add(() -> CompletableFuture.completedStage(null)
                     .thenApply(u -> SkillLoader.newBuilder()
                             .mode(mode)
                             .directories(List.of(home))
@@ -178,7 +202,7 @@ public class SimpleToolboxPlugin implements Plugin {
          * @return this
          */
         public Builder toolkit(ToolUse.Mode mode, Toolkit toolkit) {
-            suppliers.add(() -> CompletableFuture.completedStage(null)
+            loaderSuppliers.add(() -> CompletableFuture.completedStage(null)
                     .thenApply(u -> {
                         final var loader = new ToolkitLoader();
                         loader.append(mode, toolkit);
@@ -195,7 +219,7 @@ public class SimpleToolboxPlugin implements Plugin {
          * @return this
          */
         public Builder tool(ToolUse.Mode mode, Tool tool) {
-            suppliers.add(() -> CompletableFuture.completedStage(null)
+            loaderSuppliers.add(() -> CompletableFuture.completedStage(null)
                     .thenApply(u -> {
                         final var loader = new ToolkitLoader();
                         loader.append(mode, tool);
@@ -203,7 +227,7 @@ public class SimpleToolboxPlugin implements Plugin {
                     }));
             return this;
         }
-        
+
         @Override
         public SimpleToolboxPlugin build() {
             return new SimpleToolboxPlugin(this);
