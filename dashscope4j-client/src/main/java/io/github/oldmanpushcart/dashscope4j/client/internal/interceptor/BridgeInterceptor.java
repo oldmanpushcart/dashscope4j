@@ -4,6 +4,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.AigcModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.util.PublisherUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -96,7 +97,7 @@ public class BridgeInterceptor implements Interceptor {
                             })
 
                             .build();
-                    return Mono.fromCompletionStage(chain.client().async(newRequest));
+                    return PublisherUtils.unwrapCancellableStage(chain.client().async(newRequest));
                 });
                 return CompletableFuture.completedStage(flow);
             }
@@ -124,7 +125,7 @@ public class BridgeInterceptor implements Interceptor {
                             .build();
                     final var stage = chain.client().task(newRequest)
                             .thenCompose(half -> half.waitingFor(always(ofSeconds(1L))));
-                    return Mono.fromCompletionStage(stage);
+                    return PublisherUtils.unwrapCancellableStage(stage);
                 });
                 return CompletableFuture.completedStage(flow);
             }

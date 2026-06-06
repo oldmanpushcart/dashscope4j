@@ -170,27 +170,20 @@ public abstract class BaseAgent implements Agent {
                 .thenApply(response -> response.output().best().message());
     }
 
+
     @Override
     public Publisher<AssistantMessage> flow(String sessionId, UserMessage inbound) {
-        // 使用 Flux.defer 延迟执行，在订阅时才进行记忆召回
-        return Flux.defer(() -> {
-
-            final var stage = CompletableFuture.completedStage(newRequest(sessionId, inbound))
+        var request = AigcRequest.newBuilder(newRequest(sessionId, inbound))
+                .parameters(parameters -> {
 
                     // 如果没有制定输出模式，默认为增量输出
-                    .thenApply(request -> AigcRequest.newBuilder(request)
-                            .parameters(parameters -> {
-                                parameters.putIfAbsent("incremental_output", true);
-                                return parameters;
-                            })
-                            .build());
+                    parameters.putIfAbsent("incremental_output", true);
 
-            // 执行记忆召回，然后创建流
-            return Mono.fromCompletionStage(stage)
-                    .flatMapMany(request -> Flux.from(client.flow(request, interceptors(PREPARATION))))
-                    .map(response -> response.output().best().message());
-
-        });
+                    return parameters;
+                })
+                .build();
+        return Flux.from(client.flow(request, interceptors(PREPARATION)))
+                .map(response -> response.output().best().message());
     }
 
     /**
@@ -219,7 +212,7 @@ public abstract class BaseAgent implements Agent {
      * @param <T> Agent 类型
      * @param <B> Builder 类型
      */
-    public static abstract class Builder<T extends BaseAgent, B extends Builder<T, B>> implements Buildable<T, B>, Agent.Builder<T,B> {
+    public static abstract class Builder<T extends BaseAgent, B extends Builder<T, B>> implements Buildable<T, B>, Agent.Builder<T, B> {
 
         private String name;
         private String description;

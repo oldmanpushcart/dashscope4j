@@ -14,6 +14,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolResult;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.PublisherUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -59,13 +60,13 @@ class FunctionToolCaller implements Tool.Caller {
     public Publisher<AigcResponse<Output>> flowCall() {
         return Flux.defer(() -> {
             final var futureMap = parallelCallFunction();
-            return Mono.fromCompletionStage(CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
-                            .thenApply(unused -> {
-                                final var history = newHistory(futureMap);
-                                final var newRequest = newHistoryRequest(history);
-                                return client.flow(newRequest);
-                            }))
-                    .flatMapMany(Flux::from);
+            final var stage = CompletableFuture.allOf(futureMap.values().toArray(new CompletableFuture[0]))
+                    .thenApply(unused -> {
+                        final var history = newHistory(futureMap);
+                        final var newRequest = newHistoryRequest(history);
+                        return client.flow(newRequest);
+                    });
+            return PublisherUtils.fromCancellableStage(stage);
         });
     }
 

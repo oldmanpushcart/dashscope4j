@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.client.base.files.FileMeta;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.FilesOp;
 import io.github.oldmanpushcart.dashscope4j.client.base.files.Purpose;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.PublisherUtils;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -91,7 +92,7 @@ public class FilesOpImpl implements FilesOp {
     }
 
     private Publisher<FileMeta> fetchPage(String after, int batch) {
-        return Mono.fromCompletionStage(list(after, batch))
+        return Mono.from(PublisherUtils.unwrapCancellableStage(list(after, batch)))
                 .flatMapMany(listResponse -> {
                     final var metas = listResponse.metas();
                     if (metas.isEmpty()) {

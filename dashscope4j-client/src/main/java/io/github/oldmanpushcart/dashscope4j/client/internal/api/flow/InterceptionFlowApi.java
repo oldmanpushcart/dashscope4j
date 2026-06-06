@@ -4,9 +4,9 @@ import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
+import io.github.oldmanpushcart.dashscope4j.client.util.PublisherUtils;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,8 +42,7 @@ public class InterceptionFlowApi implements FlowApi {
                         return (Publisher<R>) r;
                     });
 
-            return Mono.fromCompletionStage(stage)
-                    .flatMapMany(Flux::from);
+            return PublisherUtils.fromCancellableStage(stage);
         });
     }
 

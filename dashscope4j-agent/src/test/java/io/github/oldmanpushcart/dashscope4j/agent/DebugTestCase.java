@@ -20,11 +20,13 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.RuntimeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -120,25 +122,25 @@ public class DebugTestCase implements LoadingEnv {
 
                 .build();
 
-//            {
-//                final var outbound = Flux.from(agent.flow(sessionId, Message.user("""
-//                                根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
-//                                """)))
-//                        .reduce(AssistantMessage::accumulate)
-//                        .toFuture()
-//                        .join();
-//                System.out.println(outbound.text());
-//            }
+            {
+                final var outbound = Flux.from(agent.flow(sessionId, Message.user("""
+                                根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
+                                """)))
+                        .reduce(AssistantMessage::accumulate)
+                        .toFuture()
+                        .join();
+                System.out.println(outbound.text());
+            }
 
-        {
-            final var outbound = agent.async(sessionId, Message.user("""
-                            根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
-                            """))
-                    .toCompletableFuture()
-                    .join();
-
-            System.out.println(outbound.text());
-        }
+//        {
+//            final var outbound = agent.async(sessionId, Message.user("""
+//                            根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
+//                            """))
+//                    .toCompletableFuture()
+//                    .join();
+//
+//            System.out.println(outbound.text());
+//        }
 
     }
 

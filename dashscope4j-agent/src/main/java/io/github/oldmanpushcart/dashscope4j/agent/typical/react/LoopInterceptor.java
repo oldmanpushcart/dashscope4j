@@ -13,12 +13,12 @@ import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.PublisherUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -231,8 +231,9 @@ class LoopInterceptor implements ChatInterceptor {
                                         })
                                         .thenApply(nextFlow -> processFlowResponse(chain, nextRequest, nextFlow));
                             });
-                    return Mono.fromCompletionStage(stage)
-                            .flatMapMany(Flux::from);
+
+                    // 创建可取消的阶段
+                    return PublisherUtils.fromCancellableStage(stage);
                 }));
     }
 

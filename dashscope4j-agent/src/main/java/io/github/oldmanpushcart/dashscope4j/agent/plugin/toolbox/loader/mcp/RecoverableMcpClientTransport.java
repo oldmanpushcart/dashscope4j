@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.mcp;
 
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.PublisherUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.TypeRef;
@@ -230,7 +231,7 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
             // Return cached closing future if available, otherwise empty mono
             final var cachedClosing = closingFuture;
             return cachedClosing != null 
-                    ? Mono.fromCompletionStage(cachedClosing)
+                    ? Mono.from(PublisherUtils.unwrapCancellableStage(cachedClosing))
                     : Mono.empty();
         }
 
@@ -260,7 +261,7 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
         // Cache the closing future for duplicate close requests
         this.closingFuture = closingF.toCompletableFuture();
 
-        return Mono.fromCompletionStage(closingF);
+        return Mono.from(PublisherUtils.unwrapCancellableStage(closingF));
     }
 
 
