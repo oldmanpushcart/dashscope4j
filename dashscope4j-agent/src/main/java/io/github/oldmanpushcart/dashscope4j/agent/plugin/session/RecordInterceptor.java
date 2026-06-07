@@ -12,6 +12,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
 import io.github.oldmanpushcart.dashscope4j.client.util.PublisherUtils;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -167,10 +168,11 @@ class RecordInterceptor implements ChatInterceptor {
                     if (accumulatedResponse != null) {
                         final var inbound = request.input().userInputMessage();
                         final var outbound = accumulatedResponse.output().best().message();
-                        // 将异步的记忆操作转换为 Mono，记忆完成后返回空流
 
+                        // 将异步的记忆操作转换为 Mono，记忆完成后返回空流
                         return PublisherUtils.fromCancellableStage(session.remember(List.of(inbound, outbound))
                                 .thenApply(u-> Flux.empty()));
+
                     } else {
                         return Flux.empty();
                     }

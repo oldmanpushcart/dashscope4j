@@ -12,7 +12,7 @@ public interface LoadingEnv {
             .ak(AK)
             .traceable(true)
             .http(new OkHttpClient.Builder()
-                    .pingInterval(Duration.ofSeconds(60))
+                    .pingInterval(Duration.ZERO)
                     .connectTimeout(Duration.ofSeconds(3))
                     .readTimeout(Duration.ofSeconds(60))
                     .writeTimeout(Duration.ofSeconds(60))

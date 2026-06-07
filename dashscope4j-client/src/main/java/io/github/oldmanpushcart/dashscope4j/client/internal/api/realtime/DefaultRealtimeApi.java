@@ -55,6 +55,7 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
                 .addHeader(HTTP_HEADER_X_DASHSCOPE_CLIENT, Constants.VERSION)
                 .addHeader(HTTP_HEADER_AUTHORIZATION, "Bearer %s".formatted(ak))
                 .build();
+
         http.newWebSocket(httpRequest, futureListener);
         return futureListener.getFuture();
     }
