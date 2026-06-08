@@ -18,6 +18,7 @@ public record QwenTtsRealtimeSession(
         @JsonProperty("id")
         String id,
 
+        @JsonProperty("model")
         QwenTtsRealtimeModel model,
 
         @JsonProperty("mode")
@@ -117,10 +118,6 @@ public record QwenTtsRealtimeSession(
         return new Builder();
     }
 
-    public static Builder newBuilder(QwenTtsRealtimeSession session) {
-        return new Builder(session);
-    }
-
     public static class Builder implements Buildable<QwenTtsRealtimeSession, Builder> {
 
         private QwenTtsRealtimeModel model;
@@ -136,19 +133,6 @@ public record QwenTtsRealtimeSession(
 
         public Builder() {
 
-        }
-
-        public Builder(QwenTtsRealtimeSession session) {
-            this.model = session.model;
-            this.mode = session.mode;
-            this.voice = session.voice;
-            this.language = session.language;
-            this.responseFormat = session.responseFormat;
-            this.sampleRate = session.sampleRate;
-            this.speechRate = session.speechRate;
-            this.volume = session.volume;
-            this.pitchRate = session.pitchRate;
-            this.bitRate = session.bitRate;
         }
 
         public Builder model(QwenTtsRealtimeModel model) {

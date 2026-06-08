@@ -84,10 +84,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
                         ));
                     }
                     final var session = event.session();
-                    final var newSession = QwenTtsRealtimeSession.newBuilder(session)
-                            .model(session.model())
-                            .build();
-                    final var qwenTtsRealtimeEmitter = new QwenTtsRealtimeEmitterImpl(newSession, emitter, futureMap);
+                    final var qwenTtsRealtimeEmitter = new QwenTtsRealtimeEmitterImpl(session, emitter, futureMap);
                     delegate.onOpen(qwenTtsRealtimeEmitter);
                 } else {
                     throw new IllegalStateException("Expect %s event, but was: %s".formatted(

@@ -29,6 +29,7 @@ public record QwenAsrRealtimeSession(
         @JsonProperty("id")
         String id,
 
+        @JsonProperty("model")
         QwenAsrRealtimeModel model,
 
         @JsonProperty("sample_rate")
@@ -170,16 +171,6 @@ public record QwenAsrRealtimeSession(
     }
 
     /**
-     * 创建构建器
-     *
-     * @param session 会话
-     * @return 构建器
-     */
-    public static Builder newBuilder(QwenAsrRealtimeSession session) {
-        return new Builder(session);
-    }
-
-    /**
      * 构建器
      */
     public static class Builder implements Buildable<QwenAsrRealtimeSession, Builder> {
@@ -192,14 +183,6 @@ public record QwenAsrRealtimeSession(
 
         public Builder() {
 
-        }
-
-        public Builder(QwenAsrRealtimeSession session) {
-            this.model = session.model;
-            this.sampleRate = session.sampleRate;
-            this.inputAudioFormat = session.inputAudioFormat;
-            this.inputAudioTranscription = session.inputAudioTranscription;
-            this.turnDetection = session.turnDetection;
         }
 
         /**

@@ -92,10 +92,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
                 }
 
                 final var session = event.session();
-                final var newSession = QwenAsrRealtimeSession.newBuilder(session)
-                        .model(session.model())
-                        .build();
-                final var qwenAsrRealtimeEmitter = new QwenAsrRealtimeEmitterImpl(emitter, newSession, futureMap);
+                final var qwenAsrRealtimeEmitter = new QwenAsrRealtimeEmitterImpl(emitter, session, futureMap);
                 delegate.onOpen(qwenAsrRealtimeEmitter);
             }
 
