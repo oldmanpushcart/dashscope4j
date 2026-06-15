@@ -1,7 +1,9 @@
-package io.github.oldmanpushcart.dashscope4j.agent.typical.plan;
+package io.github.oldmanpushcart.dashscope4j.agent.typical.pe;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Plan {
 
@@ -31,6 +33,35 @@ public class Plan {
 
     public void setSteps(List<Step> steps) {
         this.steps = steps;
+    }
+
+    public List<Step> getNextExecutableSteps() {
+        if (steps == null || steps.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        final var stepMap = steps.stream()
+                .collect(Collectors.toMap(Step::getId, step -> step));
+
+        return steps.stream()
+                .filter(step -> step.getStatus() == Step.Status.PENDING)
+                .filter(step -> {
+                    final var deps = step.getDependencyIds();
+                    if (deps == null || deps.isEmpty()) {
+                        return true;
+                    }
+                    // 直接调用抽象出的方法，语义非常清晰：所有依赖都已完成
+                    return deps.stream().allMatch(depId -> {
+                        final var depStep = stepMap.get(depId);
+                        return depStep != null && depStep.isCompleted();
+                    });
+                })
+                .collect(Collectors.toList());
+    }
+
+    public boolean isFinished() {
+        return steps.stream()
+                .allMatch(Step::isFinished);
     }
 
     public static class Step {
@@ -106,6 +137,17 @@ public class Plan {
 
         public void setMessage(String message) {
             this.message = message;
+        }
+
+        public boolean isCompleted() {
+            return status == Status.SUCCESS
+                    || status == Status.SKIPPED;
+        }
+
+        public boolean isFinished() {
+            return status == Status.SUCCESS
+                    || status == Status.FAILURE
+                    || status == Status.SKIPPED;
         }
 
         public enum Status {
