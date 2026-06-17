@@ -99,17 +99,6 @@ public class SkillLoader extends AbstractToolLoader {
 
     private void initToolUses() {
 
-        // 添加全局工具
-        List.of(
-                new GetReferenceFunction(skills).asTool(),
-                new GetAssetFunction(skills).asTool(),
-                new ExecuteScriptFunction(skills, Duration.ofSeconds(30)).asTool()
-        ).forEach(tool -> {
-            final var name = tool.meta().name();
-            final var use = new ToolUse(ToolUse.Mode.FIXED, tool, this);
-            uses.put(name, use);
-        });
-
         // 添加技能工具
         skills.values()
                 .stream()

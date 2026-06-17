@@ -67,11 +67,11 @@ public class DebugTestCase implements LoadingEnv {
                 .build();
 
         final var toolkitLoader = new ToolkitLoader()
-                .append(ToolUse.Mode.DYNAMIC, List.of(
-                        DashscopeToolkit.create(),
-                        GuiToolkit.create(),
-                        HttpToolkit.create()
-                ))
+//                .append(ToolUse.Mode.DYNAMIC, List.of(
+//                        DashscopeToolkit.create(),
+//                        GuiToolkit.create(),
+//                        HttpToolkit.create()
+//                ))
                 .append(ToolUse.Mode.FIXED, List.of(
                         RuntimeToolkit.create(),
                         ShellToolkit.create(),
@@ -126,7 +126,9 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = Flux.from(agent.flow(sessionId, Message.user("""
-                            根据杭州今天天气生成一幅山水画，画上要有地名、天气、时间，并且保存到./weather.png
+                            C:\\Users\\vlinux\\Downloads\\小升初会议纪要.pdf 这篇文章在说什么？
+                            
+                            我使用的是 Windows 系统，请你在执行 SKILL.md 里的命令时，自动将 Bash 语法转换为 PowerShell 语法，并将路径转换为 Windows 路径。
                             """)))
                     .reduce(AssistantMessage::accumulate)
                     .toFuture()
