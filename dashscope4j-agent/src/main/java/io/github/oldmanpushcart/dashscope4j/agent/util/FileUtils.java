@@ -25,9 +25,9 @@ public class FileUtils {
         Path absoluteWorkspace = workspace.toAbsolutePath().normalize();
         
         // 拒绝绝对路径，防止路径穿越
-        if (Path.of(userPath).isAbsolute()) {
-            throw new SecurityException("拒绝访问：不支持绝对路径：" + userPath);
-        }
+//        if (Path.of(userPath).isAbsolute()) {
+//            throw new SecurityException("拒绝访问：不支持绝对路径：" + userPath);
+//        }
 
         // 解析用户路径并规范化
         Path resolved = absoluteWorkspace.resolve(userPath).normalize();
