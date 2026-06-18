@@ -111,39 +111,11 @@ public class ShellToolkit implements Toolkit {
         return FunctionTool.newBuilder()
                 .name("shell$exec")
                 .description("""
-                        在本地环境中执行 Shell 命令或脚本（⚠️ 需谨慎使用）。
-                        
-                        【使用场景】
-                        - 执行系统管理任务（查看文件、进程等）
-                        - 运行脚本或程序
-                        - 获取系统状态信息
-                        - 自动化运维任务
-                        
-                        【参数说明】
-                        - command: 要执行的命令（必需），使用字符串数组格式
-                          * Windows 示例：["cmd.exe", "/c", "dir"]
-                          * Linux/Mac 示例：["bash", "-c", "ls -la"]
-                          * 直接执行程序：["python", "--version"]
-                        
-                        【返回结果】
-                        - output: 命令的标准输出和错误输出
-                        - exit_code: 退出码（0 表示成功）
-                        - is_success: 是否执行成功
-                        - prompt: 失败时的处理建议
-                        
-                        【⚠️ 安全注意事项】
-                        - ⛔ 禁止执行危险命令（如格式化磁盘、删除系统文件等）
-                        - ⛔ 禁止执行可能危害系统安全的命令
-                        - ⏱️ 命令执行有 %s 超时限制，防止长时间挂起
-                        - 🔒 建议优先使用只读命令（查询类）
-                        - 📝 生产环境使用时请确保有足够的权限控制
-                        
-                        【常见用法示例】
-                        - Windows 查看目录：["cmd.exe", "/c", "dir C:\\\\Users"]
-                        - Linux 查看进程：["ps", "aux"]
-                        - 查看 Python 版本：["python", "--version"]
-                        - Git 状态检查：["git", "status"]
-                        """.formatted(timeout))
+                        在本地环境执行 Shell 命令或脚本。调用前，模型需自行根据当前操作系统类型，将命令转换为目标系统支持的语法。
+                        - 参数: command (字符串数组, 必需), timeout (整数, 可选)。
+                        - 返回: output, exit_code, is_success, prompt。
+                        - 限制: 严禁执行破坏性或危害系统安全的命令。 建议优先使用只读查询命令，并确保具备相应权限。
+                        """)
                 .parameterType(CmdSpec.class)
                 .<CmdSpec>function((caller, spec) -> {
                     try {
@@ -401,7 +373,11 @@ public class ShellToolkit implements Toolkit {
 
             @JsonPropertyDescription("要执行的命令（字符串数组形式）")
             @JsonProperty(value = "command", required = true)
-            List<String> command
+            List<String> command,
+
+            @JsonPropertyDescription("命令执行超时时间（秒）")
+            @JsonProperty(value = "timeout")
+            Integer timeout
 
     ) {
     }
