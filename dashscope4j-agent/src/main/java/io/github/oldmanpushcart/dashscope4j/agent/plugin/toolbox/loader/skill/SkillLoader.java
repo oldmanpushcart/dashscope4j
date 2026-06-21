@@ -86,7 +86,7 @@ public class SkillLoader extends AbstractToolLoader {
                                 skills.put(name, skill);
                                 logger.debug("{} loaded {} from {}", this, name, skillDir);
                             } catch (IOException e) {
-                                logger.warn("{} skipping invalid skill directory {}", this, skillDir, e);
+                                logger.warn("{} skipping c skill directory {}", this, skillDir, e);
                             }
                         });
             } catch (IOException e) {
