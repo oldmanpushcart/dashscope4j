@@ -6,24 +6,23 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ToolkitSource extends AbstractToolSource {
 
     private final List<Tool> tools = new CopyOnWriteArrayList<>();
-    private final CompletableFuture<?> initF = new CompletableFuture<>();
-    private final CompletableFuture<?> closeF = new CompletableFuture<>();
+    private volatile State state = State.IDLE;
 
     public ToolkitSource(String name) {
         super(name);
     }
 
     public ToolkitSource append(List<Tool> tools) {
-        if (isClosed()) {
-            throw new IllegalStateException("Already closed!");
+
+        if (State.RUNNING != state) {
+            throw new IllegalStateException("Not initialized!");
         }
+
         if (null != tools) {
             this.tools.addAll(tools);
             fireChanged();
@@ -36,9 +35,11 @@ public class ToolkitSource extends AbstractToolSource {
     }
 
     public ToolkitSource remove(List<String> names) {
-        if (isClosed()) {
-            throw new IllegalStateException("Already closed!");
+
+        if (State.RUNNING != state) {
+            throw new IllegalStateException("Not initialized!");
         }
+
         if (null != names) {
             this.tools.removeIf(tool -> names.contains(tool.meta().name()));
             fireChanged();
@@ -47,32 +48,49 @@ public class ToolkitSource extends AbstractToolSource {
     }
 
     @Override
-    public CompletionStage<List<Tool>> tools() {
-        return initF
-                .thenApply(u -> Collections.unmodifiableList(tools));
+    public List<Tool> tools() {
+
+        if (State.RUNNING != state) {
+            throw new IllegalStateException("Not initialized!");
+        }
+
+        return Collections.unmodifiableList(tools);
     }
 
     @Override
-    public CompletionStage<ToolkitSource> initialize() {
-        initF.complete(null);
-        return initF.thenApply(u -> this);
+    public synchronized ToolkitSource initialize() {
+
+        if (State.CLOSED == state) {
+            throw new IllegalStateException("Already closed!");
+        }
+
+        state = State.RUNNING;
+        return this;
     }
 
     @Override
     public boolean isClosed() {
-        return closeF.isDone();
+        return State.CLOSED == state;
     }
 
     @Override
-    public void close() {
-        if (closeF.complete(null)) {
-            super.close();
-            tools.clear();
+    public synchronized void close() {
+        if (State.CLOSED == state) {
+            return;
         }
+        state = State.CLOSED;
+        super.close();
+        tools.clear();
     }
 
     public static ToolkitSource create(String name) {
         return new ToolkitSource(name);
+    }
+
+    private enum State {
+        IDLE,
+        RUNNING,
+        CLOSED
     }
 
 }

@@ -13,21 +13,20 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class SkillSource extends AbstractToolSource {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Path home;
     private final Duration scanInterval;
+    private final boolean isOwnScheduler;
+    private final boolean blockingInitialize;
     private final String _toString;
 
-    private volatile Skill current;
+    private volatile State state = State.IDLE;
+    private Skill current;
     private ScheduledExecutorService scheduler;
-    private boolean isOwnScheduler;
-
-    private final AtomicReference<CompletableFuture<SkillSource>> initRef = new AtomicReference<>();
-    private final CompletableFuture<?> closeF = new CompletableFuture<>();
+    private ScheduledFuture<?> scheduleF;
 
     private SkillSource(Builder builder) {
         super(builder.name);
@@ -36,6 +35,8 @@ public class SkillSource extends AbstractToolSource {
         this.home = builder.home;
         this.scheduler = builder.scheduler;
         this.scanInterval = builder.scanInterval;
+        this.isOwnScheduler = null == builder.scheduler;
+        this.blockingInitialize = builder.blockingInitialize;
         this._toString = "dashscope4j-agent:/toolbox/source/skill/%s".formatted(name());
     }
 
@@ -45,76 +46,73 @@ public class SkillSource extends AbstractToolSource {
     }
 
     @Override
-    public CompletionStage<List<Tool>> tools() {
+    public List<Tool> tools() {
 
-        final var initF = initRef.get();
-        if (null == initF) {
-            return CompletableFuture.failedStage(new IllegalStateException("Not initialized!"));
+        if (State.RUNNING != state) {
+            throw new IllegalStateException("Not initialized!");
         }
 
-        return initF.thenApply(u -> Optional.ofNullable(current)
-                .map(skill -> new SkillFunction(skill).asTool())
-                .map(List::of)
-                .orElseGet(List::of));
+        synchronized (this) {
+            return Optional.ofNullable(current)
+                    .map(SkillFunction::new)
+                    .map(SkillFunction::asTool)
+                    .map(List::of)
+                    .orElseGet(List::of);
+        }
     }
 
     @Override
-    public CompletionStage<SkillSource> initialize() {
-        final var initF = new CompletableFuture<SkillSource>();
-        if (!initRef.compareAndSet(null, initF)) {
-            return initRef.get();
+    public synchronized SkillSource initialize() {
+
+        if (State.CLOSED == state) {
+            throw new IllegalStateException("Already closed!");
         }
 
-        CompletableFuture
-                .runAsync(() -> {
+        if (State.RUNNING == state) {
+            return this;
+        }
 
-                    synchronized (this) {
-                        // 初始化扫描线程
-                        if (null == scheduler) {
-                            scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-                                final var t = new Thread(r, "%s/scanner".formatted(SkillSource.this));
-                                t.setDaemon(true);
-                                return t;
-                            });
-                            isOwnScheduler = true;
+        // 初始化扫描线程
+        if (isOwnScheduler) {
+            scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                final var t = new Thread(r, "%s/scanner".formatted(SkillSource.this));
+                t.setDaemon(true);
+                return t;
+            });
+        }
+
+        // 启动扫描任务
+        scheduleF = scheduler.scheduleAtFixedRate(
+                () -> {
+
+                    // 扫描发现变更，则发送变更事件
+                    try {
+                        if (scanning()) {
+                            fireChanged();
                         }
-
-                        // 启动扫描任务
-                        scheduler.scheduleAtFixedRate(
-                                () -> {
-
-                                    // 扫描发现变更，则发送变更事件
-                                    try {
-                                        if (scanning()) {
-                                            fireChanged();
-                                        }
-                                    } catch (Throwable t) {
-                                        logger.warn("{} scanning failed by error! home={}", this, home, t);
-                                    }
-
-                                },
-                                scanInterval.toMillis(),
-                                scanInterval.toMillis(),
-                                TimeUnit.MILLISECONDS
-                        );
+                    } catch (Throwable t) {
+                        logger.warn("{} scanning failed by error! home={}", this, home, t);
                     }
 
-                    // 开始初始化扫描
-                    scanning();
+                },
+                scanInterval.toMillis(),
+                scanInterval.toMillis(),
+                TimeUnit.MILLISECONDS
+        );
 
-                })
-                .whenComplete((v, t) -> {
-                    if (t != null) {
-                        initF.completeExceptionally(t);
-                    } else {
-                        initF.complete(this);
-                    }
-                });
+        // 开始初始化扫描
+        if (blockingInitialize) {
+            scanning();
+        }
 
-        return initF;
+        // 状态流转为运行中
+        state = State.RUNNING;
+        logger.debug("{} initialized.", this);
+
+        return this;
     }
 
-    private boolean scanning() {
+    private synchronized boolean scanning() {
         try {
             final var skillMdPath = home.resolve("SKILL.md");
 
@@ -149,22 +147,35 @@ public class SkillSource extends AbstractToolSource {
 
     @Override
     public boolean isClosed() {
-        return closeF.isDone();
+        return State.CLOSED == state;
     }
 
     @Override
-    public void close() {
-        initRef.compareAndSet(null, CompletableFuture.failedFuture(new IllegalStateException("Already closed!")));
-        initRef.get()
-                .whenComplete((u, t) -> {
-                    if (closeF.complete(null)) {
-                        if (null != scheduler && isOwnScheduler) {
-                            scheduler.shutdownNow();
-                        }
-                        super.close();
-                        logger.debug("{} closed.", this);
-                    }
-                });
+    public synchronized void close() {
+
+        if (State.CLOSED == state) {
+            return;
+        }
+
+        if (null != scheduleF) {
+            scheduleF.cancel(true);
+            scheduleF = null;
+        }
+
+        if (null != scheduler && isOwnScheduler) {
+            scheduler.shutdownNow();
+            scheduler = null;
+        }
+
+        super.close();
+        logger.debug("{} closed.", this);
+    }
+
+
+    private enum State {
+        IDLE,
+        RUNNING,
+        CLOSED
     }
 
     public static class Builder implements Buildable<SkillSource, Builder> {
@@ -173,6 +184,7 @@ public class SkillSource extends AbstractToolSource {
         private Path home;
         private ScheduledExecutorService scheduler;
         private Duration scanInterval = Duration.ofSeconds(5);
+        private boolean blockingInitialize;
 
         public Builder name(String name) {
             this.name = name;
@@ -191,6 +203,11 @@ public class SkillSource extends AbstractToolSource {
 
         public Builder scanInterval(Duration scanInterval) {
             this.scanInterval = scanInterval;
+            return this;
+        }
+
+        public Builder blockingInitialize(boolean blockingInitialize) {
+            this.blockingInitialize = blockingInitialize;
             return this;
         }
 

@@ -2,6 +2,9 @@ package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox2.source.mcp;
 
 
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox2.source.AbstractToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox2.source.ToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox2.source.skill.SkillSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox2.source.skill.SkillsSource;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
@@ -26,13 +29,14 @@ public class McpSource extends AbstractToolSource {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final McpClientTransport transport;
+    private boolean blockingInitialize;
     private final String _toString;
 
 
     private final Map<McpFunctionTool.Type, List<Tool>> currents = new ConcurrentHashMap<>();
     private final CompletableFuture<?> closeF = new CompletableFuture<>();
 
-    //private volatile McpAsyncClient mcpClient;
+    private volatile State state = State.IDLE;
     private CompletableFuture<McpAsyncClient> connectF;
 
     private McpSource(Builder builder) {
@@ -40,6 +44,7 @@ public class McpSource extends AbstractToolSource {
         CheckUtils.requireNonBlankString(builder.name, "name must not be blank!");
         Objects.requireNonNull(builder.transport, "transport must not be null!");
         this.transport = builder.transport;
+        this.blockingInitialize = builder.blockingInitialize;
         this._toString = "dashscope4j-agent:/toolbox/source/mcp/%s".formatted(name());
     }
 
@@ -50,24 +55,40 @@ public class McpSource extends AbstractToolSource {
 
     @Override
     public List<Tool> tools() {
-        // 合并所有类型的工具列表
+
+        if (State.RUNNING != state) {
+            throw new IllegalStateException("Not initialized!");
+        }
+
         return currents.values().stream()
                 .flatMap(List::stream)
                 .toList();
     }
 
     @Override
-    public synchronized boolean start() {
-        if (super.start()) {
+    public synchronized McpSource initialize() {
 
-            if (null == connectF) {
-                connectF = connecting();
-            }
-
-            return true;
+        if (State.CLOSED == state) {
+            throw new IllegalStateException("Already closed!");
         }
-        return false;
+
+        if (State.RUNNING == state) {
+            return this;
+        }
+
+        connectF = connecting()
+                .whenComplete((u, t) -> {
+                    logger.warn("{} connect fail by error!", this, t);
+                    close();
+                });
+        if (blockingInitialize) {
+            connectF.join();
+        }
+
+        state = State.RUNNING;
+        return this;
     }
+
 
     private CompletableFuture<McpAsyncClient> connecting() {
 
@@ -189,23 +210,30 @@ public class McpSource extends AbstractToolSource {
     }
 
     @Override
-    public synchronized boolean stop() {
-        return super.stop();
+    public boolean isClosed() {
+        return State.CLOSED == state;
     }
 
     @Override
-    public void close() {
-        if (closeF.complete(null)) {
-            super.close();
-            if (null != mcpClient) {
-                mcpClient.closeGracefully().toFuture()
-                        .exceptionally(closeEx -> {
-                            mcpClient.close();
-                            return null;
-                        });
-            }
-            currents.clear();
+    public synchronized void close() {
+        if (State.CLOSED == state) {
+            return;
         }
+        super.close();
+        if (null != mcpClient) {
+            mcpClient.closeGracefully().toFuture()
+                    .exceptionally(closeEx -> {
+                        mcpClient.close();
+                        return null;
+                    });
+        }
+        currents.clear();
+    }
+
+    private enum State {
+        IDLE,
+        RUNNING,
+        CLOSED
     }
 
     public static Builder newBuilder() {
@@ -216,6 +244,7 @@ public class McpSource extends AbstractToolSource {
 
         private String name;
         private McpClientTransport transport;
+        private boolean blockingInitialize;
 
         public Builder name(String name) {
             this.name = name;
@@ -224,6 +253,11 @@ public class McpSource extends AbstractToolSource {
 
         public Builder transport(McpClientTransport transport) {
             this.transport = transport;
+            return this;
+        }
+
+        public Builder blockingInitialize(boolean blockingInitialize) {
+            this.blockingInitialize = blockingInitialize;
             return this;
         }
 

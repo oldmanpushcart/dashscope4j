@@ -27,9 +27,12 @@ public class SkillsSource extends AbstractToolSource {
     private final List<Path> directories;
     private final Duration scanInterval;
     private final boolean isOwnScheduler;
+    private final boolean blockingInitialize;
     private final String _toString;
 
     private final Map<Path, Skill> snapshots = new ConcurrentHashMap<>();
+
+    private volatile State state = State.IDLE;
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> scheduleF;
 
@@ -39,6 +42,7 @@ public class SkillsSource extends AbstractToolSource {
         this.scanInterval = builder.scanInterval;
         this.scheduler = builder.scheduler;
         this.isOwnScheduler = Objects.isNull(this.scheduler);
+        this.blockingInitialize = builder.blockingInitialize;
         this._toString = "dashscope4j-agent:/toolbox/source/skills/%s".formatted(name());
     }
 
@@ -49,59 +53,71 @@ public class SkillsSource extends AbstractToolSource {
 
     @Override
     public List<Tool> tools() {
+
+        if (State.RUNNING != state) {
+            throw new IllegalStateException("Not initialized!");
+        }
+
         return snapshots.values()
                 .stream()
-                .map(skill -> new SkillFunction(skill).asTool())
+                .map(SkillFunction::new)
+                .map(SkillFunction::asTool)
                 .toList();
     }
 
     @Override
-    public synchronized boolean start() {
-        if (super.start()) {
+    public synchronized SkillsSource initialize() {
 
-            // 初始化扫描线程
-            if (null == scheduler) {
-                scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-                    final var t = new Thread(r, "%s/scanner".formatted(SkillsSource.this));
-                    t.setDaemon(true);
-                    return t;
-                });
-            }
-
-            // 强制扫描
-            scanning();
-
-            // 启动扫描任务
-            scheduleF = scheduler.scheduleAtFixedRate(
-                    () -> {
-
-                        // 只有启动状态才需要进行扫描
-                        if (!isStarted()) {
-                            return;
-                        }
-
-                        // 扫描发现变更，则发送变更事件
-                        try {
-                            if (scanning()) {
-                                fireChanged();
-                            }
-                        } catch (Throwable t) {
-                            logger.warn("{} scanning failed by error!", this, t);
-                        }
-
-                    },
-                    scanInterval.toMillis(),
-                    scanInterval.toMillis(),
-                    TimeUnit.MILLISECONDS
-            );
-
-            logger.debug("{} started.", this);
-            return true;
+        if (State.CLOSED == state) {
+            throw new IllegalStateException("Already closed!");
         }
-        return false;
+
+        if (State.RUNNING == state) {
+            return this;
+        }
+
+        // 初始化扫描线程
+        if (isOwnScheduler) {
+            scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                final var t = new Thread(r, "%s/scanner".formatted(SkillsSource.this));
+                t.setDaemon(true);
+                return t;
+            });
+        }
+
+        // 启动扫描任务
+        scheduleF = scheduler.scheduleAtFixedRate(
+                () -> {
+
+                    // 扫描发现变更，则发送变更事件
+                    try {
+                        if (scanning()) {
+                            fireChanged();
+                        }
+                    } catch (Throwable t) {
+                        logger.warn("{} scanning failed by error!", this, t);
+                    }
+
+                },
+                scanInterval.toMillis(),
+                scanInterval.toMillis(),
+                TimeUnit.MILLISECONDS
+        );
+
+        // 强制扫描
+        if (blockingInitialize) {
+            scanning();
+        }
+
+
+        // 状态流转为运行中
+        state = State.RUNNING;
+        logger.debug("{} initialized.", this);
+
+        return this;
     }
 
-    private boolean scanning() {
+    private synchronized boolean scanning() {
 
         // 当前版本快照
         final var currentVersions = directories.stream()
@@ -187,27 +203,35 @@ public class SkillsSource extends AbstractToolSource {
     }
 
     @Override
-    public synchronized boolean stop() {
-        if (super.stop()) {
-            if (null != scheduleF) {
-                scheduleF.cancel(true);
-            }
-            scheduleF = null;
-            logger.debug("{} stopped.", this);
-            return true;
-        }
-        return false;
+    public boolean isClosed() {
+        return State.CLOSED == state;
     }
 
     @Override
     public synchronized void close() {
-        if (!isClosed()) {
-            super.close();
-            if (null != scheduler && isOwnScheduler) {
-                scheduler.shutdownNow();
-            }
-            logger.debug("{} closed.", this);
+
+        if (State.CLOSED == state) {
+            return;
         }
+
+        if (null != scheduleF) {
+            scheduleF.cancel(true);
+            scheduleF = null;
+        }
+
+        if (null != scheduler && isOwnScheduler) {
+            scheduler.shutdownNow();
+            scheduler = null;
+        }
+
+        super.close();
+        logger.debug("{} closed.", this);
+    }
+
+    private enum State {
+        IDLE,
+        RUNNING,
+        CLOSED
     }
 
     public static class Builder implements Buildable<SkillsSource, Builder> {
@@ -216,6 +240,7 @@ public class SkillsSource extends AbstractToolSource {
         private List<Path> directories;
         private ScheduledExecutorService scheduler;
         private Duration scanInterval = Duration.ofSeconds(5);
+        private boolean blockingInitialize;
 
         public Builder name(String name) {
             this.name = name;
@@ -239,6 +264,11 @@ public class SkillsSource extends AbstractToolSource {
 
         public Builder scanInterval(Duration scanInterval) {
             this.scanInterval = scanInterval;
+            return this;
+        }
+
+        public Builder blockingInitialize(boolean blockingInitialize) {
+            this.blockingInitialize = blockingInitialize;
             return this;
         }
 

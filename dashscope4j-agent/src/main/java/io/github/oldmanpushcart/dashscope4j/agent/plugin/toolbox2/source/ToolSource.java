@@ -13,9 +13,9 @@ public interface ToolSource extends AutoCloseable {
 
     void removeListener(Listener listener);
 
-    CompletionStage<List<Tool>> tools();
+    List<Tool> tools();
 
-    CompletionStage<? extends ToolSource> initialize();
+    ToolSource initialize();
 
     boolean isClosed();
 
