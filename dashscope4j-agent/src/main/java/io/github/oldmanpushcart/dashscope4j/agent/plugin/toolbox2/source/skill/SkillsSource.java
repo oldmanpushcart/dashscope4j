@@ -27,7 +27,6 @@ public class SkillsSource extends AbstractToolSource {
     private final List<Path> directories;
     private final Duration scanInterval;
     private final boolean isOwnScheduler;
-    private final boolean blockingInitialize;
     private final String _toString;
 
     private final Map<Path, Skill> snapshots = new ConcurrentHashMap<>();
@@ -42,7 +41,6 @@ public class SkillsSource extends AbstractToolSource {
         this.scanInterval = builder.scanInterval;
         this.scheduler = builder.scheduler;
         this.isOwnScheduler = Objects.isNull(this.scheduler);
-        this.blockingInitialize = builder.blockingInitialize;
         this._toString = "dashscope4j-agent:/toolbox/source/skills/%s".formatted(name());
     }
 
@@ -54,27 +52,36 @@ public class SkillsSource extends AbstractToolSource {
     @Override
     public List<Tool> tools() {
 
-        if (State.RUNNING != state) {
+        if (isClosed()) {
+            throw new IllegalStateException("Already closed!");
+        }
+
+        if (!isInitialized()) {
             throw new IllegalStateException("Not initialized!");
         }
 
-        return snapshots.values()
-                .stream()
-                .map(SkillFunction::new)
-                .map(SkillFunction::asTool)
-                .toList();
+        synchronized (this) {
+            return snapshots.values()
+                    .stream()
+                    .map(SkillFunction::new)
+                    .map(SkillFunction::asTool)
+                    .toList();
+        }
     }
 
     @Override
     public synchronized SkillsSource initialize() {
 
-        if (State.CLOSED == state) {
+        if (isClosed()) {
             throw new IllegalStateException("Already closed!");
         }
 
-        if (State.RUNNING == state) {
-            return this;
+        if (isInitialized()) {
+            throw new IllegalStateException("Already initialized!");
         }
+
+        // 强制扫描
+        scanning();
 
         // 初始化扫描线程
         if (isOwnScheduler) {
@@ -104,14 +111,8 @@ public class SkillsSource extends AbstractToolSource {
                 TimeUnit.MILLISECONDS
         );
 
-        // 强制扫描
-        if (blockingInitialize) {
-            scanning();
-        }
-
-
         // 状态流转为运行中
-        state = State.RUNNING;
+        state = State.INITIALIZED;
         logger.debug("{} initialized.", this);
 
         return this;
@@ -207,6 +208,10 @@ public class SkillsSource extends AbstractToolSource {
         return State.CLOSED == state;
     }
 
+    private boolean isInitialized() {
+        return State.INITIALIZED == state;
+    }
+
     @Override
     public synchronized void close() {
 
@@ -230,7 +235,7 @@ public class SkillsSource extends AbstractToolSource {
 
     private enum State {
         IDLE,
-        RUNNING,
+        INITIALIZED,
         CLOSED
     }
 
@@ -240,7 +245,6 @@ public class SkillsSource extends AbstractToolSource {
         private List<Path> directories;
         private ScheduledExecutorService scheduler;
         private Duration scanInterval = Duration.ofSeconds(5);
-        private boolean blockingInitialize;
 
         public Builder name(String name) {
             this.name = name;
@@ -264,11 +268,6 @@ public class SkillsSource extends AbstractToolSource {
 
         public Builder scanInterval(Duration scanInterval) {
             this.scanInterval = scanInterval;
-            return this;
-        }
-
-        public Builder blockingInitialize(boolean blockingInitialize) {
-            this.blockingInitialize = blockingInitialize;
             return this;
         }
 
