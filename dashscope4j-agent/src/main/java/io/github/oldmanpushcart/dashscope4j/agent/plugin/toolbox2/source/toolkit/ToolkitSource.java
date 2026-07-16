@@ -19,14 +19,21 @@ public class ToolkitSource extends AbstractToolSource {
 
     public ToolkitSource append(List<Tool> tools) {
 
-        if (State.RUNNING != state) {
+        if (isClosed()) {
+            throw new IllegalStateException("Already closed!");
+        }
+
+        if (!isInitialized()) {
             throw new IllegalStateException("Not initialized!");
         }
 
-        if (null != tools) {
-            this.tools.addAll(tools);
-            fireChanged();
+        synchronized (this) {
+            if (null != tools) {
+                this.tools.addAll(tools);
+                fireChanged();
+            }
         }
+
         return this;
     }
 
@@ -36,35 +43,53 @@ public class ToolkitSource extends AbstractToolSource {
 
     public ToolkitSource remove(List<String> names) {
 
-        if (State.RUNNING != state) {
+        if (isClosed()) {
+            throw new IllegalStateException("Already closed!");
+        }
+
+        if (!isInitialized()) {
             throw new IllegalStateException("Not initialized!");
         }
 
-        if (null != names) {
-            this.tools.removeIf(tool -> names.contains(tool.meta().name()));
-            fireChanged();
+        synchronized (this) {
+            if (null != names) {
+                this.tools.removeIf(tool -> names.contains(tool.meta().name()));
+                fireChanged();
+            }
         }
+
         return this;
     }
 
     @Override
     public List<Tool> tools() {
 
-        if (State.RUNNING != state) {
+        if (isClosed()) {
+            throw new IllegalStateException("Already closed!");
+        }
+
+        if (!isInitialized()) {
             throw new IllegalStateException("Not initialized!");
         }
 
-        return Collections.unmodifiableList(tools);
+        synchronized (this) {
+            return Collections.unmodifiableList(tools);
+        }
+
     }
 
     @Override
     public synchronized ToolkitSource initialize() {
 
-        if (State.CLOSED == state) {
+        if (isClosed()) {
             throw new IllegalStateException("Already closed!");
         }
 
-        state = State.RUNNING;
+        if (isInitialized()) {
+            throw new IllegalStateException("Already initialized!");
+        }
+
+        state = State.INITIALIZED;
         return this;
     }
 
@@ -73,14 +98,18 @@ public class ToolkitSource extends AbstractToolSource {
         return State.CLOSED == state;
     }
 
+    private boolean isInitialized() {
+        return State.INITIALIZED == state;
+    }
+
     @Override
     public synchronized void close() {
-        if (State.CLOSED == state) {
+        if (isClosed()) {
             return;
         }
         state = State.CLOSED;
-        super.close();
         tools.clear();
+        super.close();
     }
 
     public static ToolkitSource create(String name) {
@@ -89,7 +118,7 @@ public class ToolkitSource extends AbstractToolSource {
 
     private enum State {
         IDLE,
-        RUNNING,
+        INITIALIZED,
         CLOSED
     }
 

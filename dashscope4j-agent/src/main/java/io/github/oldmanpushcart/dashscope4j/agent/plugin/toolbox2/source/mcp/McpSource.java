@@ -21,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class McpSource extends AbstractToolSource {
@@ -30,8 +31,8 @@ public class McpSource extends AbstractToolSource {
     private final String _toString;
 
 
-    private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
-    private final Map<McpFunctionTool.Type, List<Tool>> currents = new ConcurrentHashMap<>();
+    private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+    private final Map<McpFunctionTool.Type, List<Tool>> cached = new ConcurrentHashMap<>();
     private volatile State state = State.IDLE;
     private McpAsyncClient mcpClient;
 
@@ -57,20 +58,24 @@ public class McpSource extends AbstractToolSource {
         }
 
         // 未初始化的工具源，不能提供工具信息
-        if (State.RUNNING != state) {
+        if (!isInitialized()) {
             throw new IllegalStateException("Not initialized!");
         }
 
         // 根据当前工具快照提供工具信息
         rwLock.readLock().lock();
         try {
-            return currents.values().stream()
+            return cached.values().stream()
                     .flatMap(List::stream)
                     .toList();
         } finally {
             rwLock.readLock().unlock();
         }
 
+    }
+
+    private boolean isInitialized() {
+        return State.INITIALIZED == state;
     }
 
     @Override
@@ -81,29 +86,56 @@ public class McpSource extends AbstractToolSource {
             throw new IllegalStateException("Already closed!");
         }
 
-        // 源已经完成初始化，返回本身
-        if (State.RUNNING == state) {
-            return this;
+        // 不能多次重复初始化
+        if (isInitialized()) {
+            throw new IllegalStateException("Already initialized!");
         }
 
-        // 获取初始化操作
         try {
-            this.mcpClient = initializing().get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Initialize fail by interrupted!");
-        } catch (ExecutionException e) {
-            final var cause = e.getCause();
-            throw new IllegalStateException("Initialize fail by error!", cause);
+
+            // 连接MCP客户端
+            mcpClient = connecting().get();
+            logger.debug("{}/initialize MCP client connected.", this);
+
+            // 初始化获取所有工具
+            final var snapshots = fetching().get();
+            logger.debug("{}/initialize MCP client fetched.", this);
+
+            // 更新当前工具缓存
+            rwLock.writeLock().lock();
+            try {
+                cached.clear();
+                cached.putAll(snapshots);
+            } finally {
+                rwLock.writeLock().unlock();
+            }
+
+        } catch (Exception t) {
+
+            // 初始化失败需要关闭掉之前已创建的MCP客户端
+            mcpClientCloseQuietly();
+
+            final Throwable cause;
+            if (t instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+                cause = t;
+            } else if (t instanceof ExecutionException eeCause) {
+                cause = eeCause.getCause();
+            } else {
+                cause = t;
+            }
+
+            throw new RuntimeException("Initialize occur error!", cause);
+
         }
 
-        // 初始化完成
-        state = State.RUNNING;
+        state = State.INITIALIZED;
+        logger.debug("{} initialized!", this);
         return this;
     }
 
 
-    private CompletableFuture<McpAsyncClient> initializing() {
+    private CompletableFuture<McpAsyncClient> connecting() {
 
         // 构建MCP客户端
         final var mcpClient = McpClient.async(transport)
@@ -115,25 +147,6 @@ public class McpSource extends AbstractToolSource {
         // 连接MCP
         return mcpClient.initialize()
                 .toFuture()
-
-                // 初始化获取所有的数据
-                .thenCompose(initialized -> fetchAll(name(), mcpClient))
-                .thenAccept(snapshots -> {
-                    rwLock.writeLock().lock();
-                    try {
-                        currents.clear();
-                        currents.putAll(snapshots);
-                    } finally {
-                        rwLock.writeLock().unlock();
-                    }
-                })
-
-                // 如果最终判定连接失败，则主动关闭掉已创建的MCP客户端
-                .exceptionallyCompose(t -> {
-                    mcpClient.close();
-                    return CompletableFuture.failedStage(t);
-                })
-
                 .thenApply(u -> mcpClient);
     }
 
@@ -148,7 +161,7 @@ public class McpSource extends AbstractToolSource {
             // 更新现有快照
             rwLock.writeLock().lock();
             try {
-                currents.put(McpFunctionTool.Type.TOOL, functionTools);
+                cached.put(McpFunctionTool.Type.TOOL, functionTools);
             } finally {
                 rwLock.writeLock().unlock();
             }
@@ -161,54 +174,41 @@ public class McpSource extends AbstractToolSource {
 
     private Mono<Void> handleMcpPromptChanged(List<McpSchema.Prompt> mcpPrompts) {
         return Mono.fromRunnable(() -> {
-
             final var functionTools = mcpPrompts.stream()
                     .map(mcpPrompt -> new McpPromptFunctionTool(name(), mcpClient, mcpPrompt))
                     .map(Tool.class::cast)
                     .toList();
-
-            // 更新现有快照
             rwLock.writeLock().lock();
             try {
-                currents.put(McpFunctionTool.Type.PROMPT, functionTools);
+                cached.put(McpFunctionTool.Type.PROMPT, functionTools);
             } finally {
                 rwLock.writeLock().unlock();
             }
-
-            // 通知变更
             fireChanged();
         });
     }
 
     private Mono<Void> handleMcpResourceChanged(List<McpSchema.Resource> mcpResources) {
         return Mono.fromRunnable(() -> {
-
             final var functionTools = mcpResources.stream()
                     .map(mcpResource -> new McpResourceFunctionTool(name(), mcpClient, mcpResource))
                     .map(Tool.class::cast)
                     .toList();
-
-            // 更新现有快照
             rwLock.writeLock().lock();
             try {
-                currents.put(McpFunctionTool.Type.RESOURCE, functionTools);
+                cached.put(McpFunctionTool.Type.RESOURCE, functionTools);
             } finally {
                 rwLock.writeLock().unlock();
             }
-
-            // 通知变更
             fireChanged();
         });
     }
 
-    private static CompletionStage<Map<McpFunctionTool.Type, List<Tool>>> fetchAll(String name, McpAsyncClient mcpClient) {
-        if (!mcpClient.isInitialized()) {
-            return CompletableFuture.failedStage(new IllegalStateException("MCP client not initialized!"));
-        }
+    private CompletableFuture<? extends Map<McpFunctionTool.Type, List<Tool>>> fetching() {
 
         final var mcpSrvCap = mcpClient.getServerCapabilities();
         if (null == mcpSrvCap) {
-            return CompletableFuture.completedStage(Map.of());
+            return CompletableFuture.completedFuture(Map.of());
         }
 
         final var snapshots = new ConcurrentHashMap<McpFunctionTool.Type, List<Tool>>();
@@ -221,7 +221,7 @@ public class McpSource extends AbstractToolSource {
                             return;
                         }
                         final var functionTools = result.tools().stream()
-                                .map(mcpTool -> new McpToolFunctionTool(name, mcpClient, mcpTool))
+                                .map(mcpTool -> new McpToolFunctionTool(name(), mcpClient, mcpTool))
                                 .map(Tool.class::cast)
                                 .toList();
                         snapshots.put(McpFunctionTool.Type.TOOL, functionTools);
@@ -237,7 +237,7 @@ public class McpSource extends AbstractToolSource {
                             return;
                         }
                         final var functionTools = result.prompts().stream()
-                                .map(mcpPrompt -> new McpPromptFunctionTool(name, mcpClient, mcpPrompt))
+                                .map(mcpPrompt -> new McpPromptFunctionTool(name(), mcpClient, mcpPrompt))
                                 .map(Tool.class::cast)
                                 .toList();
                         snapshots.put(McpFunctionTool.Type.PROMPT, functionTools);
@@ -253,7 +253,7 @@ public class McpSource extends AbstractToolSource {
                             return;
                         }
                         final var functionTools = result.resources().stream()
-                                .map(mcpResource -> new McpResourceFunctionTool(name, mcpClient, mcpResource))
+                                .map(mcpResource -> new McpResourceFunctionTool(name(), mcpClient, mcpResource))
                                 .map(Tool.class::cast)
                                 .toList();
                         snapshots.put(McpFunctionTool.Type.RESOURCE, functionTools);
@@ -262,7 +262,8 @@ public class McpSource extends AbstractToolSource {
         }
 
         return CompletableFutureUtils.allOf(stages)
-                .thenApply(u -> snapshots);
+                .thenApply(u -> snapshots)
+                .toCompletableFuture();
     }
 
     @Override
@@ -270,30 +271,36 @@ public class McpSource extends AbstractToolSource {
         return State.CLOSED == state;
     }
 
+    private synchronized void mcpClientCloseQuietly() {
+        if (null != mcpClient) {
+            try {
+                mcpClient.close();
+            } catch (Throwable t) {
+                // ignore
+            }
+            mcpClient = null;
+        }
+    }
+
     @Override
     public synchronized void close() {
         if (isClosed()) {
             return;
         }
-        super.close();
-        if (null != mcpClient) {
-            mcpClient.closeGracefully().toFuture()
-                    .exceptionally(closeEx -> {
-                        mcpClient.close();
-                        return null;
-                    });
-        }
+        mcpClientCloseQuietly();
         rwLock.writeLock().lock();
         try {
-            currents.clear();
+            cached.clear();
         } finally {
             rwLock.writeLock().unlock();
         }
+        super.close();
+        logger.debug("{} closed.", this);
     }
 
     private enum State {
         IDLE,
-        RUNNING,
+        INITIALIZED,
         CLOSED
     }
 
