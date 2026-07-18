@@ -1,6 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox2.source.toolkit;
+package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.toolkit;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox2.source.AbstractToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.AbstractToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
@@ -114,6 +114,10 @@ public class ToolkitSource extends AbstractToolSource {
 
     public static ToolkitSource create(String name) {
         return new ToolkitSource(name);
+    }
+
+    public static ToolkitSource create() {
+        return new ToolkitSource(null);
     }
 
     private enum State {

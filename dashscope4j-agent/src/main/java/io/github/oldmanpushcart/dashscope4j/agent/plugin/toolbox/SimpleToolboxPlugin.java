@@ -4,10 +4,10 @@ import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.EmbeddingToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.ToolIndexer;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.ToolLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.mcp.McpLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.skill.SkillLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.ToolkitLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.ToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.mcp.McpSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.skill.SkillsSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.toolkit.ToolkitSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
@@ -33,7 +33,7 @@ public class SimpleToolboxPlugin implements Plugin {
     private final Path dataspace;
     private final boolean enableSearchTools;
     private final Function<Agent, ToolIndexer> indexerFactory;
-    private final List<Supplier<CompletionStage<? extends ToolLoader>>> loaderSuppliers;
+    private final List<Supplier<? extends ToolSource>> sourceSuppliers;
 
     private volatile Toolbox toolbox;
 
@@ -42,7 +42,7 @@ public class SimpleToolboxPlugin implements Plugin {
         this.dataspace = builder.dataspace;
         this.enableSearchTools = builder.enableSearchTools;
         this.indexerFactory = builder.indexerFactory;
-        this.loaderSuppliers = builder.loaderSuppliers;
+        this.sourceSuppliers = builder.sourceSuppliers;
     }
 
     // 创建工具索引
@@ -67,11 +67,14 @@ public class SimpleToolboxPlugin implements Plugin {
                 .build();
 
         // 订阅所有工具加载器
-        CompletionStage<Void> stage = CompletableFuture.completedStage(null);
-        for (final var loaderSupplier : loaderSuppliers) {
+        CompletionStage<?> stage = CompletableFuture.completedStage(null);
+        for (final var sourceSupplier : sourceSuppliers) {
             stage = stage
-                    .thenCompose(unused -> loaderSupplier.get())
-                    .thenAccept(toolbox::subscribe);
+                    .thenCompose(unused -> {
+                        final var source = sourceSupplier.get();
+                        source.initialize();
+                        return toolbox.subscribe(source);
+                    });
         }
 
         // 订阅完成，返回插件扩展
@@ -115,7 +118,7 @@ public class SimpleToolboxPlugin implements Plugin {
         private Path dataspace = Path.of("./");
         private boolean enableSearchTools = true;
         private Function<Agent, ToolIndexer> indexerFactory;
-        private final List<Supplier<CompletionStage<? extends ToolLoader>>> loaderSuppliers = new ArrayList<>();
+        private final List<Supplier<? extends ToolSource>> sourceSuppliers = new ArrayList<>();
 
         /**
          * 设置同步间隔
@@ -164,67 +167,50 @@ public class SimpleToolboxPlugin implements Plugin {
         /**
          * 添加一个MCP工具
          *
-         * @param mode      模式
          * @param name      名称
          * @param transport 传输
          * @return this
          */
-        public Builder mcp(ToolUse.Mode mode, String name, McpClientTransport transport) {
-            loaderSuppliers.add(() -> McpLoader.newBuilder()
-                    .mode(mode)
+        public Builder mcp(String name, McpClientTransport transport) {
+            sourceSuppliers.add(() -> McpSource.newBuilder()
                     .name(name)
                     .transport(transport)
-                    .buildAsync());
+                    .build());
             return this;
         }
 
         /**
          * 添加一个技能工具
          *
-         * @param mode 模式
          * @param home SKILL目录
          * @return this
          */
-        public Builder skill(ToolUse.Mode mode, Path home) {
-            loaderSuppliers.add(() -> CompletableFuture.completedStage(null)
-                    .thenApply(u -> SkillLoader.newBuilder()
-                            .mode(mode)
-                            .directories(List.of(home))
-                            .build()));
+        public Builder skill(Path home) {
+            sourceSuppliers.add(() -> SkillsSource.newBuilder()
+                    .directory(home)
+                    .build());
             return this;
         }
 
         /**
          * 添加一个工具包工具
          *
-         * @param mode    模式
          * @param toolkit 工具包
          * @return this
          */
-        public Builder toolkit(ToolUse.Mode mode, Toolkit toolkit) {
-            loaderSuppliers.add(() -> CompletableFuture.completedStage(null)
-                    .thenApply(u -> {
-                        final var loader = new ToolkitLoader();
-                        loader.append(mode, toolkit);
-                        return loader;
-                    }));
+        public Builder toolkit(Toolkit toolkit) {
+            sourceSuppliers.add(() -> ToolkitSource.create().append(toolkit));
             return this;
         }
 
         /**
          * 添加一个工具工具
          *
-         * @param mode 模式
          * @param tool 工具
          * @return this
          */
-        public Builder tool(ToolUse.Mode mode, Tool tool) {
-            loaderSuppliers.add(() -> CompletableFuture.completedStage(null)
-                    .thenApply(u -> {
-                        final var loader = new ToolkitLoader();
-                        loader.append(mode, tool);
-                        return loader;
-                    }));
+        public Builder tool(Tool tool) {
+            sourceSuppliers.add(() -> ToolkitSource.create().append(List.of(tool)));
             return this;
         }
 

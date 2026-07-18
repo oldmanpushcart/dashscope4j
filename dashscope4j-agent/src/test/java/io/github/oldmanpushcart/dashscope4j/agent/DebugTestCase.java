@@ -4,13 +4,12 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.SessionPlugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store.FileFragmentStore;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.HashMapToolbox;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolboxPlugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.LlmToolIndexer;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.mcp.McpLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.mcp.RecoverableMcpClientTransport;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.skill.SkillLoader;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.toolkit.ToolkitLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.mcp.McpSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.mcp.RecoverableMcpClientTransport;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.skill.SkillsSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.toolkit.ToolkitSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.FileOpsToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.TextFileOpsToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.RuntimeToolkit;
@@ -27,12 +26,12 @@ import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Stream;
 
 public class DebugTestCase implements LoadingEnv {
 
@@ -48,15 +47,13 @@ public class DebugTestCase implements LoadingEnv {
 
     private Plugin buildingToolboxPlugin() {
 
-        final var skillLoader = SkillLoader.newBuilder()
-                .directories(List.of(
-                        Path.of("./skills")
-                ))
-                .build();
+        final var skillsSource = SkillsSource.newBuilder()
+                .directory(Path.of("./skills"))
+                .build()
+                .initialize();
 
-        final var mcpLoader = McpLoader.newBuilder()
+        final var mcpSource = McpSource.newBuilder()
                 .name("amap")
-                .mode(ToolUse.Mode.DYNAMIC)
                 .transport(RecoverableMcpClientTransport.newBuilder()
                         .transportFactory(mapper ->
                                 HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
@@ -64,20 +61,15 @@ public class DebugTestCase implements LoadingEnv {
                                         .jsonMapper(mapper)
                                         .build())
                         .build())
-                .build();
+                .build()
+                .initialize();
 
-        final var toolkitLoader = new ToolkitLoader()
-//                .append(ToolUse.Mode.DYNAMIC, List.of(
-//                        DashscopeToolkit.create(),
-//                        GuiToolkit.create(),
-//                        HttpToolkit.create()
-//                ))
-                .append(ToolUse.Mode.FIXED, List.of(
-                        RuntimeToolkit.create(),
-                        ShellToolkit.create(),
-                        FileOpsToolkit.create(),
-                        TextFileOpsToolkit.create()
-                ));
+        final var toolkitSource = ToolkitSource.create()
+                .initialize()
+                .append(RuntimeToolkit.create())
+                .append(ShellToolkit.create())
+                .append(FileOpsToolkit.create())
+                .append(TextFileOpsToolkit.create());
 
         final var toolbox = HashMapToolbox.newBuilder()
                 .indexer(LlmToolIndexer.newBuilder()
@@ -87,11 +79,9 @@ public class DebugTestCase implements LoadingEnv {
                         .build())
                 .build();
 
-        CompletableFutureUtils.allOf(List.of(
-                        toolbox.subscribe(toolkitLoader),
-                        toolbox.subscribe(skillLoader),
-                        toolbox.subscribe(mcpLoader)
-                ))
+        CompletableFutureUtils.allOf(Stream.of(toolkitSource, skillsSource, mcpSource)
+                        .map(toolbox::subscribe)
+                        .toList())
                 .toCompletableFuture()
                 .join();
 
@@ -148,50 +138,16 @@ public class DebugTestCase implements LoadingEnv {
 
     @Test
     public void debug$2() throws InterruptedException, IOException {
-
-        final var home = Path.of("./skills/test-skill");
-        final var latch = new CountDownLatch(1);
-
-        try (final var watcher = FileSystems.getDefault().newWatchService()) {
-
-            home.register(watcher,
-                    StandardWatchEventKinds.ENTRY_CREATE,
-                    StandardWatchEventKinds.ENTRY_DELETE,
-                    StandardWatchEventKinds.ENTRY_MODIFY,
-                    StandardWatchEventKinds.OVERFLOW
-            );
-
-            new Thread(() -> {
-
-                try {
-
-                    while (!Thread.currentThread().isInterrupted()) {
-                        final var key = watcher.take();
-                        for (final var event : key.pollEvents()) {
-                            final var kind = event.kind();
-                            final var filename = event.context();
-                            final var parent = key.watchable();
-                            System.out.println("KIND=%s;parent=%s;filename=%s".formatted(
-                                    kind,
-                                    parent,
-                                    filename
-                            ));
-                        }
-                        key.reset();
-                    }
-
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                } finally {
-                    latch.countDown();
-                }
-
-            }).start();
-
-            latch.await();
-
-        }
-
+        final var root = Path.of("./skills");
+        Files.list(root).forEach(path-> {
+            final var skill = path.resolve("./SKILL.md");
+            try {
+                final var instant = Files.getLastModifiedTime(skill);
+                System.out.println(instant);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
 
     }
 

@@ -228,7 +228,7 @@ public class EmbeddingToolIndexer implements ToolIndexer {
      * @param meta        元数据信息
      * @param vectors     向量
      */
-    private record Document(String name, String description, Document.Meta meta, float[] vectors) {
+    private record Document(String name, String description, Meta meta, float[] vectors) {
 
         /**
          * 元数据
@@ -268,7 +268,7 @@ public class EmbeddingToolIndexer implements ToolIndexer {
     private class IndexCache {
 
         private final Path cacheFile;
-        private final Map<String, IndexCache.Entry> entries = new ConcurrentHashMap<>();
+        private final Map<String, Entry> entries = new ConcurrentHashMap<>();
         private final Object superThis = EmbeddingToolIndexer.this;
 
         private IndexCache(Path cacheFile) {
@@ -290,7 +290,7 @@ public class EmbeddingToolIndexer implements ToolIndexer {
                         .filter(CommonUtils::isNotBlankString)
                         .forEach(line -> {
                             try {
-                                final var entry = JacksonJsonUtils.toObject(line, IndexCache.Entry.class);
+                                final var entry = JacksonJsonUtils.toObject(line, Entry.class);
                                 entries.put(entry.key(), entry);
                             } catch (Throwable ex) {
                                 logger.warn("{} cache ignored entry, because JSON parse error. line={};", superThis, line, ex);
@@ -311,7 +311,7 @@ public class EmbeddingToolIndexer implements ToolIndexer {
             }
             return loader.apply(tool)
                     .thenApply(document -> {
-                        final var newEntry = new IndexCache.Entry(key, document);
+                        final var newEntry = new Entry(key, document);
                         entries.put(key, newEntry);
                         persist(newEntry);
                         return document;
@@ -322,7 +322,7 @@ public class EmbeddingToolIndexer implements ToolIndexer {
             return "%s|%s".formatted(tool.meta().name(), tool.meta().description());
         }
 
-        private void persist(IndexCache.Entry entry) {
+        private void persist(Entry entry) {
             try {
                 final var entryJson = JacksonJsonUtils.toJson(entry);
                 Files.writeString(cacheFile, entryJson + "\n", UTF_8, APPEND, CREATE);
@@ -358,9 +358,9 @@ public class EmbeddingToolIndexer implements ToolIndexer {
     public static class Builder implements Buildable<EmbeddingToolIndexer, Builder> {
 
         private DashscopeClient client;
-        private ChatModel model = ChatModel.QWEN_FLASH;
-        private TextEmbeddingModel embeddingModel = TextEmbeddingModel.TEXT_EMBEDDING_V4;
-        private Path cacheFile = Path.of(".embedding-tool-index-cache.jsonl");
+        private ChatModel model;
+        private TextEmbeddingModel embeddingModel;
+        private Path cacheFile;
 
         public Builder client(DashscopeClient client) {
             this.client = client;

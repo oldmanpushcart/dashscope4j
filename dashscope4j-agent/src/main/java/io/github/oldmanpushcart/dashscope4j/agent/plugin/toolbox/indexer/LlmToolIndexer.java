@@ -221,7 +221,7 @@ public class LlmToolIndexer implements ToolIndexer {
      * @param description 工具描述
      * @param meta        元数据信息
      */
-    private record Document(String name, String description, Document.Meta meta) {
+    private record Document(String name, String description, Meta meta) {
 
         /**
          * 元数据

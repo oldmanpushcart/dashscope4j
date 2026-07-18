@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox2.source.mcp;
+package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.mcp;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.modelcontextprotocol.spec.McpSchema;

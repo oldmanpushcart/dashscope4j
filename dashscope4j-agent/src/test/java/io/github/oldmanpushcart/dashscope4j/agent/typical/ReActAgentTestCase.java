@@ -3,7 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 import io.github.oldmanpushcart.dashscope4j.agent.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.agent.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.SimpleToolboxPlugin;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.dashscope.DashscopeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
@@ -23,8 +22,8 @@ public class ReActAgentTestCase implements LoadingEnv {
                 .model(ChatModel.QWEN_FLASH)
                 .plugins(plugins -> {
                     plugins.add(SimpleToolboxPlugin.newBuilder()
-                            .skill(ToolUse.Mode.DYNAMIC, Path.of("./skills"))
-                            .toolkit(ToolUse.Mode.DYNAMIC, DashscopeToolkit.create())
+                            .skill(Path.of("./skills"))
+                            .toolkit(DashscopeToolkit.create())
                             .build());
                     return plugins;
                 })

@@ -1,9 +1,8 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox2.source.skill;
+package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.skill;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox2.source.AbstractToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.AbstractToolSource;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
-import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,20 +10,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.time.Instant;
+import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 
 public class SkillsSource extends AbstractToolSource {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final List<Path> directories;
+    private final Path directory;
     private final Duration scanInterval;
     private final boolean isOwnScheduler;
     private final String _toString;
@@ -37,7 +32,8 @@ public class SkillsSource extends AbstractToolSource {
 
     private SkillsSource(Builder builder) {
         super(builder.name);
-        this.directories = CommonUtils.unmodifiableCopy(builder.directories);
+        Objects.requireNonNull(builder.directory, "directory must not be null");
+        this.directory = builder.directory;
         this.scanInterval = builder.scanInterval;
         this.scheduler = builder.scheduler;
         this.isOwnScheduler = Objects.isNull(this.scheduler);
@@ -120,61 +116,69 @@ public class SkillsSource extends AbstractToolSource {
 
     private synchronized boolean scanning() {
 
-        // 当前版本快照
-        final var currentVersions = directories.stream()
-                .filter(Files::exists)
-                .filter(Files::isDirectory)
+        final var currentVersions = new HashMap<Path, Instant>();
+        try (final var stream = Files.list(directory)) {
+            stream
+                    // 列出当前目录下的所有SKILL目录，并采集他们的SKILL.md文件最后修改时间
+                    .map(path -> {
+                        final var home = path.resolve("SKILL.md");
+                        if (!Files.exists(home)) {
+                            logger.debug("{}/scanning ignored skill directory by SKILL.md not found! path={}", this, path);
+                            return null;
+                        }
+                        try {
+                            final var lastModifiedAt = Files.getLastModifiedTime(home).toInstant();
+                            return Map.entry(path, lastModifiedAt);
+                        } catch (IOException e) {
+                            logger.debug("{}/scanning ignored skill directory by error! path={}", this, path, e);
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
 
-                // 找出所有符合规范的SKILL目录
-                .flatMap(directory -> {
-                    try {
-                        return Files.find(directory, 1, (path, attrs) -> attrs.isDirectory());
-                    } catch (IOException e) {
-                        logger.debug("{}/scanning ignored skills directory by error! directory: {}", this, directory, e);
-                        return Stream.empty();
-                    }
-                })
-
-                // 读取所有符合规范SKILL目录下，SKILL.md文件的修改时间戳
-                .map(path -> {
-                    final var home = path.resolve("SKILL.md");
-                    if (!Files.exists(home)) {
-                        logger.debug("{}/scanning ignored skill directory by SKILL.md not found! path={}", this, path);
-                        return null;
-                    }
-                    try {
-                        final var lastModifiedAt = Files.getLastModifiedTime(home).toInstant();
-                        return Map.entry(path, lastModifiedAt);
-                    } catch (IOException e) {
-                        logger.debug("{}/scanning ignored skill directory by error! path={}", this, path, e);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-
-                // 转换为当前版本快照
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                    // 转换为当前版本快照
+                    .forEach(entry -> {
+                        final var path = entry.getKey().toAbsolutePath().normalize();
+                        final var lastModifiedAt = entry.getValue();
+                        currentVersions.put(path, lastModifiedAt);
+                    });
+        } catch (IOException ioEx) {
+            logger.debug("{}/scanning ignored skills directory by error! directory: {}", this, directory, ioEx);
+        }
 
 
-        // 找出等待删除的集合
-        final var toBeRemovePaths = snapshots.keySet()
-                .stream()
-                .filter(path -> !currentVersions.containsKey(path))
-                .collect(Collectors.toSet());
+        final var toBeRemovePaths = new ArrayList<Path>();
+        final var toBeUpdatePaths = new ArrayList<Path>();
+        final var toBeInsertPaths = new ArrayList<Path>();
 
-        // 找出快照版本变更的集合
-        final var toBeUpsertPaths = snapshots.values()
-                .stream()
-                .filter(snapshot -> {
-                    final var version = currentVersions.get(snapshot.home());
-                    return null == version
-                            || !Objects.equals(version, snapshot.lastModifiedAt());
-                })
-                .map(Skill::home)
-                .collect(Collectors.toSet());
+        snapshots.forEach((path, snapshot) -> {
+
+            // 快照有当前版本没有，则认为需要删除
+            if (!currentVersions.containsKey(path)) {
+                toBeRemovePaths.add(path);
+                return;
+            }
+
+            // 快照和当前版本都有，则比对版本是否一致，不一致的认为需要更新
+            final var version = currentVersions.get(path);
+            if (!Objects.equals(snapshot.lastModifiedAt(), version)) {
+                toBeUpdatePaths.add(path);
+            }
+
+        });
+
+        currentVersions.forEach((path, version) -> {
+
+            // 当前版本有，但快照没有，则认为需要新增
+            if (!snapshots.containsKey(path)) {
+                toBeInsertPaths.add(path);
+            }
+
+        });
+
 
         // 先删除所有有变动的
-        Stream.of(toBeRemovePaths, toBeUpsertPaths)
+        Stream.of(toBeRemovePaths, toBeUpdatePaths)
                 .flatMap(Collection::stream)
                 .forEach(path -> {
                     final var skill = snapshots.remove(path);
@@ -184,8 +188,8 @@ public class SkillsSource extends AbstractToolSource {
                 });
 
         // 再添加变更的
-        toBeUpsertPaths
-                .stream()
+        Stream.of(toBeUpdatePaths, toBeInsertPaths)
+                .flatMap(Collection::stream)
                 .map(home -> {
                     try {
                         final var skill = Skill.of(home);
@@ -200,7 +204,9 @@ public class SkillsSource extends AbstractToolSource {
                 .forEach(skill -> snapshots.put(skill.home(), skill));
 
         // 通知外边，扫描发现了变动
-        return !toBeUpsertPaths.isEmpty() || !toBeRemovePaths.isEmpty();
+        return !toBeRemovePaths.isEmpty()
+                || !toBeUpdatePaths.isEmpty()
+                || !toBeInsertPaths.isEmpty();
     }
 
     @Override
@@ -239,10 +245,14 @@ public class SkillsSource extends AbstractToolSource {
         CLOSED
     }
 
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
     public static class Builder implements Buildable<SkillsSource, Builder> {
 
         private String name;
-        private List<Path> directories;
+        private Path directory;
         private ScheduledExecutorService scheduler;
         private Duration scanInterval = Duration.ofSeconds(5);
 
@@ -251,13 +261,8 @@ public class SkillsSource extends AbstractToolSource {
             return this;
         }
 
-        public Builder directories(List<Path> directories) {
-            this.directories = directories;
-            return this;
-        }
-
-        public Builder directories(UnaryOperator<List<Path>> operator) {
-            this.directories = operator.apply(CommonUtils.mutableCopy(this.directories));
+        public Builder directory(Path directory) {
+            this.directory = directory;
             return this;
         }
 

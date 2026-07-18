@@ -1,49 +1,37 @@
 package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox;
 
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.ToolIndexer;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.ToolLoader;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.ToolSource;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.client.util.IOUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalState;
-import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.unwrapEx;
 
-/**
- * HashMap 工具箱
- * <p>
- * 线程安全，支持多线程并发访问。
- * </p>
- */
 public class HashMapToolbox implements Toolbox {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ToolIndexer indexer;
-    private final Map<String, Entry> registry = new ConcurrentHashMap<>();
-    private final CompletableFuture<?> closeF = new CompletableFuture<>();
     private final boolean shared;
-
-    // 变更同步器
+    private final Mode mode;
     private final Syncer syncer;
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final CompletableFuture<?> closeF = new CompletableFuture<>();
+    private final Map<String, Entity> entities = new ConcurrentHashMap<>();
+    private final Set<ToolSubscription> subscriptions = ConcurrentHashMap.newKeySet();
+
     private HashMapToolbox(Builder builder) {
-        Objects.requireNonNull(builder.indexer, "indexer cannot be null!");
-        Objects.requireNonNull(builder.syncInterval, "syncInterval cannot be null!");
         this.indexer = builder.indexer;
         this.shared = builder.shared;
-        this.syncer = new Syncer(builder.syncInterval);
-        this.syncer.start();
+        this.mode = builder.mode;
+        this.syncer = new Syncer(builder.syncInterval).begin();
     }
 
     @Override
@@ -52,11 +40,107 @@ public class HashMapToolbox implements Toolbox {
     }
 
     @Override
-    public CompletionStage<ToolSubscription> subscribe(ToolLoader loader) {
-        final var subscription = new ToolSubscriptionImpl(loader);
-        final var handler = new ToolSubscriptionHandlerImpl(loader, subscription);
-        return loader.subscribe(subscription, handler)
-                .thenApply(u -> subscription);
+    public CompletionStage<ToolSubscription> subscribe(ToolSource source) {
+
+        /*
+         * 加载加载器并建立后续的订阅关系
+         */
+        return reload(source)
+
+                // 加载成功，建立订阅关系
+                .<ToolSubscription>thenApply(u -> {
+
+                    // 建立订阅关系
+                    final var subscription = new ToolSubscriptionImpl(source);
+                    subscription.subscribe();
+
+                    // 返回订阅关系
+                    subscriptions.add(subscription);
+                    return subscription;
+
+                })
+
+                /*
+                 * 如果加载失败，则主动进行卸载
+                 * 并明确异常信息
+                 */
+                .exceptionallyCompose(ex -> {
+                    unload(source);
+                    return illegalState(ex, "Subscribe failed: loading from loader occur error!");
+                })
+                ;
+
+    }
+
+
+    /**
+     * 重新加载加载器（异步）
+     *
+     * @param loader 加载器
+     * @return 加载结果回调
+     */
+    private CompletionStage<Void> reload(ToolSource loader) {
+
+        // 卸载加载器
+        unload(loader);
+
+        // 重新推入工具箱
+        final var tools = loader.tools();
+        tools.forEach(tool -> entities.put(tool.meta().name(), Entity.of(loader, tool)));
+
+        // 计算工具索引
+        return CompletableFutureUtils
+                .allOf(tools.stream().map(indexer::upsert).toList());
+    }
+
+    /**
+     * 卸载加载器
+     * <p>
+     * 这里仅涉及对工具实体数据和索引数据的清理，
+     * 不涉及订阅关系的改变。
+     * </p>
+     *
+     * @param loader 加载器
+     */
+    private void unload(ToolSource loader) {
+
+        // 先找到由loader所引入的所有工具名称
+        final var removeNames = entities.values()
+                .stream()
+                .filter(entity -> entity.loader == loader)
+                .map(Entity::name)
+                .collect(Collectors.toSet());
+
+        // 再根据工具名称去清理所有的工具和工具索引
+        removeNames.forEach(name -> {
+            indexer.remove(name);
+            entities.remove(name);
+        });
+
+    }
+
+    @Override
+    public boolean isClosed() {
+        return closeF.isDone();
+    }
+
+    @Override
+    public boolean isShared() {
+        return shared;
+    }
+
+    @Override
+    public void close() {
+        if (closeF.complete(null)) {
+            syncer.interrupt();
+            new ArrayList<>(subscriptions)
+                    .forEach(ToolSubscription::close);
+        }
+    }
+
+    @Override
+    public Mode mode() {
+        return mode;
     }
 
     @Override
@@ -75,115 +159,71 @@ public class HashMapToolbox implements Toolbox {
                     }
                     return result;
                 })
-                .exceptionallyCompose(ex -> illegalState(ex, "Lookup tools by intent failed!"))
-                ;
-    }
-
-    @Override
-    public Optional<Tool> lookupByName(String name) {
-        return Optional.ofNullable(registry.get(name))
-                .map(Entry::use)
-                .map(ToolUse::tool);
+                .exceptionallyCompose(ex -> illegalState(ex, "Lookup tools by intent failed!"));
     }
 
     @Override
     public List<Tool> lookupAll() {
-        return registry.values()
+        return entities.values()
                 .stream()
-                .map(Entry::use)
-                .filter(use -> use.mode() == ToolUse.Mode.FIXED)
-                .map(ToolUse::tool)
+                .map(Entity::tool)
                 .toList();
     }
 
     @Override
-    public boolean isClosed() {
-        return closeF.isDone();
+    public Optional<Tool> lookupByName(String name) {
+        return Optional.ofNullable(entities.get(name))
+                .map(Entity::tool);
     }
 
-    @Override
-    public boolean isShared() {
-        return shared;
-    }
 
-    @Override
-    public void close() {
+    /**
+     * 工具实体
+     *
+     * @param name   工具名称
+     * @param tool   工具
+     * @param loader 加载器
+     */
+    private record Entity(String name, Tool tool, ToolSource loader) {
 
-        if (!closeF.complete(null)) {
-            return;
+        public static Entity of(ToolSource loader, Tool tool) {
+            return new Entity(tool.meta().name(), tool, loader);
         }
 
-        // 停止同步器
-        syncer.interrupt();
-
-        // 关闭所有的订阅关系
-        registry.values()
-                .stream()
-                .map(entry -> entry.subscription)
-                .collect(Collectors.toSet())
-                .forEach(IOUtils::closeQuietly);
-
-        logger.debug("{} closed.", this);
     }
 
     /**
-     * 添加工具
-     * <p>
-     * 添加的工具必须要有订阅关系，明确工具来源。
-     * </p>
-     *
-     * @param use          工具使用信息
-     * @param subscription 订阅关系
-     * @return 操作回调
+     * 工具订阅关系实现
      */
-    private CompletionStage<Void> upsert(ToolUse use, ToolSubscription subscription) {
-        final var name = use.tool().meta().name();
-        registry.put(name, new Entry(name, use, subscription));
-        return indexer.upsert(use.tool())
-                .exceptionallyCompose(ex -> illegalState(ex, "Upsert tool: %s occur error!".formatted(name)));
-    }
-
-    /**
-     * 删除工具
-     * <p>
-     * 删除的工具必须要有订阅关系，只有订阅者自己才能删除
-     * </p>
-     *
-     * @param name         工具名称
-     * @param subscription 订阅关系
-     */
-    private void remove(String name, ToolSubscription subscription) {
-        final var entry = registry.get(name);
-
-        // 没有在注册表中找到，说明这个是脏数据，直接清理索结束
-        if (entry == null) {
-            indexer.remove(name);
-            return;
-        }
-
-        // 只有订阅者自己才能删除
-        if (entry.subscription != subscription) {
-            throw new IllegalArgumentException("Remove tool: %s occur error, not the same subscription!".formatted(name));
-        }
-
-        indexer.remove(name);
-        registry.remove(name);
-
-    }
-
-    private void unsubscribe(ToolSubscription subscription) {
-        //noinspection resource
-        registry.entrySet()
-                .removeIf(entry -> entry.getValue().subscription() == subscription);
-    }
-
     private class ToolSubscriptionImpl implements ToolSubscription {
 
-        private final ToolLoader loader;
+        private final ToolSource loader;
+        private final ToolSource.Listener listener;
+
+        private final CompletableFuture<?> subscribeF = new CompletableFuture<>();
         private final CompletableFuture<?> closeF = new CompletableFuture<>();
 
-        private ToolSubscriptionImpl(ToolLoader loader) {
+        private ToolSubscriptionImpl(ToolSource loader) {
             this.loader = loader;
+            this.listener = new ListenerImpl(this);
+        }
+
+        @Override
+        public ToolSource source() {
+            return loader;
+        }
+
+        @Override
+        public void subscribe() {
+            if (!subscribeF.complete(null)) {
+                throw new IllegalStateException("Already subscribed!");
+            }
+            loader.addListener(listener);
+        }
+
+        @Override
+        public boolean isSubscribed() {
+            return subscribeF.isDone();
         }
 
         @Override
@@ -193,176 +233,134 @@ public class HashMapToolbox implements Toolbox {
 
         @Override
         public void close() {
-            if (!closeF.complete(null)) {
-                return;
+
+            /*
+             * 关闭订阅关系流程
+             * 1. 先解除订阅
+             * 2. 再删除工具和索引数据
+             * 3. 最后将订阅关系从订阅关系列表中删除
+             */
+            if (closeF.complete(null)) {
+                loader.removeListener(listener);
+                unload(loader);
+                subscriptions.remove(this);
             }
-            unsubscribe(this);
-            loader.unsubscribe(this);
+
+        }
+
+        /**
+         * 订阅关系监听器实现
+         */
+        private class ListenerImpl implements ToolSource.Listener {
+
+            private final ToolSubscription subscription;
+
+            private ListenerImpl(ToolSubscription subscription) {
+                this.subscription = subscription;
+            }
+
+            @Override
+            public void onChanged() {
+                syncer.sync(subscription);
+            }
+
+            @Override
+            public void onClosed() {
+
+                /*
+                 * 这里只负责找到订阅关系，并关闭
+                 * 具体清理工具、索引和订阅关系，由订阅关系关闭触发。
+                 */
+                subscription.close();
+
+            }
+
         }
 
     }
 
-    private class ToolSubscriptionHandlerImpl implements ToolSubscriptionHandler {
-
-        private final ToolLoader loader;
-        private final ToolSubscription subscription;
-
-        private ToolSubscriptionHandlerImpl(ToolLoader loader, ToolSubscription subscription) {
-            this.loader = loader;
-            this.subscription = subscription;
-        }
-
-        @Override
-        public CompletionStage<Void> onSubscribe() {
-            CompletionStage<Void> stage = CompletableFuture.completedStage(null);
-            for (ToolUse use : loader.loaded()) {
-                stage = stage.thenCompose(u -> upsert(use, subscription));
-            }
-            return stage;
-        }
-
-        @Override
-        public void onChange(List<ToolUse> upserts, List<String> removes) {
-            syncer.notifyChange(upserts, removes, subscription);
-        }
-
-    }
 
     /**
-     * 变更同步器
-     * <p>
-     * 继承 Thread，按固定周期串行处理 onChange 事件。
-     * 消费失败的事件会保留在队列中，下次周期继续尝试。
-     * </p>
+     * 订阅关系同步器
      */
     private class Syncer extends Thread {
 
         private final Duration syncInterval;
+        private final BlockingQueue<Object> waiting = new LinkedBlockingQueue<>();
+        private final List<ToolSubscription> subscriptions = new ArrayList<>();
 
-        private final ReentrantLock lock = new ReentrantLock();
-        private final Condition waiting = lock.newCondition();
-        private final List<ChangeEvent> events = new ArrayList<>();
+        private Syncer(Duration syncInterval) {
+            this.syncInterval = syncInterval;
+        }
 
         /**
-         * 变更事件
+         * 同步订阅关系
          *
-         * @param upserts      更新工具集合
-         * @param removes      删除工具名称集合
          * @param subscription 订阅关系
          */
-        private record ChangeEvent(List<ToolUse> upserts, List<String> removes, ToolSubscription subscription) {
-        }
-
-        Syncer(Duration syncInterval) {
-            this.syncInterval = syncInterval;
-            setDaemon(true);
-            setName("dashscope4j-agent:/toolbox/syncer");
-        }
-
-        /**
-         * 通知变更
-         *
-         * @param upserts      新增/更新的工具列表
-         * @param removes      删除的工具名称列表
-         * @param subscription 对应的订阅
-         */
-        void notifyChange(List<ToolUse> upserts, List<String> removes, ToolSubscription subscription) {
-            lock.lock();
-            try {
-                events.add(new ChangeEvent(upserts, removes, subscription));
-                waiting.signalAll();
-            } finally {
-                lock.unlock();
+        public void sync(ToolSubscription subscription) {
+            synchronized (this) {
+                subscriptions.add(subscription);
             }
+            waiting.add(this);
         }
 
         @Override
         public void run() {
 
+            logger.debug("{}/syncer start.", this);
             while (!isInterrupted()) {
-
                 try {
+                    waiting.poll(syncInterval.toMillis(), TimeUnit.MILLISECONDS);
+                    List<ToolSubscription> subscriptionsCopy;
+                    synchronized (this) {
+                        subscriptionsCopy = new ArrayList<>(subscriptions);
+                    }
+                    subscriptionsCopy.forEach(subscription -> {
 
-                    // 等待一个同步周期
-                    lock.lock();
-                    try {
-                        if (!waiting.await(syncInterval.toMillis(), TimeUnit.MILLISECONDS)) {
-                            if (events.isEmpty()) {
-                                continue;
+                        // 如果已关闭，则从等待更新集合中移除
+                        if (subscription.isClosed()) {
+                            synchronized (this) {
+                                subscriptions.remove(subscription);
                             }
-                        }
-                    } finally {
-                        lock.unlock();
-                    }
-
-                    // 创建跳过名单，开始新一轮同步
-                    final var skipSet = new HashSet<ToolSubscription>();
-
-                    // 开始执行同步（使用迭代器，失败不删除）
-                    final var eventIt = events.iterator();
-                    while (eventIt.hasNext()) {
-                        final var event = eventIt.next();
-
-                        // 检查是否在跳过名单中
-                        if (skipSet.contains(event.subscription)) {
-                            logger.debug("{} skip event for subscription: {}", HashMapToolbox.this, event.subscription);
-                            continue;
+                            return;
                         }
 
-                        try {
-                            processEvent(event);
-                            eventIt.remove();
-                        } catch (Throwable ex) {
-                            // 加入跳过名单，本轮不再处理该 subscription 的后续事件
-                            skipSet.add(event.subscription);
-                            logger.warn("{} process change failed! will be retry after {}ms. subscription={}, upserts={}, removes={};",
-                                    HashMapToolbox.this,
-                                    syncInterval.toMillis(),
-                                    event.subscription,
-                                    event.upserts.size(),
-                                    event.removes.size(),
-                                    unwrapEx(ex)
-                            );
-                        }
-                    }
+                        // 进行同步
+                        reload(subscription.source())
+                                .whenComplete((u, ex) -> {
+                                    if (null == ex) {
+                                        synchronized (this) {
+                                            subscriptions.remove(subscription);
+                                        }
+                                    } else {
+                                        logger.warn("{}/syncer syncing subscription occur error!", this, ex);
+                                    }
+                                })
+                                .toCompletableFuture()
+                                .join();
 
-                } catch (InterruptedException ieEx) {
+                    });
+                } catch (InterruptedException iEx) {
+                    logger.debug("{}/syncer interrupted.", this);
                     interrupt();
                     break;
+                } catch (Throwable t) {
+                    logger.warn("{}/syncer occur error!", this, t);
                 }
-
-            }// while
-
+            }//while
+            logger.debug("{}/syncer stopped.", this);
         }
 
         /**
-         * 处理变更事件
+         * 启动
          *
-         * @param event 变更事件
+         * @return this
          */
-        private void processEvent(ChangeEvent event) {
-
-            // 先处理删除
-            for (final var name : event.removes) {
-                remove(name, event.subscription);
-            }
-
-            // 再处理新增/更新
-            for (final var use : event.upserts) {
-                upsert(use, event.subscription).toCompletableFuture().join();
-            }
-
+        public Syncer begin() {
+            start();
+            return this;
         }
-    }
-
-    /**
-     * 注册项
-     *
-     * @param name         工具名称
-     * @param use          工具用途
-     * @param subscription 订阅关系
-     */
-    private record Entry(String name, ToolUse use, ToolSubscription subscription) {
 
     }
 
@@ -370,53 +368,34 @@ public class HashMapToolbox implements Toolbox {
         return new Builder();
     }
 
-    /**
-     * 构建器
-     */
-    public static class Builder {
+    public static class Builder implements Buildable<HashMapToolbox, Builder> {
 
         private ToolIndexer indexer;
         private Duration syncInterval = Duration.ofSeconds(5);
         private boolean shared = false;
+        private Mode mode = Mode.DYNAMIC;
 
-        /**
-         * 设置工具索引器
-         *
-         * @param indexer 工具索引器
-         * @return this
-         */
         public Builder indexer(ToolIndexer indexer) {
             this.indexer = indexer;
             return this;
         }
 
-        /**
-         * 设置同步周期
-         *
-         * @param syncInterval 同步周期
-         * @return this
-         */
         public Builder syncInterval(Duration syncInterval) {
             this.syncInterval = syncInterval;
             return this;
         }
 
-        /**
-         * 设置为共享模式
-         *
-         * @param shared 是否共享
-         * @return this
-         */
         public Builder shared(boolean shared) {
             this.shared = shared;
             return this;
         }
 
-        /**
-         * 构建工具箱
-         *
-         * @return 工具箱
-         */
+        public Builder mode(Mode mode) {
+            this.mode = mode;
+            return this;
+        }
+
+        @Override
         public HashMapToolbox build() {
             return new HashMapToolbox(this);
         }

@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.loader.skill;
+package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.skill;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -8,13 +8,13 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import java.util.function.Function;
 
 /**
- * 加载技能
+ * 技能函数
  */
-class LoadSkillFunction implements Function<LoadSkillFunction.Spec, String> {
+class SkillFunction implements Function<SkillFunction.Spec, String> {
 
     private final Skill skill;
 
-    public LoadSkillFunction(Skill skill) {
+    public SkillFunction(Skill skill) {
         this.skill = skill;
     }
 

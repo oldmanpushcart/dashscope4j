@@ -1,9 +1,8 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox2.source;
+package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source;
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 public interface ToolSource extends AutoCloseable {
 
