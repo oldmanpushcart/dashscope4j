@@ -66,7 +66,7 @@ public class HashMapToolbox implements Toolbox {
                  */
                 .exceptionallyCompose(ex -> {
                     unload(source);
-                    return illegalState(ex, "Subscribe failed: loading from loader occur error!");
+                    return illegalState(ex, "Subscribe failed: loading from source occur error!");
                 })
                 ;
 
@@ -74,19 +74,19 @@ public class HashMapToolbox implements Toolbox {
 
 
     /**
-     * 重新加载加载器（异步）
+     * 重新加载工具源（异步）
      *
-     * @param loader 加载器
+     * @param source 工具源
      * @return 加载结果回调
      */
-    private CompletionStage<Void> reload(ToolSource loader) {
+    private CompletionStage<Void> reload(ToolSource source) {
 
         // 卸载加载器
-        unload(loader);
+        unload(source);
 
         // 重新推入工具箱
-        final var tools = loader.tools();
-        tools.forEach(tool -> entities.put(tool.meta().name(), Entity.of(loader, tool)));
+        final var tools = source.tools();
+        tools.forEach(tool -> entities.put(tool.meta().name(), Entity.of(source, tool)));
 
         // 计算工具索引
         return CompletableFutureUtils
@@ -94,20 +94,20 @@ public class HashMapToolbox implements Toolbox {
     }
 
     /**
-     * 卸载加载器
+     * 卸载工具源
      * <p>
      * 这里仅涉及对工具实体数据和索引数据的清理，
      * 不涉及订阅关系的改变。
      * </p>
      *
-     * @param loader 加载器
+     * @param source 工具源
      */
-    private void unload(ToolSource loader) {
+    private void unload(ToolSource source) {
 
         // 先找到由loader所引入的所有工具名称
         final var removeNames = entities.values()
                 .stream()
-                .filter(entity -> entity.loader == loader)
+                .filter(entity -> entity.source == source)
                 .map(Entity::name)
                 .collect(Collectors.toSet());
 
@@ -182,9 +182,9 @@ public class HashMapToolbox implements Toolbox {
      *
      * @param name   工具名称
      * @param tool   工具
-     * @param loader 加载器
+     * @param source 工具源
      */
-    private record Entity(String name, Tool tool, ToolSource loader) {
+    private record Entity(String name, Tool tool, ToolSource source) {
 
         public static Entity of(ToolSource loader, Tool tool) {
             return new Entity(tool.meta().name(), tool, loader);

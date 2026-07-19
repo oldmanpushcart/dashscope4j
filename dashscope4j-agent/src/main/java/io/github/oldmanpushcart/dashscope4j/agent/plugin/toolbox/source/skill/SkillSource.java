@@ -26,7 +26,7 @@ public class SkillSource extends AbstractToolSource {
     private final String _toString;
 
     private volatile State state = State.IDLE;
-    private Skill current;
+    private Skill cached;
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> scheduleF;
 
@@ -58,7 +58,7 @@ public class SkillSource extends AbstractToolSource {
         }
 
         synchronized (this) {
-            return Optional.ofNullable(current)
+            return Optional.ofNullable(cached)
                     .map(SkillFunction::new)
                     .map(SkillFunction::asTool)
                     .map(List::of)
@@ -117,26 +117,26 @@ public class SkillSource extends AbstractToolSource {
 
     private boolean scanning() {
         try {
-            final var skillMdPath = home.resolve("SKILL.md");
+            final var homeMd = home.resolve("SKILL.md");
 
             // 如果文件不存在，则根据是否之前已经加载过做为变更判断
-            if (!Files.exists(skillMdPath)) {
+            if (!Files.exists(homeMd)) {
                 synchronized (this) {
-                    final var isChanged = null != current;
+                    final var isChanged = null != cached;
                     if (isChanged) {
-                        logger.debug("{}/scanning SKILL.md not found, unloading current skill. skill={};home={}", this, current.header().name(), home);
+                        logger.debug("{}/scanning SKILL.md not found, unloading skill. name={};home={}", this, cached.header().name(), home);
+                        cached = null;
                     }
-                    current = null;
                     return isChanged;
                 }
             }
 
             // 如果文件已存在，则和已加载的技能做比对
-            final var lastModifiedAt = Files.getLastModifiedTime(skillMdPath).toInstant();
+            final var lastModifiedAt = Files.getLastModifiedTime(homeMd).toInstant();
             synchronized (this) {
-                if (null == current
-                        || !lastModifiedAt.equals(current.lastModifiedAt())) {
-                    current = Skill.of(home);
+                if (null == cached
+                        || !lastModifiedAt.equals(cached.lastModifiedAt())) {
+                    cached = Skill.of(home);
                     return true;
                 }
             }

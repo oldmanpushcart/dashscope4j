@@ -13,7 +13,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
 public class SkillsSource extends AbstractToolSource {
@@ -24,7 +25,8 @@ public class SkillsSource extends AbstractToolSource {
     private final boolean isOwnScheduler;
     private final String _toString;
 
-    private final Map<Path, Skill> snapshots = new ConcurrentHashMap<>();
+    private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+    private final Map<Path, Skill> cached = new ConcurrentHashMap<>();
 
     private volatile State state = State.IDLE;
     private ScheduledExecutorService scheduler;
@@ -56,13 +58,17 @@ public class SkillsSource extends AbstractToolSource {
             throw new IllegalStateException("Not initialized!");
         }
 
-        synchronized (this) {
-            return snapshots.values()
+        rwLock.readLock().lock();
+        try {
+            return cached.values()
                     .stream()
                     .map(SkillFunction::new)
                     .map(SkillFunction::asTool)
                     .toList();
+        } finally {
+            rwLock.readLock().unlock();
         }
+
     }
 
     @Override
@@ -98,7 +104,7 @@ public class SkillsSource extends AbstractToolSource {
                             fireChanged();
                         }
                     } catch (Throwable t) {
-                        logger.warn("{} scanning failed by error!", this, t);
+                        logger.warn("{} scan failed by error!", this, t);
                     }
 
                 },
@@ -109,41 +115,37 @@ public class SkillsSource extends AbstractToolSource {
 
         // 状态流转为运行中
         state = State.INITIALIZED;
-        logger.debug("{} initialized.", this);
+        logger.debug("{} initialized. directory={};size={};skills={};",
+                this,
+                directory,
+                cached.size(),
+                cached.keySet()
+        );
 
         return this;
     }
 
     private synchronized boolean scanning() {
 
-        final var currentVersions = new HashMap<Path, Instant>();
+        // 列出当前目录下的所有SKILL目录，并采集他们的SKILL.md文件最后修改时间
+        final var snapshotVersions = new HashMap<Path, Instant>();
         try (final var stream = Files.list(directory)) {
-            stream
-                    // 列出当前目录下的所有SKILL目录，并采集他们的SKILL.md文件最后修改时间
-                    .map(path -> {
-                        final var home = path.resolve("SKILL.md");
-                        if (!Files.exists(home)) {
-                            logger.debug("{}/scanning ignored skill directory by SKILL.md not found! path={}", this, path);
-                            return null;
-                        }
-                        try {
-                            final var lastModifiedAt = Files.getLastModifiedTime(home).toInstant();
-                            return Map.entry(path, lastModifiedAt);
-                        } catch (IOException e) {
-                            logger.debug("{}/scanning ignored skill directory by error! path={}", this, path, e);
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-
-                    // 转换为当前版本快照
-                    .forEach(entry -> {
-                        final var path = entry.getKey().toAbsolutePath().normalize();
-                        final var lastModifiedAt = entry.getValue();
-                        currentVersions.put(path, lastModifiedAt);
-                    });
+            stream.forEach(path -> {
+                final var homeMd = path.resolve("SKILL.md");
+                final var home = path.toAbsolutePath().normalize();
+                if (!Files.exists(homeMd)) {
+                    logger.debug("{}/scanning ignored by SKILL.md not found! home={}", this, home);
+                    return;
+                }
+                try {
+                    final var version = Files.getLastModifiedTime(homeMd).toInstant();
+                    snapshotVersions.put(home, version);
+                } catch (IOException e) {
+                    logger.debug("{}/scanning ignored by error! home={}", this, home, e);
+                }
+            });
         } catch (IOException ioEx) {
-            logger.debug("{}/scanning ignored skills directory by error! directory: {}", this, directory, ioEx);
+            logger.debug("{}/scanning ignored by error! directory={}", this, directory, ioEx);
         }
 
 
@@ -151,57 +153,60 @@ public class SkillsSource extends AbstractToolSource {
         final var toBeUpdatePaths = new ArrayList<Path>();
         final var toBeInsertPaths = new ArrayList<Path>();
 
-        snapshots.forEach((path, snapshot) -> {
+        cached.forEach((home, skill) -> {
 
             // 快照有当前版本没有，则认为需要删除
-            if (!currentVersions.containsKey(path)) {
-                toBeRemovePaths.add(path);
+            if (!snapshotVersions.containsKey(home)) {
+                toBeRemovePaths.add(home);
                 return;
             }
 
             // 快照和当前版本都有，则比对版本是否一致，不一致的认为需要更新
-            final var version = currentVersions.get(path);
-            if (!Objects.equals(snapshot.lastModifiedAt(), version)) {
-                toBeUpdatePaths.add(path);
+            final var snapshotVersion = snapshotVersions.get(home);
+            final var version = skill.lastModifiedAt();
+            if (!Objects.equals(version, snapshotVersion)) {
+                toBeUpdatePaths.add(home);
             }
 
         });
 
-        currentVersions.forEach((path, version) -> {
+        snapshotVersions.forEach((home, version) -> {
 
             // 当前版本有，但快照没有，则认为需要新增
-            if (!snapshots.containsKey(path)) {
-                toBeInsertPaths.add(path);
+            if (!cached.containsKey(home)) {
+                toBeInsertPaths.add(home);
             }
 
         });
 
 
-        // 先删除所有有变动的
-        Stream.of(toBeRemovePaths, toBeUpdatePaths)
-                .flatMap(Collection::stream)
-                .forEach(path -> {
-                    final var skill = snapshots.remove(path);
-                    if (null != skill) {
-                        logger.debug("{}/scanning remove skill. name={};home={};", this, skill.header().name(), skill.home());
-                    }
-                });
+        rwLock.writeLock().lock();
+        try {
+            // 先删除所有有变动的
+            Stream.of(toBeRemovePaths, toBeUpdatePaths)
+                    .flatMap(Collection::stream)
+                    .forEach(home -> {
+                        final var skill = cached.remove(home);
+                        if (null != skill) {
+                            logger.debug("{}/scanning remove skill. name={};home={};", this, skill.header().name(), skill.home());
+                        }
+                    });
 
-        // 再添加变更的
-        Stream.of(toBeUpdatePaths, toBeInsertPaths)
-                .flatMap(Collection::stream)
-                .map(home -> {
-                    try {
-                        final var skill = Skill.of(home);
-                        logger.debug("{}/scanning upsert skill. name={};home={};", this, skill.header().name(), skill.home());
-                        return skill;
-                    } catch (IOException e) {
-                        logger.warn("{}/scanning ignored skill by error! home={}", this, home, e);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .forEach(skill -> snapshots.put(skill.home(), skill));
+            // 再添加变更的
+            Stream.of(toBeUpdatePaths, toBeInsertPaths)
+                    .flatMap(Collection::stream)
+                    .forEach(home -> {
+                        try {
+                            final var skill = Skill.of(home);
+                            logger.debug("{}/scanning upsert skill. name={};home={};", this, skill.header().name(), skill.home());
+                            cached.put(home, skill);
+                        } catch (IOException e) {
+                            logger.warn("{}/scanning ignored skill by error! home={}", this, home, e);
+                        }
+                    });
+        } finally {
+            rwLock.writeLock().unlock();
+        }
 
         // 通知外边，扫描发现了变动
         return !toBeRemovePaths.isEmpty()

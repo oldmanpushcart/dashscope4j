@@ -130,7 +130,12 @@ public class McpSource extends AbstractToolSource {
         }
 
         state = State.INITIALIZED;
-        logger.debug("{} initialized!", this);
+        logger.debug("{} initialized! functionCnt={};promptCnt={};resourceCnt={};",
+                this,
+                cached.getOrDefault(McpFunctionTool.Type.TOOL, List.of()).size(),
+                cached.getOrDefault(McpFunctionTool.Type.PROMPT, List.of()).size(),
+                cached.getOrDefault(McpFunctionTool.Type.RESOURCE, List.of()).size()
+        );
         return this;
     }
 
