@@ -49,7 +49,6 @@ Dashscope4j Agent 是一个基于阿里云灵积平台的 Java 智能体框架�
 
 ```java
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.SimpleToolboxPlugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
@@ -58,28 +57,30 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 
 // 初始化客户端
 var client = DashscopeClient.newBuilder()
-    .apiKey(System.getenv("DASHSCOPE_API_KEY"))
-    .build();
+        .apiKey(System.getenv("DASHSCOPE_API_KEY"))
+        .build();
 
-// 创建 ReAct Agent
-var agent = ReActAgent.newBuilder()
-    .client(client)
-    .model(ChatModel.QWEN_PLUS)
-    .plugins(plugins -> {
-        // 添加工具箱插件
-        plugins.add(SimpleToolboxPlugin.newBuilder()
-            .toolkit(ToolUse.Mode.FIXED, ShellToolkit.create())
-            .build());
-        return plugins;
-    })
-    .build();
+        // 创建 ReAct Agent
+        var agent = ReActAgent.newBuilder()
+                .client(client)
+                .model(ChatModel.QWEN_PLUS)
+                .plugins(plugins -> {
+                    // 添加工具箱插件
+                    plugins.add(SimpleToolboxPlugin.newBuilder()
+                            .toolkit(ToolUse.Mode.FIXED, ShellToolkit.create())
+                            .build());
+                    return plugins;
+                })
+                .build();
 
-// 执行对话
-var response = agent.async("session-001", Message.user("查询当前目录下的文件"))
-    .toCompletableFuture()
-    .join();
+        // 执行对话
+        var response = agent.async("session-001", Message.user("查询当前目录下的文件"))
+                .toCompletableFuture()
+                .join();
 
-System.out.println(response.text());
+System.out.
+
+        println(response.text());
 ```
 
 ### 3. 运行效果

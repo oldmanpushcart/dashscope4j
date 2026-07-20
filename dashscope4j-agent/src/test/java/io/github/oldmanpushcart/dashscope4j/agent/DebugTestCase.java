@@ -6,10 +6,10 @@ import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store.FileFragm
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolboxPlugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.LlmToolIndexer;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.mcp.McpSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.mcp.McpToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.mcp.RecoverableMcpClientTransport;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.skill.SkillsSource;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.toolkit.ToolkitSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.skill.SkillsToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.toolkit.ToolkitToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.FileOpsToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.TextFileOpsToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.RuntimeToolkit;
@@ -45,12 +45,12 @@ public class DebugTestCase implements LoadingEnv {
 
     private Plugin buildingToolboxPlugin() {
 
-        final var skillsSource = SkillsSource.newBuilder()
+        final var skillsSource = SkillsToolSource.newBuilder()
                 .directory(Path.of("./skills"))
                 .build()
                 .initialize();
 
-        final var mcpSource = McpSource.newBuilder()
+        final var mcpSource = McpToolSource.newBuilder()
                 .name("amap")
                 .transport(RecoverableMcpClientTransport.newBuilder()
                         .transportFactory(mapper ->
@@ -62,7 +62,7 @@ public class DebugTestCase implements LoadingEnv {
                 .build()
                 .initialize();
 
-        final var toolkitSource = ToolkitSource.create()
+        final var toolkitSource = ToolkitToolSource.create()
                 .initialize()
                 .append(RuntimeToolkit.create())
                 .append(ShellToolkit.create())

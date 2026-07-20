@@ -2,7 +2,11 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.agent.LoadingEnv;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.SimpleToolboxPlugin;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.HashMapToolbox;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolboxPlugin;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.EmbeddingToolIndexer;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.skill.SkillToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.toolkit.ToolkitToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.dashscope.DashscopeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
@@ -10,6 +14,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 
 public class ReActAgentTestCase implements LoadingEnv {
@@ -17,14 +22,38 @@ public class ReActAgentTestCase implements LoadingEnv {
     @Test
     public void test$skill() {
 
-        try (final var agent = ReActAgent.newBuilder()
+        final var skillsTs = SkillToolSource.newBuilder()
+                .home(Path.of("./skills/school-score"))
+                .build()
+                .initialize();
+
+        final var toolkitTs = ToolkitToolSource.create()
+                .initialize()
+                .append(DashscopeToolkit.create());
+
+        final var toolbox = HashMapToolbox.newBuilder()
+                .indexer(EmbeddingToolIndexer.newBuilder()
+                        .client(client)
+                        .cacheFile(Path.of("./.embedding-tool-index-cache.jsonl"))
+                        .build())
+                .build();
+
+        toolbox.subscribe(skillsTs)
+                .toCompletableFuture()
+                .join();
+
+        toolbox.subscribe(toolkitTs)
+                .toCompletableFuture()
+                .join();
+
+        try (skillsTs; toolkitTs; toolbox; final var agent = ReActAgent.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
                 .plugins(plugins -> {
-                    plugins.add(SimpleToolboxPlugin.newBuilder()
-                            .skill(Path.of("./skills"))
-                            .toolkit(DashscopeToolkit.create())
-                            .build());
+                    final var toolboxPlugin = ToolboxPlugin.newBuilder()
+                            .toolboxes(List.of(toolbox))
+                            .build();
+                    plugins.add(toolboxPlugin);
                     return plugins;
                 })
                 .build()) {

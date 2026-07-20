@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
-public class SkillsSource extends AbstractToolSource {
+public class SkillsToolSource extends AbstractToolSource {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Path directory;
@@ -32,7 +32,7 @@ public class SkillsSource extends AbstractToolSource {
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> scheduleF;
 
-    private SkillsSource(Builder builder) {
+    private SkillsToolSource(Builder builder) {
         super(builder.name);
         Objects.requireNonNull(builder.directory, "directory must not be null");
         this.directory = builder.directory;
@@ -72,7 +72,7 @@ public class SkillsSource extends AbstractToolSource {
     }
 
     @Override
-    public synchronized SkillsSource initialize() {
+    public synchronized SkillsToolSource initialize() {
 
         if (isClosed()) {
             throw new IllegalStateException("Already closed!");
@@ -88,7 +88,7 @@ public class SkillsSource extends AbstractToolSource {
         // 初始化扫描线程
         if (isOwnScheduler) {
             scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-                final var t = new Thread(r, "%s/scanner".formatted(SkillsSource.this));
+                final var t = new Thread(r, "%s/scanner".formatted(SkillsToolSource.this));
                 t.setDaemon(true);
                 return t;
             });
@@ -254,7 +254,7 @@ public class SkillsSource extends AbstractToolSource {
         return new Builder();
     }
 
-    public static class Builder implements Buildable<SkillsSource, Builder> {
+    public static class Builder implements Buildable<SkillsToolSource, Builder> {
 
         private String name;
         private Path directory;
@@ -282,8 +282,8 @@ public class SkillsSource extends AbstractToolSource {
         }
 
         @Override
-        public SkillsSource build() {
-            return new SkillsSource(this);
+        public SkillsToolSource build() {
+            return new SkillsToolSource(this);
         }
 
     }

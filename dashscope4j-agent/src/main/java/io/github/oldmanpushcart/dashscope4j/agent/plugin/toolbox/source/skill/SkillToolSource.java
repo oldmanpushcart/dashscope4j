@@ -17,7 +17,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class SkillSource extends AbstractToolSource {
+public class SkillToolSource extends AbstractToolSource {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Path home;
@@ -30,7 +30,7 @@ public class SkillSource extends AbstractToolSource {
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> scheduleF;
 
-    private SkillSource(Builder builder) {
+    private SkillToolSource(Builder builder) {
         super(builder.name);
         Objects.requireNonNull(builder.home, "home must not be null");
         Objects.requireNonNull(builder.scanInterval, "scanInterval must not be null");
@@ -67,7 +67,7 @@ public class SkillSource extends AbstractToolSource {
     }
 
     @Override
-    public synchronized SkillSource initialize() {
+    public synchronized SkillToolSource initialize() {
 
         if (isClosed()) {
             throw new IllegalStateException("Already closed!");
@@ -83,7 +83,7 @@ public class SkillSource extends AbstractToolSource {
         // 初始化扫描线程
         if (isOwnScheduler) {
             scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-                final var t = new Thread(r, "%s/scanner".formatted(SkillSource.this));
+                final var t = new Thread(r, "%s/scanner".formatted(SkillToolSource.this));
                 t.setDaemon(true);
                 return t;
             });
@@ -185,7 +185,11 @@ public class SkillSource extends AbstractToolSource {
         CLOSED
     }
 
-    public static class Builder implements Buildable<SkillSource, Builder> {
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static class Builder implements Buildable<SkillToolSource, Builder> {
 
         private String name;
         private Path home;
@@ -213,8 +217,8 @@ public class SkillSource extends AbstractToolSource {
         }
 
         @Override
-        public SkillSource build() {
-            return new SkillSource(this);
+        public SkillToolSource build() {
+            return new SkillToolSource(this);
         }
 
     }

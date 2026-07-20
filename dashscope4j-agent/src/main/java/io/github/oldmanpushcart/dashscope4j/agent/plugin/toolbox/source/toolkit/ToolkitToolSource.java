@@ -8,16 +8,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class ToolkitSource extends AbstractToolSource {
+public class ToolkitToolSource extends AbstractToolSource {
 
     private final List<Tool> tools = new CopyOnWriteArrayList<>();
     private volatile State state = State.IDLE;
 
-    public ToolkitSource(String name) {
+    public ToolkitToolSource(String name) {
         super(name);
     }
 
-    public ToolkitSource append(List<Tool> tools) {
+    public ToolkitToolSource append(List<Tool> tools) {
 
         if (isClosed()) {
             throw new IllegalStateException("Already closed!");
@@ -37,11 +37,11 @@ public class ToolkitSource extends AbstractToolSource {
         return this;
     }
 
-    public ToolkitSource append(Toolkit toolkit) {
+    public ToolkitToolSource append(Toolkit toolkit) {
         return append(toolkit.tools());
     }
 
-    public ToolkitSource remove(List<String> names) {
+    public ToolkitToolSource remove(List<String> names) {
 
         if (isClosed()) {
             throw new IllegalStateException("Already closed!");
@@ -79,7 +79,7 @@ public class ToolkitSource extends AbstractToolSource {
     }
 
     @Override
-    public synchronized ToolkitSource initialize() {
+    public synchronized ToolkitToolSource initialize() {
 
         if (isClosed()) {
             throw new IllegalStateException("Already closed!");
@@ -112,12 +112,12 @@ public class ToolkitSource extends AbstractToolSource {
         super.close();
     }
 
-    public static ToolkitSource create(String name) {
-        return new ToolkitSource(name);
+    public static ToolkitToolSource create(String name) {
+        return new ToolkitToolSource(name);
     }
 
-    public static ToolkitSource create() {
-        return new ToolkitSource(null);
+    public static ToolkitToolSource create() {
+        return new ToolkitToolSource(null);
     }
 
     private enum State {

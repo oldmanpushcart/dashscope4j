@@ -358,8 +358,8 @@ public class EmbeddingToolIndexer implements ToolIndexer {
     public static class Builder implements Buildable<EmbeddingToolIndexer, Builder> {
 
         private DashscopeClient client;
-        private ChatModel model;
-        private TextEmbeddingModel embeddingModel;
+        private ChatModel model = ChatModel.QWEN_FLASH;
+        private TextEmbeddingModel embeddingModel = TextEmbeddingModel.TEXT_EMBEDDING_V4;
         private Path cacheFile;
 
         public Builder client(DashscopeClient client) {

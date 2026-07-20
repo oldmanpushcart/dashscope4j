@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class McpSource extends AbstractToolSource {
+public class McpToolSource extends AbstractToolSource {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final McpClientTransport transport;
@@ -36,7 +36,7 @@ public class McpSource extends AbstractToolSource {
     private volatile State state = State.IDLE;
     private McpAsyncClient mcpClient;
 
-    private McpSource(Builder builder) {
+    private McpToolSource(Builder builder) {
         super(builder.name);
         CheckUtils.requireNonBlankString(builder.name, "name must not be blank!");
         Objects.requireNonNull(builder.transport, "transport must not be null!");
@@ -79,7 +79,7 @@ public class McpSource extends AbstractToolSource {
     }
 
     @Override
-    public synchronized McpSource initialize() {
+    public synchronized McpToolSource initialize() {
 
         // 源已被关闭，无法继续初始化
         if (isClosed()) {
@@ -313,7 +313,7 @@ public class McpSource extends AbstractToolSource {
         return new Builder();
     }
 
-    public static class Builder implements Buildable<McpSource, Builder> {
+    public static class Builder implements Buildable<McpToolSource, Builder> {
 
         private String name;
         private McpClientTransport transport;
@@ -329,8 +329,8 @@ public class McpSource extends AbstractToolSource {
         }
 
         @Override
-        public McpSource build() {
-            return new McpSource(this);
+        public McpToolSource build() {
+            return new McpToolSource(this);
         }
 
     }

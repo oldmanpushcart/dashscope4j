@@ -23,7 +23,7 @@ import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
 
-public class SettingInterceptor implements ChatInterceptor {
+class SettingInterceptor implements ChatInterceptor {
 
     private static final Message SEARCH_TOOLS_MESSAGE = Message
             .system(PromptTemplate.newBuilder()
