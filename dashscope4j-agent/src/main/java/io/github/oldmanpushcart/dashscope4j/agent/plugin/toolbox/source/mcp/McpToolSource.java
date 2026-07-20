@@ -8,6 +8,8 @@ import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -25,7 +27,9 @@ import static java.util.Objects.requireNonNull;
 
 public class McpToolSource extends AbstractToolSource {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final McpClientTransport transport;
+    private final String _toString;
 
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
     private final Map<McpFunctionTool.Type, List<Tool>> cached = new ConcurrentHashMap<>();
@@ -37,6 +41,12 @@ public class McpToolSource extends AbstractToolSource {
         requireNonBlankString(builder.name, "name must not be blank!");
         requireNonNull(builder.transport, "transport must not be null!");
         this.transport = builder.transport;
+        this._toString = "dashscope-agent:/toolbox/source/mcp/%s".formatted(name());
+    }
+
+    @Override
+    public String toString() {
+        return _toString;
     }
 
     @Override
@@ -99,6 +109,12 @@ public class McpToolSource extends AbstractToolSource {
                             throw new IllegalStateException("Already closed!");
                         } else {
                             state = State.INITIALIZED;
+                            logger.debug("{} initialized. functionCnt={};promptCnt={};resourceCnt={};",
+                                    this,
+                                    cached.getOrDefault(McpFunctionTool.Type.TOOL, List.of()).size(),
+                                    cached.getOrDefault(McpFunctionTool.Type.PROMPT, List.of()).size(),
+                                    cached.getOrDefault(McpFunctionTool.Type.RESOURCE, List.of()).size()
+                            );
                         }
                     }
                     return this;
@@ -108,6 +124,7 @@ public class McpToolSource extends AbstractToolSource {
                     synchronized (this) {
                         state = State.IDLE;
                     }
+                    logger.warn("{} initialize occur error!", this, ex);
                     return CompletableFuture.failedStage(ex);
                 })
                 ;
@@ -285,6 +302,7 @@ public class McpToolSource extends AbstractToolSource {
             rwLock.writeLock().unlock();
         }
         super.close();
+        logger.debug("{} closed.", this);
     }
 
     private enum State {
