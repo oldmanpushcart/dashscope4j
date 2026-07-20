@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalState;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalStateStage;
 
 public class HashMapToolbox implements Toolbox {
 
@@ -66,7 +66,7 @@ public class HashMapToolbox implements Toolbox {
                  */
                 .exceptionallyCompose(ex -> {
                     unload(source);
-                    return illegalState(ex, "Subscribe failed: loading from source occur error!");
+                    return illegalStateStage(ex, "Subscribe failed: loading from source occur error!");
                 })
                 ;
 
@@ -159,7 +159,7 @@ public class HashMapToolbox implements Toolbox {
                     }
                     return result;
                 })
-                .exceptionallyCompose(ex -> illegalState(ex, "Lookup tools by intent failed!"));
+                .exceptionallyCompose(ex -> illegalStateStage(ex, "Lookup tools by intent failed!"));
     }
 
     @Override

@@ -17,6 +17,8 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalStateStage;
+
 public class SkillsToolSource extends AbstractToolSource {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -72,14 +74,14 @@ public class SkillsToolSource extends AbstractToolSource {
     }
 
     @Override
-    public synchronized SkillsToolSource initialize() {
+    public synchronized CompletionStage<SkillsToolSource> initialize() {
 
         if (isClosed()) {
-            throw new IllegalStateException("Already closed!");
+            return illegalStateStage("Already closed!");
         }
 
         if (isInitialized()) {
-            throw new IllegalStateException("Already initialized!");
+            return illegalStateStage("Already initialized!");
         }
 
         // 强制扫描
@@ -122,7 +124,7 @@ public class SkillsToolSource extends AbstractToolSource {
                 cached.keySet()
         );
 
-        return this;
+        return CompletableFuture.completedStage(this);
     }
 
     private synchronized boolean scanning() {

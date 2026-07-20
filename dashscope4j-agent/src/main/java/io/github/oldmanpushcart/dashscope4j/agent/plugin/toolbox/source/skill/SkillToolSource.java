@@ -12,10 +12,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalStateStage;
 
 public class SkillToolSource extends AbstractToolSource {
 
@@ -67,14 +66,14 @@ public class SkillToolSource extends AbstractToolSource {
     }
 
     @Override
-    public synchronized SkillToolSource initialize() {
+    public synchronized CompletionStage<SkillToolSource> initialize() {
 
         if (isClosed()) {
-            throw new IllegalStateException("Already closed!");
+            return illegalStateStage("Already closed!");
         }
 
         if (isInitialized()) {
-            throw new IllegalStateException("Already initialized!");
+            return illegalStateStage("Already initialized!");
         }
 
         // 开始初始化扫描
@@ -112,7 +111,7 @@ public class SkillToolSource extends AbstractToolSource {
         state = State.INITIALIZED;
         logger.debug("{} initialized.", this);
 
-        return this;
+        return CompletableFuture.completedStage(this);
     }
 
     private boolean scanning() {

@@ -25,16 +25,21 @@ public class ReActAgentTestCase implements LoadingEnv {
         final var skillsTs = SkillToolSource.newBuilder()
                 .home(Path.of("./skills/school-score"))
                 .build()
-                .initialize();
-
-        final var toolkitTs = ToolkitToolSource.create()
                 .initialize()
-                .append(DashscopeToolkit.create());
+                .toCompletableFuture()
+                .join();
+
+        final var toolkitTs = ToolkitToolSource.newBuilder()
+                .append(DashscopeToolkit.create())
+                .build()
+                .initialize()
+                .toCompletableFuture()
+                .join();
 
         final var toolbox = HashMapToolbox.newBuilder()
                 .indexer(EmbeddingToolIndexer.newBuilder()
                         .client(client)
-                        .cacheFile(Path.of("./.embedding-tool-index-cache.jsonl"))
+                        .storage(Path.of("./.embedding-tool-index-cache.jsonl"))
                         .build())
                 .build();
 

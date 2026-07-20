@@ -45,12 +45,14 @@ public class DebugTestCase implements LoadingEnv {
 
     private Plugin buildingToolboxPlugin() {
 
-        final var skillsSource = SkillsToolSource.newBuilder()
+        final var skillsTs = SkillsToolSource.newBuilder()
                 .directory(Path.of("./skills"))
                 .build()
-                .initialize();
+                .initialize()
+                .toCompletableFuture()
+                .join();
 
-        final var mcpSource = McpToolSource.newBuilder()
+        final var mcpTs = McpToolSource.newBuilder()
                 .name("amap")
                 .transport(RecoverableMcpClientTransport.newBuilder()
                         .transportFactory(mapper ->
@@ -60,24 +62,31 @@ public class DebugTestCase implements LoadingEnv {
                                         .build())
                         .build())
                 .build()
-                .initialize();
-
-        final var toolkitSource = ToolkitToolSource.create()
                 .initialize()
-                .append(RuntimeToolkit.create())
-                .append(ShellToolkit.create())
-                .append(FileOpsToolkit.create())
-                .append(TextFileOpsToolkit.create());
+                .toCompletableFuture()
+                .join();
+
+        final var toolkitTs = ToolkitToolSource.newBuilder()
+                .append(
+                        RuntimeToolkit.create(),
+                        ShellToolkit.create(),
+                        FileOpsToolkit.create(),
+                        TextFileOpsToolkit.create()
+                )
+                .build()
+                .initialize()
+                .toCompletableFuture()
+                .join();
 
         final var toolbox = HashMapToolbox.newBuilder()
                 .indexer(LlmToolIndexer.newBuilder()
                         .client(client)
                         .model(ChatModel.QWEN_FLASH)
-                        .cacheFile(Path.of(".toolbox-index-cache.jsonl"))
+                        .storage(Path.of(".toolbox-index-cache.jsonl"))
                         .build())
                 .build();
 
-        CompletableFutureUtils.allOf(Stream.of(toolkitSource, skillsSource, mcpSource)
+        CompletableFutureUtils.allOf(Stream.of(toolkitTs, skillsTs, mcpTs)
                         .map(toolbox::subscribe)
                         .toList())
                 .toCompletableFuture()
@@ -136,7 +145,7 @@ public class DebugTestCase implements LoadingEnv {
     @Test
     public void debug$2() throws InterruptedException, IOException {
         final var root = Path.of("./skills");
-        Files.list(root).forEach(path-> {
+        Files.list(root).forEach(path -> {
             final var skill = path.resolve("./SKILL.md");
             try {
                 final var instant = Files.getLastModifiedTime(skill);

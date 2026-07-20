@@ -3,18 +3,25 @@ package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.toolkit
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.AbstractToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalStateStage;
 
 public class ToolkitToolSource extends AbstractToolSource {
 
     private final List<Tool> tools = new CopyOnWriteArrayList<>();
     private volatile State state = State.IDLE;
 
-    public ToolkitToolSource(String name) {
-        super(name);
+    private ToolkitToolSource(Builder builder) {
+        super(builder.name);
+        this.tools.addAll(builder.tools);
     }
 
     public ToolkitToolSource append(List<Tool> tools) {
@@ -79,18 +86,18 @@ public class ToolkitToolSource extends AbstractToolSource {
     }
 
     @Override
-    public synchronized ToolkitToolSource initialize() {
+    public synchronized CompletionStage<ToolkitToolSource> initialize() {
 
         if (isClosed()) {
-            throw new IllegalStateException("Already closed!");
+            return illegalStateStage("Already closed!");
         }
 
         if (isInitialized()) {
-            throw new IllegalStateException("Already initialized!");
+            return illegalStateStage("Already initialized!");
         }
 
         state = State.INITIALIZED;
-        return this;
+        return CompletableFuture.completedStage(this);
     }
 
     @Override
@@ -113,17 +120,57 @@ public class ToolkitToolSource extends AbstractToolSource {
     }
 
     public static ToolkitToolSource create(String name) {
-        return new ToolkitToolSource(name);
+        return newBuilder()
+                .name(name)
+                .build();
     }
 
     public static ToolkitToolSource create() {
-        return new ToolkitToolSource(null);
+        return newBuilder()
+                .build();
     }
 
     private enum State {
         IDLE,
         INITIALIZED,
         CLOSED
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static class Builder implements Buildable<ToolkitToolSource, Builder> {
+
+        private String name;
+        private final List<Tool> tools = new ArrayList<>();
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder append(Tool... tools) {
+            if (null != tools) {
+                this.tools.addAll(List.of(tools));
+            }
+            return this;
+        }
+
+        public Builder append(Toolkit... toolkits) {
+            if (null != toolkits) {
+                for (Toolkit toolkit : toolkits) {
+                    this.tools.addAll(toolkit.tools());
+                }
+            }
+            return this;
+        }
+
+        @Override
+        public ToolkitToolSource build() {
+            return new ToolkitToolSource(this);
+        }
+
     }
 
 }

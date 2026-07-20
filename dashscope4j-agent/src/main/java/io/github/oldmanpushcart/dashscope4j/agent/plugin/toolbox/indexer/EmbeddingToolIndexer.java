@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalState;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalStateStage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -63,7 +63,7 @@ public class EmbeddingToolIndexer implements ToolIndexer {
         this.client = builder.client;
         this.model = builder.model;
         this.embeddingModel = builder.embeddingModel;
-        this.cache = new IndexCache(builder.cacheFile);
+        this.cache = new IndexCache(builder.storage);
     }
 
 
@@ -211,7 +211,7 @@ public class EmbeddingToolIndexer implements ToolIndexer {
                 // 计算文档失败，则更新工具索引失败
                 .exceptionallyCompose(ex -> {
                     final var name = tool.meta().name();
-                    return illegalState(ex, "Indexing tool: %s occur error!".formatted(name));
+                    return illegalStateStage(ex, "Indexing tool: %s occur error!".formatted(name));
                 });
     }
 
@@ -267,12 +267,12 @@ public class EmbeddingToolIndexer implements ToolIndexer {
 
     private class IndexCache {
 
-        private final Path cacheFile;
+        private final Path storage;
         private final Map<String, Entry> entries = new ConcurrentHashMap<>();
         private final Object superThis = EmbeddingToolIndexer.this;
 
-        private IndexCache(Path cacheFile) {
-            this.cacheFile = cacheFile;
+        private IndexCache(Path storage) {
+            this.storage = storage;
             init();
         }
 
@@ -281,11 +281,11 @@ public class EmbeddingToolIndexer implements ToolIndexer {
          */
         private void init() {
 
-            if (null == cacheFile || !Files.exists(cacheFile) || !Files.isReadable(cacheFile)) {
+            if (null == storage) {
                 return;
             }
 
-            try (final var __stream__ = Files.lines(cacheFile)) {
+            try (final var __stream__ = Files.lines(storage)) {
                 __stream__
                         .filter(CommonUtils::isNotBlankString)
                         .forEach(line -> {
@@ -298,7 +298,7 @@ public class EmbeddingToolIndexer implements ToolIndexer {
                         });
                 logger.debug("{} cache loaded. size={};", superThis, entries.size());
             } catch (IOException ioEx) {
-                logger.warn("{} cache failed to read file. file={};", superThis, cacheFile, ioEx);
+                logger.warn("{} cache failed to read file. storage={};", superThis, storage, ioEx);
             }
 
         }
@@ -323,9 +323,12 @@ public class EmbeddingToolIndexer implements ToolIndexer {
         }
 
         private void persist(Entry entry) {
+            if (null == storage) {
+                return;
+            }
             try {
                 final var entryJson = JacksonJsonUtils.toJson(entry);
-                Files.writeString(cacheFile, entryJson + "\n", UTF_8, APPEND, CREATE);
+                Files.writeString(storage, entryJson + "\n", UTF_8, APPEND, CREATE);
             } catch (Throwable ex) {
                 logger.warn("{} cache persist error! key={};", superThis, entry.key(), ex);
             }
@@ -360,7 +363,7 @@ public class EmbeddingToolIndexer implements ToolIndexer {
         private DashscopeClient client;
         private ChatModel model = ChatModel.QWEN_FLASH;
         private TextEmbeddingModel embeddingModel = TextEmbeddingModel.TEXT_EMBEDDING_V4;
-        private Path cacheFile;
+        private Path storage;
 
         public Builder client(DashscopeClient client) {
             this.client = client;
@@ -377,8 +380,8 @@ public class EmbeddingToolIndexer implements ToolIndexer {
             return this;
         }
 
-        public Builder cacheFile(Path cacheFile) {
-            this.cacheFile = cacheFile;
+        public Builder storage(Path storage) {
+            this.storage = storage;
             return this;
         }
 

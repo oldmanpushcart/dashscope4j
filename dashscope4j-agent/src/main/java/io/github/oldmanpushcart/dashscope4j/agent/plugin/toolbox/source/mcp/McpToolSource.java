@@ -3,33 +3,29 @@ package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.mcp;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.AbstractToolSource;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
-import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils.requireNonBlankString;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalStateStage;
+import static java.util.Objects.requireNonNull;
+
 public class McpToolSource extends AbstractToolSource {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final McpClientTransport transport;
-    private final String _toString;
-
 
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
     private final Map<McpFunctionTool.Type, List<Tool>> cached = new ConcurrentHashMap<>();
@@ -38,15 +34,9 @@ public class McpToolSource extends AbstractToolSource {
 
     private McpToolSource(Builder builder) {
         super(builder.name);
-        CheckUtils.requireNonBlankString(builder.name, "name must not be blank!");
-        Objects.requireNonNull(builder.transport, "transport must not be null!");
+        requireNonBlankString(builder.name, "name must not be blank!");
+        requireNonNull(builder.transport, "transport must not be null!");
         this.transport = builder.transport;
-        this._toString = "dashscope4j-agent:/toolbox/source/mcp/%s".formatted(name());
-    }
-
-    @Override
-    public String toString() {
-        return _toString;
     }
 
     @Override
@@ -78,69 +68,53 @@ public class McpToolSource extends AbstractToolSource {
         return State.INITIALIZED == state;
     }
 
+    private boolean isInitializing() {
+        return State.INITIALIZING == state;
+    }
+
     @Override
-    public synchronized McpToolSource initialize() {
+    public synchronized CompletionStage<McpToolSource> initialize() {
 
-        // 源已被关闭，无法继续初始化
         if (isClosed()) {
-            throw new IllegalStateException("Already closed!");
+            return illegalStateStage("Already closed!");
         }
 
-        // 不能多次重复初始化
+        if (isInitializing()) {
+            return illegalStateStage("Already initializing!");
+        }
+
         if (isInitialized()) {
-            throw new IllegalStateException("Already initialized!");
+            return illegalStateStage("Already initialized!");
         }
 
-        try {
+        // 先标记为初始化中，避免重复进入
+        state = State.INITIALIZING;
 
-            // 连接MCP客户端
-            mcpClient = connecting().get();
-            logger.debug("{}/initialize MCP client connected.", this);
-
-            // 初始化获取所有工具
-            final var snapshots = fetching().get();
-            logger.debug("{}/initialize MCP client fetched.", this);
-
-            // 更新当前工具缓存
-            rwLock.writeLock().lock();
-            try {
-                cached.clear();
-                cached.putAll(snapshots);
-            } finally {
-                rwLock.writeLock().unlock();
-            }
-
-        } catch (Exception t) {
-
-            // 初始化失败需要关闭掉之前已创建的MCP客户端
-            mcpClientCloseQuietly();
-
-            final Throwable cause;
-            if (t instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-                cause = t;
-            } else if (t instanceof ExecutionException eeCause) {
-                cause = eeCause.getCause();
-            } else {
-                cause = t;
-            }
-
-            throw new RuntimeException("Initialize occur error!", cause);
-
-        }
-
-        state = State.INITIALIZED;
-        logger.debug("{} initialized! functionCnt={};promptCnt={};resourceCnt={};",
-                this,
-                cached.getOrDefault(McpFunctionTool.Type.TOOL, List.of()).size(),
-                cached.getOrDefault(McpFunctionTool.Type.PROMPT, List.of()).size(),
-                cached.getOrDefault(McpFunctionTool.Type.RESOURCE, List.of()).size()
-        );
-        return this;
+        return CompletableFuture.completedStage(null)
+                .thenCompose(u -> connecting())
+                .thenCompose(u -> fetching())
+                .thenApply(u -> {
+                    synchronized (this) {
+                        if (isClosed()) {
+                            throw new IllegalStateException("Already closed!");
+                        } else {
+                            state = State.INITIALIZED;
+                        }
+                    }
+                    return this;
+                })
+                .exceptionallyCompose(ex -> {
+                    mcpClientCloseQuietly();
+                    synchronized (this) {
+                        state = State.IDLE;
+                    }
+                    return CompletableFuture.failedStage(ex);
+                })
+                ;
     }
 
 
-    private CompletableFuture<McpAsyncClient> connecting() {
+    private CompletableFuture<?> connecting() {
 
         // 构建MCP客户端
         final var mcpClient = McpClient.async(transport)
@@ -152,7 +126,11 @@ public class McpToolSource extends AbstractToolSource {
         // 连接MCP
         return mcpClient.initialize()
                 .toFuture()
-                .thenApply(u -> mcpClient);
+                .thenAccept(u -> {
+                    synchronized (this) {
+                        this.mcpClient = mcpClient;
+                    }
+                });
     }
 
     private Mono<Void> handleMcpToolChanged(List<McpSchema.Tool> mcpTools) {
@@ -209,7 +187,7 @@ public class McpToolSource extends AbstractToolSource {
         });
     }
 
-    private CompletableFuture<? extends Map<McpFunctionTool.Type, List<Tool>>> fetching() {
+    private CompletionStage<?> fetching() {
 
         final var mcpSrvCap = mcpClient.getServerCapabilities();
         if (null == mcpSrvCap) {
@@ -267,8 +245,15 @@ public class McpToolSource extends AbstractToolSource {
         }
 
         return CompletableFutureUtils.allOf(stages)
-                .thenApply(u -> snapshots)
-                .toCompletableFuture();
+                .thenAccept(u -> {
+                    rwLock.writeLock().lock();
+                    try {
+                        cached.clear();
+                        cached.putAll(snapshots);
+                    } finally {
+                        rwLock.writeLock().unlock();
+                    }
+                });
     }
 
     @Override
@@ -300,11 +285,11 @@ public class McpToolSource extends AbstractToolSource {
             rwLock.writeLock().unlock();
         }
         super.close();
-        logger.debug("{} closed.", this);
     }
 
     private enum State {
         IDLE,
+        INITIALIZING,
         INITIALIZED,
         CLOSED
     }

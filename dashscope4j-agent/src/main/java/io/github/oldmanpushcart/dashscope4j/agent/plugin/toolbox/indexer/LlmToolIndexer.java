@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalState;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalStateStage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -72,7 +72,7 @@ public class LlmToolIndexer implements ToolIndexer {
         Objects.requireNonNull(builder.model, "model must not be null!");
         this.client = builder.client;
         this.model = builder.model;
-        this.cache = new IndexCache(builder.cacheFile);
+        this.cache = new IndexCache(builder.storage);
     }
 
     @Override
@@ -105,7 +105,7 @@ public class LlmToolIndexer implements ToolIndexer {
                 // 计算文档失败，则更新工具索引失败
                 .exceptionallyCompose(ex -> {
                     final var name = tool.meta().name();
-                    return illegalState(ex, "Indexing tool: %s occur error!".formatted(name));
+                    return illegalStateStage(ex, "Indexing tool: %s occur error!".formatted(name));
                 });
     }
 
@@ -209,7 +209,7 @@ public class LlmToolIndexer implements ToolIndexer {
                             .collect(Collectors.toSet());
 
                 })
-                .exceptionallyCompose(ex -> illegalState(ex, "Indexing tools by intent occur error!"));
+                .exceptionallyCompose(ex -> illegalStateStage(ex, "Indexing tools by intent occur error!"));
     }
 
     // ---- 内部类定义 ----
@@ -399,7 +399,7 @@ public class LlmToolIndexer implements ToolIndexer {
 
         private DashscopeClient client;
         private ChatModel model = ChatModel.QWEN_FLASH;
-        private Path cacheFile = Path.of(".llm-tool-index-cache.jsonl");
+        private Path storage;
 
         /**
          * 设置Dashscope客户端
@@ -429,8 +429,8 @@ public class LlmToolIndexer implements ToolIndexer {
          * @param cacheFile 缓存文件
          * @return this
          */
-        public Builder cacheFile(Path cacheFile) {
-            this.cacheFile = cacheFile;
+        public Builder storage(Path storage) {
+            this.storage = storage;
             return this;
         }
 

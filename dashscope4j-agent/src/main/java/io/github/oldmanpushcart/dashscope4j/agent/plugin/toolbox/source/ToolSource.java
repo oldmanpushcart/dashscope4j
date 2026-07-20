@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 public interface ToolSource extends AutoCloseable {
 
@@ -14,7 +15,7 @@ public interface ToolSource extends AutoCloseable {
 
     List<Tool> tools();
 
-    ToolSource initialize();
+    CompletionStage<? extends ToolSource> initialize();
 
     boolean isClosed();
 
