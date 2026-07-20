@@ -25,12 +25,10 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardWatchEventKinds;
+import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 
 public class DebugTestCase implements LoadingEnv {
@@ -86,8 +84,7 @@ public class DebugTestCase implements LoadingEnv {
                 .join();
 
         return ToolboxPlugin.newBuilder()
-                .toolbox(toolbox)
-                .enableSearchTools(true)
+                .toolboxes(List.of(toolbox))
                 .build();
     }
 

@@ -31,7 +31,6 @@ public class SimpleToolboxPlugin implements Plugin {
 
     private final Duration syncInterval;
     private final Path dataspace;
-    private final boolean enableSearchTools;
     private final Function<Agent, ToolIndexer> indexerFactory;
     private final List<Supplier<? extends ToolSource>> sourceSuppliers;
 
@@ -40,7 +39,6 @@ public class SimpleToolboxPlugin implements Plugin {
     private SimpleToolboxPlugin(Builder builder) {
         this.syncInterval = builder.syncInterval;
         this.dataspace = builder.dataspace;
-        this.enableSearchTools = builder.enableSearchTools;
         this.indexerFactory = builder.indexerFactory;
         this.sourceSuppliers = builder.sourceSuppliers;
     }
@@ -79,7 +77,7 @@ public class SimpleToolboxPlugin implements Plugin {
 
         // 订阅完成，返回插件扩展
         return stage.thenApply(u -> {
-            final var settingInterceptor = new SettingInterceptor(toolbox, enableSearchTools);
+            final var settingInterceptor = new SettingInterceptor(List.of(toolbox));
             return new Extension() {
                 @Override
                 public Plugin plugin() {
@@ -116,7 +114,6 @@ public class SimpleToolboxPlugin implements Plugin {
 
         private Duration syncInterval = Duration.ofSeconds(5);
         private Path dataspace = Path.of("./");
-        private boolean enableSearchTools = true;
         private Function<Agent, ToolIndexer> indexerFactory;
         private final List<Supplier<? extends ToolSource>> sourceSuppliers = new ArrayList<>();
 
@@ -143,17 +140,6 @@ public class SimpleToolboxPlugin implements Plugin {
         }
 
         /**
-         * 设置是否启用搜索工具
-         *
-         * @param enableSearchTools 是否启用搜索工具
-         * @return this
-         */
-        public Builder enableSearchTools(boolean enableSearchTools) {
-            this.enableSearchTools = enableSearchTools;
-            return this;
-        }
-
-        /**
          * 工具索引工厂
          *
          * @param factory 工具索引工厂
@@ -175,7 +161,8 @@ public class SimpleToolboxPlugin implements Plugin {
             sourceSuppliers.add(() -> McpSource.newBuilder()
                     .name(name)
                     .transport(transport)
-                    .build());
+                    .build()
+                    .initialize());
             return this;
         }
 
@@ -199,7 +186,7 @@ public class SimpleToolboxPlugin implements Plugin {
          * @return this
          */
         public Builder toolkit(Toolkit toolkit) {
-            sourceSuppliers.add(() -> ToolkitSource.create().append(toolkit));
+            sourceSuppliers.add(() -> ToolkitSource.create().initialize().append(toolkit));
             return this;
         }
 
@@ -210,7 +197,7 @@ public class SimpleToolboxPlugin implements Plugin {
          * @return this
          */
         public Builder tool(Tool tool) {
-            sourceSuppliers.add(() -> ToolkitSource.create().append(List.of(tool)));
+            sourceSuppliers.add(() -> ToolkitSource.create().initialize().append(List.of(tool)));
             return this;
         }
 
