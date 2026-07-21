@@ -14,13 +14,13 @@ import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -33,14 +33,16 @@ class SettingInterceptor implements ChatInterceptor {
                     .render())
             .withCache();
 
-    private final List<Toolbox> toolboxes;
+    private final List<ToolLookup> fixes;
+    private final List<Toolbox> dynamics;
     private final Tool searchToolsTool;
-    private final ToolLookup dynamicToolLookup;
+    private final ToolLookup compositeToolLookup;
 
-    public SettingInterceptor(List<Toolbox> toolboxes) {
-        this.toolboxes = toolboxes;
-        this.searchToolsTool = new SearchToolsFunction(toolboxes).asTool();
-        this.dynamicToolLookup = new DynamicToolLookup(toolboxes);
+    public SettingInterceptor(List<ToolLookup> fixes, List<Toolbox> dynamics) {
+        this.fixes = fixes;
+        this.dynamics = dynamics;
+        this.searchToolsTool = new SearchToolsFunction(dynamics).asTool();
+        this.compositeToolLookup = new CompositeToolLookup(fixes, dynamics);
     }
 
     @Override
@@ -50,18 +52,13 @@ class SettingInterceptor implements ChatInterceptor {
 
                         // 添加静态工具搜索
                         .toolLookups(lookups -> {
-                            lookups.add(dynamicToolLookup);
+                            lookups.add(compositeToolLookup);
                             return lookups;
                         })
 
                         // 添加动态工具搜索
                         .building(inputBuilder -> {
-
-                            final var dynamicToolboxes = toolboxes.stream()
-                                    .filter(toolbox -> toolbox.mode() == Toolbox.Mode.DYNAMIC)
-                                    .toList();
-
-                            if (!dynamicToolboxes.isEmpty()) {
+                            if (!dynamics.isEmpty()) {
                                 inputBuilder
                                         .messages(messages -> {
                                             messages.add(0, SEARCH_TOOLS_MESSAGE);
@@ -72,32 +69,37 @@ class SettingInterceptor implements ChatInterceptor {
                                             return lookups;
                                         });
                             }
-
                         })
+
                         .build())
                 .build();
         return chain.proceed(newRequest);
     }
 
-    private record DynamicToolLookup(List<Toolbox> toolboxes) implements ToolLookup {
+    /**
+     * 聚合工具查找
+     *
+     * @param fixes    固定工具集合
+     * @param dynamics 动态工具集合
+     */
+    private record CompositeToolLookup(List<ToolLookup> fixes, List<Toolbox> dynamics) implements ToolLookup {
 
         @Override
-            public List<Tool> lookupAll() {
-                return toolboxes.stream()
-                        .flatMap(toolbox -> toolbox.lookupAll().stream())
-                        .toList();
-            }
-
-            @Override
-            public Optional<Tool> lookupByName(String name) {
-                return toolboxes.stream()
-                        .filter(toolbox -> toolbox.mode() == Toolbox.Mode.DYNAMIC)
-                        .flatMap(toolbox -> toolbox.lookupAll().stream())
-                        .filter(tool -> Objects.equals(tool.meta().name(), name))
-                        .findFirst();
-            }
-
+        public List<Tool> lookupAll() {
+            return fixes.stream()
+                    .flatMap(toolbox -> toolbox.lookupAll().stream())
+                    .toList();
         }
+
+        @Override
+        public Optional<Tool> lookupByName(String name) {
+            return Stream.of(fixes, dynamics)
+                    .flatMap(Collection::stream)
+                    .flatMap(toolbox -> toolbox.lookupByName(name).stream())
+                    .findFirst();
+        }
+
+    }
 
     /**
      * 工具搜索函数
@@ -110,18 +112,10 @@ class SettingInterceptor implements ChatInterceptor {
      * 供 LLM 在需要时发现和调用。
      * </p>
      *
-     * @param toolboxes 工具箱实例
+     * @param dynamics 动态工具集
      */
-    private record SearchToolsFunction(List<Toolbox> toolboxes)
+    private record SearchToolsFunction(List<Toolbox> dynamics)
             implements Function<SearchToolsFunction.Search, CompletionStage<Map<String, Tool>>> {
-
-        /**
-         * 构造工具搜索函数
-         *
-         * @param toolboxes 工具箱实例
-         */
-        private SearchToolsFunction {
-        }
 
         /**
          * 执行工具搜索
@@ -135,21 +129,23 @@ class SettingInterceptor implements ChatInterceptor {
         @Override
         public CompletionStage<Map<String, Tool>> apply(Search search) {
 
-            final var merges = new CopyOnWriteArrayList<Tool>();
-            final var stages = toolboxes.stream()
-                    .filter(toolbox -> toolbox.mode() == Toolbox.Mode.DYNAMIC)
-                    .map(toolbox -> toolbox
-                            .lookupByIntent(search.intent())
-                            .thenAccept(merges::addAll))
+            // 所有工具箱串并行查询
+            final var stages = dynamics.stream()
+                    .map(toolbox -> toolbox.lookupByIntent(search.intent()))
                     .toList();
 
-            return CompletableFutureUtils.allOf(stages)
-                    .thenApply(u -> merges.stream()
-                            .collect(toMap(
-                                    tool -> tool.meta().name(),
-                                    tool -> tool
-                            )));
-
+            // 等待所有并行查询结果返回
+            return CompletableFutureUtils.sequentialMap(stages, stage -> stage)
+                    .thenApply(merges -> {
+                        // 将并行查询的多个工具集合合并为一个MAP
+                        return merges.stream()
+                                .flatMap(Collection::stream)
+                                .collect(toMap(
+                                        tool -> tool.meta().name(),
+                                        tool -> tool,
+                                        (a, b) -> b
+                                ));
+                    });
         }
 
         /**

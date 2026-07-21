@@ -15,10 +15,12 @@ import java.util.stream.Collectors;
 
 import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalStateStage;
 
+/**
+ * 基于 {@link HashMap} 的工具箱实现
+ */
 public class HashMapToolbox implements Toolbox {
 
     private final ToolIndexer indexer;
-    private final Mode mode;
     private final Syncer syncer;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -28,7 +30,6 @@ public class HashMapToolbox implements Toolbox {
 
     private HashMapToolbox(Builder builder) {
         this.indexer = builder.indexer;
-        this.mode = builder.mode;
         this.syncer = new Syncer(builder.syncInterval).begin();
     }
 
@@ -48,12 +49,11 @@ public class HashMapToolbox implements Toolbox {
                 // 加载成功，建立订阅关系
                 .<ToolSubscription>thenApply(u -> {
 
-                    // 建立订阅关系
+                    // 创建订阅关系
                     final var subscription = new ToolSubscriptionImpl(source);
-                    subscription.subscribe();
 
-                    // 返回订阅关系
-                    subscriptions.add(subscription);
+                    // 建立订阅关系
+                    subscriptions.add(subscription.subscribe());
                     return subscription;
 
                 })
@@ -132,16 +132,11 @@ public class HashMapToolbox implements Toolbox {
     }
 
     @Override
-    public Mode mode() {
-        return mode;
-    }
-
-    @Override
     public CompletionStage<List<Tool>> lookupByIntent(String intent) {
         return indexer.query(intent)
                 .thenApply(names -> {
                     final List<Tool> result = new ArrayList<>();
-                    for (final var name : names) {
+                    names.forEach(name -> {
                         final var lookupOpt = lookupByName(name);
                         if (lookupOpt.isPresent()) {
                             result.add(lookupOpt.get());
@@ -149,7 +144,7 @@ public class HashMapToolbox implements Toolbox {
                             logger.warn("{} found bad index, remove it. tool={}", this, name);
                             indexer.remove(name);
                         }
-                    }
+                    });
                     return result;
                 })
                 .exceptionallyCompose(ex -> illegalStateStage(ex, "Lookup tools by intent failed!"));
@@ -190,33 +185,24 @@ public class HashMapToolbox implements Toolbox {
      */
     private class ToolSubscriptionImpl implements ToolSubscription {
 
-        private final ToolSource loader;
+        private final ToolSource source;
         private final ToolSource.Listener listener;
 
-        private final CompletableFuture<?> subscribeF = new CompletableFuture<>();
         private final CompletableFuture<?> closeF = new CompletableFuture<>();
 
-        private ToolSubscriptionImpl(ToolSource loader) {
-            this.loader = loader;
+        private ToolSubscriptionImpl(ToolSource source) {
+            this.source = source;
             this.listener = new ListenerImpl(this);
         }
 
         @Override
         public ToolSource source() {
-            return loader;
+            return source;
         }
 
-        @Override
-        public void subscribe() {
-            if (!subscribeF.complete(null)) {
-                throw new IllegalStateException("Already subscribed!");
-            }
-            loader.addListener(listener);
-        }
-
-        @Override
-        public boolean isSubscribed() {
-            return subscribeF.isDone();
+        public ToolSubscriptionImpl subscribe() {
+            source.addListener(listener);
+            return this;
         }
 
         @Override
@@ -234,8 +220,8 @@ public class HashMapToolbox implements Toolbox {
              * 3. 最后将订阅关系从订阅关系列表中删除
              */
             if (closeF.complete(null)) {
-                loader.removeListener(listener);
-                unload(loader);
+                source.removeListener(listener);
+                unload(source);
                 subscriptions.remove(this);
             }
 
@@ -305,35 +291,32 @@ public class HashMapToolbox implements Toolbox {
             while (!isInterrupted()) {
                 try {
                     waiting.poll(syncInterval.toMillis(), TimeUnit.MILLISECONDS);
-                    List<ToolSubscription> subscriptionsCopy;
-                    synchronized (this) {
-                        subscriptionsCopy = new ArrayList<>(subscriptions);
-                    }
-                    subscriptionsCopy.forEach(subscription -> {
+                    new ArrayList<>(subscriptions)
+                            .forEach(subscription -> {
 
-                        // 如果已关闭，则从等待更新集合中移除
-                        if (subscription.isClosed()) {
-                            synchronized (this) {
-                                subscriptions.remove(subscription);
-                            }
-                            return;
-                        }
-
-                        // 进行同步
-                        reload(subscription.source())
-                                .whenComplete((u, ex) -> {
-                                    if (null == ex) {
-                                        synchronized (this) {
-                                            subscriptions.remove(subscription);
-                                        }
-                                    } else {
-                                        logger.warn("{}/syncer syncing subscription occur error!", this, ex);
+                                // 如果已关闭，则从等待更新集合中移除
+                                if (subscription.isClosed()) {
+                                    synchronized (this) {
+                                        subscriptions.remove(subscription);
                                     }
-                                })
-                                .toCompletableFuture()
-                                .join();
+                                    return;
+                                }
 
-                    });
+                                // 进行同步
+                                reload(subscription.source())
+                                        .whenComplete((u, ex) -> {
+                                            if (null == ex) {
+                                                synchronized (this) {
+                                                    subscriptions.remove(subscription);
+                                                }
+                                            } else {
+                                                logger.warn("{}/syncer syncing subscription occur error!", this, ex);
+                                            }
+                                        })
+                                        .toCompletableFuture()
+                                        .join();
+
+                            });
                 } catch (InterruptedException iEx) {
                     logger.debug("{}/syncer interrupted.", this);
                     interrupt();
@@ -361,24 +344,37 @@ public class HashMapToolbox implements Toolbox {
         return new Builder();
     }
 
+    /**
+     * 构建器
+     */
     public static class Builder implements Buildable<HashMapToolbox, Builder> {
 
         private ToolIndexer indexer;
         private Duration syncInterval = Duration.ofSeconds(5);
-        private Mode mode = Mode.DYNAMIC;
 
+        /**
+         * 设置工具索引
+         *
+         * @param indexer 工具索引
+         * @return this
+         */
         public Builder indexer(ToolIndexer indexer) {
             this.indexer = indexer;
             return this;
         }
 
+        /**
+         * 设置同步间隔
+         * <p>
+         * 工具源发生变更时会立即同步到工具箱，
+         * 但如果同步失败后，就得依靠这个同步间隔来定期检查还有哪些未完成的同步，持续的进行同步操作，直至订阅取消。
+         * </p>
+         *
+         * @param syncInterval 同步间隔
+         * @return this
+         */
         public Builder syncInterval(Duration syncInterval) {
             this.syncInterval = syncInterval;
-            return this;
-        }
-
-        public Builder mode(Mode mode) {
-            this.mode = mode;
             return this;
         }
 

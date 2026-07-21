@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.SessionPlugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.storage.FileFragmentStorage;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolboxPlugin;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.LlmToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.mcp.McpToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.mcp.RecoverableMcpClientTransport;
@@ -93,7 +93,7 @@ public class DebugTestCase implements LoadingEnv {
                 .join();
 
         return ToolboxPlugin.newBuilder()
-                .toolboxes(List.of(toolbox))
+                .dynamics(List.of(toolbox))
                 .build();
     }
 

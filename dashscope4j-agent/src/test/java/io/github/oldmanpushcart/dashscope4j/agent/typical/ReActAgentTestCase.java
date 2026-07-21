@@ -2,8 +2,8 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.agent.LoadingEnv;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolboxPlugin;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.EmbeddingToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.skill.SkillToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.toolkit.ToolkitToolSource;
@@ -56,7 +56,7 @@ public class ReActAgentTestCase implements LoadingEnv {
                 .model(ChatModel.QWEN_FLASH)
                 .plugins(plugins -> {
                     final var toolboxPlugin = ToolboxPlugin.newBuilder()
-                            .toolboxes(List.of(toolbox))
+                            .dynamics(List.of(toolbox))
                             .build();
                     plugins.add(toolboxPlugin);
                     return plugins;

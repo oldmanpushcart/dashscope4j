@@ -7,42 +7,39 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolLookup;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * 工具箱
+ */
 public interface Toolbox extends ToolLookup, AutoCloseable {
 
+    /**
+     * 订阅工具源
+     *
+     * @param source 工具源
+     * @return 订阅关系
+     */
     CompletionStage<ToolSubscription> subscribe(ToolSource source);
 
+    /**
+     * 根据意图查找工具
+     *
+     * @param intent 意图
+     * @return 工具列表
+     */
     CompletionStage<List<Tool>> lookupByIntent(String intent);
 
+    /**
+     * @return 是否已关闭
+     */
     boolean isClosed();
 
+    /**
+     * 关闭
+     * <p>
+     * 工具箱关闭后，将会主动从所有工具源中取消订阅。
+     * </p>
+     */
     @Override
     void close();
-
-    Mode mode();
-
-    /**
-     * 使用模式
-     */
-    enum Mode {
-
-        /**
-         * 固定模式
-         * <p>
-         * 工具始终注册在 LLM 的工具列表中，对 LLM 可见。
-         * 适用于常用工具、核心工具。
-         * </p>
-         */
-        FIXED,
-
-        /**
-         * 动态模式
-         * <p>
-         * 工具按需动态加载，不主动出现在 LLM 的工具列表中。
-         * 适用于插件式工具或大量工具场景。
-         * </p>
-         */
-        DYNAMIC
-
-    }
 
 }

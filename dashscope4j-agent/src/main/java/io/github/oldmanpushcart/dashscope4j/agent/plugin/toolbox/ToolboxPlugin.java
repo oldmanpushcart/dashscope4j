@@ -3,12 +3,12 @@ package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolLookup;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
@@ -18,18 +18,19 @@ import java.util.function.UnaryOperator;
  */
 public class ToolboxPlugin implements Plugin {
 
-    private final List<Toolbox> toolboxes;
+    private final List<ToolLookup> fixes;
+    private final List<Toolbox> dynamics;
 
     private ToolboxPlugin(Builder builder) {
-        Objects.requireNonNull(builder.toolboxes, "toolbox must not be null!");
-        this.toolboxes = CommonUtils.unmodifiableCopy(builder.toolboxes);
+        this.fixes = CommonUtils.unmodifiableCopy(builder.fixes);
+        this.dynamics = CommonUtils.unmodifiableCopy(builder.dynamics);
     }
 
     @Override
     public CompletionStage<Extension> install(Agent agent) {
         return CompletableFuture.completedStage(null)
                 .thenApply(u -> {
-                    final var settingInterceptor = new SettingInterceptor(toolboxes);
+                    final var settingInterceptor = new SettingInterceptor(fixes, dynamics);
                     return new Extension() {
 
                         @Override
@@ -52,7 +53,10 @@ public class ToolboxPlugin implements Plugin {
     @Override
     public CompletionStage<Void> uninstall() {
         return CompletableFuture.completedStage(null)
-                .thenAccept(u -> toolboxes.clear());
+                .thenAccept(u -> {
+                    fixes.clear();
+                    dynamics.clear();
+                });
     }
 
     public static Builder newBuilder() {
@@ -62,15 +66,26 @@ public class ToolboxPlugin implements Plugin {
 
     public static class Builder implements Buildable<ToolboxPlugin, Builder> {
 
-        private List<Toolbox> toolboxes;
+        private List<ToolLookup> fixes;
+        private List<Toolbox> dynamics;
 
-        public Builder toolboxes(List<Toolbox> toolboxes) {
-            this.toolboxes = toolboxes;
+        public Builder fixes(List<ToolLookup> fixes) {
+            this.fixes = fixes;
             return this;
         }
 
-        public Builder toolboxes(UnaryOperator<List<Toolbox>> operator) {
-            this.toolboxes = operator.apply(CommonUtils.mutableCopy(toolboxes));
+        public Builder fixes(UnaryOperator<List<ToolLookup>> operator) {
+            this.fixes = operator.apply(CommonUtils.mutableCopy(fixes));
+            return this;
+        }
+
+        public Builder dynamics(List<Toolbox> dynamics) {
+            this.dynamics = dynamics;
+            return this;
+        }
+
+        public Builder dynamics(UnaryOperator<List<Toolbox>> operator) {
+            this.dynamics = operator.apply(CommonUtils.mutableCopy(dynamics));
             return this;
         }
 
