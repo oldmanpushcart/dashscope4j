@@ -39,7 +39,7 @@ public class HashMapToolbox implements Toolbox {
     }
 
     @Override
-    public CompletionStage<ToolSubscription> subscribe(ToolSource source) {
+    public CompletionStage<? extends ToolSubscription> subscribe(ToolSource source) {
 
         /*
          * 加载加载器并建立后续的订阅关系
@@ -47,7 +47,7 @@ public class HashMapToolbox implements Toolbox {
         return reload(source)
 
                 // 加载成功，建立订阅关系
-                .<ToolSubscription>thenApply(u -> {
+                .thenApply(u -> {
 
                     // 创建订阅关系
                     final var subscription = new ToolSubscriptionImpl(source);

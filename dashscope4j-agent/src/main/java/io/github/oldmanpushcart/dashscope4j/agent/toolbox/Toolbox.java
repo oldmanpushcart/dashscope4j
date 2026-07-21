@@ -18,7 +18,7 @@ public interface Toolbox extends ToolLookup, AutoCloseable {
      * @param source 工具源
      * @return 订阅关系
      */
-    CompletionStage<ToolSubscription> subscribe(ToolSource source);
+    CompletionStage<? extends ToolSubscription> subscribe(ToolSource source);
 
     /**
      * 根据意图查找工具

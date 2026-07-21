@@ -64,26 +64,63 @@ public class ToolboxPlugin implements Plugin {
     }
 
 
+    /**
+     * 构建者
+     */
     public static class Builder implements Buildable<ToolboxPlugin, Builder> {
 
         private List<ToolLookup> fixes;
         private List<Toolbox> dynamics;
 
+        /**
+         * 设置固定位工具箱列表
+         * <p>
+         * 固定位工具箱中的工具，将必定出现在LLM的工具列表中。
+         * 由大模型自行挑选并决定工具使用。
+         * </p>
+         *
+         * @param fixes 固定位工具箱列表
+         * @return this
+         */
         public Builder fixes(List<ToolLookup> fixes) {
             this.fixes = fixes;
             return this;
         }
 
+        /**
+         * 修改固定位工具箱列表
+         *
+         * @param operator 修改操作
+         * @return this
+         * @see #fixes(List)
+         */
         public Builder fixes(UnaryOperator<List<ToolLookup>> operator) {
             this.fixes = operator.apply(CommonUtils.mutableCopy(fixes));
             return this;
         }
 
+        /**
+         * 设置动态工具箱列表
+         * <p>
+         * 动态工具箱中的工具，将不会出现在LLM的工具列表中。
+         * 但会提供搜索工具，引导大模型通过对搜索工具的调用，选择出合适的工具。
+         * </p>
+         *
+         * @param dynamics 动态工具箱列表
+         * @return this
+         */
         public Builder dynamics(List<Toolbox> dynamics) {
             this.dynamics = dynamics;
             return this;
         }
 
+        /**
+         * 修改动态工具箱列表。
+         *
+         * @param operator 修改操作
+         * @return this
+         * @see #dynamics(List)
+         */
         public Builder dynamics(UnaryOperator<List<Toolbox>> operator) {
             this.dynamics = operator.apply(CommonUtils.mutableCopy(dynamics));
             return this;
