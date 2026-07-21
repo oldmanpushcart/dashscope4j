@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer;
+package io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer;
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 

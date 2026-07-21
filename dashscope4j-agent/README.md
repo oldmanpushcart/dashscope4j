@@ -675,7 +675,7 @@ SessionPlugin.newBuilder()
 
 | 存储器 | 类 | 持久化 |
 |--------|-----|--------|
-| 文件存储 | `FileFragmentStore` | ✅ 文件系统 |
+| 文件存储 | `FileFragmentStorage` | ✅ 文件系统 |
 | 内存存储 | `HashMapFragmentStore` | ❌ 仅内存 |
 
 ---

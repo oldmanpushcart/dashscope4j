@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store;
+package io.github.oldmanpushcart.dashscope4j.agent.plugin.session.storage;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -18,7 +18,7 @@ import java.util.concurrent.CompletionStage;
  * 用于存储和检索会话片段。
  * </p>
  */
-public interface FragmentStore {
+public interface FragmentStorage {
 
     /**
      * 流式获取会话片段

@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source;
+package io.github.oldmanpushcart.dashscope4j.agent.toolbox.source;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

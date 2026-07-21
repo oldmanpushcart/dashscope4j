@@ -1,6 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.toolkit;
+package io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.toolkit;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.AbstractToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.AbstractToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;

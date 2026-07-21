@@ -1,6 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox;
+package io.github.oldmanpushcart.dashscope4j.agent.toolbox;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.ToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.ToolSource;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolLookup;
 
@@ -14,8 +14,6 @@ public interface Toolbox extends ToolLookup, AutoCloseable {
     CompletionStage<List<Tool>> lookupByIntent(String intent);
 
     boolean isClosed();
-
-    boolean isShared();
 
     @Override
     void close();

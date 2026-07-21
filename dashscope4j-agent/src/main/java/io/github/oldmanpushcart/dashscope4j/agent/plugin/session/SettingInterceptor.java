@@ -1,6 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.plugin.session;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store.FragmentStore;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.storage.FragmentStorage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
@@ -18,13 +18,13 @@ class SettingInterceptor implements ChatInterceptor {
     private final int maxTokens;
     private final int retainTokens;
 
-    private final FragmentStore store;
+    private final FragmentStorage storage;
 
-    public SettingInterceptor(ChatModel model, FragmentStore store, int maxTokens, double gcRatio) {
+    public SettingInterceptor(ChatModel model, FragmentStorage storage, int maxTokens, double gcRatio) {
         this.model = model;
         this.maxTokens = maxTokens;
         this.retainTokens = (int) (maxTokens * gcRatio);
-        this.store = store;
+        this.storage = storage;
     }
 
     @Override
@@ -46,7 +46,7 @@ class SettingInterceptor implements ChatInterceptor {
                     // 创建会话
                     final var session = new CompressSession(
                             sessionId,
-                            store,
+                            storage,
                             chain.client(),
                             model,
                             maxTokens,

@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
@@ -51,12 +52,7 @@ public class ToolboxPlugin implements Plugin {
     @Override
     public CompletionStage<Void> uninstall() {
         return CompletableFuture.completedStage(null)
-                .thenAccept(u ->
-                        toolboxes.forEach(toolbox -> {
-                            if (!toolbox.isShared() && !toolbox.isClosed()) {
-                                toolbox.close();
-                            }
-                        }));
+                .thenAccept(u -> toolboxes.clear());
     }
 
     public static Builder newBuilder() {

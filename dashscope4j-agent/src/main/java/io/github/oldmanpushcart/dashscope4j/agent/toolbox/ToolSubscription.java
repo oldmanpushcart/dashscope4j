@@ -1,6 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox;
+package io.github.oldmanpushcart.dashscope4j.agent.toolbox;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.ToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.ToolSource;
 
 public interface ToolSubscription extends AutoCloseable {
 

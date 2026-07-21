@@ -2,14 +2,14 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.SessionPlugin;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store.FileFragmentStore;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.HashMapToolbox;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.storage.FileFragmentStorage;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolboxPlugin;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.LlmToolIndexer;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.mcp.McpToolSource;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.mcp.RecoverableMcpClientTransport;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.skill.SkillsToolSource;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.toolkit.ToolkitToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.LlmToolIndexer;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.mcp.McpToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.mcp.RecoverableMcpClientTransport;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.skill.SkillsToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.toolkit.ToolkitToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.FileOpsToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.TextFileOpsToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.RuntimeToolkit;
@@ -35,7 +35,7 @@ public class DebugTestCase implements LoadingEnv {
 
     private Plugin buildingSessionPlugin() {
         return SessionPlugin.newBuilder()
-                .store(FileFragmentStore.newBuilder()
+                .storage(FileFragmentStorage.newBuilder()
                         .directory(Path.of(".session"))
                         .build())
                 .maxTokens(50 * 100)

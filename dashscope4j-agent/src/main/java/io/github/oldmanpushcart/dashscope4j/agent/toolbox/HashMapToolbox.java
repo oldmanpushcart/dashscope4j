@@ -1,7 +1,7 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox;
+package io.github.oldmanpushcart.dashscope4j.agent.toolbox;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer.ToolIndexer;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.source.ToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.ToolIndexer;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.ToolSource;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
@@ -18,7 +18,6 @@ import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFuture
 public class HashMapToolbox implements Toolbox {
 
     private final ToolIndexer indexer;
-    private final boolean shared;
     private final Mode mode;
     private final Syncer syncer;
 
@@ -29,7 +28,6 @@ public class HashMapToolbox implements Toolbox {
 
     private HashMapToolbox(Builder builder) {
         this.indexer = builder.indexer;
-        this.shared = builder.shared;
         this.mode = builder.mode;
         this.syncer = new Syncer(builder.syncInterval).begin();
     }
@@ -122,11 +120,6 @@ public class HashMapToolbox implements Toolbox {
     @Override
     public boolean isClosed() {
         return closeF.isDone();
-    }
-
-    @Override
-    public boolean isShared() {
-        return shared;
     }
 
     @Override
@@ -372,7 +365,6 @@ public class HashMapToolbox implements Toolbox {
 
         private ToolIndexer indexer;
         private Duration syncInterval = Duration.ofSeconds(5);
-        private boolean shared = false;
         private Mode mode = Mode.DYNAMIC;
 
         public Builder indexer(ToolIndexer indexer) {
@@ -382,11 +374,6 @@ public class HashMapToolbox implements Toolbox {
 
         public Builder syncInterval(Duration syncInterval) {
             this.syncInterval = syncInterval;
-            return this;
-        }
-
-        public Builder shared(boolean shared) {
-            this.shared = shared;
             return this;
         }
 

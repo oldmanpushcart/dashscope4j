@@ -1,7 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.plugin.session;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store.FragmentStore;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store.FragmentStore.Fragment;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.storage.FragmentStorage;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.storage.FragmentStorage.Fragment;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
@@ -48,7 +48,7 @@ class CompressSession implements Session {
     /**
      * 片段存储器
      */
-    private final FragmentStore store;
+    private final FragmentStorage storage;
 
     /**
      * DashScope 客户端（用于 LLM 压缩）
@@ -97,15 +97,15 @@ class CompressSession implements Session {
      * 构造压缩会话
      *
      * @param sessionId    会话 ID
-     * @param store        片段存储器
+     * @param storage      片段存储器
      * @param client       DashScope 客户端
      * @param model        聊天模型
      * @param maxTokens    最大 Token 数（触发压缩的阈值）
      * @param retainTokens 保留的 Token 数（压缩后保留的上下文大小）
      */
-    public CompressSession(String sessionId, FragmentStore store, DashscopeClient client, ChatModel model, int maxTokens, int retainTokens) {
+    public CompressSession(String sessionId, FragmentStorage storage, DashscopeClient client, ChatModel model, int maxTokens, int retainTokens) {
         this.sessionId = sessionId;
-        this.store = store;
+        this.storage = storage;
         this.client = client;
         this.model = model;
         this.maxTokens = maxTokens;
@@ -123,7 +123,7 @@ class CompressSession implements Session {
         return cacheGet(() -> {
             final var tokensRef = new AtomicInteger();
             // 从存储中流式读取片段，累加 Token 数直到达到最大限制
-            return Flux.from(store.flow(sessionId, Long.MAX_VALUE))
+            return Flux.from(storage.flow(sessionId, Long.MAX_VALUE))
                     .takeWhile(fragment -> tokensRef.addAndGet(fragment.tokens()) <= maxTokens)
                     .collectList()
                     .toFuture();
@@ -133,7 +133,7 @@ class CompressSession implements Session {
     @Override
     public CompletionStage<Void> remember(List<Message> messages) {
         // 将消息持久化到存储，然后推送到内存缓存并检查是否需要压缩
-        return store.append(sessionId, messages)
+        return storage.append(sessionId, messages)
                 .thenCompose(this::push);
     }
 
@@ -248,14 +248,14 @@ class CompressSession implements Session {
                             // 更新摘要消息
                             summaryRef.set(result.summary());
                         }
-                    
+
                         // 压缩后的TOKENS
                         final var after
                                 = result.retained().stream().mapToInt(Fragment::tokens).sum()
                                 + TokenizerUtils.estimateTokens(result.summary().text());
 
                         // 压缩率
-                        final var rate = String.format("%.2f", after * 100.0f / tokens );
+                        final var rate = String.format("%.2f", after * 100.0f / tokens);
                         logger.debug("{}/compress {} -> {} tokens, rate={}%", this, tokens, after, rate);
                     }
                     return null;

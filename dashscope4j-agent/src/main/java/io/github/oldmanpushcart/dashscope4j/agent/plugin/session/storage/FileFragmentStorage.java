@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store;
+package io.github.oldmanpushcart.dashscope4j.agent.plugin.session.storage;
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.util.TokenizerUtils;
@@ -33,9 +33,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * 使用 JSONL 格式存储片段，支持并发读写和流式读取。
  * </p>
  */
-public class FileFragmentStore implements FragmentStore {
+public class FileFragmentStorage implements FragmentStorage {
 
-    private static final Logger logger = LoggerFactory.getLogger(FileFragmentStore.class);
+    private static final Logger logger = LoggerFactory.getLogger(FileFragmentStorage.class);
     private static final String FILE_PREFIX = "session";
     private static final int READ_BUFFER_SIZE = 8192;
     private static final int SEQUENCE_STEP = 10;
@@ -46,7 +46,7 @@ public class FileFragmentStore implements FragmentStore {
     /**
      * 构造函数（通过 Builder 调用）
      */
-    private FileFragmentStore(Builder builder) {
+    private FileFragmentStorage(Builder builder) {
         this.directory = builder.directory.toAbsolutePath().normalize();
 
         try {
@@ -180,9 +180,9 @@ public class FileFragmentStore implements FragmentStore {
             return this;
         }
 
-        public FileFragmentStore build() {
+        public FileFragmentStorage build() {
             Objects.requireNonNull(directory, "directory must not be null");
-            return new FileFragmentStore(this);
+            return new FileFragmentStorage(this);
         }
     }
 

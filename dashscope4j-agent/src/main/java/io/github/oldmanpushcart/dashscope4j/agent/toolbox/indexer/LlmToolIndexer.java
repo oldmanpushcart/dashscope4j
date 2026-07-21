@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.indexer;
+package io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -426,7 +426,7 @@ public class LlmToolIndexer implements ToolIndexer {
         /**
          * 缓存文件
          *
-         * @param cacheFile 缓存文件
+         * @param storage 缓存文件
          * @return this
          */
         public Builder storage(Path storage) {

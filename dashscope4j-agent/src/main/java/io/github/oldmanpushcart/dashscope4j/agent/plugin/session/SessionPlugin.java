@@ -2,7 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.plugin.session;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.store.FragmentStore;
+import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.storage.FragmentStorage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
@@ -20,20 +20,20 @@ import java.util.concurrent.CompletionStage;
 public class SessionPlugin implements Plugin {
 
     private final ChatModel model;
-    private final FragmentStore store;
+    private final FragmentStorage storage;
     private final int maxTokens;
     private final double gcRatio;
 
     private SessionPlugin(Builder builder) {
         this.model = builder.model;
-        this.store = builder.store;
+        this.storage = builder.storage;
         this.maxTokens = builder.maxTokens;
         this.gcRatio = builder.gcRatio;
     }
 
     @Override
     public CompletionStage<Extension> install(Agent agent) {
-        final var settingInterceptor = new SettingInterceptor(model, store, maxTokens, gcRatio);
+        final var settingInterceptor = new SettingInterceptor(model, storage, maxTokens, gcRatio);
         final var recordInterceptor = new RecordInterceptor();
 
         final Extension extension = new Extension() {
@@ -69,7 +69,7 @@ public class SessionPlugin implements Plugin {
     public static class Builder implements Buildable<SessionPlugin, Builder> {
 
         private ChatModel model = ChatModel.QWEN_FLASH;
-        private FragmentStore store;
+        private FragmentStorage storage;
         private int maxTokens = 10000 * 10;
         private double gcRatio = 0.3;
 
@@ -87,11 +87,11 @@ public class SessionPlugin implements Plugin {
         /**
          * 设置会话存储
          *
-         * @param store 会话存储
+         * @param storage 会话存储
          * @return this
          */
-        public Builder store(FragmentStore store) {
-            this.store = store;
+        public Builder storage(FragmentStorage storage) {
+            this.storage = storage;
             return this;
         }
 
