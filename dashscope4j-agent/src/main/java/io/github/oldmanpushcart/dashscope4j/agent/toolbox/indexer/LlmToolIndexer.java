@@ -303,12 +303,12 @@ public class LlmToolIndexer implements ToolIndexer {
      */
     private class IndexCache {
 
-        private final Path cacheFile;
+        private final Path storage;
         private final Map<String, Entry> entries = new ConcurrentHashMap<>();
         private final Object superThis = LlmToolIndexer.this;
 
-        private IndexCache(Path cacheFile) {
-            this.cacheFile = cacheFile;
+        private IndexCache(Path storage) {
+            this.storage = storage;
             init();
         }
 
@@ -317,11 +317,11 @@ public class LlmToolIndexer implements ToolIndexer {
          */
         private void init() {
 
-            if (null == cacheFile || !Files.exists(cacheFile) || !Files.isReadable(cacheFile)) {
+            if (null == storage || !Files.exists(storage) || !Files.isReadable(storage)) {
                 return;
             }
 
-            try (final var __stream__ = Files.lines(cacheFile)) {
+            try (final var __stream__ = Files.lines(storage)) {
                 __stream__
                         .filter(CommonUtils::isNotBlankString)
                         .forEach(line -> {
@@ -334,7 +334,7 @@ public class LlmToolIndexer implements ToolIndexer {
                         });
                 logger.debug("{} cache loaded. size={};", superThis, entries.size());
             } catch (IOException ioEx) {
-                logger.warn("{} cache failed to read file. file={};", superThis, cacheFile, ioEx);
+                logger.warn("{} cache failed to read storage. file={};", superThis, storage, ioEx);
             }
 
         }
@@ -361,7 +361,7 @@ public class LlmToolIndexer implements ToolIndexer {
         private void persist(Entry entry) {
             try {
                 final var entryJson = JacksonJsonUtils.toJson(entry);
-                Files.writeString(cacheFile, entryJson + "\n", UTF_8, APPEND, CREATE);
+                Files.writeString(storage, entryJson + "\n", UTF_8, APPEND, CREATE);
             } catch (Throwable ex) {
                 logger.warn("{} cache persist error! key={};", superThis, entry.key(), ex);
             }

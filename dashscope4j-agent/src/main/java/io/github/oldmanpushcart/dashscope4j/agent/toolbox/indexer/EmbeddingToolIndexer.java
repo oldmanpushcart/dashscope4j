@@ -285,6 +285,11 @@ public class EmbeddingToolIndexer implements ToolIndexer {
                 return;
             }
 
+            if (!Files.exists(storage)) {
+                logger.debug("{} load cache ignored, because storage not exists. file={};", superThis, storage);
+                return;
+            }
+
             try (final var __stream__ = Files.lines(storage)) {
                 __stream__
                         .filter(CommonUtils::isNotBlankString)
@@ -298,7 +303,7 @@ public class EmbeddingToolIndexer implements ToolIndexer {
                         });
                 logger.debug("{} cache loaded. size={};", superThis, entries.size());
             } catch (IOException ioEx) {
-                logger.warn("{} cache failed to read file. storage={};", superThis, storage, ioEx);
+                logger.warn("{} cache failed to read storage. file={};", superThis, storage, ioEx);
             }
 
         }
