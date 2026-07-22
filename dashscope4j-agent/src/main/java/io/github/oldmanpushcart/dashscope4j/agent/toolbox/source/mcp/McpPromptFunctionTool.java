@@ -74,10 +74,7 @@ class McpPromptFunctionTool implements McpFunctionTool {
         final var argumentMap = JacksonJsonUtils.<Map<String, Object>>toObject(argumentJson, mapTypeRef.getType());
 
         // 调用 MCP 服务器的 getPrompt API
-        final var request = McpSchema.GetPromptRequest.builder(mcpPrompt.name())
-                .arguments(argumentMap)
-                .build();
-        ;
+        final var request = new McpSchema.GetPromptRequest(mcpPrompt.name(), argumentMap);
 
         return client.getPrompt(request)
                 .toFuture()

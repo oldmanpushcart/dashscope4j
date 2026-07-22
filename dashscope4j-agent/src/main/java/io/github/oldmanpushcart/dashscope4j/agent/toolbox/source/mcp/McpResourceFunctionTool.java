@@ -81,8 +81,7 @@ class McpResourceFunctionTool implements McpFunctionTool {
         final var uri = (String) argumentMap.getOrDefault("uri", mcpResource.uri());
 
         // 调用 MCP 服务器的 readResource API
-        final var request = McpSchema.ReadResourceRequest.builder(uri)
-                .build();
+        final var request = new McpSchema.ReadResourceRequest(uri);
 
         return mcpClient.readResource(request)
                 .toFuture()

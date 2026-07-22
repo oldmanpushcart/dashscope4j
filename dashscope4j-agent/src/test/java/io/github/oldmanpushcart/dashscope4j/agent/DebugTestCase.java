@@ -122,7 +122,7 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = Flux.from(agent.flow(sessionId, Message.user("""
-                            C:\\Users\\vlinux\\Downloads\\小升初会议纪要.pdf 这篇文章在说什么？
+                            杭州今天的天气适合骑自行车吗？
                             """)))
                     .reduce(AssistantMessage::accumulate)
                     .toFuture()

@@ -93,9 +93,7 @@ class McpToolFunctionTool implements McpFunctionTool {
         final var name = mcpTool.name();
 
 
-        final var request = McpSchema.CallToolRequest.builder(name)
-                .arguments(argumentMap)
-                .build();
+        final var request = new McpSchema.CallToolRequest(name, argumentMap);
 
         return mcpClient.callTool(request)
                 .toFuture()
