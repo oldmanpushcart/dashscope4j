@@ -38,7 +38,7 @@ public class DebugTestCase implements LoadingEnv {
                 .storage(FileFragmentStorage.newBuilder()
                         .directory(Path.of(".session"))
                         .build())
-                .maxTokens(50 * 100)
+                .maxTokens(50 * 1000)
                 .gcRatio(0.3)
                 .build();
     }
@@ -46,7 +46,7 @@ public class DebugTestCase implements LoadingEnv {
     private Plugin buildingToolboxPlugin() {
 
         final var skillsTs = SkillsToolSource.newBuilder()
-                .directory(Path.of("./skills"))
+                .directory(Path.of("/Users/vlinux/.qoderwork/skills"))
                 .build()
                 .initialize()
                 .toCompletableFuture()
@@ -122,7 +122,7 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = Flux.from(agent.flow(sessionId, Message.user("""
-                            杭州今天的天气适合骑自行车吗？
+                            我今天都有什么会议？
                             """)))
                     .reduce(AssistantMessage::accumulate)
                     .toFuture()
