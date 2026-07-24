@@ -6,6 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatInterceptor;
+import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -20,8 +21,7 @@ class SettingInterceptor implements ChatInterceptor {
                     .resource("/prompt/REACT_AGENT.md")
                     .build()
                     .render())
-            .withCache()
-            ;
+            .withCache();
 
     @Override
     public CompletionStage<?> intercept(Chain chain, AigcRequest<Input, Output> request) {
@@ -40,8 +40,20 @@ class SettingInterceptor implements ChatInterceptor {
                 .input(input -> Input.newBuilder(input)
                         .messages(messages -> {
 
-                            // 添加到 SystemMessage
-                            messages.add(0, REACT_SYSTEM_MESSAGE);
+                            /*
+                             * 系统消息：可用工具列表
+                             * REACT的工具调用机制比较特殊，由REACT自身机制完成。
+                             * 所以这里将工具作为消息上下文注入并禁用工具调用
+                             */
+                            final var systemToolsMessage = Message.system("""
+                                    ### 可用工具清单
+                                    %s
+                                    """.formatted(
+                                    JacksonJsonUtils.toJson(input.toolLookup().lookupAll())
+                            )).withCache();
+
+                            // 注入REACT系统消息
+                            messages.addAll(0, List.of(REACT_SYSTEM_MESSAGE, systemToolsMessage));
 
                             return messages;
 

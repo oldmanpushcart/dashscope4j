@@ -160,6 +160,12 @@ public class HashMapToolbox implements Toolbox {
 
     @Override
     public Optional<Tool> lookupByName(String name) {
+
+        // entities类型是ConcurrentHashMap，要求确保key不为null
+        if (null == name) {
+            return Optional.empty();
+        }
+
         return Optional.ofNullable(entities.get(name))
                 .map(Entity::tool);
     }

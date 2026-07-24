@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -28,11 +29,16 @@ public class SettingInterceptor implements Interceptor {
                     // 设置结果消息格式为：MESSAGE
                     parameters.put("result_format", "message");
 
-                    // 设置工具集
-                    final var lookup = chatRequest.input().toolLookup();
-                    final var tools = lookup.lookupAll();
-                    if(CommonUtils.isNotEmpty(tools)) {
-                        parameters.put("tools", lookup.lookupAll());
+                    /*
+                     * 设置工具集
+                     * 如果指定了：tool_choice=none，则说明当前请求不需要TOOL
+                     */
+                    if (!Objects.equals("none", parameters.get("tool_choice"))) {
+                        final var lookup = chatRequest.input().toolLookup();
+                        final var tools = lookup.lookupAll();
+                        if (CommonUtils.isNotEmpty(tools)) {
+                            parameters.put("tools", lookup.lookupAll());
+                        }
                     }
 
                     return parameters;

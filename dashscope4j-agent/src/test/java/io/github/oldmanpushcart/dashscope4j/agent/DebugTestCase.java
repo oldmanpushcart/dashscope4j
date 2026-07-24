@@ -10,6 +10,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.mcp.McpToolSour
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.mcp.RecoverableMcpClientTransport;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.skill.SkillsToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.toolkit.ToolkitToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.dashscope.DashscopeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.FileOpsToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.TextFileOpsToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.RuntimeToolkit;
@@ -71,7 +72,8 @@ public class DebugTestCase implements LoadingEnv {
                         RuntimeToolkit.create(),
                         ShellToolkit.create(),
                         FileOpsToolkit.create(),
-                        TextFileOpsToolkit.create()
+                        TextFileOpsToolkit.create(),
+                        DashscopeToolkit.create()
                 )
                 .build()
                 .initialize()
@@ -122,7 +124,10 @@ public class DebugTestCase implements LoadingEnv {
 
         {
             final var outbound = Flux.from(agent.flow(sessionId, Message.user("""
-                            我今天都有什么会议？
+                            根据杭州今天的天气情况，给我生成一副漂亮高清晰度的山水画，我要用来做电脑桌面图。要求
+                            1. 包含当地特色
+                            2. 当天天气情况的文字说明。
+                            3. 保存到./weather.png
                             """)))
                     .reduce(AssistantMessage::accumulate)
                     .toFuture()
