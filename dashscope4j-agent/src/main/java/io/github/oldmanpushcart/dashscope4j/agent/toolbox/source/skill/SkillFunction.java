@@ -12,10 +12,16 @@ import java.util.function.Function;
  */
 class SkillFunction implements Function<SkillFunction.Spec, String> {
 
+    private final String namespace;
     private final Skill skill;
 
-    public SkillFunction(Skill skill) {
+    public SkillFunction(String namespace, Skill skill) {
+        this.namespace = namespace;
         this.skill = skill;
+    }
+
+    private static String toName(String namespace, Skill.Header header) {
+        return "%s$skill$%s".formatted(namespace, header.name());
     }
 
     @Override
@@ -40,7 +46,7 @@ class SkillFunction implements Function<SkillFunction.Spec, String> {
 
     public Tool asTool() {
         return FunctionTool.newBuilder()
-                .name("skill$%s".formatted(skill.header().name()))
+                .name(toName(namespace, skill.header()))
                 .description(skill.header().description())
                 .parameterType(Spec.class)
                 .function(this)

@@ -15,7 +15,6 @@ import java.util.List;
  * 每个工具包可以包含多个功能相关的工具，例如：
  * </p>
  * <ul>
- *   <li>{@link GuiToolkit} - GUI 自动化工具包（截图、鼠标、键盘、剪贴板）</li>
  *   <li>{@link FileOpsToolkit} - 文件操作工具包</li>
  *   <li>{@link ShellToolkit} - Shell 命令执行工具包</li>
  *   <li>{@link RuntimeToolkit} - 运行时环境信息查询工具包</li>
@@ -29,7 +28,6 @@ import java.util.List;
  *   <li>提供统一的工具注册接口</li>
  * </ul>
  *
- * @see GuiToolkit GUI 自动化工具包实现
  * @see Tool 单个工具接口
  * @see FunctionTool 函数型工具实现
  */

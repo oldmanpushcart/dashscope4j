@@ -13,6 +13,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.toolkit.Toolkit
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.dashscope.DashscopeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.FileOpsToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.TextFileOpsToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.network.HttpToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.RuntimeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
@@ -47,14 +48,13 @@ public class DebugTestCase implements LoadingEnv {
     private Plugin buildingToolboxPlugin() {
 
         final var skillsTs = SkillsToolSource.newBuilder()
-                .directory(Path.of("/Users/vlinux/.qoderwork/skills"))
+                .directory(Path.of("./skills"))
                 .build()
                 .initialize()
                 .toCompletableFuture()
                 .join();
 
         final var mcpTs = McpToolSource.newBuilder()
-                .name("amap")
                 .transport(RecoverableMcpClientTransport.newBuilder()
                         .transportFactory(mapper ->
                                 HttpClientStreamableHttpTransport.builder("https://mcp.amap.com")
@@ -73,7 +73,8 @@ public class DebugTestCase implements LoadingEnv {
                         ShellToolkit.create(),
                         FileOpsToolkit.create(),
                         TextFileOpsToolkit.create(),
-                        DashscopeToolkit.create()
+                        DashscopeToolkit.create(),
+                        HttpToolkit.create()
                 )
                 .build()
                 .initialize()

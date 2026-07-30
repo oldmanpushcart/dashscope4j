@@ -16,12 +16,19 @@ import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFuture
 
 public class ToolkitToolSource extends AbstractToolSource {
 
+    private final String _toString;
     private final List<Tool> tools = new CopyOnWriteArrayList<>();
     private volatile State state = State.IDLE;
 
     private ToolkitToolSource(Builder builder) {
-        super(builder.name);
+        super(builder.namespace);
+        this._toString = "dashscope4j-agent:/toolbox/source/%s/toolkit".formatted(namespace());
         this.tools.addAll(builder.tools);
+    }
+
+    @Override
+    public String toString() {
+        return _toString;
     }
 
     public ToolkitToolSource append(List<Tool> tools) {
@@ -36,7 +43,10 @@ public class ToolkitToolSource extends AbstractToolSource {
 
         synchronized (this) {
             if (null != tools) {
-                this.tools.addAll(tools);
+                tools.forEach(tool -> {
+                    final var namespaceTool = new NamespaceTool(namespace(), tool);
+                    this.tools.add(namespaceTool);
+                });
                 fireChanged();
             }
         }
@@ -121,7 +131,7 @@ public class ToolkitToolSource extends AbstractToolSource {
 
     public static ToolkitToolSource create(String name) {
         return newBuilder()
-                .name(name)
+                .namespace(name)
                 .build();
     }
 
@@ -136,17 +146,57 @@ public class ToolkitToolSource extends AbstractToolSource {
         CLOSED
     }
 
+    private static class NamespaceTool implements Tool {
+
+        private final Tool tool;
+        private final Tool.Meta meta;
+
+        private NamespaceTool(String namespace, Tool tool) {
+            this.tool = tool;
+            this.meta = new Meta() {
+
+                private final String name = "%s$%s".formatted(namespace, tool.meta().name());
+
+                @Override
+                public String name() {
+                    return name;
+                }
+
+                @Override
+                public String description() {
+                    return tool.meta().description();
+                }
+            };
+        }
+
+        @Override
+        public Meta meta() {
+            return meta;
+        }
+
+        @Override
+        public Classify classify() {
+            return tool.classify();
+        }
+
+        @Override
+        public CompletionStage<String> call(Caller caller, String argumentJson) {
+            return tool.call(caller, argumentJson);
+        }
+
+    }
+
     public static Builder newBuilder() {
         return new Builder();
     }
 
     public static class Builder implements Buildable<ToolkitToolSource, Builder> {
 
-        private String name;
+        private String namespace;
         private final List<Tool> tools = new ArrayList<>();
 
-        public Builder name(String name) {
-            this.name = name;
+        public Builder namespace(String namespace) {
+            this.namespace = namespace;
             return this;
         }
 

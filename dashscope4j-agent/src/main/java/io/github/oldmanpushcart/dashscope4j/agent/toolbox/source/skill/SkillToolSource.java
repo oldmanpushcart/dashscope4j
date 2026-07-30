@@ -30,14 +30,14 @@ public class SkillToolSource extends AbstractToolSource {
     private ScheduledFuture<?> scheduleF;
 
     private SkillToolSource(Builder builder) {
-        super(builder.name);
+        super(builder.namespace);
         Objects.requireNonNull(builder.home, "home must not be null");
         Objects.requireNonNull(builder.scanInterval, "scanInterval must not be null");
         this.home = builder.home;
         this.scheduler = builder.scheduler;
         this.scanInterval = builder.scanInterval;
         this.isOwnScheduler = null == builder.scheduler;
-        this._toString = "dashscope4j-agent:/toolbox/source/skill/%s".formatted(name());
+        this._toString = "dashscope4j-agent:/toolbox/source/%s/skill".formatted(namespace());
     }
 
     @Override
@@ -58,7 +58,7 @@ public class SkillToolSource extends AbstractToolSource {
 
         synchronized (this) {
             return Optional.ofNullable(cached)
-                    .map(SkillFunction::new)
+                    .map(skill -> new SkillFunction(namespace(), skill))
                     .map(SkillFunction::asTool)
                     .map(List::of)
                     .orElseGet(List::of);
@@ -190,13 +190,13 @@ public class SkillToolSource extends AbstractToolSource {
 
     public static class Builder implements Buildable<SkillToolSource, Builder> {
 
-        private String name;
+        private String namespace;
         private Path home;
         private ScheduledExecutorService scheduler;
         private Duration scanInterval = Duration.ofSeconds(5);
 
-        public Builder name(String name) {
-            this.name = name;
+        public Builder namespace(String namespace) {
+            this.namespace = namespace;
             return this;
         }
 

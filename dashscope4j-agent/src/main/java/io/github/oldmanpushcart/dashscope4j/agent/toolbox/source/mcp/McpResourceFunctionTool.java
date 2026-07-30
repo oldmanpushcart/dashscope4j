@@ -58,7 +58,7 @@ class McpResourceFunctionTool implements McpFunctionTool {
         // Resource 通常需要一个 uri 参数来读取
         final var parameterSchema = JacksonJsonUtils.toNode(McpSchemaHelper.buildResourceArgumentsSchema(mcpResource));
         return new Meta(
-                "mcp$%s$resource$%s".formatted(namespace, mcpResource.name()),
+                "%s$mcp$resource$%s".formatted(namespace, mcpResource.name()),
                 mcpResource.description() != null ? mcpResource.description() : "MCP Resource: " + mcpResource.name(),
                 parameterSchema
         );

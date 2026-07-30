@@ -37,11 +37,10 @@ public class McpToolSource extends AbstractToolSource {
     private McpAsyncClient mcpClient;
 
     private McpToolSource(Builder builder) {
-        super(builder.name);
-        requireNonBlankString(builder.name, "name must not be blank!");
+        super(builder.namespace);
         requireNonNull(builder.transport, "transport must not be null!");
         this.transport = builder.transport;
-        this._toString = "dashscope-agent:/toolbox/source/mcp/%s".formatted(name());
+        this._toString = "dashscope-agent:/toolbox/source/%s/mcp".formatted(namespace());
     }
 
     @Override
@@ -154,7 +153,7 @@ public class McpToolSource extends AbstractToolSource {
         return Mono.fromRunnable(() -> {
 
             final var functionTools = mcpTools.stream()
-                    .map(mcpTool -> new McpToolFunctionTool(name(), mcpClient, mcpTool))
+                    .map(mcpTool -> new McpToolFunctionTool(namespace(), mcpClient, mcpTool))
                     .map(Tool.class::cast)
                     .toList();
 
@@ -175,7 +174,7 @@ public class McpToolSource extends AbstractToolSource {
     private Mono<Void> handleMcpPromptChanged(List<McpSchema.Prompt> mcpPrompts) {
         return Mono.fromRunnable(() -> {
             final var functionTools = mcpPrompts.stream()
-                    .map(mcpPrompt -> new McpPromptFunctionTool(name(), mcpClient, mcpPrompt))
+                    .map(mcpPrompt -> new McpPromptFunctionTool(namespace(), mcpClient, mcpPrompt))
                     .map(Tool.class::cast)
                     .toList();
             rwLock.writeLock().lock();
@@ -191,7 +190,7 @@ public class McpToolSource extends AbstractToolSource {
     private Mono<Void> handleMcpResourceChanged(List<McpSchema.Resource> mcpResources) {
         return Mono.fromRunnable(() -> {
             final var functionTools = mcpResources.stream()
-                    .map(mcpResource -> new McpResourceFunctionTool(name(), mcpClient, mcpResource))
+                    .map(mcpResource -> new McpResourceFunctionTool(namespace(), mcpClient, mcpResource))
                     .map(Tool.class::cast)
                     .toList();
             rwLock.writeLock().lock();
@@ -221,7 +220,7 @@ public class McpToolSource extends AbstractToolSource {
                             return;
                         }
                         final var functionTools = result.tools().stream()
-                                .map(mcpTool -> new McpToolFunctionTool(name(), mcpClient, mcpTool))
+                                .map(mcpTool -> new McpToolFunctionTool(namespace(), mcpClient, mcpTool))
                                 .map(Tool.class::cast)
                                 .toList();
                         snapshots.put(McpFunctionTool.Type.TOOL, functionTools);
@@ -237,7 +236,7 @@ public class McpToolSource extends AbstractToolSource {
                             return;
                         }
                         final var functionTools = result.prompts().stream()
-                                .map(mcpPrompt -> new McpPromptFunctionTool(name(), mcpClient, mcpPrompt))
+                                .map(mcpPrompt -> new McpPromptFunctionTool(namespace(), mcpClient, mcpPrompt))
                                 .map(Tool.class::cast)
                                 .toList();
                         snapshots.put(McpFunctionTool.Type.PROMPT, functionTools);
@@ -253,7 +252,7 @@ public class McpToolSource extends AbstractToolSource {
                             return;
                         }
                         final var functionTools = result.resources().stream()
-                                .map(mcpResource -> new McpResourceFunctionTool(name(), mcpClient, mcpResource))
+                                .map(mcpResource -> new McpResourceFunctionTool(namespace(), mcpClient, mcpResource))
                                 .map(Tool.class::cast)
                                 .toList();
                         snapshots.put(McpFunctionTool.Type.RESOURCE, functionTools);
@@ -318,11 +317,11 @@ public class McpToolSource extends AbstractToolSource {
 
     public static class Builder implements Buildable<McpToolSource, Builder> {
 
-        private String name;
+        private String namespace;
         private McpClientTransport transport;
 
-        public Builder name(String name) {
-            this.name = name;
+        public Builder namespace(String namespace) {
+            this.namespace = namespace;
             return this;
         }
 

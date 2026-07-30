@@ -1,5 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.toolbox.source;
 
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
 import java.util.List;
@@ -8,12 +9,12 @@ import java.util.concurrent.CompletionStage;
 /**
  * 工具源
  */
-public interface ToolSource extends AutoCloseable {
+public interface ToolSource extends Toolkit, AutoCloseable {
 
     /**
-     * @return 源名称
+     * @return 命名空间
      */
-    String name();
+    String namespace();
 
     /**
      * 初始化工具源

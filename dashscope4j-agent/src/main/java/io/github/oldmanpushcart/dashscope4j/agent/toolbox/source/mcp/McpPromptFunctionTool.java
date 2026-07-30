@@ -54,7 +54,7 @@ class McpPromptFunctionTool implements McpFunctionTool {
         // 从 Prompt 的参数列表构建 JSON Schema
         final var parameterSchema = JacksonJsonUtils.toNode(McpSchemaHelper.buildPromptArgumentsSchema(mcpPrompt.arguments()));
         return new Meta(
-                "mcp$%s$prompt$%s".formatted(namespace, mcpPrompt.name()),
+                "%s$mcp$prompt$%s".formatted(namespace, mcpPrompt.name()),
                 mcpPrompt.description() != null ? mcpPrompt.description() : "MCP Prompt: " + mcpPrompt.name(),
                 parameterSchema
         );

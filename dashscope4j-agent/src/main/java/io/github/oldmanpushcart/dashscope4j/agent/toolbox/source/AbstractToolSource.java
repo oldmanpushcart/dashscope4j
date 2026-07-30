@@ -1,29 +1,27 @@
 package io.github.oldmanpushcart.dashscope4j.agent.toolbox.source;
 
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractToolSource implements ToolSource {
 
-    private static final AtomicInteger SEQUENCE = new AtomicInteger(0);
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String name;
+    private final String namespace;
     private final List<WeakReference<Listener>> listenerRefs = new ArrayList<>();
 
-    public AbstractToolSource(String name) {
-        this.name = Objects.requireNonNullElseGet(name, () -> "0x%02X".formatted(SEQUENCE.incrementAndGet() & 0xFF));
+    public AbstractToolSource(String namespace) {
+        this.namespace = CommonUtils.isBlankString(namespace) ? "default" : namespace;
     }
 
     @Override
-    public String name() {
-        return name;
+    public String namespace() {
+        return namespace;
     }
 
     @Override
