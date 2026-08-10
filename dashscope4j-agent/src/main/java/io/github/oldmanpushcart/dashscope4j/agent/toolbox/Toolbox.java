@@ -2,15 +2,15 @@ package io.github.oldmanpushcart.dashscope4j.agent.toolbox;
 
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.ToolSource;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolLookup;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
  * 工具箱
  */
-public interface Toolbox extends ToolLookup, AutoCloseable {
+public interface Toolbox extends AutoCloseable {
 
     /**
      * 订阅工具源
@@ -27,6 +27,14 @@ public interface Toolbox extends ToolLookup, AutoCloseable {
      * @return 工具列表
      */
     CompletionStage<List<Tool>> lookupByIntent(String intent);
+
+    /**
+     * 根据名称查找工具
+     *
+     * @param name 工具名称
+     * @return 找到的工具，未找到时返回空Optional
+     */
+    Optional<Tool> lookupByName(String name);
 
     /**
      * @return 是否已关闭

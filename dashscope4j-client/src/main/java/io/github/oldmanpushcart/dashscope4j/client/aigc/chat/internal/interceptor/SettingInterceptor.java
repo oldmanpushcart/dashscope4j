@@ -34,10 +34,9 @@ public class SettingInterceptor implements Interceptor {
                      * 如果指定了：tool_choice=none，则说明当前请求不需要TOOL
                      */
                     if (!Objects.equals("none", parameters.get("tool_choice"))) {
-                        final var lookup = chatRequest.input().toolLookup();
-                        final var tools = lookup.lookupAll();
+                        final var tools = chatRequest.input().tools();
                         if (CommonUtils.isNotEmpty(tools)) {
-                            parameters.put("tools", lookup.lookupAll());
+                            parameters.put("tools", tools);
                         }
                     }
 

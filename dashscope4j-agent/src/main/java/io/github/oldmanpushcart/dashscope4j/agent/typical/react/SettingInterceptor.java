@@ -49,7 +49,7 @@ class SettingInterceptor implements ChatInterceptor {
                                     ### 可用工具清单
                                     %s
                                     """.formatted(
-                                    JacksonJsonUtils.toJson(input.toolLookup().lookupAll())
+                                    JacksonJsonUtils.toJson(input.tools())
                             )).withCache();
 
                             // 注入REACT系统消息

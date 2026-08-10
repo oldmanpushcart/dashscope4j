@@ -14,7 +14,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.UUID;
 
 public class ReActAgentTestCase implements LoadingEnv {
@@ -56,7 +55,7 @@ public class ReActAgentTestCase implements LoadingEnv {
                 .model(ChatModel.QWEN_FLASH)
                 .plugins(plugins -> {
                     final var toolboxPlugin = ToolboxPlugin.newBuilder()
-                            .dynamics(List.of(toolbox))
+                            .toolbox(toolbox)
                             .build();
                     plugins.add(toolboxPlugin);
                     return plugins;

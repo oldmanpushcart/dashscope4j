@@ -9,7 +9,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolLookup;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
@@ -127,14 +126,9 @@ public abstract class BaseAgent implements Agent {
                         .messages(List.of(inbound))
 
                         // 添加工具
-                        .toolLookups(lookups -> {
-                            final var tools = toolkits.stream()
-                                    .map(Toolkit::tools)
-                                    .flatMap(List::stream)
-                                    .toList();
-                            final var lookup = ToolLookup.tools(tools);
-                            lookups.add(lookup);
-                            return lookups;
+                        .tools(tools -> {
+                            toolkits.forEach(toolkit -> tools.addAll(toolkit.tools()));
+                            return tools;
                         })
 
                         // 构建

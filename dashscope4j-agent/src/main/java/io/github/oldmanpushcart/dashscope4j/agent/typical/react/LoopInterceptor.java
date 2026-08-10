@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
@@ -291,7 +292,10 @@ class LoopInterceptor implements ChatInterceptor {
      * @return 工具
      */
     private Tool requireTool(AigcRequest<Input, Output> request, String name) {
-        return request.input().toolLookup().lookupByName(name)
+        return request.input().tools()
+                .stream()
+                .filter(tool -> Objects.equals(tool.meta().name(), name))
+                .findFirst()
                 .orElseThrow(() -> ToolExecutionException.notFound(name));
     }
 

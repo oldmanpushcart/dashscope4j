@@ -11,7 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.internal.intercepto
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolLookup;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcModelTags;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
@@ -163,14 +163,14 @@ public record ChatModel(
     public static class Input {
 
         private final List<Message> messages;
-        private final List<ToolLookup> toolLookups;
+        private final List<Tool> tools;
         private final boolean uploadEnabled;
         private final boolean inlineEnabled;
         private final boolean failOnToolError;
 
         private Input(Builder builder) {
             this.messages = unmodifiableCopy(builder.messages);
-            this.toolLookups = unmodifiableCopy(builder.toolLookups);
+            this.tools = unmodifiableCopy(builder.tools);
             this.uploadEnabled = builder.uploadEnabled;
             this.inlineEnabled = builder.inlineEnabled;
             this.failOnToolError = builder.failOnToolError;
@@ -267,8 +267,8 @@ public record ChatModel(
          * @return 工具查找器
          */
         @JsonIgnore
-        public ToolLookup toolLookup() {
-            return ToolLookup.group(toolLookups);
+        public List<Tool> tools() {
+            return tools;
         }
 
 
@@ -286,7 +286,7 @@ public record ChatModel(
         public static class Builder implements Buildable<Input, Builder> {
 
             private List<Message> messages;
-            private List<ToolLookup> toolLookups;
+            private List<Tool> tools;
             private boolean uploadEnabled;
             private boolean inlineEnabled;
             private boolean failOnToolError;
@@ -297,7 +297,7 @@ public record ChatModel(
 
             public Builder(Input input) {
                 this.messages = input.messages;
-                this.toolLookups = input.toolLookups;
+                this.tools = input.tools;
                 this.uploadEnabled = input.uploadEnabled;
                 this.inlineEnabled = input.inlineEnabled;
                 this.failOnToolError = input.failOnToolError;
@@ -340,19 +340,32 @@ public record ChatModel(
             }
 
             /**
-             * 设置工具查找器列表
+             * 设置工具集
              */
-            public Builder toolLookups(List<ToolLookup> lookups) {
-                this.toolLookups = lookups;
+            public Builder tools(List<Tool> tools) {
+                this.tools = tools;
                 return this;
             }
 
             /**
-             * 修改工具查找器列表
+             * 修改工具集
              */
-            public Builder toolLookups(UnaryOperator<List<ToolLookup>> operator) {
-                this.toolLookups = operator.apply(CommonUtils.mutableCopy(this.toolLookups));
+            public Builder tools(UnaryOperator<List<Tool>> operator) {
+                this.tools = operator.apply(CommonUtils.mutableCopy(this.tools));
                 return this;
+            }
+
+            /**
+             * 添加工具
+             *
+             * @param tool 工具
+             * @return this
+             */
+            public Builder addTool(Tool tool) {
+                return tools(list -> {
+                    list.add(tool);
+                    return list;
+                });
             }
 
             /**

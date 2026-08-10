@@ -27,9 +27,7 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -96,7 +94,7 @@ public class DebugTestCase implements LoadingEnv {
                 .join();
 
         return ToolboxPlugin.newBuilder()
-                .dynamics(List.of(toolbox))
+                .toolbox(toolbox)
                 .build();
     }
 
@@ -150,16 +148,6 @@ public class DebugTestCase implements LoadingEnv {
 
     @Test
     public void debug$2() throws InterruptedException, IOException {
-        final var root = Path.of("./skills");
-        Files.list(root).forEach(path -> {
-            final var skill = path.resolve("./SKILL.md");
-            try {
-                final var instant = Files.getLastModifiedTime(skill);
-                System.out.println(instant);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
 
     }
 

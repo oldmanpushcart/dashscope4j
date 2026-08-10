@@ -7,7 +7,6 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.function.QueryScore
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.Content;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.content.ImageContent;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolLookup;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcResponse;
 import org.junit.jupiter.api.Assertions;
@@ -137,17 +136,15 @@ public class ChatTestCase implements LoadingEnv {
         final var request = AigcRequest.newBuilder(data.model)
                 .input(ChatModel.Input.newBuilder()
                         .addMessage(Message.user("请问英语和物理分别是多少分?"))
-                        .toolLookups(List.of(
-                                ToolLookup.single(new QueryScoreFunction() {
+                        .addTool(new QueryScoreFunction() {
 
-                                    @Override
-                                    public Result query(Query query) {
-                                        called.set(true);
-                                        return super.query(query);
-                                    }
+                            @Override
+                            public Result query(Query query) {
+                                called.set(true);
+                                return super.query(query);
+                            }
 
-                                }.toTool())
-                        ))
+                        }.toTool())
                         .build())
                 .build();
         final var response = data.op().apply(request)

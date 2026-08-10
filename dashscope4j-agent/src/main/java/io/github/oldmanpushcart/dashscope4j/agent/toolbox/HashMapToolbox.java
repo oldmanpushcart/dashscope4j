@@ -151,14 +151,6 @@ public class HashMapToolbox implements Toolbox {
     }
 
     @Override
-    public List<Tool> lookupAll() {
-        return entities.values()
-                .stream()
-                .map(Entity::tool)
-                .toList();
-    }
-
-    @Override
     public Optional<Tool> lookupByName(String name) {
 
         // entities类型是ConcurrentHashMap，要求确保key不为null
