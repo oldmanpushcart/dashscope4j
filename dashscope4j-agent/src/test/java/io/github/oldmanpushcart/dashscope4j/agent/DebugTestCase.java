@@ -16,6 +16,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolkit.file.TextFileOpsToolki
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.network.HttpToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.RuntimeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeAgent;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
@@ -110,7 +111,7 @@ public class DebugTestCase implements LoadingEnv {
         final var sessionPlugin = buildingSessionPlugin();
         final var toolboxPlugin = buildingToolboxPlugin();
 
-        final var agent = ReActAgent.newBuilder()
+        final var agent = DashscopeAgent.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_PLUS)
                 .plugins(plugins -> {

@@ -37,8 +37,7 @@
         <revision>4.0.1-SNAPSHOT</revision>
         <release.jdk.version>17</release.jdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <junit.version>5.8.0</junit.version>
+        <junit.version>5.5.0-M1</junit.version>
         <slf4j.version>2.0.11</slf4j.version>
         <logback.version>1.5.29</logback.version>
         <reactor-bom.version>2025.0.5</reactor-bom.version>
@@ -92,6 +91,13 @@
 
     <build>
         <plugins>
+
+            <!-- 测试报告 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.6.0-M1</version>
+            </plugin>
 
             <!-- 源码和Javadoc打包 -->
             <plugin>

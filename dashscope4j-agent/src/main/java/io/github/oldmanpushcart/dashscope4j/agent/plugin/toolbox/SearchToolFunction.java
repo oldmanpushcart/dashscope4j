@@ -6,17 +6,15 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
-
-import static java.util.stream.Collectors.toMap;
 
 /**
  * 工具搜索函数
  */
 class SearchToolFunction
-        implements Function<SearchToolFunction.Search, CompletionStage<Object>> {
+        implements Function<SearchToolFunction.Search, CompletionStage<List<Tool>>> {
 
     private final Toolbox toolbox;
 
@@ -25,11 +23,8 @@ class SearchToolFunction
     }
 
     @Override
-    public CompletionStage<Object> apply(Search search) {
-        return toolbox.lookupByIntent(search.intent())
-                .thenApply(tools -> Map.of(
-                        ""
-                ));
+    public CompletionStage<List<Tool>> apply(Search search) {
+        return toolbox.lookupByIntent(search.intent());
     }
 
     /**
