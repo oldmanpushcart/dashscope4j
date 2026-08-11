@@ -11,6 +11,7 @@ import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import okhttp3.*;
 import okio.BufferedSink;
 import okio.Okio;
+import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -73,9 +74,9 @@ public class HttpToolkit implements Toolkit {
     private final long smallTextThreshold;
 
     /**
-     * 是否只读模式
+     * 工具集
      */
-    private final boolean readOnly;
+    private final List<Tool> tools;
 
     private HttpToolkit(Builder builder) {
         Objects.requireNonNull(builder.workspace, "workspace must not be null!");
@@ -92,18 +93,14 @@ public class HttpToolkit implements Toolkit {
         this.workspace = builder.workspace.toAbsolutePath().normalize();
         this.maxDownloadSize = builder.maxDownloadSize;
         this.smallTextThreshold = builder.smallTextThreshold;
-        this.readOnly = builder.readOnly;
+        this.tools = builder.readOnly
+                ? List.of(get(), download())
+                : List.of(get(), post(), put(), delete());
     }
 
     @Override
-    public List<Tool> tools() {
-        if (readOnly) {
-            // 只读模式：仅返回 GET 请求
-            return List.of(get(), download());
-        } else {
-            // 读写模式：返回所有工具
-            return List.of(get(), post(), put(), delete());
-        }
+    public @NonNull Iterator<Tool> iterator() {
+        return tools.iterator();
     }
 
     // ==================== Builder ====================
@@ -115,6 +112,8 @@ public class HttpToolkit implements Toolkit {
     public static Builder newBuilder() {
         return new Builder();
     }
+
+
 
     public static class Builder implements Buildable<HttpToolkit, Builder> {
 

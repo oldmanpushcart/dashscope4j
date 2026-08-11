@@ -18,6 +18,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.GeneralAigcModel;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.handler.BinaryFileSink;
 import io.github.oldmanpushcart.dashscope4j.client.api.task.Task;
+import org.jspecify.annotations.NonNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +28,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -52,20 +54,23 @@ public class DashscopeToolkit implements Toolkit {
             .uploadEnabled(true)
             .build();
 
+    private final List<Tool> tools = List.of(
+            analyzeDocument(),
+            analyzeVision(),
+            imageEdit(),
+            t2i(),
+            t2v(),
+            tts()
+    );
+
     private DashscopeToolkit() {
         // 无状态工具包，无需配置
     }
 
+
     @Override
-    public List<Tool> tools() {
-        return List.of(
-                analyzeDocument(),
-                analyzeVision(),
-                imageEdit(),
-                t2i(),
-                t2v(),
-                tts()
-        );
+    public @NonNull Iterator<Tool> iterator() {
+        return tools.iterator();
     }
 
     /**
@@ -238,14 +243,14 @@ public class DashscopeToolkit implements Toolkit {
 
         List<URI> toImageUris() {
             return images != null ? images.stream()
-                                    .map(DashscopeToolkit::parseUri)
-                                    .toList() : List.of();
+                    .map(DashscopeToolkit::parseUri)
+                    .toList() : List.of();
         }
 
         List<URI> toVideoUris() {
             return videos != null ? videos.stream()
-                                    .map(DashscopeToolkit::parseUri)
-                                    .toList() : List.of();
+                    .map(DashscopeToolkit::parseUri)
+                    .toList() : List.of();
         }
 
         Message toUserMessage() {
@@ -363,8 +368,8 @@ public class DashscopeToolkit implements Toolkit {
 
         List<URI> toImageUris() {
             return images != null ? images.stream()
-                                    .map(DashscopeToolkit::parseUri)
-                                    .toList() : List.of();
+                    .map(DashscopeToolkit::parseUri)
+                    .toList() : List.of();
         }
 
         record Size(

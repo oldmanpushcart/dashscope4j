@@ -26,32 +26,29 @@ public class ToolboxPlugin implements Plugin {
     }
 
     @Override
-    public CompletionStage<Extension> install(Agent agent) {
-        return CompletableFuture.completedStage(null)
-                .thenApply(u -> {
-                    final var settingInterceptor = new SettingInterceptor(tools, toolbox);
-                    return new Extension() {
+    public Extension install(Agent agent) {
+        final var settingInterceptor = new SettingInterceptor(tools, toolbox);
+        return new Extension() {
 
-                        @Override
-                        public Plugin plugin() {
-                            return ToolboxPlugin.this;
-                        }
+            @Override
+            public Plugin plugin() {
+                return ToolboxPlugin.this;
+            }
 
-                        @Override
-                        public List<ChatInterceptor> interceptors(Phases phases) {
-                            return switch (phases) {
-                                case PREPARATION -> List.of(settingInterceptor);
-                                case INTERACTION -> List.of();
-                            };
-                        }
+            @Override
+            public List<ChatInterceptor> interceptors(Phases phases) {
+                return switch (phases) {
+                    case PREPARATION -> List.of(settingInterceptor);
+                    case INTERACTION -> List.of();
+                };
+            }
 
-                    };
-                });
+        };
     }
 
     @Override
-    public CompletionStage<Void> uninstall() {
-        return CompletableFuture.completedStage(null);
+    public void uninstall() {
+
     }
 
     public static Builder newBuilder() {

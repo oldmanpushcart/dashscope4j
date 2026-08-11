@@ -8,6 +8,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolExecutionException;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -57,26 +59,22 @@ public class TextFileOpsToolkit implements Toolkit {
     private final Charset charset;
 
     /**
-     * 是否只读模式
+     * 工具集
      */
-    private final boolean readOnly;
+    private final List<Tool> tools;
 
     private TextFileOpsToolkit(Builder builder) {
         this.workspace = builder.workspace;
         this.maxFileSize = builder.maxFileSize;
         this.charset = builder.charset;
-        this.readOnly = builder.readOnly;
+        this.tools = builder.readOnly
+                ? List.of(read(), search())
+                : List.of(read(), search(), strReplace(), insertLine(), write());
     }
 
     @Override
-    public List<Tool> tools() {
-        if (readOnly) {
-            // 只读模式：仅返回读取和搜索工具
-            return List.of(read(), search());
-        } else {
-            // 读写模式：返回所有工具
-            return List.of(read(), search(), strReplace(), insertLine(), write());
-        }
+    public @NonNull Iterator<Tool> iterator() {
+        return tools.iterator();
     }
 
     // ==================== Builder ====================
@@ -662,19 +660,19 @@ public class TextFileOpsToolkit implements Toolkit {
                 .name("text_file$write")
                 .description("""
                         写入文本文件内容，创建新文件或覆盖现有文件。
-
+                        
                         【重要】仅支持文本文件，不支持二进制文件（如图片、视频、压缩包等）
-
+                        
                         【使用场景】
                         - 创建新的源代码文件
                         - 生成配置文件
                         - 创建文档或脚本
-
+                        
                         【返回结果】
                         - operation: 操作类型（created 或 overwritten）
                         - bytes_written: 写入的字节数
                         - lines_count: 写入的行数
-
+                        
                         【注意事项】
                         - 默认不允许覆盖已存在的文件
                         - 设置 overwrite=true 可以强制覆盖

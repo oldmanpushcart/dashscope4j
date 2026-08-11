@@ -8,16 +8,14 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolExecutionException;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
+import org.jspecify.annotations.NonNull;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -49,17 +47,20 @@ public class ShellToolkit implements Toolkit {
      */
     private final SecurityLevel securityLevel;
 
+    private final List<Tool> tools;
+
     private ShellToolkit(Builder builder) {
         Objects.requireNonNull(builder.timeout, "timeout must not be null!");
         CheckUtils.require(builder.timeout, t -> !t.isNegative() && !t.isZero(), "timeout must be positive!");
         Objects.requireNonNull(builder.securityLevel, "securityLevel must not be null!");
         this.timeout = builder.timeout;
         this.securityLevel = builder.securityLevel;
+        this.tools = List.of(shell());
     }
 
     @Override
-    public List<Tool> tools() {
-        return List.of(shell());
+    public @NonNull Iterator<Tool> iterator() {
+        return tools.iterator();
     }
 
     // ==================== Builder ====================
@@ -71,6 +72,7 @@ public class ShellToolkit implements Toolkit {
     public static Builder newBuilder() {
         return new Builder();
     }
+
 
     public static class Builder implements Buildable<ShellToolkit, Builder> {
         private Duration timeout = DEFAULT_TIMEOUT;

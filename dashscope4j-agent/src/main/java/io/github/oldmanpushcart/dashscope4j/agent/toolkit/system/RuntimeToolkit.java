@@ -3,11 +3,13 @@ package io.github.oldmanpushcart.dashscope4j.agent.toolkit.system;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import org.jspecify.annotations.NonNull;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -22,13 +24,15 @@ import java.util.Map;
  */
 public class RuntimeToolkit implements Toolkit {
 
+    private final List<Tool> tools = List.of(
+            os(),
+            env(),
+            datetime()
+    );
+
     @Override
-    public List<Tool> tools() {
-        return List.of(
-                os(),
-                env(),
-                datetime()
-        );
+    public @NonNull Iterator<Tool> iterator() {
+        return tools.iterator();
     }
 
     // ==================== Builder ====================
@@ -177,5 +181,6 @@ public class RuntimeToolkit implements Toolkit {
                 })
                 .build();
     }
+
 
 }

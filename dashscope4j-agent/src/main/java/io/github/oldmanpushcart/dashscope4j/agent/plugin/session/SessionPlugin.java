@@ -8,8 +8,6 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatIntercept
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 /**
  * 会话插件
@@ -32,11 +30,10 @@ public class SessionPlugin implements Plugin {
     }
 
     @Override
-    public CompletionStage<Extension> install(Agent agent) {
+    public Extension install(Agent agent) {
         final var settingInterceptor = new SettingInterceptor(model, storage, maxTokens, gcRatio);
         final var recordInterceptor = new RecordInterceptor();
-
-        final Extension extension = new Extension() {
+        return new Extension() {
             @Override
             public Plugin plugin() {
                 return SessionPlugin.this;
@@ -50,13 +47,11 @@ public class SessionPlugin implements Plugin {
                 };
             }
         };
-
-        return CompletableFuture.completedStage(extension);
     }
 
     @Override
-    public CompletionStage<Void> uninstall() {
-        return CompletableFuture.completedStage(null);
+    public void uninstall() {
+
     }
 
     public static Builder newBuilder() {

@@ -2,18 +2,17 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
 import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
-import io.github.oldmanpushcart.dashscope4j.agent.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
-import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
@@ -22,10 +21,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
 import static io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin.Phases.INTERACTION;
 import static io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin.Phases.PREPARATION;
+import static io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils.mutableCopy;
 
 
 /**
@@ -52,8 +53,9 @@ public abstract class BaseAgent implements Agent {
     private final DashscopeClient client;
     private final ChatModel model;
     private final List<Plugin> plugins;
-    private final List<Toolkit> toolkits;
+    private final List<Tool> tools;
     private final List<Plugin.Extension> extensions = new ArrayList<>();
+    private final AtomicReference<State> stateRef = new AtomicReference<>(State.PENDING);
 
     /**
      * 构造 BaseAgent
@@ -66,7 +68,7 @@ public abstract class BaseAgent implements Agent {
         this.client = builder.client;
         this.model = builder.model;
         this.plugins = CommonUtils.unmodifiableCopy(builder.plugins);
-        this.toolkits = CommonUtils.unmodifiableCopy(builder.toolkits);
+        this.tools = CommonUtils.unmodifiableCopy(builder.tools);
     }
 
     @Override
@@ -84,17 +86,16 @@ public abstract class BaseAgent implements Agent {
         return client;
     }
 
-    /**
-     * 异步初始化Agent，安装所有插件
-     *
-     * @return 完成信号
-     */
-    protected CompletionStage<Void> initAsync() {
-        return CompletableFutureUtils.sequentialMap(plugins(), plugin -> plugin.install(this))
-                .thenAccept(extensions -> {
-                    this.extensions.clear();
-                    this.extensions.addAll(extensions);
-                });
+    // 初始化Agent
+    protected void init() {
+
+
+
+        // 安装插件
+        plugins().stream()
+                .map(plugin -> plugin.install(this))
+                .forEach(extensions::add);
+
     }
 
     /**
@@ -123,13 +124,10 @@ public abstract class BaseAgent implements Agent {
                         .failOnToolError(false)
 
                         // 用户输入
-                        .messages(List.of(inbound))
+                        .addMessage(inbound)
 
                         // 添加工具
-                        .tools(tools -> {
-                            toolkits.forEach(toolkit -> tools.addAll(toolkit.tools()));
-                            return tools;
-                        })
+                        .addTools(tools)
 
                         // 构建
                         .build())
@@ -190,10 +188,13 @@ public abstract class BaseAgent implements Agent {
 
     @Override
     public void close() {
-        CompletableFutureUtils.sequentialMap(plugins, Plugin::uninstall)
-                .exceptionally(ex -> null)
-                .toCompletableFuture()
-                .join();
+        plugins().forEach(Plugin::uninstall);
+    }
+
+    private enum State {
+        PENDING,
+        INITIATED,
+        CLOSED
     }
 
     /**
@@ -205,7 +206,7 @@ public abstract class BaseAgent implements Agent {
      * @param <T> Agent 类型
      * @param <B> Builder 类型
      */
-    public static abstract class Builder<T extends BaseAgent, B extends Builder<T, B>> implements Buildable<T, B>, Agent.Builder<T, B> {
+    public static abstract class Builder<T extends BaseAgent, B extends Builder<T, B>> implements Buildable<T, B> {
 
         private String name;
         private String description;
@@ -214,7 +215,7 @@ public abstract class BaseAgent implements Agent {
         private ChatModel model = ChatModel.QWEN_FLASH;
 
         private List<Plugin> plugins;
-        private List<Toolkit> toolkits;
+        private List<Tool> tools;
 
 
         protected Builder() {
@@ -229,55 +230,148 @@ public abstract class BaseAgent implements Agent {
             this.client = agent.client;
             this.model = agent.model;
             this.plugins = agent.plugins;
-            this.toolkits = agent.toolkits;
+            this.tools = agent.tools;
 
         }
 
+        /**
+         * 设置智能体名称
+         *
+         * @param name 智能体名称
+         * @return 构建器
+         */
         public B name(String name) {
             this.name = name;
             return self();
         }
 
+        /**
+         * 设置智能体描述
+         *
+         * @param description 智能体描述
+         * @return 构建器
+         */
         public B description(String description) {
             this.description = description;
             return self();
         }
 
+        /**
+         * 设置 Dashscope 客户端
+         *
+         * @param client Dashscope 客户端
+         * @return 构建器
+         */
         public B client(DashscopeClient client) {
             this.client = client;
             return self();
         }
 
+        /**
+         * 设置对话模型
+         *
+         * @param model 对话模型
+         * @return 构建器
+         */
         public B model(ChatModel model) {
             this.model = model;
             return self();
         }
 
+        /**
+         * 设置插件列表
+         *
+         * @param plugins 插件列表
+         * @return 构建器
+         */
         public B plugins(List<Plugin> plugins) {
             this.plugins = plugins;
             return self();
         }
 
+        /**
+         * 修改插件列表
+         *
+         * @param operator 修改操作
+         * @return 构建器
+         */
         public B plugins(UnaryOperator<List<Plugin>> operator) {
-            this.plugins = operator.apply(CommonUtils.mutableCopy(this.plugins));
+            this.plugins = operator.apply(mutableCopy(this.plugins));
             return self();
         }
 
-        public B toolkits(List<Toolkit> toolkits) {
-            this.toolkits = toolkits;
+        /**
+         * 添加插件
+         *
+         * @param plugin 插件
+         * @return 构建器
+         */
+        public B addPlugin(Plugin plugin) {
+            return plugins(list -> {
+                list.add(plugin);
+                return list;
+            });
+        }
+
+        /**
+         * 添加插件列表
+         *
+         * @param it 插件列表
+         * @return 构建器
+         */
+        public B addPlugins(Iterable<? extends Plugin> it) {
+            return plugins(list -> {
+                it.forEach(list::add);
+                return list;
+            });
+        }
+
+        /**
+         * 设置工具列表
+         *
+         * @param tools 工具列表
+         * @return 构建器
+         */
+        public B tools(List<Tool> tools) {
+            this.tools = tools;
             return self();
         }
 
-        public B toolkits(UnaryOperator<List<Toolkit>> operator) {
-            this.toolkits = operator.apply(CommonUtils.mutableCopy(this.toolkits));
+        /**
+         * 修改工具列表
+         *
+         * @param operator 修改操作
+         * @return 构建器
+         */
+        public B tools(UnaryOperator<List<Tool>> operator) {
+            this.tools = operator.apply(mutableCopy(this.tools));
             return self();
         }
 
-        @Override
-        public T build() {
-            return buildAsync()
-                    .toCompletableFuture()
-                    .join();
+        /**
+         * 添加工具
+         *
+         * @param tool 工具
+         * @return 构建器
+         */
+        public B addTool(Tool tool) {
+            return tools(list -> {
+                list.add(tool);
+                return list;
+            });
+        }
+
+        /**
+         * 添加工具列表
+         *
+         * @param it 工具列表
+         * @return 构建器
+         */
+        public B addTools(Iterable<? extends Tool> it) {
+            return tools(list -> {
+                it.forEach(list::add);
+                return list;
+            });
         }
 
     }

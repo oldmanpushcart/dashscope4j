@@ -6,8 +6,6 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
-import java.util.List;
-
 /**
  * 工具包接口
  * <p>
@@ -31,17 +29,6 @@ import java.util.List;
  * @see Tool 单个工具接口
  * @see FunctionTool 函数型工具实现
  */
-public interface Toolkit {
-
-    /**
-     * 获取此工具包提供的所有工具列表
-     * <p>
-     * 返回的工具列表将被注册到 LLM Agent 中，供其在需要时调用。
-     * 每个工具都应该有清晰的名称、描述和参数定义。
-     * </p>
-     *
-     * @return 不可变的工具列表，包含此工具包提供的所有可用工具
-     */
-    List<Tool> tools();
+public interface Toolkit extends Iterable<Tool> {
 
 }

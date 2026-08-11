@@ -3,6 +3,7 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
+import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import org.reactivestreams.Publisher;
 
@@ -47,43 +48,14 @@ public interface Agent extends AutoCloseable {
     Publisher<AssistantMessage> flow(String sessionId, UserMessage inbound);
 
     /**
+     * @return 是否已关闭
+     */
+    boolean isClosed();
+
+    /**
      * 关闭
      */
     @Override
     void close();
-
-
-    /**
-     * 构建器
-     *
-     * @param <T> 智能体类型
-     * @param <B> 构建器类型
-     */
-    interface Builder<T extends Agent, B extends Builder<T,B>> extends Buildable<T,B> {
-
-        /**
-         * 设置名称
-         *
-         * @param name 名称
-         * @return this
-         */
-        B name(String name);
-
-        /**
-         * 设置描述
-         *
-         * @param description 描述
-         * @return this
-         */
-        B description(String description);
-
-        /**
-         * 异步构建
-         *
-         * @return 智能体
-         */
-        CompletionStage<T> buildAsync();
-
-    }
 
 }

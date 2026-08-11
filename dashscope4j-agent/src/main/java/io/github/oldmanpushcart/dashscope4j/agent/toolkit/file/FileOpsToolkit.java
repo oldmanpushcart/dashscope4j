@@ -9,6 +9,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.ToolExecutionException;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
+import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
@@ -16,10 +17,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -59,9 +57,9 @@ public class FileOpsToolkit implements Toolkit {
     private final int maxResults;
 
     /**
-     * 是否只读模式
+     * 工具集
      */
-    private final boolean readOnly;
+    private final List<Tool> tools;
 
     private FileOpsToolkit(Builder builder) {
         Objects.requireNonNull(builder.workspace, "workspace must not be null!");
@@ -71,18 +69,14 @@ public class FileOpsToolkit implements Toolkit {
         CheckUtils.require(builder.maxResults, t -> t > 0, "maxResults must be greater than 0, current is: %s".formatted(builder.maxResults));
         this.workspace = builder.workspace.toAbsolutePath().normalize();
         this.maxResults = builder.maxResults;
-        this.readOnly = builder.readOnly;
+        this.tools = builder.readOnly
+                ? List.of(info(), list(), search())
+                : List.of(info(), delete(), move(), copy(), touch(), mkdir(), list(), search());
     }
 
     @Override
-    public List<Tool> tools() {
-        if (readOnly) {
-            // 只读模式：仅返回读取相关工具
-            return List.of(info(), list(), search());
-        } else {
-            // 读写模式：返回所有工具
-            return List.of(info(), delete(), move(), copy(), touch(), mkdir(), list(), search());
-        }
+    public @NonNull Iterator<Tool> iterator() {
+        return tools.iterator();
     }
 
     // ==================== Builder ====================

@@ -22,8 +22,8 @@ public class SettingPlugin implements Plugin {
     }
 
     @Override
-    public CompletionStage<Extension> install(Agent agent) {
-        return CompletableFuture.completedStage(new Extension() {
+    public Extension install(Agent agent) {
+        return new Extension() {
             @Override
             public Plugin plugin() {
                 return SettingPlugin.this;
@@ -36,12 +36,12 @@ public class SettingPlugin implements Plugin {
                     case INTERACTION -> List.of();
                 };
             }
-        });
+        };
     }
 
     @Override
-    public CompletionStage<Void> uninstall() {
-        return null;
+    public void uninstall() {
+
     }
 
     private record SettingInterceptor(UnaryOperator<AigcRequest<Input, Output>> operator) implements ChatInterceptor {

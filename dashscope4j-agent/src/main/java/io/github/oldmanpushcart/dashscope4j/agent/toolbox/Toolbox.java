@@ -21,6 +21,22 @@ public interface Toolbox extends AutoCloseable {
     CompletionStage<? extends ToolSubscription> subscribe(ToolSource source);
 
     /**
+     * 订阅单个工具
+     *
+     * @param tool 工具
+     * @return 订阅关系
+     */
+    CompletionStage<? extends ToolSubscription> subscribe(Tool tool);
+
+    /**
+     * 订阅工具集
+     *
+     * @param it 工具集
+     * @return 订阅关系
+     */
+    CompletionStage<? extends ToolSubscription> subscribe(Iterable<? extends Tool> it);
+
+    /**
      * 根据意图查找工具
      *
      * @param intent 意图

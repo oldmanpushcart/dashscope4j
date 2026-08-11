@@ -2,6 +2,7 @@ package io.github.oldmanpushcart.dashscope4j.agent.toolbox;
 
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.ToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.ToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.toolkit.ToolkitToolSource;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
@@ -68,6 +69,39 @@ public class HashMapToolbox implements Toolbox {
                 })
                 ;
 
+    }
+
+    @Override
+    public CompletionStage<? extends ToolSubscription> subscribe(Tool tool) {
+        return subscribe(List.of(tool));
+    }
+
+    @Override
+    public CompletionStage<? extends ToolSubscription> subscribe(Iterable<? extends Tool> it) {
+        final var toolkitTs = ToolkitToolSource.newBuilder()
+                .building(builder -> it.forEach(builder::append))
+                .build();
+        return subscribe(toolkitTs)
+                .thenApply(sub ->
+                        new ToolSubscription() {
+
+                            @Override
+                            public ToolSource source() {
+                                return sub.source();
+                            }
+
+                            @Override
+                            public boolean isClosed() {
+                                return sub.isClosed();
+                            }
+
+                            @Override
+                            public void close() {
+                                sub.close();
+                                toolkitTs.close();
+                            }
+
+                        });
     }
 
 

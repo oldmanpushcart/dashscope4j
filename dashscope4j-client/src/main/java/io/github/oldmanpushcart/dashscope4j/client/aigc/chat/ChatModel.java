@@ -332,9 +332,9 @@ public record ChatModel(
             /**
              * 添加多条消息
              */
-            public Builder addMessages(List<? extends Message> messages) {
+            public Builder addMessages(Iterable<? extends Message> it) {
                 return messages(list -> {
-                    list.addAll(messages);
+                    it.forEach(list::add);
                     return list;
                 });
             }
@@ -364,6 +364,16 @@ public record ChatModel(
             public Builder addTool(Tool tool) {
                 return tools(list -> {
                     list.add(tool);
+                    return list;
+                });
+            }
+
+            /**
+             * 添加工具集
+             */
+            public Builder addTools(Iterable<? extends Tool> it) {
+                return tools(list -> {
+                    it.forEach(list::add);
                     return list;
                 });
             }
@@ -443,8 +453,8 @@ public record ChatModel(
                  * 检查等待合并的候选结果数量与当前对话应答的候选结果数量是否相等
                  * 如果不相等则说明无法合并
                  */
-                final List<Choice> currChoices = choices;
-                final List<Choice> nextChoices = next.choices;
+                final var currChoices = choices;
+                final var nextChoices = next.choices;
                 if (currChoices.size() != nextChoices.size()) {
                     throw new IllegalArgumentException("The size of choices is not equal! expect:%s but %s".formatted(
                             currChoices.size(),

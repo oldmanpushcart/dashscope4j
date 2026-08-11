@@ -34,14 +34,12 @@ public interface Plugin {
      * @param agent Agent实例
      * @return 插件扩展
      */
-    CompletionStage<Extension> install(Agent agent);
+    Extension install(Agent agent);
 
     /**
      * 在Agent关闭过程中运行
-     *
-     * @return 完成信号
      */
-    CompletionStage<Void> uninstall();
+    void uninstall();
 
     /**
      * 插件扩展接口

@@ -12,7 +12,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatIntercept
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-public class SettingInterceptor implements ChatInterceptor {
+class SettingInterceptor implements ChatInterceptor {
 
     private static final Message SEARCH_TOOLS_MESSAGE = Message
             .system(PromptTemplate.newBuilder()
