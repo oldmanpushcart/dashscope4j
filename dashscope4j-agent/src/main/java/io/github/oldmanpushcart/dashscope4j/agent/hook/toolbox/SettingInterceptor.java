@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox;
+package io.github.oldmanpushcart.dashscope4j.agent.hook.toolbox;
 
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.Toolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.util.PromptTemplate;

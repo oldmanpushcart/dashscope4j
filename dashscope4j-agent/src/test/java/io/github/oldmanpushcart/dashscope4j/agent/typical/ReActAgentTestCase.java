@@ -2,11 +2,10 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.DashscopeAssertions;
 import io.github.oldmanpushcart.dashscope4j.agent.LoadingEnv;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolboxPlugin;
+import io.github.oldmanpushcart.dashscope4j.agent.hook.toolbox.ToolboxHook;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.EmbeddingToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.skill.SkillToolSource;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.toolkit.ToolkitToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.dashscope.DashscopeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
@@ -21,20 +20,6 @@ public class ReActAgentTestCase implements LoadingEnv {
     @Test
     public void test$skill() {
 
-        final var skillsTs = SkillToolSource.newBuilder()
-                .home(Path.of("./skills/school-score"))
-                .build()
-                .initialize()
-                .toCompletableFuture()
-                .join();
-
-        final var toolkitTs = ToolkitToolSource.newBuilder()
-                .append(DashscopeToolkit.create())
-                .build()
-                .initialize()
-                .toCompletableFuture()
-                .join();
-
         final var toolbox = HashMapToolbox.newBuilder()
                 .indexer(EmbeddingToolIndexer.newBuilder()
                         .client(client)
@@ -42,25 +27,23 @@ public class ReActAgentTestCase implements LoadingEnv {
                         .build())
                 .build();
 
-        toolbox.subscribe(skillsTs)
+        toolbox.subscribeSkill("dashscope4j", Path.of("./skills/school-score"))
                 .toCompletableFuture()
                 .join();
 
-        toolbox.subscribe(toolkitTs)
+        toolbox.subscribeTools("dashscope4j", DashscopeToolkit.create())
                 .toCompletableFuture()
                 .join();
 
-        try (skillsTs; toolkitTs; toolbox; final var agent = ReActAgent.newBuilder()
-                .client(client)
-                .model(ChatModel.QWEN_FLASH)
-                .plugins(plugins -> {
-                    final var toolboxPlugin = ToolboxPlugin.newBuilder()
+        try (toolbox) {
+
+            final var agent = ReActAgent.newBuilder()
+                    .client(client)
+                    .model(ChatModel.QWEN_FLASH)
+                    .addHook(ToolboxHook.newBuilder()
                             .toolbox(toolbox)
-                            .build();
-                    plugins.add(toolboxPlugin);
-                    return plugins;
-                })
-                .build()) {
+                            .build())
+                    .build();
 
             final var sessionId = UUID.randomUUID().toString();
             final var inbound = Message.user("小蓝的数学成绩是多少?");

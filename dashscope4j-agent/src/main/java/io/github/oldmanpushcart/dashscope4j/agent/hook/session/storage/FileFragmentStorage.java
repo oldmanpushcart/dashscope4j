@@ -1,4 +1,4 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.session.storage;
+package io.github.oldmanpushcart.dashscope4j.agent.hook.session.storage;
 
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.github.oldmanpushcart.dashscope4j.client.util.TokenizerUtils;

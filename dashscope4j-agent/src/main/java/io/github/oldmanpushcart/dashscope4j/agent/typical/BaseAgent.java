@@ -1,7 +1,9 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
+import io.github.oldmanpushcart.dashscope4j.agent.hook.Hook;
+import io.github.oldmanpushcart.dashscope4j.agent.hook.InteractionHook;
+import io.github.oldmanpushcart.dashscope4j.agent.hook.PreparationHook;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
@@ -16,16 +18,12 @@ import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
-import static io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin.Phases.INTERACTION;
-import static io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin.Phases.PREPARATION;
 import static io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils.mutableCopy;
 
 
@@ -52,10 +50,8 @@ public abstract class BaseAgent implements Agent {
     private final String description;
     private final DashscopeClient client;
     private final ChatModel model;
-    private final List<Plugin> plugins;
     private final List<Tool> tools;
-    private final List<Plugin.Extension> extensions = new ArrayList<>();
-    private final AtomicReference<State> stateRef = new AtomicReference<>(State.PENDING);
+    private final List<Hook> hooks;
 
     /**
      * 构造 BaseAgent
@@ -67,8 +63,8 @@ public abstract class BaseAgent implements Agent {
         this.description = builder.description;
         this.client = builder.client;
         this.model = builder.model;
-        this.plugins = CommonUtils.unmodifiableCopy(builder.plugins);
         this.tools = CommonUtils.unmodifiableCopy(builder.tools);
+        this.hooks = CommonUtils.unmodifiableCopy(builder.hooks);
     }
 
     @Override
@@ -84,18 +80,6 @@ public abstract class BaseAgent implements Agent {
     @Override
     public DashscopeClient client() {
         return client;
-    }
-
-    // 初始化Agent
-    protected void init() {
-
-
-
-        // 安装插件
-        plugins().stream()
-                .map(plugin -> plugin.install(this))
-                .forEach(extensions::add);
-
     }
 
     /**
@@ -127,13 +111,13 @@ public abstract class BaseAgent implements Agent {
                         .addMessage(inbound)
 
                         // 添加工具
-                        .addTools(tools)
+                        .addTools(tools())
 
                         // 构建
                         .build())
 
-                // 组装拦截器
-                .interceptors(interceptors(INTERACTION))
+                // 组装拦截器（每次交互）
+                .interceptors(interactionInterceptors())
 
                 // 注入会话ID
                 .context(Map.of("SESSION-ID", sessionId))
@@ -142,29 +126,40 @@ public abstract class BaseAgent implements Agent {
                 .build();
     }
 
-    private List<Interceptor> interceptors(Plugin.Phases phases) {
-        return extensions.stream()
-                .map(extension -> extension.interceptors(phases))
-                .flatMap(List::stream)
-                .map(Interceptor.class::cast)
-                .toList();
+
+    /**
+     * 获取智能体可以使用的工具列表。
+     * 设计为{@code protected}的原因是，这是Agent实现可以增加工具的便捷入口
+     *
+     * @return 工具列表
+     */
+    protected List<Tool> tools() {
+        return tools;
     }
 
-    protected List<Plugin> plugins() {
-        return plugins;
+    /**
+     * 获取智能体可以使用的钩子列表
+     * 设计为{@code protected}的原因是，这是Agent实现可以增加钩子的便捷入口
+     *
+     * @return 钩子列表
+     */
+    protected List<Hook> hooks() {
+        return hooks;
     }
 
     @Override
     public CompletionStage<AssistantMessage> async(String sessionId, UserMessage inbound) {
         return CompletableFuture.completedStage(newRequest(sessionId, inbound))
-                .thenCompose(request -> client.async(request, interceptors(PREPARATION)))
+                .thenCompose(request -> client.async(request, preparationInterceptors()))
                 .thenApply(response -> response.output().best().message());
     }
 
 
     @Override
     public Publisher<AssistantMessage> flow(String sessionId, UserMessage inbound) {
-        var request = AigcRequest.newBuilder(newRequest(sessionId, inbound))
+
+        // 组装对话请求
+        final var request = AigcRequest.newBuilder(newRequest(sessionId, inbound))
                 .parameters(parameters -> {
 
                     // 如果没有制定输出模式，默认为增量输出
@@ -173,8 +168,25 @@ public abstract class BaseAgent implements Agent {
                     return parameters;
                 })
                 .build();
-        return Flux.from(client.flow(request, interceptors(PREPARATION)))
+
+        return Flux.from(client.flow(request, preparationInterceptors()))
                 .map(response -> response.output().best().message());
+    }
+
+    private List<Interceptor> interactionInterceptors() {
+        return hooks().stream()
+                .map(hook -> hook instanceof InteractionHook ih ? ih.onInteraction(this) : List.of())
+                .flatMap(List::stream)
+                .map(Interceptor.class::cast)
+                .toList();
+    }
+
+    private List<Interceptor> preparationInterceptors() {
+        return hooks().stream()
+                .map(hook -> hook instanceof PreparationHook ph ? ph.onPreparation(this) : List.of())
+                .flatMap(List::stream)
+                .map(Interceptor.class::cast)
+                .toList();
     }
 
     /**
@@ -184,17 +196,6 @@ public abstract class BaseAgent implements Agent {
      */
     protected ChatModel model() {
         return model;
-    }
-
-    @Override
-    public void close() {
-        plugins().forEach(Plugin::uninstall);
-    }
-
-    private enum State {
-        PENDING,
-        INITIATED,
-        CLOSED
     }
 
     /**
@@ -214,7 +215,7 @@ public abstract class BaseAgent implements Agent {
         private DashscopeClient client;
         private ChatModel model = ChatModel.QWEN_FLASH;
 
-        private List<Plugin> plugins;
+        private List<Hook> hooks;
         private List<Tool> tools;
 
 
@@ -229,7 +230,7 @@ public abstract class BaseAgent implements Agent {
 
             this.client = agent.client;
             this.model = agent.model;
-            this.plugins = agent.plugins;
+            this.hooks = agent.hooks;
             this.tools = agent.tools;
 
         }
@@ -279,48 +280,48 @@ public abstract class BaseAgent implements Agent {
         }
 
         /**
-         * 设置插件列表
+         * 设置钩子列表
          *
-         * @param plugins 插件列表
+         * @param hooks 钩子列表
          * @return 构建器
          */
-        public B plugins(List<Plugin> plugins) {
-            this.plugins = plugins;
+        public B hooks(List<Hook> hooks) {
+            this.hooks = hooks;
             return self();
         }
 
         /**
-         * 修改插件列表
+         * 修改钩子列表
          *
          * @param operator 修改操作
          * @return 构建器
          */
-        public B plugins(UnaryOperator<List<Plugin>> operator) {
-            this.plugins = operator.apply(mutableCopy(this.plugins));
+        public B hooks(UnaryOperator<List<Hook>> operator) {
+            this.hooks = operator.apply(mutableCopy(this.hooks));
             return self();
         }
 
         /**
-         * 添加插件
+         * 添加钩子
          *
-         * @param plugin 插件
+         * @param hook 钩子
          * @return 构建器
          */
-        public B addPlugin(Plugin plugin) {
-            return plugins(list -> {
-                list.add(plugin);
+        public B addHook(Hook hook) {
+            return hooks(list -> {
+                list.add(hook);
                 return list;
             });
         }
 
         /**
-         * 添加插件列表
+         * 添加钩子列表
          *
-         * @param it 插件列表
+         * @param it 钩子列表
          * @return 构建器
          */
-        public B addPlugins(Iterable<? extends Plugin> it) {
-            return plugins(list -> {
+        public B addHooks(Iterable<? extends Hook> it) {
+            return hooks(list -> {
                 it.forEach(list::add);
                 return list;
             });

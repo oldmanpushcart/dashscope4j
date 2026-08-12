@@ -49,7 +49,7 @@ Dashscope4j Agent 是一个基于阿里云灵积平台的 Java 智能体框架�
 
 ```java
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
+import io.github.oldmanpushcart.dashscope4j.agent.hook.toolbox.ToolUse;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
@@ -170,8 +170,8 @@ public interface Plugin {
 | 插件 | 说明 | 用途 |
 |------|------|------|
 | `SimpleToolboxPlugin` | 简易工具箱插件 | 快速配置工具集合 |
-| `ToolboxPlugin` | 高级工具箱插件 | 精细控制工具箱行为 |
-| `SessionPlugin` | 会话管理插件 | 历史记录与记忆压缩 |
+| `ToolboxHook` | 高级工具箱插件 | 精细控制工具箱行为 |
+| `SessionHook` | 会话管理插件 | 历史记录与记忆压缩 |
 
 #### 3. Toolbox 工具箱
 
@@ -335,7 +335,7 @@ var agent = ReActAgent.newBuilder()
 
 ### 会话记忆配置
 
-添加 `SessionPlugin` 实现持久化会话管理：
+添加 `SessionHook` 实现持久化会话管理：
 
 ```java
 var sessionPlugin = SessionPlugin.newBuilder()

@@ -13,6 +13,11 @@ public interface ToolSubscription extends AutoCloseable {
     ToolSource source();
 
     /**
+     * @return 工具箱
+     */
+    Toolbox toolbox();
+
+    /**
      * @return 是否已关闭
      */
     boolean isClosed();

@@ -1,19 +1,17 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.react;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
+import io.github.oldmanpushcart.dashscope4j.agent.hook.Hook;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseAgent;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 /**
  * ReAct 智能助手
  */
 public class ReActAgent extends BaseAgent {
 
-    private final Plugin plugin = new ReActPlugin();
+    private final Hook hook = new ReActHook();
 
     protected ReActAgent(Builder builder) {
         super(builder);
@@ -25,14 +23,14 @@ public class ReActAgent extends BaseAgent {
     }
 
     @Override
-    protected List<Plugin> plugins() {
+    protected List<Hook> hooks() {
 
         /*
          * 合并插件
          * ReAct的插件必须是最后一个生效
          */
-        final var merged = new ArrayList<>(super.plugins());
-        merged.add(plugin);
+        final var merged = new ArrayList<>(super.hooks());
+        merged.add(hook);
         return merged;
 
     }
@@ -43,10 +41,9 @@ public class ReActAgent extends BaseAgent {
 
     public static class Builder extends BaseAgent.Builder<ReActAgent, ReActAgent.Builder> {
 
-        public CompletionStage<ReActAgent> buildAsync() {
-            return CompletableFuture.completedStage(null)
-                    .thenApply(u -> new ReActAgent(this))
-                    .thenCompose(agent -> agent.initAsync().thenApply(u -> agent));
+        @Override
+        public ReActAgent build() {
+            return new ReActAgent(this);
         }
 
     }

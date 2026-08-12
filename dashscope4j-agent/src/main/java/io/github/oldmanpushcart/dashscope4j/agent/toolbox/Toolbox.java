@@ -1,8 +1,11 @@
 package io.github.oldmanpushcart.dashscope4j.agent.toolbox;
 
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.ToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolkit.Toolkit;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
+import io.modelcontextprotocol.spec.McpClientTransport;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -23,18 +26,28 @@ public interface Toolbox extends AutoCloseable {
     /**
      * 订阅单个工具
      *
-     * @param tool 工具
+     * @param namespace 命名空间
+     * @param tool      工具
      * @return 订阅关系
      */
-    CompletionStage<? extends ToolSubscription> subscribe(Tool tool);
+    CompletionStage<? extends ToolSubscription> subscribeTool(String namespace, Tool tool);
 
     /**
      * 订阅工具集
      *
-     * @param it 工具集
+     * @param namespace 命名空间
+     * @param it        工具集
      * @return 订阅关系
      */
-    CompletionStage<? extends ToolSubscription> subscribe(Iterable<? extends Tool> it);
+    CompletionStage<? extends ToolSubscription> subscribeTools(String namespace, Iterable<? extends Tool> it);
+
+    CompletionStage<? extends ToolSubscription> subscribeTools(String namespace, List<Iterable<? extends Tool>> its);
+
+    CompletionStage<? extends ToolSubscription> subscribeSkill(String namespace, Path path);
+
+    CompletionStage<? extends ToolSubscription> subscribeSkills(String namespace, Path path);
+
+    CompletionStage<? extends ToolSubscription> subscribeMcp(String namespace, McpClientTransport transport);
 
     /**
      * 根据意图查找工具

@@ -2,17 +2,24 @@ package io.github.oldmanpushcart.dashscope4j.agent.toolbox;
 
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.ToolIndexer;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.ToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.mcp.McpToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.skill.SkillToolSource;
+import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.skill.SkillsToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.toolkit.ToolkitToolSource;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils;
+import io.github.oldmanpushcart.dashscope4j.client.util.IOUtils;
+import io.modelcontextprotocol.spec.McpClientTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static io.github.oldmanpushcart.dashscope4j.client.util.CompletableFutureUtils.illegalStateStage;
 
@@ -72,36 +79,60 @@ public class HashMapToolbox implements Toolbox {
     }
 
     @Override
-    public CompletionStage<? extends ToolSubscription> subscribe(Tool tool) {
-        return subscribe(List.of(tool));
+    public CompletionStage<? extends ToolSubscription> subscribeTool(String namespace, Tool tool) {
+        return subscribeTools(namespace, List.of(tool));
     }
 
     @Override
-    public CompletionStage<? extends ToolSubscription> subscribe(Iterable<? extends Tool> it) {
-        final var toolkitTs = ToolkitToolSource.newBuilder()
+    public CompletionStage<? extends ToolSubscription> subscribeTools(String namespace, Iterable<? extends Tool> it) {
+        final var ts = ToolkitToolSource.newBuilder()
+                .namespace(namespace)
                 .building(builder -> it.forEach(builder::append))
                 .build();
-        return subscribe(toolkitTs)
-                .thenApply(sub ->
-                        new ToolSubscription() {
+        return ts.initialize()
+                .thenCompose(this::subscribe)
+                .thenApply(this::makeAutocloseToolSource);
+    }
 
-                            @Override
-                            public ToolSource source() {
-                                return sub.source();
-                            }
+    @Override
+    public CompletionStage<? extends ToolSubscription> subscribeTools(String namespace, List<Iterable<? extends Tool>> its) {
+        final var tools = its.stream()
+                .flatMap(it -> StreamSupport.stream(it.spliterator(), false))
+                .toList();
+        return subscribeTools(namespace, tools);
+    }
 
-                            @Override
-                            public boolean isClosed() {
-                                return sub.isClosed();
-                            }
+    @Override
+    public CompletionStage<? extends ToolSubscription> subscribeSkill(String namespace, Path path) {
+        final var ts = SkillToolSource.newBuilder()
+                .namespace(namespace)
+                .home(path)
+                .build();
+        return ts.initialize()
+                .thenCompose(this::subscribe)
+                .thenApply(this::makeAutocloseToolSource);
+    }
 
-                            @Override
-                            public void close() {
-                                sub.close();
-                                toolkitTs.close();
-                            }
+    @Override
+    public CompletionStage<? extends ToolSubscription> subscribeSkills(String namespace, Path path) {
+        final var ts = SkillsToolSource.newBuilder()
+                .namespace(namespace)
+                .directory(path)
+                .build();
+        return ts.initialize()
+                .thenCompose(this::subscribe)
+                .thenApply(this::makeAutocloseToolSource);
+    }
 
-                        });
+    @Override
+    public CompletionStage<? extends ToolSubscription> subscribeMcp(String namespace, McpClientTransport transport) {
+        final var ts = McpToolSource.newBuilder()
+                .namespace(namespace)
+                .transport(transport)
+                .build();
+        return ts.initialize()
+                .thenCompose(this::subscribe)
+                .thenApply(this::makeAutocloseToolSource);
     }
 
 
@@ -212,6 +243,31 @@ public class HashMapToolbox implements Toolbox {
 
     }
 
+    private ToolSubscription makeAutocloseToolSource(ToolSubscription subscription) {
+        return new ToolSubscription() {
+            @Override
+            public ToolSource source() {
+                return subscription.source();
+            }
+
+            @Override
+            public Toolbox toolbox() {
+                return subscription.toolbox();
+            }
+
+            @Override
+            public boolean isClosed() {
+                return subscription.isClosed();
+            }
+
+            @Override
+            public void close() {
+                IOUtils.closeQuietly(subscription);
+                IOUtils.closeQuietly(subscription.source());
+            }
+        };
+    }
+
     /**
      * 工具订阅关系实现
      */
@@ -230,6 +286,11 @@ public class HashMapToolbox implements Toolbox {
         @Override
         public ToolSource source() {
             return source;
+        }
+
+        @Override
+        public Toolbox toolbox() {
+            return HashMapToolbox.this;
         }
 
         public ToolSubscriptionImpl subscribe() {

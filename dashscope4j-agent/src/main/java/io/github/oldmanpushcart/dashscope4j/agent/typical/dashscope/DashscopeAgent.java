@@ -1,19 +1,18 @@
 package io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
+import io.github.oldmanpushcart.dashscope4j.agent.hook.Hook;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseAgent;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 /**
  * Dashscope-Agent
  */
 public class DashscopeAgent extends BaseAgent {
 
-    private final Plugin dashscopePlugin;
+    private final Hook hook = new DashscopeHook();
+    ;
 
     /**
      * 构造 DashscopeAgent
@@ -22,14 +21,13 @@ public class DashscopeAgent extends BaseAgent {
      */
     protected DashscopeAgent(Builder builder) {
         super(builder);
-        this.dashscopePlugin = new DashscopePlugin();
     }
 
     @Override
-    protected List<Plugin> plugins() {
-        final var newPlugins = new ArrayList<>(super.plugins());
-        newPlugins.add(dashscopePlugin);
-        return newPlugins;
+    protected List<Hook> hooks() {
+        final var newHooks = new ArrayList<>(super.hooks());
+        newHooks.add(hook);
+        return newHooks;
     }
 
     public static Builder newBuilder() {
@@ -38,10 +36,9 @@ public class DashscopeAgent extends BaseAgent {
 
     public static class Builder extends BaseAgent.Builder<DashscopeAgent, Builder> {
 
-        public CompletionStage<DashscopeAgent> buildAsync() {
-            return CompletableFuture.completedStage(null)
-                    .thenApply(u -> new DashscopeAgent(this))
-                    .thenCompose(agent -> agent.initAsync().thenApply(u -> agent));
+        @Override
+        public DashscopeAgent build() {
+            return new DashscopeAgent(this);
         }
 
     }

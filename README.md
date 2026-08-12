@@ -96,25 +96,27 @@ System.out.println(reply);
 
 ```java
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.SimpleToolboxPlugin;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.toolbox.ToolUse;
+import io.github.oldmanpushcart.dashscope4j.agent.hook.toolbox.SimpleToolboxPlugin;
+import io.github.oldmanpushcart.dashscope4j.agent.hook.toolbox.ToolUse;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
 
 var agent = ReActAgent.newBuilder()
-    .client(client)
-    .model(ChatModel.QWEN_PLUS)
-    .plugins(plugins -> {
-        plugins.add(SimpleToolboxPlugin.newBuilder()
-            .toolkit(ToolUse.Mode.FIXED, ShellToolkit.create())
-            .build());
-        return plugins;
-    })
-    .build();
+        .client(client)
+        .model(ChatModel.QWEN_PLUS)
+        .plugins(plugins -> {
+            plugins.add(SimpleToolboxPlugin.newBuilder()
+                    .toolkit(ToolUse.Mode.FIXED, ShellToolkit.create())
+                    .build());
+            return plugins;
+        })
+        .build();
 
 var response = agent.async("session-001", Message.user("查询当前目录文件"))
-    .toCompletableFuture().join();
+        .toCompletableFuture().join();
 
-System.out.println(response.text());
+System.out.
+
+println(response.text());
 ```
 
 ---

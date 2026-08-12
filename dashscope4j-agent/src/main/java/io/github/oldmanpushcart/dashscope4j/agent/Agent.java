@@ -3,8 +3,6 @@ package io.github.oldmanpushcart.dashscope4j.agent;
 import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.UserMessage;
-import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
-import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 import org.reactivestreams.Publisher;
 
 import java.util.concurrent.CompletionStage;
@@ -12,7 +10,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * 智能体
  */
-public interface Agent extends AutoCloseable {
+public interface Agent {
 
     /**
      * @return 名称
@@ -46,16 +44,5 @@ public interface Agent extends AutoCloseable {
      * @return 处理结果
      */
     Publisher<AssistantMessage> flow(String sessionId, UserMessage inbound);
-
-    /**
-     * @return 是否已关闭
-     */
-    boolean isClosed();
-
-    /**
-     * 关闭
-     */
-    @Override
-    void close();
 
 }

@@ -1,7 +1,7 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.setting;
+package io.github.oldmanpushcart.dashscope4j.agent.hook.setting;
 
 import io.github.oldmanpushcart.dashscope4j.agent.Agent;
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.Plugin;
+import io.github.oldmanpushcart.dashscope4j.agent.hook.PreparationHook;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;
 import io.github.oldmanpushcart.dashscope4j.client.api.AigcRequest;
@@ -9,39 +9,23 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatIntercept
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
 
-public class SettingPlugin implements Plugin {
+/**
+ * 设置钩子
+ */
+public class SettingHook implements PreparationHook {
 
-    private final UnaryOperator<AigcRequest<Input, Output>> operator;
+    private final SettingInterceptor settingInterceptor;
 
-    private SettingPlugin(Builder builder) {
-        this.operator = builder.operator;
+    private SettingHook(Builder builder) {
+        this.settingInterceptor = new SettingInterceptor(builder.operator);
     }
 
     @Override
-    public Extension install(Agent agent) {
-        return new Extension() {
-            @Override
-            public Plugin plugin() {
-                return SettingPlugin.this;
-            }
-
-            @Override
-            public List<ChatInterceptor> interceptors(Phases phases) {
-                return switch (phases) {
-                    case PREPARATION -> List.of(new SettingInterceptor(operator));
-                    case INTERACTION -> List.of();
-                };
-            }
-        };
-    }
-
-    @Override
-    public void uninstall() {
-
+    public List<? extends ChatInterceptor> onPreparation(Agent agent) {
+        return List.of(settingInterceptor);
     }
 
     private record SettingInterceptor(UnaryOperator<AigcRequest<Input, Output>> operator) implements ChatInterceptor {
@@ -65,7 +49,7 @@ public class SettingPlugin implements Plugin {
         return new Builder();
     }
 
-    public static class Builder implements Buildable<SettingPlugin, Builder> {
+    public static class Builder implements Buildable<SettingHook, Builder> {
 
         private UnaryOperator<AigcRequest<Input, Output>> operator;
 
@@ -75,8 +59,8 @@ public class SettingPlugin implements Plugin {
         }
 
         @Override
-        public SettingPlugin build() {
-            return new SettingPlugin(this);
+        public SettingHook build() {
+            return new SettingHook(this);
         }
 
     }

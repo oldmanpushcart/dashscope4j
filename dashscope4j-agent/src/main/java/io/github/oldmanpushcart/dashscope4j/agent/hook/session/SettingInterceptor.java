@@ -1,6 +1,6 @@
-package io.github.oldmanpushcart.dashscope4j.agent.plugin.session;
+package io.github.oldmanpushcart.dashscope4j.agent.hook.session;
 
-import io.github.oldmanpushcart.dashscope4j.agent.plugin.session.storage.FragmentStorage;
+import io.github.oldmanpushcart.dashscope4j.agent.hook.session.storage.FragmentStorage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Input;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel.Output;

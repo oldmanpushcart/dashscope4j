@@ -31,7 +31,7 @@ public class ToolkitToolSource extends AbstractToolSource {
         return _toString;
     }
 
-    public ToolkitToolSource append(List<Tool> tools) {
+    public ToolkitToolSource append(Iterable<? extends Tool> it) {
 
         if (isClosed()) {
             throw new IllegalStateException("Already closed!");
@@ -42,8 +42,8 @@ public class ToolkitToolSource extends AbstractToolSource {
         }
 
         synchronized (this) {
-            if (null != tools) {
-                tools.forEach(tool -> {
+            if (null != it) {
+                it.forEach(tool -> {
                     final var namespaceTool = new NamespaceTool(namespace(), tool);
                     this.tools.add(namespaceTool);
                 });
@@ -52,10 +52,6 @@ public class ToolkitToolSource extends AbstractToolSource {
         }
 
         return this;
-    }
-
-    public ToolkitToolSource append(Toolkit toolkit) {
-        return append(toolkit.tools());
     }
 
     public ToolkitToolSource remove(List<String> names) {
@@ -210,7 +206,7 @@ public class ToolkitToolSource extends AbstractToolSource {
         public Builder append(Toolkit... toolkits) {
             if (null != toolkits) {
                 for (Toolkit toolkit : toolkits) {
-                    this.tools.addAll(toolkit.tools());
+                    toolkit.forEach(this.tools::add);
                 }
             }
             return this;
