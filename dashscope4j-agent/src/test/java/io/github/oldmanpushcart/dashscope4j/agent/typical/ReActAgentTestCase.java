@@ -5,7 +5,6 @@ import io.github.oldmanpushcart.dashscope4j.agent.LoadingEnv;
 import io.github.oldmanpushcart.dashscope4j.agent.hook.toolbox.ToolboxHook;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.HashMapToolbox;
 import io.github.oldmanpushcart.dashscope4j.agent.toolbox.indexer.EmbeddingToolIndexer;
-import io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.skill.SkillToolSource;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.dashscope.DashscopeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;

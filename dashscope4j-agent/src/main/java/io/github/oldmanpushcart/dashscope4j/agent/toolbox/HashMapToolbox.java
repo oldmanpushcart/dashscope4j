@@ -103,10 +103,10 @@ public class HashMapToolbox implements Toolbox {
     }
 
     @Override
-    public CompletionStage<? extends ToolSubscription> subscribeSkill(String namespace, Path path) {
+    public CompletionStage<? extends ToolSubscription> subscribeSkill(String namespace, Path home) {
         final var ts = SkillToolSource.newBuilder()
                 .namespace(namespace)
-                .home(path)
+                .home(home)
                 .build();
         return ts.initialize()
                 .thenCompose(this::subscribe)
@@ -114,10 +114,10 @@ public class HashMapToolbox implements Toolbox {
     }
 
     @Override
-    public CompletionStage<? extends ToolSubscription> subscribeSkills(String namespace, Path path) {
+    public CompletionStage<? extends ToolSubscription> subscribeSkills(String namespace, Path directory) {
         final var ts = SkillsToolSource.newBuilder()
                 .namespace(namespace)
-                .directory(path)
+                .directory(directory)
                 .build();
         return ts.initialize()
                 .thenCompose(this::subscribe)

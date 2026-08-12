@@ -6,7 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatIntercept
 import java.util.List;
 
 /**
- * 准备钩子
+ * 准备阶段钩子
  */
 public interface PreparationHook extends Hook {
 

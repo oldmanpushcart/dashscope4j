@@ -19,6 +19,11 @@ public class FunAsrTestCase implements LoadingEnv {
         final var buffers = AudioHelper.generatePcmByteBuffers(client, 16000, "锄禾日当午，汗滴禾下土。谁知盘中餐，粒粒皆辛苦。");
         final var session = FunAsrSession.newBuilder()
                 .model(FunAsrModel.FUN_ASR_REALTIME)
+                .parameters(parameters-> {
+                    parameters.put("format", "pcm");
+                    parameters.put("sample_rate", 16000);
+                    return parameters;
+                })
                 .build();
 
         final var stringBuf = new StringBuilder();
@@ -57,7 +62,7 @@ public class FunAsrTestCase implements LoadingEnv {
         completeF.join();
 
         final var text = stringBuf.toString();
-        DashscopeAssertions.dashscopeAssertText(client, text, "内容是《悯农》，有可能有错别字。");
+        DashscopeAssertions.dashscopeAssertText(client, text, "内容是《悯农》这首诗，有可能有错别字。");
 
 
     }

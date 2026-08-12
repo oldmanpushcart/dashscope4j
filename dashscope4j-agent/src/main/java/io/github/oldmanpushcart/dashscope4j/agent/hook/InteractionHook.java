@@ -6,7 +6,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.ChatIntercept
 import java.util.List;
 
 /**
- * 交互钩子
+ * 交互阶段钩子
  */
 public interface InteractionHook extends Hook {
 

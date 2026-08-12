@@ -3,8 +3,8 @@ package io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope;
 import io.github.oldmanpushcart.dashscope4j.agent.hook.Hook;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.BaseAgent;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Dashscope-Agent
@@ -25,9 +25,9 @@ public class DashscopeAgent extends BaseAgent {
 
     @Override
     protected List<Hook> hooks() {
-        final var newHooks = new ArrayList<>(super.hooks());
-        newHooks.add(hook);
-        return newHooks;
+        return Stream.of(super.hooks(), List.of(hook))
+                .flatMap(List::stream)
+                .toList();
     }
 
     public static Builder newBuilder() {
