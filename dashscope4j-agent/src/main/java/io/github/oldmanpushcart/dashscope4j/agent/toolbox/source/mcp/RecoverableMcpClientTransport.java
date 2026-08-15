@@ -1,7 +1,6 @@
 package io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.mcp;
 
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
-import io.github.oldmanpushcart.dashscope4j.client.util.PublisherUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.TypeRef;
@@ -15,345 +14,164 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
-import static java.util.Objects.*;
+import static java.util.Objects.requireNonNullElseGet;
 import static java.util.concurrent.CompletableFuture.completedStage;
 
-/**
- * 可恢复的 MCP 客户端传输层包装器
- * <p>
- * 提供自动重连能力的 MCP 传输层封装，核心特性包括：
- * <ul>
- *     <li><b>自动重连</b>：连接断开后自动重试，支持指数退避策略</li>
- *     <li><b>心跳检测</b>：定期发送 Ping 消息检测连接健康状态</li>
- *     <li><b>故障计数</b>：跟踪连续发送失败和心跳失败次数</li>
- *     <li><b>优雅关闭</b>：支持资源的有序释放和清理</li>
- * </ul>
- * </p>
- * <p>
- * 当检测到网络故障时（发送失败或心跳超时），会自动重置连接并触发重连流程。
- * 重连间隔采用指数退避算法，避免对服务器造成过大压力。
- * </p>
- *
- * @see McpClientTransport
- * @see ReconnectStrategy
- */
 public class RecoverableMcpClientTransport implements McpClientTransport {
 
-    /**
-     * 组件名称
-     */
-    private static final String NAME = "mcp-client-transport/recoverable";
-    
-    /**
-     * 默认心跳间隔：30 秒
-     */
-    private static final Duration DEFAULT_PING_INTERVAL = Duration.ofSeconds(30);
-    
-    /**
-     * 默认心跳超时时间：60 秒（心跳间隔的 2 倍）
-     */
-    private static final Duration DEFAULT_PING_TIMEOUT = Duration.ofSeconds(60); // 2x ping interval
-    
-    /**
-     * 默认最大连续发送失败次数
-     */
-    private static final int DEFAULT_MAX_CONSECUTIVE_SEND_FAILURES = 5;
-    
-    /**
-     * 默认最大连续心跳失败次数
-     */
-    private static final int DEFAULT_MAX_CONSECUTIVE_PING_FAILURES = 5;
-    
-    /**
-     * 最大重试次数：防止指数退避计算溢出
-     */
-    private static final int MAX_RETRY_ATTEMPT = 63; // Prevent overflow in exponential backoff
-    
-    /**
-     * 默认重连策略：指数退避
-     */
-    private static final ReconnectStrategy DEFAULT_RECONNECT_STRATEGY = ReconnectStrategies
-            .exponentialBackoff(
-                    Duration.ofSeconds(1),
-                    Duration.ofMinutes(1),
-                    0.3
-            );
-
-    /**
-     * 日志记录器
-     */
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    
-    /**
-     * JSON 映射器
-     */
     private final McpJsonMapper mapper;
-    
-    /**
-     * 传输层工厂，用于创建底层传输实例
-     */
-    private final McpClientTransportFactory transportFactory;
-    
-    /**
-     * 重连策略
-     */
     private final ReconnectStrategy reconnectStrategy;
-    
-    /**
-     * 最大连续发送失败次数阈值
-     */
-    private final int maxConsecutiveSendFailures;
-
-    /**
-     * 是否拥有调度器的所有权
-     */
+    private final Function<McpJsonMapper, McpClientTransport> transportFactory;
     private final boolean ownsScheduler;
-    
-    /**
-     * 调度器，用于执行定时任务
-     */
-    private final ScheduledExecutorService scheduler;
 
-    /**
-     * 是否启用心跳检测
-     */
-    private final boolean pingEnabled;
-    
-    /**
-     * 心跳间隔时间
-     */
-    private final Duration pingInterval;
-    
-    /**
-     * 心跳超时时间
-     */
-    private final Duration pingTimeout; // Timeout for each ping request
-    
-    /**
-     * 最大连续心跳失败次数阈值
-     */
-    private final int maxConsecutivePingFailures;
-
-    /**
-     * 关闭标志
-     */
-    private final AtomicBoolean closed = new AtomicBoolean(false);
-    
-    /**
-     * 当前持有的连接（包含传输层和消息处理器）
-     */
     private final AtomicReference<CompletableFuture<Hold>> holderRef = new AtomicReference<>(new CompletableFuture<>());
-    
-    /**
-     * 心跳检测器
-     */
-    private final Pinger pinger = new Pinger();
-    
-    /**
-     * 网络健康状态跟踪器
-     */
-    private final NetworkHealth networkHealth = new NetworkHealth();
-    
-    // Cache the closing future to handle duplicate close requests
-    private volatile CompletableFuture<Void> closingFuture;
+    private final AtomicBoolean connectF = new AtomicBoolean(false);
+    private final CompletableFuture<?> closeF = new CompletableFuture<>();
 
-    private RecoverableMcpClientTransport(Builder builder) {
+    private volatile ScheduledExecutorService scheduler;
 
-        requireNonNull(builder.transportFactory, "transportFactory must not be null.");
-        
-        // Validate parameters
-        if (builder.maxConsecutiveSendFailures < 0) {
-            throw new IllegalArgumentException("maxConsecutiveSendFailures must be non-negative");
-        }
-        if (builder.pingInterval != null && builder.pingInterval.toMillis() <= 0) {
-            throw new IllegalArgumentException("pingInterval must be positive");
-        }
-        if (builder.pingTimeout != null && builder.pingTimeout.toMillis() <= 0) {
-            throw new IllegalArgumentException("pingTimeout must be positive");
-        }
+
+    // --- PING ---
+    private final boolean pingEnabled;
+    private final Duration pingInterval;
+    private final Duration pingTimeout;
+    private final int maxConsecutivePingFailures;
+    private final Pinger pinger;
+
+    public RecoverableMcpClientTransport(Builder builder) {
+        Objects.requireNonNull(builder.reconnectStrategy, "reconnectStrategy must not be null!");
+        Objects.requireNonNull(builder.transportFactory, "transportFactory must not be null!");
 
         this.mapper = requireNonNullElseGet(builder.mapper, () -> new JacksonMcpJsonMapper(JacksonJsonUtils.newMapper()));
+        this.reconnectStrategy = builder.reconnectStrategy;
         this.transportFactory = builder.transportFactory;
-        this.reconnectStrategy = requireNonNullElse(builder.reconnectStrategy, DEFAULT_RECONNECT_STRATEGY);
-        this.maxConsecutiveSendFailures = builder.maxConsecutiveSendFailures;
+        this.scheduler = builder.scheduler;
+        this.ownsScheduler = null == builder.scheduler;
 
-        // Configure pinger
         this.pingEnabled = builder.pingEnabled;
-        this.pingInterval = requireNonNullElse(builder.pingInterval, DEFAULT_PING_INTERVAL);
-        this.pingTimeout = requireNonNullElse(builder.pingTimeout, DEFAULT_PING_TIMEOUT);
-        this.maxConsecutivePingFailures = builder.maxConsecutivePingFailures;
-        
-        // Validate pingTimeout >= pingInterval
-        if (this.pingTimeout.compareTo(this.pingInterval) < 0) {
-            throw new IllegalArgumentException("pingTimeout must be >= pingInterval");
+        this.pingInterval = Objects.requireNonNullElseGet(builder.pingInterval, () -> Duration.ofSeconds(10));
+        this.pingTimeout = Objects.requireNonNullElseGet(builder.pingTimeout, () -> Duration.ofSeconds(3));
+        this.maxConsecutivePingFailures = Objects.requireNonNullElse(builder.maxConsecutivePingFailures, 3);
+        this.pinger = new Pinger();
+
+    }
+
+    /**
+     * @return 是否已关闭
+     */
+    private boolean isClosed() {
+        return closeF.isDone();
+    }
+
+    /**
+     * @return 获取连接持有者
+     */
+    private CompletableFuture<Hold> getHolder() {
+        return holderRef.get();
+    }
+
+    /**
+     * 尝试重置连接持有者。
+     * <p>
+     * 仅当持有者当前持有的连接实例与期望值一致时，才会将其替换为一个新的空连接实例，
+     * 表示当前连接已被废弃，等待新连接来填充。
+     * </p>
+     *
+     * @param expect 期待连接持有者所拥有的连接实例
+     * @return TRUE | FALSE
+     */
+    private boolean tryResetHolder(CompletableFuture<Hold> expect) {
+        return holderRef.compareAndSet(expect, new CompletableFuture<>());
+    }
+
+    /**
+     * 关闭连接持有者
+     *
+     * @return 关闭回调
+     */
+    private CompletionStage<Void> closingHolder() {
+        final var holder = getHolder();
+
+        // 成功取消：transport 从未创建，无需关闭
+        if (holder.cancel(true)) {
+            return completedStage(null);
         }
 
-        // Create scheduler if necessary
-        if (Objects.isNull(builder.scheduler)) {
-            this.ownsScheduler = true;
-            this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-                final Thread thread = new Thread(r);
-                thread.setName("%s/scheduler".formatted(NAME));
-                thread.setDaemon(true);
-                return thread;
-            });
-        } else {
-            this.ownsScheduler = false;
-            this.scheduler = builder.scheduler;
+        // 已连接成功：优雅关闭底层 transport
+        if (holder.isDone() && !holder.isCancelled()) {
+            return holder.thenCompose(Hold::closeGracefully)
+                    .exceptionally(ex -> {
+                        logger.warn("{} closing holder failed.", this, ex);
+                        return null;
+                    });
         }
 
+        // 已被其他地方关闭或其他状态
+        return completedStage(null);
     }
 
     @Override
     public String toString() {
-        return NAME;
-    }
-
-    @Override
-    public Mono<Void> connect(Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>> handler) {
-        schedulingConnectNow(pinger.wrapHandler(handler::apply));
-        return Mono.empty();
+        return "dashscope4j-agent://mcp/new-recoverable-mcp-client-transport";
     }
 
     @Override
     public Mono<Void> closeGracefully() {
 
-        // Do nothing if the transport is already closed or closing
-        if (!closed.compareAndSet(false, true)) {
-            // Return cached closing future if available, otherwise empty mono
-            final var cachedClosing = closingFuture;
-            return cachedClosing != null 
-                    ? Mono.from(PublisherUtils.unwrapCancellableStage(cachedClosing))
-                    : Mono.empty();
+        if (isClosed() || !closeF.complete(null)) {
+            return Mono.empty();
         }
 
-        // main closing
-        final var closingF = CompletableFuture.completedStage(null)
+        // 关闭PINGER
+        pinger.close();
 
-                // closing pinger
-                .thenAccept(unused -> pinger.close())
-
-                // closing holder
-                .thenCompose(unused -> closingHolder())
-                .exceptionally(ex -> {
-                    logger.warn("{} closing holder failed.", this, ex);
-                    return null;
-                })
-
-                // closing scheduler
-                .thenCompose(unused -> closingSchedulerIfNecessary())
-                .exceptionally(ex -> {
-                    logger.warn("{} closing scheduler failed.", this, ex);
-                    return null;
-                })
-
-                // finally closed
-                .thenAccept(unused -> logger.info("{} closed.", this));
-        
-        // Cache the closing future for duplicate close requests
-        this.closingFuture = closingF.toCompletableFuture();
-
-        return Mono.from(PublisherUtils.unwrapCancellableStage(closingF));
-    }
-
-
-    /**
-     * Closing the holder
-     */
-    private CompletionStage<Void> closingHolder() {
-        final var holder = getHolder();
-        if (!holder.cancel(true) && holder.isDone()) {
-            return holder.thenCompose(hold -> hold.closeGracefully().toFuture())
-                    .exceptionally(ex -> {
-                        logger.warn("{} closing holder's transport failed.", this, ex);
-                        return null;
-                    });
-        }
-        return completedStage(null);
-    }
-
-    /*
-     * Closing the scheduler
-     */
-    private CompletionStage<Void> closingSchedulerIfNecessary() {
-        if (!ownsScheduler) {
-            return completedStage(null);
-        }
-        final var closingF = new CompletableFuture<Void>();
-        try {
-            logger.info("{} shutting down scheduler.", this);
-            scheduler.shutdown();
-            if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) {
+        // 关闭调度器
+        synchronized (this) {
+            if (ownsScheduler && null != scheduler) {
                 scheduler.shutdownNow();
-                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    closingF.completeExceptionally(new IllegalStateException("Failed to close scheduler!"));
-                } else {
-                    logger.warn("{} scheduler shutdown with force.", this);
-                    closingF.complete(null);
-                }
-            } else {
-                logger.info("{} scheduler shutdown gracefully.", this);
-                closingF.complete(null);
+                scheduler = null;
             }
-        } catch (InterruptedException ex) {
-            scheduler.shutdownNow();
-            Thread.currentThread().interrupt();
-            closingF.completeExceptionally(ex);
         }
-        return closingF;
+
+        return Mono.fromCompletionStage(closingHolder())
+                .doFinally(s -> logger.debug("{} closed.", this));
+
     }
 
     @Override
     public Mono<Void> sendMessage(McpSchema.JSONRPCMessage message) {
 
-        // Skip sending if the transport has already been closed
         if (isClosed()) {
-            return Mono.empty();
+            return Mono.error(new IllegalStateException("Already closed!"));
         }
 
-        // Get the current holder
         final var holder = getHolder();
-
-        // Send the message and handle result
         final var sendF = holder.thenCompose(hold ->
-
-                // Perform the actual message sending
-                hold.transport.sendMessage(message)
+                hold.transport().sendMessage(message)
                         .toFuture()
 
-                        // On success: reset consecutive failure count
-                        .thenAccept(unused -> networkHealth.notifySendSuccess())
-
-                        // On failure: handle send error
-                        .exceptionallyCompose(ex -> {
-                            logger.warn("{}/send failed. message={}, cause={}", 
-                                    this, message.getClass().getSimpleName(), ex.toString());
-                            networkHealth.notifySendFailure(() -> {
+                        /*
+                         * 发送失败则需要理解发起重连，
+                         * 但只有能成功重置连接持有者手中的连接实例的请求，才有资格发起立即重连。
+                         */
+                        .whenComplete((u, ex) -> {
+                            if (null != ex) {
                                 if (tryResetHolder(holder)) {
-                                    schedulingConnectNow(hold.handler);
+                                    schedulingConnectNow(hold.handler());
                                 }
-                            });
-                            return CompletableFuture.failedStage(ex);
-                        }))
-                
-                // Handle case where holder was cancelled or completed during send
-                .exceptionallyCompose(ex -> {
-                    if (ex instanceof CancellationException) {
-                        logger.debug("{}/send cancelled. holder was reset during send.", this);
-                    } else {
-                        logger.warn("{}/send failed with exception. cause={}", this, ex.toString());
-                    }
-                    return CompletableFuture.failedStage(ex);
-                });
+                            }
+                        }));
 
+        //noinspection NullableProblems
         return Mono.fromFuture(sendF);
     }
 
@@ -362,441 +180,215 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
         return mapper.convertValue(data, typeRef);
     }
 
-    private boolean isClosed() {
-        return closed.get();
-    }
+    @Override
+    public Mono<Void> connect(Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>> handler) {
 
-
-    /**
-     * 获取当前持有的连接
-     *
-     * @return 连接 Future
-     */
-    private CompletableFuture<Hold> getHolder() {
-        return holderRef.get();
-    }
-
-    /**
-     * 尝试重置连接持有者
-     * <p>
-     * 使用 CAS 操作原子性地替换旧的连接持有者为新的持有者，
-     * 并异步关闭旧的连接。
-     * </p>
-     *
-     * @param holder 旧的连接持有者
-     * @return true 如果成功重置，false 如果 CAS 失败
-     */
-    private boolean tryResetHolder(CompletableFuture<Hold> holder) {
-        // Create new holder first to minimize race condition window
-        final var newHolder = new CompletableFuture<Hold>();
-        if (!holderRef.compareAndSet(holder, newHolder)) {
-            return false;
+        if (isClosed()) {
+            return Mono.error(new IllegalStateException("Already closed!"));
         }
-        
-        // Close the old holder asynchronously
-        closeOldHolder(holder);
-        return true;
+
+        if (!connectF.compareAndSet(false, true)) {
+            return Mono.error(new IllegalStateException("Duplicate connected!"));
+        }
+
+        schedulingConnectNow(pingEnabled ? pinger.wrapHandler(handler::apply) : handler::apply);
+        return Mono.empty();
     }
 
-    /**
-     * 优雅关闭旧的连接持有者
-     *
-     * @param holder 旧的连接持有者
-     */
-    private void closeOldHolder(CompletableFuture<Hold> holder) {
-        if (!holder.cancel(true)) {
-            // Holder is already done, close it gracefully
-            holder.thenAccept(hold -> {
-                hold.closeGracefully().subscribe(
-                    unused -> logger.debug("{} closed old holder's transport.", this),
-                    ex -> logger.warn("{} failed to close old holder's transport.", this, ex)
-                );
-            });
-        } else {
-            logger.debug("{} cancelled old holder.", this);
-        }
-    }
-
-    /**
-     * 调度任务执行
-     *
-     * @param task  要执行的任务
-     * @param delay 延迟时间，如果为 null 或零则立即执行
-     * @return 调度任务的 Future
-     */
-    private Future<?> scheduling(Runnable task, Duration delay) {
-        try {
-            return Objects.isNull(delay) || delay.isZero()
-                    ? scheduler.submit(task)
-                    : scheduler.schedule(task, delay.toMillis(), TimeUnit.MILLISECONDS);
-        } catch (RejectedExecutionException ex) {
-            // Scheduler is shutting down, ignore the task
-            logger.debug("{} rejected task execution. scheduler is shutting down.", this);
-            return CompletableFuture.completedFuture(null);
-        }
-    }
-
-    /**
-     * 重连上下文
-     *
-     * @param handler      消息处理器
-     * @param attemptCount 重试次数
-     * @param failureCause 失败原因
-     */
-    private record ReconnectContext(Handler handler, int attemptCount, Throwable failureCause) {
-        
-        /**
-         * 创建下一次重试的上下文
-         *
-         * @param cause 失败原因
-         * @return 新的重连上下文
-         */
-        ReconnectContext nextAttempt(Throwable cause) {
-            return new ReconnectContext(handler, attemptCount + 1, cause);
-        }
-    }
 
     /**
      * 立即调度连接任务
      *
-     * @param handler 消息处理器
-     * @return 调度任务的 Future
+     * @param handler 处理器
      */
-    private Future<?> schedulingConnectNow(Handler handler) {
-        return schedulingConnect(new ReconnectContext(handler, 0, null));
+    private void schedulingConnectNow(Handler handler) {
+        schedulingConnect(new Attempt(handler, 0, null));
     }
 
 
     /**
-     * 调度带重试的连接任务
-     * <p>
-     * 根据重试次数计算连接间隔，首次连接或立即重连时隔阂为零。
-     * 连接成功后启动心跳检测，连接失败则调度下一次重试。
-     * </p>
+     * 调度连接任务
      *
-     * @param context 重连上下文
-     * @return 调度任务的 Future
+     * @param attempt 重连连接上下文
      */
-    private Future<?> schedulingConnect(ReconnectContext context) {
+    private void schedulingConnect(Attempt attempt) {
 
         /*
-         * Compute the connection interval based on retry attempt count.
+         * 计算重试间隔
          *
-         * If attemptCount is 0, it indicates the first connection or an immediate reconnect,
-         * in which case the interval is set to zero.
+         * 如果是第一次（count == 0）失败，则应该立即重连，即重试间隔为0；
+         * 如果是第N次失败，则应该根据重试策略计算重试间隔；
          */
-        final var connectInterval = context.attemptCount() == 0
+        final var connectInterval = attempt.count() == 0
                 ? Duration.ZERO
-                : reconnectStrategy.retryDelay(context.attemptCount(), context.failureCause());
+                : reconnectStrategy.retryDelay(attempt.count(), attempt.cause());
 
         /*
-         * schedule connect
-         *
-         * if successful, then schedule heartbeat
-         * else schedule reconnect
+         * 重试间隔为null，说明策略放弃了本次重试。
+         * 如果重试被放弃，则需要立即关闭Transport
          */
-        return scheduling(() -> completedStage(null)
-                .thenApply(unused -> transportFactory.create(mapper))
+        if (null == connectInterval) {
+            logger.debug("{} reconnect strategy gave up after {} attempts, closing transport.", this, attempt.count());
+            close();
+            return;
+        }
 
-                // Connect transport
-                .thenCompose(transport -> transport.connect(context.handler())
+        // 记录重试间隔
+        if (null != attempt.cause()) {
+            logger.warn("{} connect failed after {} attempts, retrying in {}ms",
+                    this,
+                    attempt.count(),
+                    connectInterval.toMillis(),
+                    attempt.cause()
+            );
+        }
+
+        // 发起连接任务
+        scheduling(() -> CompletableFuture.completedStage(null)
+
+                // 获取Transport
+                .thenApply(u -> transportFactory.apply(mapper))
+
+                // 连接Transport
+                .thenCompose(transport -> transport.connect(attempt.handler())
                         .toFuture()
-                        .thenApply(unused -> transport))
+                        .thenApply(u -> transport))
 
                 /*
-                 * Connect transport success
-                 *
-                 * complete the holder instance and schedule heartbeat,
-                 * if complete failed, close the transport and cleanup resources.
+                 * 处理Transport的连接结果
+                 * 成功：发起PING
+                 * 失败：发起重连
                  */
-                .thenAccept(transport -> {
-                    if (getHolder().complete(new Hold(transport, context.handler()))) {
-                        logger.info("{} connected successfully. scheduling heartbeat.", this);
-                        // Reset network health counters after successful connection
-                        networkHealth.reset();
-                        schedulingPing();
-                    } else {
-                        // Holder was reset during connection, cleanup transport
-                        logger.debug("{} holder was reset during connection, closing transport.", this);
-                        transport.close();
-                    }
-                })
+                .whenComplete((transport, ex) -> {
 
-                // Connect transport failed, schedule reconnect with connect interval
-                .exceptionally(ex -> {
-                    logger.warn("{} connect failed, scheduling reconnect. attempt={}, cause={}", 
-                            this, context.attemptCount() + 1, ex.toString());
-                    schedulingConnect(context.nextAttempt(ex));
-                    return null;
+                    // Transport 连接成功
+                    if (null == ex) {
+
+                        //  标记连接实例完成
+                        final var hold = new Hold(transport, attempt.handler());
+                        final var holder = getHolder();
+                        if (holder.complete(hold)) {
+                            logger.debug("{} connected after {} attempts.", this, attempt.count());
+                            pinger.schedulingPing(holder);
+                        }
+
+                        /*
+                         * 标记失败，说明连接已经被其他连接请求标记完成。
+                         * 这种情况应该不会发生，这里做一个防呆的检查，防止Transport泄露。
+                         */
+                        else {
+                            logger.debug("{} connecting reset after {} attempts.", this, attempt.count());
+                            transport.close();
+                        }
+
+                    }
+
+                    // Transport 连接失败
+                    else {
+                        transport.close();
+                        schedulingConnect(attempt.next(ex));
+                    }
+
                 }), connectInterval);
 
     }
 
 
     /**
-     * Schedules a ping task to periodically check the connection health.
+     * 任务调度
      *
-     * <p>If the ping succeeds, it resets the consecutive failure counter
-     * and schedules the next ping.</p>
-     *
-     * <p>If the ping fails beyond the configured threshold,
-     * the holder will be reset and a reconnection attempt is triggered.</p>
-     *
-     * @see #pinger
-     * @see #tryResetHolder(CompletableFuture)
-     * @see #schedulingConnectNow(Handler)
+     * @param task  任务
+     * @param delay 执行延迟时间
+     * @return 调度回调
      */
-    private void schedulingPing() {
+    private Future<?> scheduling(Runnable task, Duration delay) {
 
-        // Skip if ping is disabled
-        if (!pingEnabled) {
-            return;
-        }
+        synchronized (this) {
 
-        scheduling(() -> {
-            final var holder = getHolder();
-            holder.thenCompose(hold -> pinger.ping(hold)
+            if (isClosed()) {
+                return CompletableFuture.failedFuture(new IllegalStateException("Already closed!"));
+            }
 
-                    /*
-                     * Heartbeat success
-                     *
-                     * 1. reset consecutive failure counter
-                     * 2. continue to schedule heartbeat
-                     */
-                    .thenAccept(unused -> {
-                        networkHealth.notifyPingSuccess();
-                        // Only schedule next ping if this holder is still active
-                        if (holder.isDone() && !holder.isCompletedExceptionally() && !holder.isCancelled()) {
-                            logger.trace("{} heartbeat success, scheduling next ping.", this);
-                            schedulingPing();
-                        } else {
-                            logger.debug("{} heartbeat success but holder changed, skipping next ping.", this);
-                        }
-                    })
-
-                    /*
-                     * Heartbeat failed
-                     *
-                     * 1. increment consecutive failure counter
-                     * 2. if consecutive failure count exceeds the threshold, reset the holder and schedule reconnect
-                     * 3. stop scheduling new pings (reconnection will handle it)
-                     */
-                    .exceptionallyCompose(ex -> {
-                        networkHealth.notifyPingFailure(() -> {
-                            if (tryResetHolder(holder)) {
-                                schedulingConnectNow(hold.handler);
-                            }
-                        });
-                        // Don't continue scheduling on failure - let reconnection handle it
-                        return null;
-                    }));
-
-        }, pingInterval);
-    }
-
-
-    /**
-     * 连接持有者
-     * <p>
-     * 封装了底层的 MCP 传输层和消息处理器。
-     * </p>
-     *
-     * @param transport 底层传输层
-     * @param handler   消息处理器
-     */
-        private record Hold(McpClientTransport transport, Handler handler) {
-
-        /**
-             * 优雅关闭传输层
-             *
-             * @return 关闭完成的 Mono
-             */
-            public Mono<Void> closeGracefully() {
-                return transport.closeGracefully();
+            if (ownsScheduler && null == scheduler) {
+                scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                    final Thread thread = new Thread(r);
+                    thread.setName("%s/scheduler".formatted(this));
+                    thread.setDaemon(true);
+                    return thread;
+                });
             }
 
         }
 
+        try {
+            return null == delay || delay.isZero()
+                    ? scheduler.submit(task)
+                    : scheduler.schedule(task, delay.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException reEx) {
+            return CompletableFuture.failedFuture(reEx);
+        }
+
+    }
+
+
     /**
-     * 网络健康状态跟踪器
+     * 处理器
      * <p>
-     * 集中管理所有故障计数和重连逻辑，避免在 Hold 实例中重复管理状态。
-     * 跟踪连续发送失败和心跳失败次数，当超过阈值时触发重连。
+     * 无他，这里弄一个类来封装，纯粹是因为原来的{@code Function}代码太长。
      * </p>
      */
-    private class NetworkHealth {
-
-        /**
-         * 连续发送失败次数
-         */
-        private final AtomicInteger consecutiveSendFailures = new AtomicInteger(0);
-        
-        /**
-         * 连续心跳失败次数
-         */
-        private final AtomicInteger consecutivePingFailures = new AtomicInteger(0);
-        
-        /**
-         * 是否正在重连
-         */
-        private final AtomicBoolean reconnecting = new AtomicBoolean(false);
-
-        /**
-         * 通知发送操作成功
-         * <p>
-         * 重置连续发送失败计数器。
-         * </p>
-         */
-        public void notifySendSuccess() {
-            consecutiveSendFailures.set(0);
-        }
-
-        /**
-         * 通知发送操作失败
-         * <p>
-         * 如果失败次数超过阈值，则触发重连。
-         * </p>
-         *
-         * @param trigger 重连触发回调
-         */
-        public void notifySendFailure(Runnable trigger) {
-            final int failures = consecutiveSendFailures.incrementAndGet();
-            // Cap the failure count to prevent integer overflow
-            if (failures < 0) {
-                consecutiveSendFailures.set(Integer.MAX_VALUE - 1);
-            }
-            final boolean shouldTrigger = maxConsecutiveSendFailures <= 0 || failures > maxConsecutiveSendFailures;
-            if (shouldTrigger && reconnecting.compareAndSet(false, true)) {
-                trigger.run();
-            }
-        }
-
-        /**
-         * 通知心跳成功
-         * <p>
-         * 重置连续心跳失败计数器和重连标志。
-         * </p>
-         */
-        public void notifyPingSuccess() {
-            consecutivePingFailures.set(0);
-            reconnecting.set(false); // Reset reconnect flag on successful ping
-        }
-
-        /**
-         * 通知心跳失败
-         * <p>
-         * 如果失败次数超过阈值，则触发重连。
-         * </p>
-         *
-         * @param trigger 重连触发回调
-         */
-        public void notifyPingFailure(Runnable trigger) {
-            final int failures = consecutivePingFailures.incrementAndGet();
-            // Cap the failure count to prevent integer overflow
-            if (failures < 0) {
-                consecutivePingFailures.set(Integer.MAX_VALUE - 1);
-            }
-            final boolean shouldTrigger = maxConsecutivePingFailures <= 0 || failures > maxConsecutivePingFailures;
-            if (shouldTrigger && reconnecting.compareAndSet(false, true)) {
-                trigger.run();
-            }
-        }
-
-        /**
-         * 重置所有计数器
-         * <p>
-         * 在成功重连后调用。
-         * </p>
-         */
-        public void reset() {
-            consecutiveSendFailures.set(0);
-            consecutivePingFailures.set(0);
-            reconnecting.set(false);
-        }
-
-    }
-
-
-    /**
-     * MCP 客户端传输层工厂接口
-     */
-    public interface McpClientTransportFactory {
-
-        /**
-         * 创建新的 MCP 客户端传输层实例
-         *
-         * @param mapper JSON 映射器
-         * @return MCP 客户端传输层实例
-         */
-        McpClientTransport create(McpJsonMapper mapper);
-
-    }
-
-    /**
-     * 重连策略接口
-     */
-    public interface ReconnectStrategy {
-
-        /**
-         * 根据重试次数和失败原因计算重试延迟
-         *
-         * @param attemptCount 重试次数
-         * @param failureCause 失败原因
-         * @return 重试延迟时间
-         */
-        Duration retryDelay(int attemptCount, Throwable failureCause);
-
-    }
-
-    public interface ReconnectStrategies {
-
-        /**
-         * Create a new strategy.
-         *
-         * @param baseDelay   initial delay (base)
-         * @param maxDelay    maximum allowed delay
-         * @param jitterRatio randomness ratio to avoid thundering herd problem
-         */
-        static ReconnectStrategy exponentialBackoff(final Duration baseDelay, final Duration maxDelay, final double jitterRatio) {
-            final Random random = new Random();
-            return (attemptCount, failureCause) -> {
-
-                if (attemptCount <= 0) {
-                    return Duration.ZERO;
-                }
-
-                // Cap attempt count to prevent overflow in exponential calculation
-                final int cappedAttemptCount = Math.min(attemptCount, MAX_RETRY_ATTEMPT);
-
-                // exponential backoff: baseDelay * 2^(attemptCount - 1)
-                final double expBackoffMillis = baseDelay.toMillis() * Math.pow(2, cappedAttemptCount - 1);
-
-                // apply jitter: ± jitterRatio of the current exponential delay
-                final double jitter = (random.nextDouble() * 2 - 1) * jitterRatio * expBackoffMillis;
-
-                final long calculatedDelay = (long) (expBackoffMillis + jitter);
-
-                // cap at maxDelay and ensure non-negative
-                return Duration.ofMillis(Math.max(0, Math.min(calculatedDelay, maxDelay.toMillis())));
-            };
-
-        }
-
-    }
-
-
-    /**
-     * Handler interface for handling messages.
-     */
+    @FunctionalInterface
     private interface Handler extends Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>> {
+    }
+
+
+    /**
+     * 连接实例
+     * <p>
+     * 一个连接实例由{@code Transport}和{@code Handler}配对组成，代表一个有效连接。
+     * </p>
+     *
+     * @param transport 传输通道
+     * @param handler   处理器
+     */
+    private record Hold(McpClientTransport transport, Handler handler) {
+
+        /**
+         * 优雅关闭连接
+         *
+         * @return 关闭回调
+         */
+        public CompletionStage<Void> closeGracefully() {
+            return transport.closeGracefully().toFuture();
+        }
 
     }
 
     /**
-     * 心跳检测器
+     * 重连上下文
+     *
+     * @param handler 消息处理器
+     * @param count   重试次数
+     * @param cause   失败原因
+     */
+    private record Attempt(Handler handler, int count, Throwable cause) {
+
+        /**
+         * 创建下一次重试的上下文
+         *
+         * @param cause 失败原因
+         * @return 新的重连上下文
+         */
+        Attempt next(Throwable cause) {
+            return new Attempt(handler, count + 1, cause);
+        }
+
+    }
+
+    /**
+     * Pinger
      * <p>
-     * 负责监控连接健康状态，通过定期发送 Ping 消息并等待 Pong 响应来检测连接是否正常。
-     * 使用会话映射表跟踪待处理的 Ping 请求，支持超时处理和容量限制。
+     * 负责向服务器发送 Ping 请求并等待 Pong 响应，以确保连接的活跃性。
      * </p>
      */
     private class Pinger implements AutoCloseable {
@@ -805,17 +397,66 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
          * Ping 消息前缀，用于区分 Ping 请求和普通请求
          */
         private static final String PREFIX = "HB-PING";
-        
+
         /**
          * 最大会话数，防止内存耗尽
          */
-        // Limit session map size to prevent memory exhaustion
         private static final int MAX_SESSIONS = 1000;
-        
+
         /**
          * 会话映射表：Ping ID -> Pong 回调 Future
          */
         private final Map<String, CompletableFuture<Void>> sessionMap = new ConcurrentHashMap<>();
+
+        /**
+         * 连续心跳失败次数
+         */
+        private final AtomicInteger consecutivePingFailures = new AtomicInteger(0);
+
+        /*
+         * FATHER THIS
+         */
+        private final Object _this = RecoverableMcpClientTransport.this;
+
+        /**
+         * 调度一个 Ping 任务
+         *
+         * @param holder 连接实例持有者
+         * @return 调度结果
+         */
+        @SuppressWarnings("UnusedReturnValue")
+        public Future<?> schedulingPing(CompletableFuture<Hold> holder) {
+
+            if (!pingEnabled) {
+                return CompletableFuture.completedFuture(null);
+            }
+
+            return scheduling(() -> {
+                holder.thenCompose(hold -> ping(hold)
+                        .thenAccept(u -> {
+                            logger.debug("{} ping success.", _this);
+                            consecutivePingFailures.set(0);
+                            schedulingPing(holder);
+                        })
+                        .exceptionally(ex -> {
+                            final var failures = consecutivePingFailures.incrementAndGet();
+                            if (failures <= maxConsecutivePingFailures) {
+                                logger.warn("{} ping failed, not giving up yet! failures={}", _this, failures, ex);
+                                schedulingPing(holder);
+                            } else {
+                                if (tryResetHolder(holder)) {
+                                    logger.warn("{} ping failed, giving up! failures={}", _this, failures, ex);
+                                    schedulingConnectNow(hold.handler());
+                                } else {
+                                    logger.warn("{} ping failed, ignored by reset! failures={}", _this, failures, ex);
+                                    consecutivePingFailures.set(0);
+                                }
+                            }
+                            return null;
+                        }));
+            }, pingInterval);
+
+        }
 
         /**
          * 向服务器发送 Ping 并等待 Pong 响应
@@ -824,7 +465,7 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
          * @return 收到 Pong 时完成的 CompletionStage
          * @throws IllegalStateException 如果会话映射表已满
          */
-        public CompletionStage<?> ping(Hold hold) {
+        private CompletionStage<?> ping(Hold hold) {
 
             /*
              * Ping 请求标识
@@ -834,14 +475,14 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
              */
             final var pingId = "%s-%s".formatted(PREFIX, UUID.randomUUID().toString());
 
-            // Pong 回调 Future
+            // Pong 回调
             final var pongF = new CompletableFuture<Void>();
 
             /*
              * 检查会话映射表容量，防止内存耗尽
              */
             if (sessionMap.size() >= MAX_SESSIONS) {
-                logger.warn("{} session map full ({} sessions), rejecting ping.", this, MAX_SESSIONS);
+                logger.warn("{} session map full ({} sessions), rejecting ping.", _this, MAX_SESSIONS);
                 pongF.completeExceptionally(new IllegalStateException("Session map capacity exceeded"));
                 return pongF;
             }
@@ -867,15 +508,21 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
              * 如果发送失败，将从 sessionMap 中移除 Pong 回调 Future，
              * 并取消 Ping 超时任务。
              */
-            return hold.transport.sendMessage(new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, McpSchema.METHOD_PING, pingId, null))
+            return hold.transport().sendMessage(new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, McpSchema.METHOD_PING, pingId, null))
                     .toFuture()
                     .thenCompose(unused -> pongF)
                     .whenComplete((r, ex) -> {
-                        // Clean up session map entry
+
                         sessionMap.remove(pingId, pongF);
                         if (!timeoutF.isDone()) {
                             timeoutF.cancel(true);
                         }
+
+                        // 提前失败回来的
+                        if (null != ex && !pongF.isDone()) {
+                            pongF.completeExceptionally(ex);
+                        }
+
                     });
         }
 
@@ -883,15 +530,21 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
          * 调度 Ping 超时任务
          *
          * @param pingId Ping ID
-         * @param pongF  Pong 回调 Future
-         * @return Ping 超时 Future
+         * @param pongF  Pong 回调
+         * @return 调度任务
          */
         private Future<?> schedulingPingTimeout(String pingId, CompletableFuture<Void> pongF) {
             return scheduling(() -> {
+
+                /*
+                 * 起手就尝试将PONG回调标记取消，
+                 * 如果能取消成功，说明PONG还没到；否则说明PONG已经在超时之前完成。
+                 */
                 if (pongF.cancel(true)) {
-                    logger.warn("{}/heartbeat/{} timeout!", RecoverableMcpClientTransport.this, pingId);
+                    logger.debug("{} pong timeout, no response received. id={}", _this, pingId);
                 }
-            }, pingTimeout); // Use dedicated timeout, not interval
+
+            }, pingTimeout);
         }
 
         /**
@@ -903,6 +556,7 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
         private boolean isPingId(String requestId) {
             return requestId.startsWith(PREFIX);
         }
+
 
         /**
          * 包装处理器以拦截 Ping 响应
@@ -919,23 +573,21 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
                     .filter(message -> {
 
                         /*
-                         * When received a message, check if it is a ping response.
-                         * If it is a ping response, remove the corresponding ping session and complete the pong callback future.
+                         * 检查收到的每个消息，它的应答ID是否符合PING的格式。
+                         * 如果符合则说明本消息应由PINGER接手。
                          *
-                         * Ping response's id must be a pingId, which is a special prefix + UUID.
+                         * 找到ID对应的PONG，并通知其完成。
                          */
                         if (message instanceof McpSchema.JSONRPCResponse response
                                 && response.id() instanceof String requestId
                                 && isPingId(requestId)) {
                             final var pongF = sessionMap.remove(requestId);
                             if (null != pongF) {
-                                // Complete only if not already cancelled
-                                if (!pongF.isCancelled()) {
-                                    pongF.complete(null);
-                                }
+                                pongF.complete(null);
                             }
                             return false;
                         }
+
                         return true;
                     })
                     .transform(delegate);
@@ -949,178 +601,142 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
 
     }
 
-    /**
-     * 创建构建器
-     *
-     * @return 新的 Builder 实例
-     */
+
+    @FunctionalInterface
+    public interface ReconnectStrategy {
+
+        Duration retryDelay(int attemptCount, Throwable failureCause);
+
+        default ReconnectStrategy combine(ReconnectStrategy next) {
+            return (attemptCount, failureCause) -> {
+                final var delay = retryDelay(attemptCount, failureCause);
+                final var nextDelay = next.retryDelay(attemptCount, failureCause);
+                if (null == delay || null == nextDelay) {
+                    return null;
+                }
+                return Duration.ofMillis(Math.max(delay.toMillis(), nextDelay.toMillis()));
+            };
+        }
+
+    }
+
+    public interface ReconnectStrategies {
+
+        static ReconnectStrategy never() {
+            return (attemptCount, failureCause) -> null;
+        }
+
+        static ReconnectStrategy always() {
+            return (attemptCount, failureCause) -> Duration.ZERO;
+        }
+
+        static ReconnectStrategy max(final int maxRetry) {
+            return (attemptCount, failureCause) ->
+                    attemptCount < maxRetry
+                            ? Duration.ZERO
+                            : null;
+        }
+
+        static ReconnectStrategy delay(Duration delay) {
+            return (attemptCount, failureCause) -> delay;
+        }
+
+        static ReconnectStrategy causeBy(Predicate<Throwable> predicate) {
+            return (attemptCount, failureCause) ->
+                    predicate.test(failureCause)
+                            ? Duration.ZERO
+                            : null;
+        }
+
+        static ReconnectStrategy backoff(final Duration baseDelay, final Duration maxDelay, final double jitterRatio) {
+            return (attemptCount, failureCause) -> {
+
+                if (attemptCount <= 0) {
+                    return Duration.ZERO;
+                }
+
+                // Cap attempt count to prevent overflow in exponential calculation
+                final int cappedAttemptCount = Math.min(attemptCount, 63);
+
+                // exponential backoff: baseDelay * 2^(attemptCount - 1)
+                final double expBackoffMillis = baseDelay.toMillis() * Math.pow(2, cappedAttemptCount - 1);
+
+                // apply jitter: ± jitterRatio of the current exponential delay
+                final double jitter = (ThreadLocalRandom.current().nextDouble() * 2 - 1) * jitterRatio * expBackoffMillis;
+
+                final long calculatedDelay = (long) (expBackoffMillis + jitter);
+
+                // cap at maxDelay and ensure non-negative
+                return Duration.ofMillis(Math.max(0, Math.min(calculatedDelay, maxDelay.toMillis())));
+
+            };
+        }
+
+
+    }
+
     public static Builder newBuilder() {
         return new Builder();
     }
 
-    /**
-     * RecoverableMcpClientTransport 构建器
-     * <p>
-     * 使用 Builder 模式配置可恢复的 MCP 传输层。
-     * </p>
-     */
     public static class Builder implements Buildable<RecoverableMcpClientTransport, Builder> {
 
-        /**
-         * JSON 映射器
-         */
         private McpJsonMapper mapper;
-        
-        /**
-         * 传输层工厂
-         */
-        private McpClientTransportFactory transportFactory;
-        
-        /**
-         * 重连策略
-         */
         private ReconnectStrategy reconnectStrategy;
-        
-        /**
-         * 调度器
-         */
+        private Function<McpJsonMapper, McpClientTransport> transportFactory;
         private ScheduledExecutorService scheduler;
-        
-        /**
-         * 最大连续发送失败次数，默认为 5
-         */
-        private int maxConsecutiveSendFailures = DEFAULT_MAX_CONSECUTIVE_SEND_FAILURES;
 
-        /**
-         * 是否启用心跳检测，默认启用
-         */
-        private boolean pingEnabled = true;
-        
-        /**
-         * 心跳间隔时间，默认为 30 秒
-         */
-        private Duration pingInterval = DEFAULT_PING_INTERVAL;
-        
-        /**
-         * 心跳超时时间，默认为 60 秒
-         */
-        private Duration pingTimeout = DEFAULT_PING_TIMEOUT;
-        
-        /**
-         * 最大连续心跳失败次数，默认为 5
-         */
-        private int maxConsecutivePingFailures = DEFAULT_MAX_CONSECUTIVE_PING_FAILURES;
+        private boolean pingEnabled;
+        private Duration pingInterval;
+        private Duration pingTimeout;
+        private Integer maxConsecutivePingFailures;
 
-
-        /**
-         * 设置 JSON 映射器
-         *
-         * @param mapper JSON 映射器
-         * @return 当前构建器
-         */
         public Builder mapper(McpJsonMapper mapper) {
             this.mapper = mapper;
             return this;
         }
 
-        /**
-         * 设置传输层工厂
-         *
-         * @param transportFactory 传输层工厂
-         * @return 当前构建器
-         */
-        public Builder transportFactory(McpClientTransportFactory transportFactory) {
-            this.transportFactory = transportFactory;
-            return this;
-        }
-
-        /**
-         * 设置重连策略
-         *
-         * @param reconnectStrategy 重连策略
-         * @return 当前构建器
-         */
         public Builder reconnectStrategy(ReconnectStrategy reconnectStrategy) {
             this.reconnectStrategy = reconnectStrategy;
             return this;
         }
 
-        /**
-         * 设置调度器
-         *
-         * @param scheduler 调度器
-         * @return 当前构建器
-         */
+        public Builder transportFactory(Function<McpJsonMapper, McpClientTransport> transportFactory) {
+            this.transportFactory = transportFactory;
+            return this;
+        }
+
         public Builder scheduler(ScheduledExecutorService scheduler) {
             this.scheduler = scheduler;
             return this;
         }
 
-        /**
-         * 设置最大连续发送失败次数
-         *
-         * @param maxConsecutiveSendFailures 最大连续发送失败次数
-         * @return 当前构建器
-         */
-        public Builder maxConsecutiveSendFailures(int maxConsecutiveSendFailures) {
-            this.maxConsecutiveSendFailures = maxConsecutiveSendFailures;
-            return this;
-        }
-
-        /**
-         * 设置心跳间隔时间
-         *
-         * @param pingInterval 心跳间隔
-         * @return 当前构建器
-         */
-        public Builder pingInterval(Duration pingInterval) {
-            this.pingInterval = pingInterval;
-            return this;
-        }
-
-        /**
-         * 设置心跳超时时间
-         *
-         * @param pingTimeout 心跳超时时间
-         * @return 当前构建器
-         */
-        public Builder pingTimeout(Duration pingTimeout) {
-            this.pingTimeout = pingTimeout;
-            return this;
-        }
-
-        /**
-         * 设置最大连续心跳失败次数
-         *
-         * @param maxConsecutivePingFailures 最大连续心跳失败次数
-         * @return 当前构建器
-         */
-        public Builder maxConsecutivePingFailures(int maxConsecutivePingFailures) {
-            this.maxConsecutivePingFailures = maxConsecutivePingFailures;
-            return this;
-        }
-
-        /**
-         * 设置是否启用心跳检测
-         *
-         * @param pingEnabled 是否启用
-         * @return 当前构建器
-         */
         public Builder pingEnabled(boolean pingEnabled) {
             this.pingEnabled = pingEnabled;
             return this;
         }
 
-        /**
-         * 构建可恢复的 MCP 传输层
-         *
-         * @return 新创建的传输层实例
-         */
+        public Builder pingInterval(Duration pingInterval) {
+            this.pingInterval = pingInterval;
+            return this;
+        }
+
+        public Builder pingTimeout(Duration pingTimeout) {
+            this.pingTimeout = pingTimeout;
+            return this;
+        }
+
+        public Builder maxConsecutivePingFailures(int maxConsecutivePingFailures) {
+            this.maxConsecutivePingFailures = maxConsecutivePingFailures;
+            return this;
+        }
+
         @Override
         public RecoverableMcpClientTransport build() {
             return new RecoverableMcpClientTransport(this);
         }
 
     }
+
 
 }

@@ -17,6 +17,7 @@ import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeAge
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
+import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -24,8 +25,12 @@ import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
+
+import static io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.mcp.RecoverableMcpClientTransport.ReconnectStrategies.always;
+import static io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.mcp.RecoverableMcpClientTransport.ReconnectStrategies.delay;
 
 public class DebugTestCase implements LoadingEnv {
 
@@ -66,6 +71,8 @@ public class DebugTestCase implements LoadingEnv {
                                         .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
                                         .jsonMapper(mapper)
                                         .build())
+                        .pingEnabled(true)
+                        .reconnectStrategy(always())
                         .build()
                 )
                 .toCompletableFuture()
@@ -128,6 +135,43 @@ public class DebugTestCase implements LoadingEnv {
 
     @Test
     public void debug$2() throws InterruptedException, IOException {
+
+        final var transport = RecoverableMcpClientTransport.newBuilder()
+                .transportFactory(mapper -> {
+                    return HttpClientStreamableHttpTransport
+                            .builder("https://1mcp.amap.com")
+                            .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+                            .jsonMapper(mapper)
+                            .openConnectionOnStartup(true)
+                            .build();
+                })
+//                .transportFactory(mapper-> {
+//                    return HttpClientSseClientTransport.builder("https://mcp.amap.com")
+//                            .sseEndpoint("/sse?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+//                            .build();
+//                })
+                .pingEnabled(true)
+                .reconnectStrategy(always().combine(delay(Duration.ofMillis(3000))))
+                .build();
+
+        final var mcpClient = McpClient.async(transport)
+                .initializationTimeout(Duration.ofHours(1))
+                .build();
+
+        mcpClient.initialize()
+                .toFuture()
+                .join();
+
+        mcpClient.listTools()
+                .toFuture()
+                .thenAccept(System.out::println)
+                .join();
+
+        Thread.sleep(1000 * 15);
+
+        mcpClient.close();
+
+        Thread.sleep(1000 * 60);
 
     }
 
