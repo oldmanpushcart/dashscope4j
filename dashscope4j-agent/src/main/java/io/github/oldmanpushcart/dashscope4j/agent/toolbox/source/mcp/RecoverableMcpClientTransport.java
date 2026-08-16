@@ -246,26 +246,28 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
         // 发起连接任务
         scheduling(() -> CompletableFuture.completedStage(null)
 
-                // 获取Transport
-                .thenApply(u -> transportFactory.apply(mapper))
+                // 创建新连接实例并尝试连接
+                .thenCompose(u -> {
+                    final var holder = attempt.handler();
+                    final var transport = transportFactory.apply(mapper);
+                    final var hold = new Hold(transport, holder);
+                    return hold.connect();
+                })
 
-                // 连接Transport
-                .thenCompose(transport -> transport.connect(attempt.handler())
-                        .toFuture()
-                        .thenApply(u -> transport))
+                // 测试连接是否能正常工作
+                .thenCompose(hold -> pinger.ping(hold).thenApply(u -> hold))
 
                 /*
-                 * 处理Transport的连接结果
+                 * 处理连接结果
                  * 成功：发起PING
                  * 失败：发起重连
                  */
-                .whenComplete((transport, ex) -> {
+                .whenComplete((hold, ex) -> {
 
-                    // Transport 连接成功
+                    // 连接成功
                     if (null == ex) {
 
                         //  标记连接实例完成
-                        final var hold = new Hold(transport, attempt.handler());
                         final var holder = getHolder();
                         if (holder.complete(hold)) {
                             logger.debug("{} connected after {} attempts.", this, attempt.count());
@@ -274,18 +276,18 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
 
                         /*
                          * 标记失败，说明连接已经被其他连接请求标记完成。
-                         * 这种情况应该不会发生，这里做一个防呆的检查，防止Transport泄露。
+                         * 这种情况应该不会发生，这里做一个防呆的检查，防止Hold泄露。
                          */
                         else {
                             logger.debug("{} connecting reset after {} attempts.", this, attempt.count());
-                            transport.close();
+                            hold.close();
                         }
 
                     }
 
-                    // Transport 连接失败
+                    // 连接失败
                     else {
-                        transport.close();
+                        hold.close();
                         schedulingConnect(attempt.next(ex));
                     }
 
@@ -360,6 +362,14 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
          */
         public CompletionStage<Void> closeGracefully() {
             return transport.closeGracefully().toFuture();
+        }
+
+        public void close() {
+            transport.close();
+        }
+
+        public CompletableFuture<Hold> connect() {
+            return transport.connect(handler).toFuture().thenApply(u -> this);
         }
 
     }

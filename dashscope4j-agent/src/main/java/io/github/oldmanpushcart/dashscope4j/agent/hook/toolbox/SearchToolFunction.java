@@ -7,6 +7,7 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.FunctionTool;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.tool.Tool;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -14,7 +15,7 @@ import java.util.function.Function;
  * 工具搜索函数
  */
 class SearchToolFunction
-        implements Function<SearchToolFunction.Search, CompletionStage<List<Tool>>> {
+        implements Function<SearchToolFunction.Search, CompletionStage<Object>> {
 
     private final Toolbox toolbox;
 
@@ -23,8 +24,14 @@ class SearchToolFunction
     }
 
     @Override
-    public CompletionStage<List<Tool>> apply(Search search) {
-        return toolbox.lookupByIntent(search.intent());
+    public CompletionStage<Object> apply(Search search) {
+        return toolbox.lookupByIntent(search.intent())
+                .thenApply(tools -> Map.of(
+                        "tools", tools,
+                        "suggest", """
+                                匹配到的工具列表不能直接使用，必须通过`invoke_tool`工具进行调用。
+                                """
+                ));
     }
 
     /**

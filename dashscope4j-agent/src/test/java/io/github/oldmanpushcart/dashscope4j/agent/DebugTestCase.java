@@ -14,10 +14,12 @@ import io.github.oldmanpushcart.dashscope4j.agent.toolkit.network.HttpToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.RuntimeToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.toolkit.system.ShellToolkit;
 import io.github.oldmanpushcart.dashscope4j.agent.typical.dashscope.DashscopeAgent;
+import io.github.oldmanpushcart.dashscope4j.agent.typical.react.ReActAgent;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.ChatModel;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.AssistantMessage;
 import io.github.oldmanpushcart.dashscope4j.client.aigc.chat.message.Message;
 import io.modelcontextprotocol.client.McpClient;
+import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -99,9 +101,9 @@ public class DebugTestCase implements LoadingEnv {
         final var sessionHook = buildingSessionHook();
         final var toolboxHook = buildingToolboxHook();
 
-        final var agent = DashscopeAgent.newBuilder()
+        final var agent = ReActAgent.newBuilder()
                 .client(client)
-                .model(ChatModel.QWEN_PLUS)
+                .model(ChatModel.QWEN_FLASH)
                 .hooks(List.of(
                         sessionHook,
                         toolboxHook
@@ -137,19 +139,18 @@ public class DebugTestCase implements LoadingEnv {
     public void debug$2() throws InterruptedException, IOException {
 
         final var transport = RecoverableMcpClientTransport.newBuilder()
-                .transportFactory(mapper -> {
-                    return HttpClientStreamableHttpTransport
-                            .builder("https://1mcp.amap.com")
-                            .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
-                            .jsonMapper(mapper)
-                            .openConnectionOnStartup(true)
-                            .build();
-                })
-//                .transportFactory(mapper-> {
-//                    return HttpClientSseClientTransport.builder("https://mcp.amap.com")
-//                            .sseEndpoint("/sse?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+//                .transportFactory(mapper -> {
+//                    return HttpClientStreamableHttpTransport
+//                            .builder("https://mcp.amap.com")
+//                            .endpoint("/mcp?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+//                            .jsonMapper(mapper)
 //                            .build();
 //                })
+                .transportFactory(mapper-> {
+                    return HttpClientSseClientTransport.builder("https://mcp.amap.com")
+                            .sseEndpoint("/sse?key=%s".formatted(System.getenv("AMAP_MAPS_API_KEY")))
+                            .build();
+                })
                 .pingEnabled(true)
                 .reconnectStrategy(always().combine(delay(Duration.ofMillis(3000))))
                 .build();
@@ -167,11 +168,7 @@ public class DebugTestCase implements LoadingEnv {
                 .thenAccept(System.out::println)
                 .join();
 
-        Thread.sleep(1000 * 15);
-
         mcpClient.close();
-
-        Thread.sleep(1000 * 60);
 
     }
 
