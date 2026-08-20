@@ -91,7 +91,12 @@ public class HashMapToolbox implements Toolbox {
                 .build();
         return ts.initialize()
                 .thenCompose(this::subscribe)
-                .thenApply(this::makeAutocloseToolSource);
+                .thenApply(this::makeAutocloseToolSource)
+                .whenComplete((u, ex) -> {
+                    if (null != ex) {
+                        IOUtils.closeQuietly(ts);
+                    }
+                });
     }
 
     @Override
@@ -110,7 +115,12 @@ public class HashMapToolbox implements Toolbox {
                 .build();
         return ts.initialize()
                 .thenCompose(this::subscribe)
-                .thenApply(this::makeAutocloseToolSource);
+                .thenApply(this::makeAutocloseToolSource)
+                .whenComplete((u, ex) -> {
+                    if (null != ex) {
+                        IOUtils.closeQuietly(ts);
+                    }
+                });
     }
 
     @Override
@@ -121,7 +131,12 @@ public class HashMapToolbox implements Toolbox {
                 .build();
         return ts.initialize()
                 .thenCompose(this::subscribe)
-                .thenApply(this::makeAutocloseToolSource);
+                .thenApply(this::makeAutocloseToolSource)
+                .whenComplete((u, ex) -> {
+                    if (null != ex) {
+                        IOUtils.closeQuietly(ts);
+                    }
+                });
     }
 
     @Override
@@ -132,7 +147,12 @@ public class HashMapToolbox implements Toolbox {
                 .build();
         return ts.initialize()
                 .thenCompose(this::subscribe)
-                .thenApply(this::makeAutocloseToolSource);
+                .thenApply(this::makeAutocloseToolSource)
+                .whenComplete((u, ex) -> {
+                    if (null != ex) {
+                        IOUtils.closeQuietly(ts);
+                    }
+                });
     }
 
 
@@ -149,7 +169,11 @@ public class HashMapToolbox implements Toolbox {
 
         // 重新推入工具箱
         final var tools = source.tools();
-        tools.forEach(tool -> entities.put(tool.meta().name(), Entity.of(source, tool)));
+        for (final var tool : tools) {
+            final var name = tool.meta().name();
+            final var entity = Entity.of(source, tool);
+            entities.putIfAbsent(name, entity);
+        }
 
         // 计算工具索引
         return CompletableFutureUtils
