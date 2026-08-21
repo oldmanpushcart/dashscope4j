@@ -11,11 +11,14 @@ import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
 import org.jspecify.annotations.NonNull;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -125,33 +128,44 @@ public class ShellToolkit implements Toolkit {
                         validateCommand(spec.command());
 
                         final var charset = detectTerminalCharset();
+                        final var cmdTimeout = (spec.timeout() != null)
+                                ? Duration.ofSeconds(spec.timeout())
+                                : timeout;
 
                         final var process = new ProcessBuilder()
+                                .redirectInput(ProcessBuilder.Redirect.from(nullDevice()))
                                 .redirectErrorStream(true)
                                 .command(spec.command())
                                 .start();
 
+                        // 异步读取输出（避免管道缓冲区满导致子进程阻塞死锁）
+                        final var outputBuf = new StringBuilder();
+                        final var readFuture = CompletableFuture.runAsync(() -> {
+                            try (final var reader = new BufferedReader(new InputStreamReader(process.getInputStream(), charset))) {
+                                String line;
+                                while ((line = reader.readLine()) != null) {
+                                    outputBuf.append(line).append('\n');
+                                }
+                            } catch (IOException ignored) {
+                            }
+                        });
+
                         // 等待进程完成（带超时）
-                        final var completed = process.waitFor(timeout.toMillis(), MILLISECONDS);
+                        final var completed = process.waitFor(cmdTimeout.toMillis(), MILLISECONDS);
 
                         if (!completed) {
                             // 超时，销毁进程
                             process.destroyForcibly();
+                            readFuture.get();
                             throw ToolExecutionException.callFailed(
                                     "shell$execute",
-                                    String.format("Command execution timed out (exceeded %s), forcibly terminated", timeout),
+                                    String.format("Command execution timed out (exceeded %s), forcibly terminated", cmdTimeout),
                                     "Try simplifying the command or increasing the timeout."
                             );
                         }
 
-                        // 同步读取输出
-                        final var outputBuf = new StringBuilder();
-                        try (final var reader = new BufferedReader(new InputStreamReader(process.getInputStream(), charset))) {
-                            String line;
-                            while ((line = reader.readLine()) != null) {
-                                outputBuf.append(line).append('\n');
-                            }
-                        }
+                        // 等待输出读取完成
+                        readFuture.get();
 
                         final int exitCode = process.exitValue();
                         final String output = outputBuf.toString();
@@ -160,10 +174,10 @@ public class ShellToolkit implements Toolkit {
                                 "output", output,
                                 "exit_code", exitCode,
                                 "is_success", exitCode == 0,
-                                "prompt", generatePrompt(exitCode, timeout)
+                                "prompt", generatePrompt(exitCode, cmdTimeout)
                         );
 
-                    } catch (IOException | InterruptedException ex) {
+                    } catch (IOException | InterruptedException | ExecutionException ex) {
                         if (ex instanceof InterruptedException) {
                             Thread.currentThread().interrupt();
                         }
@@ -219,6 +233,13 @@ public class ShellToolkit implements Toolkit {
      */
     private static boolean isWindows() {
         return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
+    /**
+     * 获取跨平台的空设备文件（用于 stdin 重定向，避免子进程阻塞）
+     */
+    private static File nullDevice() {
+        return isWindows() ? new File("NUL") : new File("/dev/null");
     }
 
     /**
