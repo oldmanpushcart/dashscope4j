@@ -152,6 +152,7 @@ public class VectorUtils {
                     return new Matched(key, source);
                 })
                 .sorted((o1, o2) -> Float.compare(o2.score(), o1.score()))
+                .limit(topK)
                 .toList();
     }
 
