@@ -16,7 +16,7 @@ class SettingInterceptor implements ChatInterceptor {
 
     private static final Message SEARCH_TOOLS_MESSAGE = Message
             .system(PromptTemplate.newBuilder()
-                    .resource("/prompt/SEARCH_TOOLS.md")
+                    .resource("/prompt/SEARCH_TOOL.md")
                     .build()
                     .render())
             .withCache();
