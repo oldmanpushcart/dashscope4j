@@ -116,7 +116,9 @@ public class ShellToolkit implements Toolkit {
         return FunctionTool.newBuilder()
                 .name("shell$exec")
                 .description("""
-                        在本地环境执行 Shell 命令或脚本。调用前，模型需自行根据当前操作系统类型，将命令转换为目标系统支持的语法。
+                        在本地环境执行 Shell 命令或脚本。
+                        
+                        调用前，模型需先确定当前操作系统类型和运行环境类型，并根据这些信息将命令转换为目标支持的语法。
                         - 参数: command (字符串数组, 必需), timeout (整数, 可选)。
                         - 返回: output, exit_code, is_success, prompt。
                         - 限制: 严禁执行破坏性或危害系统安全的命令。 建议优先使用只读查询命令，并确保具备相应权限。
