@@ -91,12 +91,14 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
 
         @Override
         public Realtime.Emitter<String> data(String in) {
+            logger.trace("{} >>> data:{}", this, in);
             sending(() -> ws.send(in));
             return this;
         }
 
         @Override
         public Realtime.Emitter<String> binary(ByteBuffer buffer) {
+            logger.trace("{} >>> binary:{}", this, buffer.remaining());
             sending(() -> {
                 final ByteString byteString = ByteString.of(buffer);
                 return ws.send(byteString);
@@ -206,11 +208,13 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
 
         @Override
         public void onMessage(@NonNull WebSocket ws, @NonNull String text) {
+            logger.trace("{} <<< data:{}", this, text);
             handler.onData(text);
         }
 
         @Override
         public void onMessage(@NonNull WebSocket ws, @NonNull ByteString bytes) {
+            logger.trace("{} <<< binary:{}", this, bytes.size());
             handler.onBinary(bytes.asByteBuffer());
         }
 
@@ -224,6 +228,7 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
 
         @Override
         public void onClosed(@NonNull WebSocket webSocket, int code, @NonNull String reason) {
+            logger.trace("{} connection closed, code:{};reason:{}", this, code, reason);
             if (!closed.compareAndSet(false, true)) {
                 return;
             }
@@ -247,6 +252,8 @@ public class DefaultRealtimeApi implements RealtimeApi, InternalContents {
 
         @Override
         public void onFailure(@NonNull WebSocket ws, @NonNull Throwable t, @Nullable Response httpResponse) {
+
+            logger.trace("{} occur error:", this, t);
 
             if (!closed.compareAndSet(false, true)) {
                 return;

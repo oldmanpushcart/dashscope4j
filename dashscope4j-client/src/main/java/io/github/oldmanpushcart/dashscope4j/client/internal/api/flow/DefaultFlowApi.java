@@ -5,6 +5,7 @@ import io.github.oldmanpushcart.dashscope4j.client.api.ApiException;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.internal.InternalContents;
+import io.github.oldmanpushcart.dashscope4j.client.util.CommonUtils;
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -20,6 +21,7 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
 public class DefaultFlowApi implements FlowApi, InternalContents {
@@ -113,22 +115,59 @@ public class DefaultFlowApi implements FlowApi, InternalContents {
                      */
                     if (null != t) {
                         sink.error(t);
-                    } else if (null != httpResponse
-                            && !httpResponse.isSuccessful()
-                            && "application/json".equals(httpResponse.header(HTTP_HEADER_CONTENT_TYPE))) {
+                        return;
+                    }
 
-                        try {
-                            final var stringResponseBody = httpResponse.body().string();
+                    try {
+
+                        // 这个不应该发生，Throwable 和 Response 必定二选一
+                        if (null == httpResponse) {
+                            throw new IllegalStateException("SSE failed! http-response is null!");
+                        }
+
+                        final var ct = httpResponse.header(HTTP_HEADER_CONTENT_TYPE);
+                        final var stringResponseBody = httpResponse.body().string();
+
+                        /*
+                         * application/json;charset=UTF-8
+                         * 这种情况是整个建连就报错，之前部分模型出现过这种错误返回情况。
+                         */
+                        if (CommonUtils.isStringStartWith(ct, "application/json")) {
                             final var response = request.responseDecoder().apply(httpResponse, stringResponseBody);
                             if (!response.isSuccess()) {
                                 throw new ApiException(response);
                             }
-                        } catch (Throwable ex) {
-                            sink.error(ex);
                         }
 
-                    } else {
-                        sink.error(new IllegalStateException("SSE failed!"));
+                        /*
+                         * text/event-stream;charset=UTF-8
+                         * 这种情况是错误信息以SSE事件返回，坑爹的是这个SSE事件你得自己解码
+                         *
+                         * id:1
+                         * event:error
+                         * :HTTP_STATUS/400
+                         * data:{"request_id":"a4698521-279d-9775-b3cd-1d575f6984d6","code":"Arrearage","message":"Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment"}
+                         */
+                        else if (CommonUtils.isStringStartWith(ct, "text/event-stream")) {
+                            final var sse = ServerSideEvent.valueOf(stringResponseBody);
+                            if (null != sse
+                                    && Objects.equals(sse.event(), "error")
+                                    && CommonUtils.isNotBlankString(sse.data())) {
+                                final var response = request.responseDecoder().apply(httpResponse, sse.data());
+                                if (!response.isSuccess()) {
+                                    throw new ApiException(response);
+                                }
+                            }
+                        }
+
+                        /*
+                         * 能走到这里，说明不是预期中的错误场景。
+                         * 那么就用通用的错误来解决。
+                         */
+                        throw new IllegalStateException("SSE failed! ct=%s;body=%s".formatted(ct, stringResponseBody));
+
+                    } catch (Throwable processEx) {
+                        sink.error(processEx);
                     }
 
                 }

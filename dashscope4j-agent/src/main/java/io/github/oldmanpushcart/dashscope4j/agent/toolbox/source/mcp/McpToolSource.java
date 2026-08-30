@@ -39,7 +39,7 @@ public class McpToolSource extends AbstractToolSource {
         super(builder.namespace);
         requireNonNull(builder.transport, "transport must not be null!");
         this.transport = builder.transport;
-        this._toString = "dashscope-agent:/toolbox/source/%s/mcp".formatted(namespace());
+        this._toString = "dashscope-agent:/toolbox/source/mcp/%s".formatted(namespace());
     }
 
     @Override

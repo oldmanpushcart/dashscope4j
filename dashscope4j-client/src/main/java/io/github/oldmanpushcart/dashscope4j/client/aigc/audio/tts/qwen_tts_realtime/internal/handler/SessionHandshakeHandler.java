@@ -12,15 +12,20 @@ import io.github.oldmanpushcart.dashscope4j.client.aigc.audio.tts.qwen_tts_realt
 import io.github.oldmanpushcart.dashscope4j.client.api.realtime.Realtime;
 
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.oldmanpushcart.dashscope4j.client.util.UUIDUtils.genUUID22;
+import static java.util.concurrent.CompletableFuture.delayedExecutor;
 
 public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, ServerEvent> {
 
+    private static final Duration DEFAULT_HANDSHAKE_TIMEOUT = Duration.ofSeconds(10);
     private static final String KEY_SESSION_FINISHED = "session.finished";
 
     private final QwenTtsRealtimeSession session;
@@ -28,11 +33,18 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
 
     private final Map<String, CompletableFuture<?>> futureMap = new ConcurrentHashMap<>();
     private final AtomicReference<State> state = new AtomicReference<>(State.AWAITING_SESSION_CREATED);
+    private final Duration timeout;
     private volatile Realtime.Emitter<ClientEvent> emitter;
+    private volatile CompletableFuture<?> timeoutF;
 
     public SessionHandshakeHandler(QwenTtsRealtimeSession session, Realtime.Handler<ClientEvent, ServerEvent> delegate) {
+        this(session, delegate, DEFAULT_HANDSHAKE_TIMEOUT);
+    }
+
+    public SessionHandshakeHandler(QwenTtsRealtimeSession session, Realtime.Handler<ClientEvent, ServerEvent> delegate, Duration timeout) {
         this.session = session;
         this.delegate = delegate;
+        this.timeout = timeout;
     }
 
     @Override
@@ -67,7 +79,20 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
                                 state.get()
                         ));
                     }
+
+                    /*
+                     * 发送请求后，立即设定超时
+                     *
+                     * 这个比较坑爹，因为QWEN_TTS如果欠费或账号状态异常，是不会返回任何信息告知，链接也不关闭。
+                     * 导致整个请求无端在这里倍挂起，所以只好设置了一个超时时间来规避这个问题。
+                     */
                     emitter.data(new SessionUpdateClientEvent(genUUID22(), session));
+                    timeoutF = CompletableFuture.runAsync(() -> {
+                        if (state.get() == State.AWAITING_SESSION_CONFIRMED) {
+                            onClosed(new TimeoutException("Session handshake timeout!"));
+                        }
+                    }, delayedExecutor(timeout.toMillis(), TimeUnit.MILLISECONDS));
+
                 } else {
                     throw new IllegalStateException("Expect %s event, but was: %s".formatted(
                             "session.created",
@@ -104,6 +129,7 @@ public class SessionHandshakeHandler implements Realtime.Handler<ClientEvent, Se
 
     @Override
     public void onClosed(Throwable ex) {
+        timeoutF.cancel(true);
         futureMap.forEach((type, future) -> {
             if (null != future) {
                 if (null != ex) {

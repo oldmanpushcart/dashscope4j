@@ -91,8 +91,13 @@ public class QwenTtsRealtimeTestCase implements LoadingEnv {
                     }
                 }
 
+            }).whenComplete((u,ex)-> {
+                if(null != ex) {
+                    completeF.completeExceptionally(ex);
+                }
             });
 
+            System.out.println("=== complete ===");
             completeF.join();
 
             final var audioURI = DataURI.from("audio/pcm", baos.toByteArray()).toURI();

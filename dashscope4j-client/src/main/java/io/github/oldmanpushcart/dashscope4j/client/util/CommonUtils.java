@@ -45,6 +45,11 @@ public class CommonUtils {
         return !isEmpty(map);
     }
 
+    public static boolean isStringStartWith(String str, String prefix) {
+        return Objects.equals(str, prefix)
+                || (null != str && str.startsWith(prefix));
+    }
+
     public static String joinStrings(String... strings) {
         if (null == strings) {
             return null;

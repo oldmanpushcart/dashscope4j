@@ -1,6 +1,7 @@
 package io.github.oldmanpushcart.dashscope4j.agent.toolbox.source.mcp;
 
 import io.github.oldmanpushcart.dashscope4j.client.util.Buildable;
+import io.github.oldmanpushcart.dashscope4j.client.util.CheckUtils;
 import io.github.oldmanpushcart.dashscope4j.client.util.jackson.JacksonJsonUtils;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.TypeRef;
@@ -27,7 +28,9 @@ import static java.util.concurrent.CompletableFuture.completedStage;
 
 public class RecoverableMcpClientTransport implements McpClientTransport {
 
+    private static final AtomicInteger SEQUENCER = new AtomicInteger(1000);
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final String _toString;
     private final McpJsonMapper mapper;
     private final ReconnectStrategy reconnectStrategy;
     private final Function<McpJsonMapper, McpClientTransport> transportFactory;
@@ -48,9 +51,11 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
     private final Pinger pinger;
 
     public RecoverableMcpClientTransport(Builder builder) {
+        CheckUtils.requireNonBlankString(builder.name, "name must not be blank!");
         Objects.requireNonNull(builder.reconnectStrategy, "reconnectStrategy must not be null!");
         Objects.requireNonNull(builder.transportFactory, "transportFactory must not be null!");
 
+        this._toString = "dashscope4j-agent://mcp/recoverable-transport/%s@%d".formatted(builder.name, SEQUENCER.incrementAndGet());
         this.mapper = requireNonNullElseGet(builder.mapper, () -> new JacksonMcpJsonMapper(JacksonJsonUtils.newMapper()));
         this.reconnectStrategy = builder.reconnectStrategy;
         this.transportFactory = builder.transportFactory;
@@ -121,7 +126,7 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
 
     @Override
     public String toString() {
-        return "dashscope4j-agent://mcp/new-recoverable-mcp-client-transport";
+        return _toString;
     }
 
     @Override
@@ -691,6 +696,7 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
 
     public static class Builder implements Buildable<RecoverableMcpClientTransport, Builder> {
 
+        private String name;
         private McpJsonMapper mapper;
         private ReconnectStrategy reconnectStrategy;
         private Function<McpJsonMapper, McpClientTransport> transportFactory;
@@ -700,6 +706,11 @@ public class RecoverableMcpClientTransport implements McpClientTransport {
         private Duration pingInterval;
         private Duration pingTimeout;
         private Integer maxConsecutivePingFailures;
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
 
         public Builder mapper(McpJsonMapper mapper) {
             this.mapper = mapper;

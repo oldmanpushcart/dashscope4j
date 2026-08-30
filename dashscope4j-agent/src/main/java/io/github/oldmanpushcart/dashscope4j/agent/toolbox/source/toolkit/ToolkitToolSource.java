@@ -22,7 +22,7 @@ public class ToolkitToolSource extends AbstractToolSource {
 
     private ToolkitToolSource(Builder builder) {
         super(builder.namespace);
-        this._toString = "dashscope4j-agent:/toolbox/source/%s/toolkit".formatted(namespace());
+        this._toString = "dashscope4j-agent:/toolbox/source/toolkit/%s".formatted(namespace());
         this.tools.addAll(builder.tools);
     }
 

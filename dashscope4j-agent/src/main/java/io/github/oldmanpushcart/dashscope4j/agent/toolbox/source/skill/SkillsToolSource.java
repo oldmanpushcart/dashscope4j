@@ -41,7 +41,7 @@ public class SkillsToolSource extends AbstractToolSource {
         this.scanInterval = builder.scanInterval;
         this.scheduler = builder.scheduler;
         this.isOwnScheduler = Objects.isNull(this.scheduler);
-        this._toString = "dashscope4j-agent:/toolbox/source/%s/skills".formatted(namespace());
+        this._toString = "dashscope4j-agent:/toolbox/source/skills/%s".formatted(namespace());
     }
 
     @Override

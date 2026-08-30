@@ -4,6 +4,8 @@ import io.github.oldmanpushcart.dashscope4j.client.DashscopeClient;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiRequest;
 import io.github.oldmanpushcart.dashscope4j.client.api.ApiResponse;
 import io.github.oldmanpushcart.dashscope4j.client.api.interceptor.Interceptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,6 +15,7 @@ import java.util.concurrent.CompletionStage;
 
 public class InterceptionAsyncApi implements AsyncApi {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final DashscopeClient client;
     private final AsyncApi delegate;
     private final Interceptor interceptor;
@@ -25,7 +28,14 @@ public class InterceptionAsyncApi implements AsyncApi {
 
     @Override
     public <T extends ApiRequest<R>, R extends ApiResponse> CompletionStage<R> execute(T request) {
-        final var chain = new Interceptor.Chain(Interceptor.Type.ASYNC, client, request, delegate::execute);
+        final var chain = new Interceptor.Chain(Interceptor.Type.ASYNC, client, request, r -> {
+            final var prefix = interceptor.getClass().getName();
+            logger.trace("{} >>> ENTER", prefix);
+            return delegate.execute(r)
+                    .whenComplete((u, ex) -> {
+                        logger.trace("{} <<< EXIXT", prefix, ex);
+                    });
+        });
         try {
             //noinspection unchecked
             return (CompletionStage<R>) interceptor.intercept(chain);

@@ -98,16 +98,16 @@ public class DebugTestCase implements LoadingEnv {
                 UUID.randomUUID().toString()
                 //"SESSION-001"
                 ;
-        final var sessionHook = buildingSessionHook();
-        final var toolboxHook = buildingToolboxHook();
+//        final var sessionHook = buildingSessionHook();
+//        final var toolboxHook = buildingToolboxHook();
 
         final var agent = ReActAgent.newBuilder()
                 .client(client)
                 .model(ChatModel.QWEN_FLASH)
-                .hooks(List.of(
-                        sessionHook,
-                        toolboxHook
-                ))
+//                .hooks(List.of(
+//                        sessionHook,
+//                        toolboxHook
+//                ))
                 .build();
 
         {
