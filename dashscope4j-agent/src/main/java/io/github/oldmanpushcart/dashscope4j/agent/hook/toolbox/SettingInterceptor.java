@@ -14,9 +14,9 @@ import java.util.concurrent.CompletionStage;
 
 class SettingInterceptor implements ChatInterceptor {
 
-    private static final Message SEARCH_TOOLS_MESSAGE = Message
+    private static final Message TOOLBOX_MESSAGE = Message
             .system(PromptTemplate.newBuilder()
-                    .resource("/prompt/SEARCH_TOOL.md")
+                    .resource("/prompt/TOOLBOX.md")
                     .build()
                     .render())
             .withCache();
@@ -52,7 +52,7 @@ class SettingInterceptor implements ChatInterceptor {
 
                                     // 添加动态工具使用提示信息
                                     .messages(messages -> {
-                                        messages.add(0, SEARCH_TOOLS_MESSAGE);
+                                        messages.add(0, TOOLBOX_MESSAGE);
                                         return messages;
                                     })
 
